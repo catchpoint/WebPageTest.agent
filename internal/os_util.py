@@ -65,7 +65,7 @@ def flush_dns():
     logging.debug("Flushing DNS")
     plat = platform.system()
     if plat == "Windows":
-        subprocess.call(['ipconfig', 'flushdns'])
+        subprocess.call(['ipconfig', '/flushdns'])
     elif plat == "Darwin":
         subprocess.call(['sudo', 'killall', '-HUP', 'mDNSResponder'])
         subprocess.call(['sudo', 'dscacheutil', '-flushcache'])

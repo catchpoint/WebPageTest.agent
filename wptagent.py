@@ -11,11 +11,14 @@ import sys
 import time
 import traceback
 
+START_BROWSER_TIME_LIMIT = 30
+
 class WPTAgent(object):
     """Main agent workflow"""
     def __init__(self, options, browsers):
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
+        self.devtools = None
         self.must_exit = False
         self.options = options
         self.browsers = Browsers(options, browsers)
@@ -37,8 +40,7 @@ class WPTAgent(object):
                             if browser is not None:
                                 browser.prepare(task)
                                 browser.launch(task)
-                                # - Run the test (connected to dev tools)
-                                time.sleep(10)
+                                self.run_test(task)
                                 browser.stop()
                                 # - Process the trace/devtools data
                             else:
@@ -54,6 +56,31 @@ class WPTAgent(object):
             except BaseException as err:
                 logging.critical("Unhandled exception: %s", err.__str__)
                 traceback.print_exc(file=sys.stdout)
+
+    def run_test(self, task):
+        """Run an individual test"""
+        from internal.devtools import DevTools
+        self.devtools = DevTools(task)
+        if self.devtools.connect(START_BROWSER_TIME_LIMIT):
+            logging.debug("Devtools connected")
+            end_time = time.clock() + task['time_limit']
+            while len(task['script']) and time.clock() < end_time:
+                command = task['script'].pop(0)
+                if command['record']:
+                    self.devtools.start_recording()
+                self.process_command(command)
+                if command['record']:
+                    self.devtools.wait_for_page_load()
+            self.devtools.close()
+        else:
+            task['error'] = "Error connecting to dev tools interface"
+            logging.critical(task.error)
+        self.devtools = None
+
+    def process_command(self, command):
+        """Process an individual script command"""
+        if command['command'] == 'navigate':
+            self.devtools.send_command('Page.navigate', {'url': command['target']})
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""
@@ -80,6 +107,12 @@ def check_dependencies():
         import requests as _
     except ImportError:
         print "Missing requests module. Please run 'pip install requests'"
+        ret = False
+
+    try:
+        import websocket as _
+    except ImportError:
+        print "Missing websocket module. Please run 'pip install websocket-client'"
         ret = False
 
     # Windows-specific imports

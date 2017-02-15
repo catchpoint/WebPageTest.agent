@@ -65,7 +65,8 @@ class WebPageTest(object):
                         'run': job['current_state']['run'],
                         'cached': 1 if job['current_state']['repeat_view'] else 0,
                         'done': False,
-                        'profile': self.profile_dir}
+                        'profile': self.profile_dir,
+                        'time_limit': 120}
                 # Set up the task configuration options
                 task['width'] = 1024
                 task['height'] = 768
@@ -85,7 +86,18 @@ class WebPageTest(object):
                     elif 'fvonly' in job and job['fvonly']:
                         job['current_state']['done'] = True
                         task['done'] = True
+                self.build_script(job, task)
+        if task is None and os.path.isdir(self.profile_dir):
+            shutil.rmtree(self.profile_dir)
         return task
+
+    def build_script(self, job, task):
+        """Build the actual script that will be used for testing"""
+        if 'script' in job:
+            #TODO: parse the script
+            pass
+        elif 'url' in job:
+            task['script'] = [{'command': 'navigate', 'target': job['url'], 'record': True}]
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
