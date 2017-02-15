@@ -1,0 +1,5 @@
+[Chrome]
+exe=C:/Program Files (x86)/Google/Chrome/Application/chrome.exe
+
+[Canary]
+exe=C:/Users/pmeenan/AppData/Local/Google/Chrome SxS/Application/chrome.exe

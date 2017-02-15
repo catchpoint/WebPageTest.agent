@@ -9,7 +9,6 @@ import platform
 import shutil
 import urllib
 import zipfile
-import requests
 
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
@@ -25,10 +24,12 @@ class WebPageTest(object):
         self.workdir = os.path.join(workdir, self.pc_name)
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
-        os.makedirs(self.workdir)
+        self.profile_dir = os.path.join(self.workdir, 'browser')
+        os.makedirs(self.profile_dir)
 
     def get_test(self):
         """Get a job from the server"""
+        import requests
         job = None
         url = self.url + "getwork.php?f=json"
         url += "&location=" + urllib.quote_plus(self.location)
@@ -41,7 +42,7 @@ class WebPageTest(object):
             if len(response.text):
                 job = response.json()
                 logging.debug("Job: %s", json.dumps(job))
-                if job['Test ID'] is None:
+                if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                     job = None
         except requests.exceptions.RequestException as err:
             logging.critical("Get Work Error: %s", err.strerror)
@@ -63,7 +64,12 @@ class WebPageTest(object):
                 task = {'id': job['Test ID'],
                         'run': job['current_state']['run'],
                         'cached': 1 if job['current_state']['repeat_view'] else 0,
-                        'done': False}
+                        'done': False,
+                        'profile': self.profile_dir}
+                # Set up the task configuration options
+                task['width'] = 1024
+                task['height'] = 768
+                task['port'] = 9222
                 task['prefix'] = "{0}_".format(task['run'])
                 if task['cached']:
                     task['prefix'] += "Cached_"
@@ -119,6 +125,7 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path):
         """Send a multi-part post"""
+        import requests
         ret = True
         # pass the data fields as query params and any files as post data
         url += "?"
@@ -141,4 +148,3 @@ class WebPageTest(object):
             logging.error("Upload Error: %s", err.strerror)
             ret = False
         return ret
-
