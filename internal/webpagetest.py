@@ -10,6 +10,8 @@ import shutil
 import urllib
 import zipfile
 
+DEFAULT_JPEG_QUALITY = 30
+
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     def __init__(self, options, workdir):
@@ -25,7 +27,6 @@ class WebPageTest(object):
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
         self.profile_dir = os.path.join(self.workdir, 'browser')
-        os.makedirs(self.profile_dir)
 
     def get_test(self):
         """Get a job from the server"""
@@ -42,6 +43,11 @@ class WebPageTest(object):
             if len(response.text):
                 job = response.json()
                 logging.debug("Job: %s", json.dumps(job))
+                # set some default options
+                if 'iq' not in job:
+                    job['iq'] = DEFAULT_JPEG_QUALITY
+                if 'pngss' not in job:
+                    job['pngss'] = 0
                 if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                     job = None
         except requests.exceptions.RequestException as err:
@@ -61,17 +67,20 @@ class WebPageTest(object):
                 job['current_state']['run'] += 1
                 job['current_state']['repeat_view'] = False
             if job['current_state']['run'] <= job['runs']:
-                task = {'id': job['Test ID'],
-                        'run': job['current_state']['run'],
+                test_id = job['Test ID']
+                run = job['current_state']['run']
+                profile_dir = '{0}.{1}.{2:d}'.format(self.profile_dir, test_id, run)
+                task = {'id': test_id,
+                        'run': run,
                         'cached': 1 if job['current_state']['repeat_view'] else 0,
                         'done': False,
-                        'profile': self.profile_dir,
+                        'profile': profile_dir,
                         'time_limit': 120}
                 # Set up the task configuration options
                 task['width'] = 1024
                 task['height'] = 768
                 task['port'] = 9222
-                task['prefix'] = "{0}_".format(task['run'])
+                task['prefix'] = "{0:d}_".format(run)
                 if task['cached']:
                     task['prefix'] += "Cached_"
                 short_id = "{0}.{1}.{2}".format(task['id'], task['run'], task['cached'])
@@ -79,6 +88,8 @@ class WebPageTest(object):
                 if os.path.isdir(task['dir']):
                     shutil.rmtree(task['dir'])
                 os.makedirs(task['dir'])
+                if not os.path.isdir(profile_dir):
+                    os.makedirs(profile_dir)
                 if job['current_state']['run'] == job['runs']:
                     if job['current_state']['repeat_view']:
                         job['current_state']['done'] = True
@@ -87,8 +98,11 @@ class WebPageTest(object):
                         job['current_state']['done'] = True
                         task['done'] = True
                 self.build_script(job, task)
-        if task is None and os.path.isdir(self.profile_dir):
-            shutil.rmtree(self.profile_dir)
+        if task is None and os.path.isdir(self.workdir):
+            try:
+                shutil.rmtree(self.workdir)
+            except BaseException as _:
+                pass
         return task
 
     def build_script(self, job, task):
@@ -133,7 +147,15 @@ class WebPageTest(object):
         self.post_data(self.url + "workdone.php", data, zip_path)
         # Clean up so we don't leave directories lying around
         if os.path.isdir(task['dir']):
-            shutil.rmtree(task['dir'])
+            try:
+                shutil.rmtree(task['dir'])
+            except BaseException as _:
+                pass
+        if task['done'] and os.path.isdir(self.workdir):
+            try:
+                shutil.rmtree(self.workdir)
+            except BaseException as _:
+                pass
 
     def post_data(self, url, data, file_path):
         """Send a multi-part post"""
@@ -144,13 +166,10 @@ class WebPageTest(object):
         for key in data:
             url += key + '=' + urllib.quote_plus(data[key]) + '&'
         try:
-            upload_file = None
             if file_path is not None and os.path.isfile(file_path):
-                upload_file = open(file_path)
                 requests.post(url,
-                              files={'file':(os.path.basename(file_path), upload_file)},
+                              files={'file':(os.path.basename(file_path), open(file_path, 'rb'))},
                               timeout=300)
-                upload_file.close()
             else:
                 requests.post(url)
         except requests.exceptions.RequestException as err:

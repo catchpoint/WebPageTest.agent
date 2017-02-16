@@ -22,7 +22,8 @@ class WPTAgent(object):
         self.must_exit = False
         self.options = options
         self.browsers = Browsers(options, browsers)
-        self.wpt = WebPageTest(options, os.path.join(os.path.dirname(__file__), "work"))
+        self.wpt = WebPageTest(options,
+                               os.path.join(os.path.abspath(os.path.dirname(__file__)), "work"))
         self.current_test = None
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -60,7 +61,7 @@ class WPTAgent(object):
     def run_test(self, task):
         """Run an individual test"""
         from internal.devtools import DevTools
-        self.devtools = DevTools(task)
+        self.devtools = DevTools(self.current_test, task)
         if self.devtools.connect(START_BROWSER_TIME_LIMIT):
             logging.debug("Devtools connected")
             end_time = time.clock() + task['time_limit']
@@ -71,6 +72,8 @@ class WPTAgent(object):
                 self.process_command(command)
                 if command['record']:
                     self.devtools.wait_for_page_load()
+                    self.devtools.stop_recording()
+                    self.devtools.grab_screenshot()
             self.devtools.close()
         else:
             task['error'] = "Error connecting to dev tools interface"
