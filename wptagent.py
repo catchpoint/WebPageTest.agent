@@ -7,11 +7,13 @@ import logging
 import os
 import platform
 import signal
+import subprocess
 import sys
 import time
 import traceback
 
 START_BROWSER_TIME_LIMIT = 30
+SCREEN_SHOT_SIZE = 400
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -73,7 +75,12 @@ class WPTAgent(object):
                 if command['record']:
                     self.devtools.wait_for_page_load()
                     self.devtools.stop_recording()
-                    self.devtools.grab_screenshot()
+                    if self.current_test['pngss']:
+                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.png')
+                        self.devtools.grab_screenshot(screen_shot, png=True)
+                    else:
+                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.jpg')
+                        self.devtools.grab_screenshot(screen_shot, png=False)
             self.devtools.close()
         else:
             task['error'] = "Error connecting to dev tools interface"
@@ -116,6 +123,26 @@ def check_dependencies():
         import websocket as _
     except ImportError:
         print "Missing websocket module. Please run 'pip install websocket-client'"
+        ret = False
+
+    try:
+        import ujson as _
+    except ImportError:
+        print "Missing ujson parser. Please run 'pip install ujson'"
+        ret = False
+
+    try:
+        from PIL import Image as _
+    except ImportError:
+        print "Missing PIL modile. Please run 'pip install pillow'"
+        ret = False
+
+    if subprocess.call(['python', '--version']):
+        print "Make sure python 2.7 is available in the path."
+        ret = False
+
+    if subprocess.call(['convert', '-version'], shell=True):
+        print "Missing convert utility. Please install ImageMagick and make sure it is in the path."
         ret = False
 
     # Windows-specific imports

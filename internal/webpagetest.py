@@ -2,13 +2,13 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for interfacing with WebPageTest server"""
-import json
 import logging
 import os
 import platform
 import shutil
 import urllib
 import zipfile
+import ujson as json
 
 DEFAULT_JPEG_QUALITY = 30
 
@@ -115,6 +115,7 @@ class WebPageTest(object):
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
+        logging.info('Uploading result')
         data = {'id': task['id'],
                 'location': self.location,
                 'key': self.key,
@@ -123,12 +124,22 @@ class WebPageTest(object):
         needs_zip = []
         zip_path = None
         if os.path.isdir(task['dir']):
+            # upload any video images
+            video_dir = os.path.join(task['dir'], 'video')
+            if os.path.isdir(video_dir):
+                for filename in os.listdir(video_dir):
+                    filepath = os.path.join(video_dir, filename)
+                    if os.path.isfile(filepath):
+                        logging.debug('Uploading %s', filename)
+                        self.post_data(self.url + "resultimage.php", data,
+                                       filepath, task['prefix'] + filename)
             # Upload the separate large files (> 100KB)
             for filename in os.listdir(task['dir']):
                 filepath = os.path.join(task['dir'], filename)
                 if os.path.isfile(filepath):
                     if os.path.getsize(filepath) > 100000:
-                        if self.post_data(self.url + "resultimage.php", data, filepath):
+                        logging.debug('Uploading %s', filename)
+                        if self.post_data(self.url + "resultimage.php", data, filepath, filename):
                             os.remove(filepath)
                         else:
                             needs_zip.append(filepath)
@@ -139,12 +150,14 @@ class WebPageTest(object):
                 zip_path = os.path.join(task['dir'], "result.zip")
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     for filepath in needs_zip:
+                        logging.debug('Compressing %s', os.path.basename(filepath))
                         zip_file.write(filepath, os.path.basename(filepath))
                         os.remove(filepath)
         # Post the workdone event for the task (with the zip attached)
         if task['done']:
             data['done'] = '1'
-        self.post_data(self.url + "workdone.php", data, zip_path)
+        logging.debug('Uploading result zip')
+        self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around
         if os.path.isdir(task['dir']):
             try:
@@ -157,7 +170,7 @@ class WebPageTest(object):
             except BaseException as _:
                 pass
 
-    def post_data(self, url, data, file_path):
+    def post_data(self, url, data, file_path, filename):
         """Send a multi-part post"""
         import requests
         ret = True
@@ -168,7 +181,7 @@ class WebPageTest(object):
         try:
             if file_path is not None and os.path.isfile(file_path):
                 requests.post(url,
-                              files={'file':(os.path.basename(file_path), open(file_path, 'rb'))},
+                              files={'file':(filename, open(file_path, 'rb'))},
                               timeout=300)
             else:
                 requests.post(url)

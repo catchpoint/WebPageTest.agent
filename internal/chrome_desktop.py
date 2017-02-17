@@ -30,6 +30,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--host-rules="MAP cache.pack.google.com 127.0.0.1"'
 ]
 
+START_PAGE = 'about:blank'
+
 class ChromeBrowser(object):
     """Desktop Chrome"""
     def __init__(self, path):
@@ -63,6 +65,7 @@ class ChromeBrowser(object):
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
+        args.append(START_PAGE)
         self.proc = launch_process(args)
 
     def stop(self):
