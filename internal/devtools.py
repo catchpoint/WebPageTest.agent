@@ -3,17 +3,12 @@
 # found in the LICENSE file.
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
 import base64
-import glob
 import gzip
 import logging
-import math
 import os
-import re
 import subprocess
 import time
 import ujson as json
-
-VIDEO_SIZE = 400
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
@@ -21,7 +16,7 @@ class DevTools(object):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.path_base = os.path.join(task['dir'], task['prefix'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-        self.video_path = os.path.join(task['dir'], 'video')
+        self.video_path = os.path.join(task['dir'], task['video_subdirectory'])
         self.video_prefix = os.path.join(self.video_path, 'ms_')
         if not os.path.isdir(self.video_path):
             os.makedirs(self.video_path)
@@ -36,7 +31,6 @@ class DevTools(object):
         self.error = None
         self.dev_tools_file = None
         self.trace_file = None
-        self.trace_file_path = None
         self.trace_ts_start = None
 
     def connect(self, timeout):
@@ -143,24 +137,6 @@ class DevTools(object):
             self.trace_file.write("\n]}")
             self.trace_file.close()
             self.trace_file = None
-        # Post-process the trace file
-        if self.trace_file_path is not None:
-            logging.info('Processing trace file')
-            user_timing = self.path_base + 'user_timing.json.gz'
-            cpu_slices = self.path_base + 'timeline_cpu.json.gz'
-            script_timing = self.path_base + 'script_timing.json.gz'
-            feature_usage = self.path_base + 'feature_usage.json.gz'
-            interactive = self.path_base + 'interactive.json.gz'
-            v8_stats = self.path_base + 'v8stats.json.gz'
-            trace_parser = os.path.join(self.support_path, "trace-parser.py")
-            subprocess.call(['python', trace_parser, '-vvvv',
-                             '-t', self.trace_file_path, '-u', user_timing, '-c', cpu_slices,
-                             '-j', script_timing, '-f', feature_usage, '-i', interactive,
-                             '-s', v8_stats])
-            self.trace_file_path = None
-        # Post Process the video frames
-        if 'Capture Video' in self.job and self.job['Capture Video']:
-            self.process_video()
 
     def flush_pending_messages(self):
         """Clear out any pending websocket messages"""
@@ -300,8 +276,7 @@ class DevTools(object):
                 'value' in msg['params'] and \
                 len(msg['params']['value']):
             if self.trace_file is None:
-                self.trace_file_path = self.path_base + 'trace.json.gz'
-                self.trace_file = gzip.open(self.trace_file_path, 'wb')
+                self.trace_file = gzip.open(self.path_base + 'trace.json.gz', 'wb')
                 self.trace_file.write('{"traceEvents":[{}')
             # write out the trace events one-per-line but pull out any
             # devtools screenshots as separate files.
@@ -341,153 +316,3 @@ class DevTools(object):
         if self.dev_tools_file is not None:
             self.dev_tools_file.write(",\n")
             self.dev_tools_file.write(json.dumps(msg))
-
-    def process_video(self):
-        """Make all of the image frames the same size, run
-        visualmetrics against them and convert them all to jpeg"""
-        from PIL import Image
-        if os.path.isdir(self.video_path):
-            # Make them all the same size
-            logging.debug("Resizing video frames")
-            min_width = None
-            min_height = None
-            images = {}
-            for filename in os.listdir(self.video_path):
-                filepath = os.path.join(self.video_path, filename)
-                with Image.open(filepath) as image:
-                    width, height = image.size
-                    images[filename] = {'path': filepath, 'width': width, 'height': height}
-                    if min_width is None or (width > 0 and width < min_width):
-                        min_width = width
-                    if min_height is None or (height > 0 and height < min_height):
-                        min_height = height
-            if min_width is not None and min_height is not None:
-                for filename in os.listdir(self.video_path):
-                    if filename in images and \
-                            (images[filename]['width'] > min_width or \
-                                    images[filename]['height'] > min_height):
-                        filepath = os.path.join(self.video_path, filename)
-                        tmp = filepath + '.png'
-                        os.rename(filepath, tmp)
-                        if subprocess.call(['convert', tmp, '-resize',
-                                            '{0:d}x{1:d}'.format(min_width, min_height), filepath],
-                                           shell=True) == 0:
-                            os.remove(tmp)
-                        else:
-                            os.rename(tmp, filepath)
-            # Eliminate duplicate frames
-            logging.debug("Removing duplicate video frames")
-            self.cap_frame_count(self.video_path, 50)
-            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
-            count = len(files)
-            if count > 2:
-                baseline = files[0]
-                for index in xrange(1, count):
-                    if self.frames_match(baseline, files[index], 1, 0):
-                        logging.debug('Removing similar frame %s', os.path.basename(files[index]))
-                        os.remove(files[index])
-                    else:
-                        baseline = files[index]
-            # Run visualmetrics against them
-            logging.debug("Processing video frames")
-            filename = '{0:d}.{1:d}.histograms.json.gz'.format(self.task['run'],
-                                                               self.task['cached'])
-            histograms = os.path.join(self.task['dir'], filename)
-            visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
-            subprocess.call(['python', visualmetrics, '-vvvv',
-                             '-d', self.video_path, '--histogram', histograms])
-            # Convert them all to jpeg
-            logging.debug("Converting video frames to jpeg")
-            for filename in os.listdir(self.video_path):
-                ext = filename.find('.png')
-                if ext > 0:
-                    src = os.path.join(self.video_path, filename)
-                    dst = os.path.join(self.video_path, filename[0:ext] + '.jpg')
-                    args = ['convert', src, '-resize', '{0:d}x{0:d}'.format(VIDEO_SIZE),
-                            '-quality', str(self.job['iq']), dst]
-                    logging.debug(' '.join(args))
-                    subprocess.call(args, shell=True)
-                    os.remove(src)
-
-    def frames_match(self, image1, image2, fuzz_percent, max_differences):
-        """Compare video frames"""
-        match = False
-        args = ['compare', '-metric', 'AE']
-        if fuzz_percent > 0:
-            args.extend(['-fuzz', '{0:d}%'.format(fuzz_percent)])
-        args.extend([image1, image2, 'null:'])
-        compare = subprocess.Popen(args, stderr=subprocess.PIPE, shell=True)
-        _, err = compare.communicate()
-        if re.match('^[0-9]+$', err):
-            different_pixels = int(err)
-            if different_pixels <= max_differences:
-                match = True
-        return match
-
-    def cap_frame_count(self, directory, maxframes):
-        """Limit the number of video frames using an decay for later times"""
-        frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
-        frame_count = len(frames)
-        if frame_count > maxframes:
-            # First pass, sample all video frames at 10fps instead of 60fps,
-            # keeping the first 20% of the target
-            logging.debug('Sampling 10fps: Reducing %d frames to target of %d...',
-                          frame_count, maxframes)
-            skip_frames = int(maxframes * 0.2)
-            self.sample_frames(frames, 100, 0, skip_frames)
-            frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
-            frame_count = len(frames)
-            if frame_count > maxframes:
-                # Second pass, sample all video frames after the first 5 seconds
-                # at 2fps, keeping the first 40% of the target
-                logging.debug('Sampling 2fps: Reducing %d frames to target of %d...',
-                              frame_count, maxframes)
-                skip_frames = int(maxframes * 0.4)
-                self.sample_frames(frames, 500, 5000, skip_frames)
-                frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
-                frame_count = len(frames)
-                if frame_count > maxframes:
-                    # Third pass, sample all video frames after the first 10 seconds
-                    # at 1fps, keeping the first 60% of the target
-                    logging.debug('Sampling 1fps: Reducing %d frames to target of %d...',
-                                  frame_count, maxframes)
-                    skip_frames = int(maxframes * 0.6)
-                    self.sample_frames(frames, 1000, 10000, skip_frames)
-        logging.debug('%d frames final count with a target max of %d frames...',
-                      frame_count, maxframes)
-
-
-    def sample_frames(self, frames, interval, start_ms, skip_frames):
-        """Sample frames at a given interval"""
-        frame_count = len(frames)
-        if frame_count > 3:
-            # Always keep the first and last frames, only sample in the middle
-            first_frame = frames[0]
-            first_change = frames[1]
-            last_frame = frames[-1]
-            match = re.compile(r'ms_(?P<ms>[0-9]+)\.')
-            matches = re.search(match, first_change)
-            first_change_time = 0
-            if matches is not None:
-                first_change_time = int(matches.groupdict().get('ms'))
-            last_bucket = None
-            logging.debug('Sapling frames in %d ms intervals after %d ms, '
-                          'skipping %d frames...', interval,
-                          first_change_time + start_ms, skip_frames)
-            frame_count = 0
-            for frame in frames:
-                matches = re.search(match, frame)
-                if matches is not None:
-                    frame_count += 1
-                    frame_time = int(matches.groupdict().get('ms'))
-                    frame_bucket = int(math.floor(frame_time / interval))
-                    if (frame_time > first_change_time + start_ms and
-                            frame_bucket == last_bucket and
-                            frame != first_frame and
-                            frame != first_change and
-                            frame != last_frame and
-                            frame_count > skip_frames):
-                        logging.debug('Removing sampled frame ' + frame)
-                        os.remove(frame)
-                    last_bucket = frame_bucket
-

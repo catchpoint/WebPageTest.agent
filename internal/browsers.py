@@ -23,11 +23,11 @@ class Browsers(object):
                     ready = False
         return ready
 
-    def get_browser(self, name):
+    def get_browser(self, name, job):
         """Return an instance of the browser logic"""
         browser = None
         # only support desktop browsers for now
         if name in self.browsers and 'exe' in self.browsers[name]:
             from .chrome_desktop import ChromeBrowser
-            browser = ChromeBrowser(self.browsers[name]['exe'])
+            browser = ChromeBrowser(self.browsers[name]['exe'], job)
         return browser

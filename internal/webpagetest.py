@@ -83,8 +83,11 @@ class WebPageTest(object):
                 task['prefix'] = "{0:d}_".format(run)
                 if task['cached']:
                     task['prefix'] += "Cached_"
-                short_id = "{0}.{1}.{2}".format(task['id'], task['run'], task['cached'])
+                short_id = "{0}.{1}.{2}".format(task['id'], run, task['cached'])
                 task['dir'] = os.path.join(self.workdir, short_id)
+                task['video_subdirectory'] = 'video_{0:d}'.format(run)
+                if task['cached']:
+                    task['video_subdirectory'] += "_cached"
                 if os.path.isdir(task['dir']):
                     shutil.rmtree(task['dir'])
                 os.makedirs(task['dir'])
@@ -125,14 +128,21 @@ class WebPageTest(object):
         zip_path = None
         if os.path.isdir(task['dir']):
             # upload any video images
-            video_dir = os.path.join(task['dir'], 'video')
+            video_dir = os.path.join(task['dir'], task['video_subdirectory'])
             if os.path.isdir(video_dir):
                 for filename in os.listdir(video_dir):
                     filepath = os.path.join(video_dir, filename)
                     if os.path.isfile(filepath):
-                        logging.debug('Uploading %s', filename)
-                        self.post_data(self.url + "resultimage.php", data,
-                                       filepath, task['prefix'] + filename)
+                        name = task['video_subdirectory'] + '/' + filename
+                        if os.path.getsize(filepath) > 100000:
+                            logging.debug('Uploading %s', filename)
+                            if self.post_data(self.url + "resultimage.php", data,
+                                              filepath, task['prefix'] + filename):
+                                os.remove(filepath)
+                            else:
+                                needs_zip.append({'path': filepath, 'name': name})
+                        else:
+                            needs_zip.append({'path': filepath, 'name': name})
             # Upload the separate large files (> 100KB)
             for filename in os.listdir(task['dir']):
                 filepath = os.path.join(task['dir'], filename)
@@ -142,17 +152,17 @@ class WebPageTest(object):
                         if self.post_data(self.url + "resultimage.php", data, filepath, filename):
                             os.remove(filepath)
                         else:
-                            needs_zip.append(filepath)
+                            needs_zip.append({'path': filepath, 'name': filename})
                     else:
-                        needs_zip.append(filepath)
+                        needs_zip.append({'path': filepath, 'name': filename})
             # Zip the remaining files
             if len(needs_zip):
                 zip_path = os.path.join(task['dir'], "result.zip")
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    for filepath in needs_zip:
-                        logging.debug('Compressing %s', os.path.basename(filepath))
-                        zip_file.write(filepath, os.path.basename(filepath))
-                        os.remove(filepath)
+                    for zipitem in needs_zip:
+                        logging.debug('Compressing %s', zipitem['name'])
+                        zip_file.write(zipitem['path'], zipitem['name'])
+                        os.remove(zipitem['path'])
         # Post the workdone event for the task (with the zip attached)
         if task['done']:
             data['done'] = '1'

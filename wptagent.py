@@ -12,20 +12,17 @@ import sys
 import time
 import traceback
 
-START_BROWSER_TIME_LIMIT = 30
-SCREEN_SHOT_SIZE = 400
-
 class WPTAgent(object):
     """Main agent workflow"""
     def __init__(self, options, browsers):
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
-        self.devtools = None
         self.must_exit = False
         self.options = options
         self.browsers = Browsers(options, browsers)
-        self.wpt = WebPageTest(options,
-                               os.path.join(os.path.abspath(os.path.dirname(__file__)), "work"))
+        self.root_path = os.path.abspath(os.path.dirname(__file__))
+        self.support_path = os.path.join(os.path.join(self.root_path, "internal"), "support")
+        self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
         self.current_test = None
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -39,13 +36,16 @@ class WPTAgent(object):
                         task = self.wpt.get_task(self.current_test)
                         while task is not None:
                             # - Prepare the browser
-                            browser = self.browsers.get_browser(self.current_test['browser'])
+                            browser = self.browsers.get_browser(self.current_test['browser'],
+                                                                self.current_test)
                             if browser is not None:
                                 browser.prepare(task)
                                 browser.launch(task)
-                                self.run_test(task)
+                                browser.run_task(task)
                                 browser.stop()
-                                # - Process the trace/devtools data
+                                # Do any necessary post-processing (video, trace, etc)
+                                self.process_video(task)
+                                self.process_trace(task)
                             else:
                                 err = "Invalid browser - {0}".format(self.current_test['browser'])
                                 logging.critical(err)
@@ -60,37 +60,29 @@ class WPTAgent(object):
                 logging.critical("Unhandled exception: %s", err.__str__)
                 traceback.print_exc(file=sys.stdout)
 
-    def run_test(self, task):
-        """Run an individual test"""
-        from internal.devtools import DevTools
-        self.devtools = DevTools(self.current_test, task)
-        if self.devtools.connect(START_BROWSER_TIME_LIMIT):
-            logging.debug("Devtools connected")
-            end_time = time.clock() + task['time_limit']
-            while len(task['script']) and time.clock() < end_time:
-                command = task['script'].pop(0)
-                if command['record']:
-                    self.devtools.start_recording()
-                self.process_command(command)
-                if command['record']:
-                    self.devtools.wait_for_page_load()
-                    self.devtools.stop_recording()
-                    if self.current_test['pngss']:
-                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.png')
-                        self.devtools.grab_screenshot(screen_shot, png=True)
-                    else:
-                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.jpg')
-                        self.devtools.grab_screenshot(screen_shot, png=False)
-            self.devtools.close()
-        else:
-            task['error'] = "Error connecting to dev tools interface"
-            logging.critical(task.error)
-        self.devtools = None
+    def process_video(self, task):
+        """Post process the video"""
+        from internal.video_processing import VideoProcessing
+        video = VideoProcessing(self.current_test, task)
+        video.process()
 
-    def process_command(self, command):
-        """Process an individual script command"""
-        if command['command'] == 'navigate':
-            self.devtools.send_command('Page.navigate', {'url': command['target']})
+    def process_trace(self, task):
+        """Post-process the trace file"""
+        path_base = os.path.join(task['dir'], task['prefix'])
+        trace_file = path_base + 'trace.json.gz'
+        if os.path.isfile(trace_file):
+            logging.info('Processing trace file')
+            user_timing = path_base + 'user_timing.json.gz'
+            cpu_slices = path_base + 'timeline_cpu.json.gz'
+            script_timing = path_base + 'script_timing.json.gz'
+            feature_usage = path_base + 'feature_usage.json.gz'
+            interactive = path_base + 'interactive.json.gz'
+            v8_stats = path_base + 'v8stats.json.gz'
+            trace_parser = os.path.join(self.support_path, "trace-parser.py")
+            subprocess.call(['python', trace_parser, '-vvvv',
+                             '-t', trace_file, '-u', user_timing, '-c', cpu_slices,
+                             '-j', script_timing, '-f', feature_usage, '-i', interactive,
+                             '-s', v8_stats])
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""
