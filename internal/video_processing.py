@@ -8,6 +8,7 @@ import math
 import os
 import re
 import subprocess
+import threading
 
 VIDEO_SIZE = 400
 
@@ -21,42 +22,24 @@ class VideoProcessing(object):
 
     def process(self):
         """Post Process the video"""
-        from PIL import Image
         if os.path.isdir(self.video_path):
-            # Make them all the same size
-            logging.debug("Resizing video frames")
-            min_width = None
-            min_height = None
-            images = {}
-            for filename in os.listdir(self.video_path):
-                filepath = os.path.join(self.video_path, filename)
-                with Image.open(filepath) as image:
+            # Make the initial screen shot the same size as the video
+            logging.debug("Resizing initial video frame")
+            from PIL import Image
+            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
+            count = len(files)
+            if count > 1:
+                with Image.open(files[1]) as image:
                     width, height = image.size
-                    images[filename] = {'path': filepath, 'width': width, 'height': height}
-                    if min_width is None or (width > 0 and width < min_width):
-                        min_width = width
-                    if min_height is None or (height > 0 and height < min_height):
-                        min_height = height
-            if min_width is not None and min_height is not None:
-                for filename in os.listdir(self.video_path):
-                    if filename in images and \
-                            (images[filename]['width'] > min_width or \
-                                    images[filename]['height'] > min_height):
-                        filepath = os.path.join(self.video_path, filename)
-                        tmp = filepath + '.png'
-                        os.rename(filepath, tmp)
-                        if subprocess.call(['convert', tmp, '-resize',
-                                            '{0:d}x{1:d}'.format(min_width, min_height), filepath],
-                                           shell=True) == 0:
-                            os.remove(tmp)
-                        else:
-                            os.rename(tmp, filepath)
+                    subprocess.call(['convert', files[0], '-resize',
+                                     '{0:d}x{1:d}'.format(width, height), files[0]],
+                                    shell=True)
             # Eliminate duplicate frames
             logging.debug("Removing duplicate video frames")
             self.cap_frame_count(self.video_path, 50)
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
             count = len(files)
-            if count > 2:
+            if count > 1:
                 baseline = files[0]
                 for index in xrange(1, count):
                     if self.frames_match(baseline, files[index], 1, 0):
@@ -64,6 +47,10 @@ class VideoProcessing(object):
                         os.remove(files[index])
                     else:
                         baseline = files[index]
+            # start a background thread to convert the images to jpeg
+            logging.debug("Converting video frames to jpeg")
+            jpeg_thread = threading.Thread(target=self.convert_to_jpeg)
+            jpeg_thread.start()
             # Run visualmetrics against them
             logging.debug("Processing video frames")
             filename = '{0:d}.{1:d}.histograms.json.gz'.format(self.task['run'],
@@ -72,18 +59,19 @@ class VideoProcessing(object):
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
             subprocess.call(['python', visualmetrics, '-vvvv',
                              '-d', self.video_path, '--histogram', histograms])
-            # Convert them all to jpeg
-            logging.debug("Converting video frames to jpeg")
-            for filename in os.listdir(self.video_path):
-                ext = filename.find('.png')
-                if ext > 0:
-                    src = os.path.join(self.video_path, filename)
-                    dst = os.path.join(self.video_path, filename[0:ext] + '.jpg')
-                    args = ['convert', src, '-resize', '{0:d}x{0:d}'.format(VIDEO_SIZE),
-                            '-quality', str(self.job['iq']), dst]
-                    logging.debug(' '.join(args))
-                    subprocess.call(args, shell=True)
-                    os.remove(src)
+            # Wait for the jpeg task to complete and delete the png's
+            logging.debug("Waiting for jpeg conversion to finish")
+            jpeg_thread.join()
+            for filepath in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
+                os.remove(filepath)
+
+    def convert_to_jpeg(self):
+        """Convert all of the pngs in the given directory to jpeg"""
+        for src in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
+            dst = os.path.splitext(src)[0] + '.jpg'
+            args = ['convert', src, '-resize', '{0:d}x{0:d}'.format(VIDEO_SIZE),
+                    '-quality', str(self.job['iq']), dst]
+            subprocess.call(args, shell=True)
 
     def frames_match(self, image1, image2, fuzz_percent, max_differences):
         """Compare video frames"""

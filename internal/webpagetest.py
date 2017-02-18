@@ -158,9 +158,9 @@ class WebPageTest(object):
             # Zip the remaining files
             if len(needs_zip):
                 zip_path = os.path.join(task['dir'], "result.zip")
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
                     for zipitem in needs_zip:
-                        logging.debug('Compressing %s', zipitem['name'])
+                        logging.debug('Storing %s', zipitem['name'])
                         zip_file.write(zipitem['path'], zipitem['name'])
                         os.remove(zipitem['path'])
         # Post the workdone event for the task (with the zip attached)

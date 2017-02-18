@@ -9,6 +9,7 @@ import platform
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 
@@ -23,7 +24,8 @@ class WPTAgent(object):
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.support_path = os.path.join(os.path.join(self.root_path, "internal"), "support")
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
-        self.current_test = None
+        self.job = None
+        self.task = None
         signal.signal(signal.SIGINT, self.signal_handler)
 
     def run_testing(self):
@@ -31,47 +33,47 @@ class WPTAgent(object):
         while not self.must_exit:
             try:
                 if self.browsers.is_ready():
-                    self.current_test = self.wpt.get_test()
-                    if self.current_test is not None:
-                        task = self.wpt.get_task(self.current_test)
-                        while task is not None:
+                    self.job = self.wpt.get_test()
+                    if self.job is not None:
+                        self.task = self.wpt.get_task(self.job)
+                        while self.task is not None:
                             # - Prepare the browser
-                            browser = self.browsers.get_browser(self.current_test['browser'],
-                                                                self.current_test)
+                            browser = self.browsers.get_browser(self.job['browser'], self.job)
                             if browser is not None:
-                                browser.prepare(task)
-                                browser.launch(task)
-                                browser.run_task(task)
+                                browser.prepare(self.task)
+                                browser.launch(self.task)
+                                browser.run_task(self.task)
                                 browser.stop()
-                                # Do any necessary post-processing (video, trace, etc)
-                                self.process_video(task)
-                                self.process_trace(task)
+                                # Process the trace concurrently with the video
+                                trace_thread = threading.Thread(target=self.process_trace)
+                                trace_thread.start()
+                                self.process_video()
+                                trace_thread.join()
                             else:
-                                err = "Invalid browser - {0}".format(self.current_test['browser'])
+                                err = "Invalid browser - {0}".format(self.job['browser'])
                                 logging.critical(err)
-                                task['error'] = err
-                            self.wpt.upload_task_result(task)
-                            task = self.wpt.get_task(self.current_test)
-                if self.current_test is not None:
-                    self.current_test = None
+                                self.task['error'] = err
+                            self.wpt.upload_task_result(self.task)
+                            self.task = self.wpt.get_task(self.job)
+                if self.job is not None:
+                    self.job = None
                 else:
                     self.sleep(15)
             except BaseException as err:
                 logging.critical("Unhandled exception: %s", err.__str__)
                 traceback.print_exc(file=sys.stdout)
 
-    def process_video(self, task):
+    def process_video(self):
         """Post process the video"""
         from internal.video_processing import VideoProcessing
-        video = VideoProcessing(self.current_test, task)
+        video = VideoProcessing(self.job, self.task)
         video.process()
 
-    def process_trace(self, task):
+    def process_trace(self):
         """Post-process the trace file"""
-        path_base = os.path.join(task['dir'], task['prefix'])
+        path_base = os.path.join(self.task['dir'], self.task['prefix'])
         trace_file = path_base + 'trace.json.gz'
         if os.path.isfile(trace_file):
-            logging.info('Processing trace file')
             user_timing = path_base + 'user_timing.json.gz'
             cpu_slices = path_base + 'timeline_cpu.json.gz'
             script_timing = path_base + 'script_timing.json.gz'
@@ -88,7 +90,7 @@ class WPTAgent(object):
         """Ctrl+C handler"""
         if self.must_exit:
             exit(1)
-        if self.current_test is None:
+        if self.job is None:
             print "Exiting..."
         else:
             print "Will exit after test completes.  Hit Ctrl+C again to exit immediately"
