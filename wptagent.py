@@ -81,10 +81,9 @@ class WPTAgent(object):
             interactive = path_base + 'interactive.json.gz'
             v8_stats = path_base + 'v8stats.json.gz'
             trace_parser = os.path.join(self.support_path, "trace-parser.py")
-            subprocess.call(['python', trace_parser, '-vvvv',
-                             '-t', trace_file, '-u', user_timing, '-c', cpu_slices,
-                             '-j', script_timing, '-f', feature_usage, '-i', interactive,
-                             '-s', v8_stats])
+            subprocess.call(['python', trace_parser, '-t', trace_file, '-u', user_timing,
+                             '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
+                             '-i', interactive, '-s', v8_stats])
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""

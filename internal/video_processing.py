@@ -57,8 +57,8 @@ class VideoProcessing(object):
                                                                self.task['cached'])
             histograms = os.path.join(self.task['dir'], filename)
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
-            subprocess.call(['python', visualmetrics, '-vvvv',
-                             '-d', self.video_path, '--histogram', histograms])
+            subprocess.call(['python', visualmetrics, '-d', self.video_path,
+                             '--histogram', histograms])
             # Wait for the jpeg task to complete and delete the png's
             logging.debug("Waiting for jpeg conversion to finish")
             jpeg_thread.join()
