@@ -46,9 +46,11 @@ class WPTAgent(object):
                             if browser is not None:
                                 browser.prepare(self.task)
                                 browser.launch(self.task)
-                                self.shaper.configure(self.job)
-                                # Run the actual test
-                                browser.run_task(self.task)
+                                if self.shaper.configure(self.job):
+                                    # Run the actual test
+                                    browser.run_task(self.task)
+                                else:
+                                    self.task.error = "Error configuring traffic-shaping"
                                 self.shaper.reset()
                                 browser.stop()
                             else:
