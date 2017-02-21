@@ -3,6 +3,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """WebPageTest cross-platform agent"""
+import atexit
 import logging
 import os
 import platform
@@ -18,14 +19,17 @@ class WPTAgent(object):
     def __init__(self, options, browsers):
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
+        from internal.traffic_shaping import TrafficShaper
         self.must_exit = False
         self.options = options
         self.browsers = Browsers(options, browsers)
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.support_path = os.path.join(os.path.join(self.root_path, "internal"), "support")
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
+        self.shaper = TrafficShaper()
         self.job = None
         self.task = None
+        atexit.register(self.cleanup)
         signal.signal(signal.SIGINT, self.signal_handler)
 
     def run_testing(self):
@@ -42,18 +46,22 @@ class WPTAgent(object):
                             if browser is not None:
                                 browser.prepare(self.task)
                                 browser.launch(self.task)
+                                self.shaper.configure(self.job)
+                                # Run the actual test
                                 browser.run_task(self.task)
+                                self.shaper.reset()
                                 browser.stop()
-                                # Process the trace concurrently with the video
-                                trace_thread = threading.Thread(target=self.process_trace)
-                                trace_thread.start()
-                                self.process_video()
-                                trace_thread.join()
                             else:
                                 err = "Invalid browser - {0}".format(self.job['browser'])
                                 logging.critical(err)
                                 self.task['error'] = err
+                            # Post-process the results before uploading
+                            trace_thread = threading.Thread(target=self.process_trace)
+                            trace_thread.start()
+                            self.process_video()
+                            trace_thread.join()
                             self.wpt.upload_task_result(self.task)
+                            # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
                 if self.job is not None:
                     self.job = None
@@ -95,6 +103,10 @@ class WPTAgent(object):
             print "Will exit after test completes.  Hit Ctrl+C again to exit immediately"
         self.must_exit = True
 
+    def cleanup(self):
+        """Do any cleanup that needs to be run regardless of how we exit."""
+        self.shaper.remove()
+
     def sleep(self, seconds):
         """Sleep wrapped in an exception handler to properly deal with Ctrl+C"""
         try:
@@ -102,52 +114,56 @@ class WPTAgent(object):
         except IOError:
             pass
 
-
-def check_dependencies():
-    """Validate that all of the external dependencies are installed"""
-    ret = True
-    try:
-        import requests as _
-    except ImportError:
-        print "Missing requests module. Please run 'pip install requests'"
-        ret = False
-
-    try:
-        import websocket as _
-    except ImportError:
-        print "Missing websocket module. Please run 'pip install websocket-client'"
-        ret = False
-
-    try:
-        import ujson as _
-    except ImportError:
-        print "Missing ujson parser. Please run 'pip install ujson'"
-        ret = False
-
-    try:
-        from PIL import Image as _
-    except ImportError:
-        print "Missing PIL modile. Please run 'pip install pillow'"
-        ret = False
-
-    if subprocess.call(['python', '--version']):
-        print "Make sure python 2.7 is available in the path."
-        ret = False
-
-    if subprocess.call(['convert', '-version'], shell=True):
-        print "Missing convert utility. Please install ImageMagick and make sure it is in the path."
-        ret = False
-
-    # Windows-specific imports
-    if platform.system() == "Windows":
+    def startup(self):
+        """Validate that all of the external dependencies are installed"""
+        ret = True
         try:
-            import win32api as _
-            import win32process as _
+            import requests as _
         except ImportError:
-            print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
+            print "Missing requests module. Please run 'pip install requests'"
             ret = False
 
-    return ret
+        try:
+            import websocket as _
+        except ImportError:
+            print "Missing websocket module. Please run 'pip install websocket-client'"
+            ret = False
+
+        try:
+            import ujson as _
+        except ImportError:
+            print "Missing ujson parser. Please run 'pip install ujson'"
+            ret = False
+
+        try:
+            from PIL import Image as _
+        except ImportError:
+            print "Missing PIL modile. Please run 'pip install pillow'"
+            ret = False
+
+        if subprocess.call(['python', '--version']):
+            print "Make sure python 2.7 is available in the path."
+            ret = False
+
+        if subprocess.call(['convert', '-version'], shell=True):
+            print "Missing convert utility. Please install ImageMagick " \
+                  "and make sure it is in the path."
+            ret = False
+
+        # Windows-specific imports
+        if platform.system() == "Windows":
+            try:
+                import win32api as _
+                import win32process as _
+            except ImportError:
+                print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
+                ret = False
+
+        if not self.shaper.install():
+            print "Error configuring traffic shaping, make sure it is installed."
+            ret = False
+
+        return ret
 
 
 def parse_ini(ini):
@@ -184,6 +200,13 @@ def main():
     parser.add_argument('--name', help="Agent name (for the work directory).")
     options, _ = parser.parse_known_args()
 
+    # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
+    if sys.version_info[0] != 2 or \
+            sys.version_info[1] != 7 or \
+            sys.version_info[2] < 11:
+        print "Requires python 2.7 (2.7.11 or later)"
+        exit(1)
+
     # Set up logging
     log_level = logging.CRITICAL
     if options.verbose == 1:
@@ -202,9 +225,9 @@ def main():
         print "No browsers configured. Check that browsers.ini is present and correct."
         exit(1)
 
-    if check_dependencies():
+    agent = WPTAgent(options, browsers)
+    if agent.startup():
         #Create a work directory relative to where we are running
-        agent = WPTAgent(options, browsers)
         print "Running agent, hit Ctrl+C to exit"
         agent.run_testing()
         print "Done"
