@@ -147,7 +147,7 @@ class WPTAgent(object):
             print "Make sure python 2.7 is available in the path."
             ret = False
 
-        if subprocess.call(['convert', '-version'], shell=True):
+        if subprocess.call('convert -version', shell=True):
             print "Missing convert utility. Please install ImageMagick " \
                   "and make sure it is in the path."
             ret = False

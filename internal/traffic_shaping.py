@@ -22,28 +22,28 @@ class TrafficShaper(object):
 
     def install(self):
         """Install and configure the traffic-shaper"""
-        ret = False
+        ret = True
         if self.shaper is not None:
             ret = self.shaper.install()
         return ret
 
     def remove(self):
         """Uninstall traffic-shaping"""
-        ret = False
+        ret = True
         if self.shaper is not None:
             ret = self.shaper.remove()
         return ret
 
     def reset(self):
         """Disable traffic-shaping"""
-        ret = False
+        ret = True
         if self.shaper is not None:
             ret = self.shaper.reset()
         return ret
 
     def configure(self, job):
         """Enable traffic-shaping"""
-        ret = False
+        ret = True
         in_bps = 0
         if 'bwIn' in job:
             in_bps = int(job['bwIn']) * 1000
