@@ -164,7 +164,7 @@ class DevTools(object):
                 self.websocket.send(out)
                 if wait:
                     self.websocket.settimeout(1)
-                    end_time = monotonic.monotonic() + 30
+                    end_time = monotonic.monotonic() + 10
                     while ret is None and monotonic.monotonic() < end_time:
                         try:
                             raw = self.websocket.recv()

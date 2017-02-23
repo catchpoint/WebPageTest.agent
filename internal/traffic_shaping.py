@@ -5,6 +5,7 @@
 import logging
 import os
 import platform
+import re
 import subprocess
 
 class TrafficShaper(object):
@@ -191,11 +192,43 @@ class Dummynet(object):
 class NetEm(object):
     """Linux traffic-shaper using netem/tc"""
     def __init__(self):
-        pass
+        self.interface = None
 
     def install(self):
         """Install and configure the traffic-shaper"""
-        return True
+        ret = False
+
+        # Figure out the default interface
+        try:
+            out = subprocess.check_output(['route'])
+            routes = out.splitlines()
+            match = re.compile(r'^([^\s]+)\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+'\
+                               r'[^\s]+\s+[^\s]+\s+[^\s]+\s+([^\s]+)')
+            for route in routes:
+                fields = re.search(match, route)
+                if fields:
+                    destination = fields.group(1)
+                    if destination == 'default':
+                        self.interface = fields.group(2)
+                        logging.debug("Default interface: %s", self.interface)
+                        break
+
+            if self.interface:
+                # Set up the ifb interface so inbound traffic can be shaped
+                subprocess.call(['sudo', 'modprobe', 'ifb'])
+                subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'up'])
+                subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', 'ens33', 'ingress'])
+                subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', 'ens33', 'parent',
+                                 'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
+                                 'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
+                                 'dev', 'ifb0'])
+                self.reset()
+                ret = True
+            else:
+                logging.critical("Unable to identify default interface using 'route'")
+        except BaseException as err:
+            logging.debug("Error configuring netem: %s", err.__str__)
+        return ret
 
     def remove(self):
         """Uninstall traffic-shaping"""
@@ -203,8 +236,36 @@ class NetEm(object):
 
     def reset(self):
         """Disable traffic-shaping"""
-        return True
+        ret = False
+        if self.interface is not None:
+            ret = subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', 'ifb0', 'root']) == 0 and\
+                  subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
+                                   'root']) == 0
+        return ret
 
     def configure(self, in_bps, out_bps, rtt, plr):
         """Enable traffic-shaping"""
-        return True
+        ret = False
+        if self.interface is not None:
+            in_latency = rtt / 2
+            if rtt % 2:
+                in_latency += 1
+            if self.configure_interface('ifb0', in_bps, in_latency, plr):
+                ret = self.configure_interface(self.interface, out_bps, rtt / 2, plr)
+        return ret
+
+    def configure_interface(self, interface, bps, latency, plr):
+        """Configure traffic-shaping for a single interface"""
+        ret = False
+        args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root', 'handle',
+                '1:0', 'netem', 'delay', '{0:d}ms'.format(latency)]
+        if plr > 0:
+            args.extend(['loss', '{0:.2f}%'.format(plr)])
+        ret = subprocess.call(args) == 0
+        if ret and bps > 0:
+            kbps = int(bps / 1000)
+            args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'parent', '1:1',
+                    'handle', '10:', 'tbf', 'rate', '{0:d}kbit'.format(kbps),
+                    'buffer', '150000', 'limit', '150000']
+            ret = subprocess.call(args) == 0
+        return ret
