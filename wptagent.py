@@ -29,6 +29,7 @@ class WPTAgent(object):
         self.shaper = TrafficShaper()
         self.job = None
         self.task = None
+        self.xvfb = None
         atexit.register(self.cleanup)
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -109,6 +110,8 @@ class WPTAgent(object):
     def cleanup(self):
         """Do any cleanup that needs to be run regardless of how we exit."""
         self.shaper.remove()
+        if self.xvfb is not None:
+            self.xvfb.stop()
 
     def sleep(self, seconds):
         """Sleep wrapped in an exception handler to properly deal with Ctrl+C"""
@@ -147,7 +150,7 @@ class WPTAgent(object):
         try:
             from PIL import Image as _
         except ImportError:
-            print "Missing PIL modile. Please run 'pip install pillow'"
+            print "Missing PIL module. Please run 'pip install pillow'"
             ret = False
 
         if subprocess.call(['python', '--version']):
@@ -158,6 +161,16 @@ class WPTAgent(object):
             print "Missing convert utility. Please install ImageMagick " \
                   "and make sure it is in the path."
             ret = False
+
+        if self.options.xvfb:
+            try:
+                from xvfbwrapper import Xvfb
+                self.xvfb = Xvfb(width=1920, height=1200, colordepth=24)
+                self.xvfb.start()
+            except ImportError:
+                print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
+                ret = False
+
 
         # Windows-specific imports
         if platform.system() == "Windows":
@@ -207,6 +220,8 @@ def main():
     parser.add_argument('--chrome', help="Path to Chrome executable (if configured).")
     parser.add_argument('--canary', help="Path to Chrome canary executable (if configured).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
+    parser.add_argument('--xvfb', action='store_true', default=False,
+                        help="Use an xvfb virtual display (Linux only)")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
