@@ -610,7 +610,7 @@ def get_decimate_filter():
   try:
     filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
     lines = filters.split("\n")
-    match = re.compile('(?P<filter>[\w]*decimate).*V->V.*Remove near-duplicate frames')
+    match = re.compile(r'(?P<filter>[\w]*decimate).*V->V.*Remove near-duplicate frames')
     for line in lines:
       m = re.search(match, line)
       if m is not None:
@@ -929,7 +929,7 @@ def calculate_image_histogram(file):
 def convert_to_jpeg(directory, quality):
   directory = os.path.realpath(directory)
   files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
-  match = re.compile('(?P<base>ms_[0-9]+\.)')
+  match = re.compile(r'(?P<base>ms_[0-9]+\.)')
   for file in files:
     m = re.search(match, file)
     if m is not None:

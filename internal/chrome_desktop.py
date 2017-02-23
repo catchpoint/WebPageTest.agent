@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import time
+import monotonic
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-background-networking',
@@ -62,15 +63,19 @@ class ChromeBrowser(object):
         """Launch the browser"""
         from .os_util import launch_process
         logging.debug("Launching browser")
-        args = [self.path]
-        args.extend(CHROME_COMMAND_LINE_OPTIONS)
+        args = CHROME_COMMAND_LINE_OPTIONS
         args.extend(['--window-position="0,0"',
                      '--window-size="{0:d},{1:d}"'.format(task['width'], task['height'])])
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
         args.append(START_PAGE)
-        self.proc = launch_process(args)
+        if self.path.find(' ') > -1:
+            command_line = '"{0}"'.format(self.path)
+        else:
+            command_line = self.path
+        command_line += ' ' + ' '.join(args)
+        self.proc = launch_process(command_line)
 
     def stop(self):
         """Terminate the browser (gently at first but forced if needed)"""
@@ -82,14 +87,19 @@ class ChromeBrowser(object):
             stop_process(self.proc)
             self.proc = None
 
+    def wait_for_idle(self):
+        """Wait for the browser and OS to go idle"""
+        #just hard-code a 5-second sleep for now
+        time.sleep(5)
+
     def run_task(self, task):
         """Run an individual test"""
         from internal.devtools import DevTools
         devtools = DevTools(self.job, task)
         if devtools.connect(START_BROWSER_TIME_LIMIT):
             logging.debug("Devtools connected")
-            end_time = time.clock() + task['time_limit']
-            while len(task['script']) and time.clock() < end_time:
+            end_time = monotonic.monotonic() + task['time_limit']
+            while len(task['script']) and monotonic.monotonic() < end_time:
                 command = task['script'].pop(0)
                 if command['record']:
                     devtools.start_recording()
@@ -106,7 +116,7 @@ class ChromeBrowser(object):
             devtools.close()
         else:
             task['error'] = "Error connecting to dev tools interface"
-            logging.critical(task.error)
+            logging.critical(task['error'])
 
     def process_command(self, devtools, command):
         """Process an individual script command"""

@@ -19,31 +19,33 @@ class TrafficShaper(object):
                 self.shaper = WinShaper()
             else:
                 self.shaper = Dummynet()
+        elif plat == "Linux":
+            self.shaper = NetEm()
 
     def install(self):
         """Install and configure the traffic-shaper"""
-        ret = True
+        ret = False
         if self.shaper is not None:
             ret = self.shaper.install()
         return ret
 
     def remove(self):
         """Uninstall traffic-shaping"""
-        ret = True
+        ret = False
         if self.shaper is not None:
             ret = self.shaper.remove()
         return ret
 
     def reset(self):
         """Disable traffic-shaping"""
-        ret = True
+        ret = False
         if self.shaper is not None:
             ret = self.shaper.reset()
         return ret
 
     def configure(self, job):
         """Enable traffic-shaping"""
-        ret = True
+        ret = False
         in_bps = 0
         if 'bwIn' in job:
             in_bps = int(job['bwIn']) * 1000
@@ -182,3 +184,27 @@ class Dummynet(object):
                self.ipfw(out_command) and\
                self.ipfw(in_queue_command) and\
                self.ipfw(out_queue_command)
+
+#
+# netem
+#
+class NetEm(object):
+    """Linux traffic-shaper using netem/tc"""
+    def __init__(self):
+        pass
+
+    def install(self):
+        """Install and configure the traffic-shaper"""
+        return True
+
+    def remove(self):
+        """Uninstall traffic-shaping"""
+        return True
+
+    def reset(self):
+        """Disable traffic-shaping"""
+        return True
+
+    def configure(self, in_bps, out_bps, rtt, plr):
+        """Enable traffic-shaping"""
+        return True

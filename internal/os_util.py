@@ -22,19 +22,16 @@ def kill_all(exe, force):
             subprocess.call(['killall', exe])
 
 
-def launch_process(args):
+def launch_process(command_line):
     """Start a process using platform-specific support"""
+    logging.debug(command_line)
     if platform.system() == 'Windows':
         import win32api
         import win32con
         import win32process
-        exe = args.pop(0)
-        if exe.find(' ') > -1:
-            exe = '"' + exe + '"'
-        command_line = exe + ' ' + ' '.join(args)
         startupinfo = win32process.STARTUPINFO()
         startupinfo.wShowWindow = 1 #SW_SHOWNORMAL
-        process_handle, thread_handle, proc, thread_id = \
+        process_handle, thread_handle, proc, _ = \
             win32process.CreateProcess(None,             # executable
                                        command_line,     # command-line
                                        None,             # process attributes
@@ -49,7 +46,7 @@ def launch_process(args):
         if thread_handle:
             win32api.CloseHandle(thread_handle)
     else:
-        proc = subprocess.Popen(args, shell=True)
+        proc = subprocess.Popen(command_line, shell=True)
     return proc
 
 

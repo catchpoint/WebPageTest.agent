@@ -2,3 +2,5 @@
 /browsers.ini
 *.pyc
 /run.cmd
+/run.sh
+/work

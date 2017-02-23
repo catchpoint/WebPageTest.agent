@@ -31,9 +31,10 @@ class VideoProcessing(object):
             if count > 1:
                 with Image.open(files[1]) as image:
                     width, height = image.size
-                    subprocess.call(['convert', files[0], '-resize',
-                                     '{0:d}x{1:d}'.format(width, height), files[0]],
-                                    shell=True)
+                    command = 'convert "{0}" -resize {1:d}x{2:d} "{0}"'.format(
+                        files[0], width, height)
+                    logging.debug(command)
+                    subprocess.call(command, shell=True)
             # Eliminate duplicate frames
             logging.debug("Removing duplicate video frames")
             self.cap_frame_count(self.video_path, 50)
@@ -69,18 +70,19 @@ class VideoProcessing(object):
         """Convert all of the pngs in the given directory to jpeg"""
         for src in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
             dst = os.path.splitext(src)[0] + '.jpg'
-            args = ['convert', src, '-resize', '{0:d}x{0:d}'.format(VIDEO_SIZE),
-                    '-quality', str(self.job['iq']), dst]
-            subprocess.call(args, shell=True)
+            command = 'convert "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
+                src, VIDEO_SIZE, self.job['iq'], dst)
+            logging.debug(command)
+            subprocess.call(command, shell=True)
 
     def frames_match(self, image1, image2, fuzz_percent, max_differences):
         """Compare video frames"""
         match = False
-        args = ['compare', '-metric', 'AE']
+        command = 'compare -metric AE'
         if fuzz_percent > 0:
-            args.extend(['-fuzz', '{0:d}%'.format(fuzz_percent)])
-        args.extend([image1, image2, 'null:'])
-        compare = subprocess.Popen(args, stderr=subprocess.PIPE, shell=True)
+            command += '-fuzz {0:d}%'.format(fuzz_percent)
+        command += '"{0}" "{1}" null:'.format(image1, image2)
+        compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
         _, err = compare.communicate()
         if re.match('^[0-9]+$', err):
             different_pixels = int(err)

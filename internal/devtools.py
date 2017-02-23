@@ -8,6 +8,7 @@ import logging
 import os
 import subprocess
 import time
+import monotonic
 import ujson as json
 
 class DevTools(object):
@@ -27,7 +28,7 @@ class DevTools(object):
         self.page_loaded = False
         self.main_frame = None
         self.is_navigating = False
-        self.last_activity = time.clock()
+        self.last_activity = monotonic.monotonic()
         self.error = None
         self.dev_tools_file = None
         self.trace_file = None
@@ -37,8 +38,8 @@ class DevTools(object):
         """Connect to the browser"""
         import requests
         ret = False
-        end_time = time.clock() + timeout
-        while not ret and time.clock() < end_time:
+        end_time = monotonic.monotonic() + timeout
+        while not ret and monotonic.monotonic() < end_time:
             try:
                 response = requests.get(self.url, timeout=timeout)
                 if len(response.text):
@@ -62,6 +63,7 @@ class DevTools(object):
                             time.sleep(1)
             except BaseException as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__)
+                time.sleep(1)
         return ret
 
     def close(self):
@@ -99,7 +101,7 @@ class DevTools(object):
         self.send_command('Tracing.start',
                           {'categories': trace, 'options': 'record-as-much-as-possible'})
         if 'web10' not in self.task or not self.task['web10']:
-            self.last_activity = time.clock()
+            self.last_activity = monotonic.monotonic()
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
@@ -118,9 +120,9 @@ class DevTools(object):
         if self.websocket:
             logging.info('Collecting trace events')
             done = False
-            last_message = time.clock()
+            last_message = monotonic.monotonic()
             self.websocket.settimeout(1)
-            while not done and time.clock() - last_message < 30:
+            while not done and monotonic.monotonic() - last_message < 30:
                 try:
                     raw = self.websocket.recv()
                     if raw is not None and len(raw):
@@ -129,7 +131,7 @@ class DevTools(object):
                             if msg['method'] == 'Tracing.tracingComplete':
                                 done = True
                             elif msg['method'] == 'Tracing.dataCollected':
-                                last_message = time.clock()
+                                last_message = monotonic.monotonic()
                                 self.process_trace_event(msg)
                 except BaseException as _:
                     pass
@@ -162,8 +164,8 @@ class DevTools(object):
                 self.websocket.send(out)
                 if wait:
                     self.websocket.settimeout(1)
-                    end_time = time.clock() + 30
-                    while ret is None and time.clock() < end_time:
+                    end_time = monotonic.monotonic() + 30
+                    while ret is None and monotonic.monotonic() < end_time:
                         try:
                             raw = self.websocket.recv()
                             if raw is not None and len(raw):
@@ -181,7 +183,7 @@ class DevTools(object):
         """Wait for the page load and activity to finish"""
         if self.websocket:
             self.websocket.settimeout(1)
-            now = time.clock()
+            now = monotonic.monotonic()
             end_time = now + self.task['time_limit']
             done = False
             while not done:
@@ -195,7 +197,7 @@ class DevTools(object):
                 except BaseException as _:
                     # ignore timeouts when we're in a polling read loop
                     pass
-                now = time.clock()
+                now = monotonic.monotonic()
                 elapsed_activity = now - self.last_activity
                 if self.page_loaded and elapsed_activity >= 2:
                     done = True
@@ -217,8 +219,10 @@ class DevTools(object):
                 tmp_file = path + '.png'
                 with open(tmp_file, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
-                args = ['convert', '-quality', str(self.job['iq']), tmp_file, path]
-                subprocess.call(args, shell=True)
+                command = 'convert -quality {0:d} "{1}" "{2}"'.format(
+                    self.job['iq'], tmp_file, path)
+                logging.debug(command)
+                subprocess.call(command, shell=True)
                 if os.path.isfile(tmp_file):
                     os.remove(tmp_file)
 
@@ -251,7 +255,7 @@ class DevTools(object):
                 self.main_frame = msg['params']['frameId']
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
-                self.last_activity = time.clock()
+                self.last_activity = monotonic.monotonic()
                 self.page_loaded = False
         elif event == 'javascriptDialogOpening':
             self.error = "Page opened a modal dailog"
@@ -259,8 +263,7 @@ class DevTools(object):
     def process_network_event(self):
         """Process Network.* dev tools events"""
         if 'web10' not in self.task or not self.task['web10']:
-            logging.debug('Activity detected')
-            self.last_activity = time.clock()
+            self.last_activity = monotonic.monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""

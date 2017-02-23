@@ -48,6 +48,7 @@ class WPTAgent(object):
                                 browser.launch(self.task)
                                 if self.shaper.configure(self.job):
                                     # Run the actual test
+                                    browser.wait_for_idle()
                                     browser.run_task(self.task)
                                 else:
                                     self.task.error = "Error configuring traffic-shaping"
@@ -68,7 +69,7 @@ class WPTAgent(object):
                 if self.job is not None:
                     self.job = None
                 else:
-                    self.sleep(15)
+                    self.sleep(5)
             except BaseException as err:
                 logging.critical("Unhandled exception: %s", err.__str__)
                 traceback.print_exc(file=sys.stdout)
@@ -119,6 +120,12 @@ class WPTAgent(object):
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
+        try:
+            import monotonic as _
+        except ImportError:
+            print "Missing monotonic module. Please run 'pip install monotonic'"
+            ret = False
+
         try:
             import requests as _
         except ImportError:
