@@ -50,9 +50,13 @@ class DevTools(object):
                         for index in xrange(len(tabs)):
                             if 'type' in tabs[index] and \
                                     tabs[index]['type'] == 'page' and \
-                                    'webSocketDebuggerUrl' in tabs[index]:
-                                websocket_url = tabs[index]['webSocketDebuggerUrl']
-                                break
+                                    'webSocketDebuggerUrl' in tabs[index] and \
+                                    'id' in tabs[index]:
+                                if websocket_url is None:
+                                    websocket_url = tabs[index]['webSocketDebuggerUrl']
+                                else:
+                                    # Close extra tabs
+                                    requests.get(self.url + '/close/' + tabs[index]['id'])
                         if websocket_url is not None:
                             from websocket import create_connection
                             self.websocket = create_connection(websocket_url)
