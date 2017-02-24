@@ -3,10 +3,12 @@
 # found in the LICENSE file.
 """Cross-platform support for os-level things that differ on different platforms"""
 import logging
+import os
 import platform
 import subprocess
+import psutil
 
-def kill_all(exe, force):
+def kill_all(exe, force, timeout=30):
     """Terminate all instances of the given process"""
     logging.debug("Terminating all instances of %s", exe)
     plat = platform.system()
@@ -20,7 +22,20 @@ def kill_all(exe, force):
             subprocess.call(['killall', '-s', 'SIGKILL', exe])
         else:
             subprocess.call(['killall', exe])
-
+    # Wait up to Timeout time for all instances to exit
+    processes = []
+    for proc in psutil.process_iter():
+        try:
+            pinfo = proc.as_dict(attrs=['pid', 'name', 'exe'])
+        except psutil.NoSuchProcess:
+            pass
+        else:
+            if 'exe' in pinfo and pinfo['exe'] is not None and\
+                    os.path.basename(pinfo['exe']) == exe:
+                processes.append(proc)
+    if len(processes):
+        logging.debug("Waiting up to %d seconds for %s to exit", timeout, exe)
+        psutil.wait_procs(processes, timeout=timeout)
 
 def launch_process(command_line):
     """Start a process using platform-specific support"""
