@@ -6,10 +6,10 @@ import logging
 import os
 import platform
 import subprocess
-import psutil
 
 def kill_all(exe, force, timeout=30):
     """Terminate all instances of the given process"""
+    import psutil
     logging.debug("Terminating all instances of %s", exe)
     plat = platform.system()
     if plat == "Windows":

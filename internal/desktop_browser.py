@@ -7,7 +7,6 @@ import os
 import shutil
 import constants
 import monotonic
-import psutil
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
@@ -50,6 +49,7 @@ class DesktopBrowser(object):
 
     def wait_for_idle(self):
         """Wait for no more than 20% of a single core used for 500ms"""
+        import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
