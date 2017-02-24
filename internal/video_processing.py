@@ -80,8 +80,8 @@ class VideoProcessing(object):
         match = False
         command = 'compare -metric AE'
         if fuzz_percent > 0:
-            command += '-fuzz {0:d}%'.format(fuzz_percent)
-        command += '"{0}" "{1}" null:'.format(image1, image2)
+            command += ' -fuzz {0:d}%'.format(fuzz_percent)
+        command += ' "{0}" "{1}" null:'.format(image1, image2)
         compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
         _, err = compare.communicate()
         if re.match('^[0-9]+$', err):
