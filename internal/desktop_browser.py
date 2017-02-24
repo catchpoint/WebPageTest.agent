@@ -25,6 +25,7 @@ class DesktopBrowser(object):
             flush_dns()
             if 'profile' in task:
                 if not task['cached'] and os.path.isdir(task['profile']):
+                    logging.debug("Clearing profile %s", task['profile'])
                     shutil.rmtree(task['profile'])
                 if not os.path.isdir(task['profile']):
                     os.makedirs(task['profile'])
