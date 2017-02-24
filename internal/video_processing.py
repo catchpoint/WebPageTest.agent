@@ -35,18 +35,20 @@ class VideoProcessing(object):
                         files[0], width, height)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
-            # Eliminate duplicate frames
+            # Eliminate duplicate frames (allow for a 10% difference on the first frame)
             logging.debug("Removing duplicate video frames")
             self.cap_frame_count(self.video_path, 50)
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
             count = len(files)
             if count > 1:
+                fuzz = 10
                 baseline = files[0]
                 for index in xrange(1, count):
-                    if self.frames_match(baseline, files[index], 1, 0):
+                    if self.frames_match(baseline, files[index], fuzz, 0):
                         logging.debug('Removing similar frame %s', os.path.basename(files[index]))
                         os.remove(files[index])
                     else:
+                        fuzz = 1
                         baseline = files[index]
             # start a background thread to convert the images to jpeg
             logging.debug("Converting video frames to jpeg")
