@@ -53,6 +53,10 @@ class DevtoolsBrowser(object):
                                             "deviceScaleFactor": float(self.job['dpr']),
                                             "mobile": True, "fitWindow": True},
                                            wait=True)
+                self.devtools.send_command("Emulation.setVisibleSize",
+                                           {"width": int(self.job['width']),
+                                            "height": int(self.job['height'])},
+                                           wait=True)
             # UA String
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
