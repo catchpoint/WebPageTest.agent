@@ -28,6 +28,6 @@ class Browsers(object):
         browser = None
         # only support desktop browsers for now
         if name in self.browsers and 'exe' in self.browsers[name]:
-            from .chrome_desktop import ChromeBrowser
-            browser = ChromeBrowser(self.browsers[name]['exe'], job)
+            from .chrome_desktop import ChromeDesktop
+            browser = ChromeDesktop(self.browsers[name]['exe'], job)
         return browser

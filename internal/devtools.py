@@ -62,7 +62,7 @@ class DevTools(object):
                         else:
                             time.sleep(1)
             except BaseException as err:
-                logging.critical("Connect to dev tools Error: %s", err.__str__)
+                logging.critical("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(1)
         return ret
 
@@ -176,7 +176,7 @@ class DevTools(object):
                         except BaseException as _:
                             pass
             except BaseException as err:
-                logging.critical("Websocket send error: %s", err.__str__)
+                logging.critical("Websocket send error: %s", err.__str__())
         return ret
 
     def wait_for_page_load(self):

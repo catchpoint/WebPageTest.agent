@@ -73,33 +73,30 @@ class WinShaper(object):
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "winshaper", "shaper.exe")
 
+    def shaper(self, args):
+        """Run a shaper command with elevated permissions"""
+        from .os_util import run_elevated
+        return run_elevated(self.exe, ' '.join(args)) == 0
+
     def install(self):
         """Install and configure the traffic-shaper"""
-        command = [self.exe, 'install']
-        logging.debug(' '.join(command))
-        return subprocess.call(command) == 0
+        return self.shaper(['install'])
 
     def remove(self):
         """Uninstall traffic-shaping"""
-        command = [self.exe, 'remove']
-        logging.debug(' '.join(command))
-        return subprocess.call(command) == 0
+        return self.shaper(['remove'])
 
     def reset(self):
         """Disable traffic-shaping"""
-        command = [self.exe, 'reset']
-        logging.debug(' '.join(command))
-        return subprocess.call(command) == 0
+        return self.shaper(['reset'])
 
     def configure(self, in_bps, out_bps, rtt, plr):
         """Enable traffic-shaping"""
-        command = [self.exe, 'set',
-                   'inbps={0:d}'.format(in_bps),
-                   'outbps={0:d}'.format(out_bps),
-                   'rtt={0:d}'.format(rtt),
-                   'plr={0:.2f}'.format(plr)]
-        logging.debug(' '.join(command))
-        return subprocess.call(command) == 0
+        return self.shaper(['set',
+                            'inbps={0:d}'.format(in_bps),
+                            'outbps={0:d}'.format(out_bps),
+                            'rtt={0:d}'.format(rtt),
+                            'plr={0:.2f}'.format(plr)])
 
 #
 # Dummynet
@@ -116,10 +113,8 @@ class Dummynet(object):
 
     def ipfw(self, args):
         """Run a single ipfw command"""
-        command = [self.exe]
-        command.extend(args)
-        logging.debug(' '.join(command))
-        return subprocess.call(command) == 0
+        from .os_util import run_elevated
+        return run_elevated(self.exe, ' '.join(args)) == 0
 
     def install(self):
         """Set up the pipes"""
@@ -227,7 +222,7 @@ class NetEm(object):
             else:
                 logging.critical("Unable to identify default interface using 'route'")
         except BaseException as err:
-            logging.debug("Error configuring netem: %s", err.__str__)
+            logging.debug("Error configuring netem: %s", err.__str__())
         return ret
 
     def remove(self):

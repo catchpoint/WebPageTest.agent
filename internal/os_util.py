@@ -70,3 +70,29 @@ def flush_dns():
     elif plat == "Linux":
         subprocess.call(['sudo', 'service', 'dnsmasq', 'restart'])
         subprocess.call(['sudo', 'rndc', 'restart'])
+
+def run_elevated(command, args):
+    """Run the given command as an elevated user and wait for it to return"""
+    ret = 1
+    if command.find(' ') > -1:
+        command = '"' + command + '"'
+    if platform.system() == 'Windows':
+        import win32api
+        import win32con
+        import win32event
+        import win32process
+        from win32com.shell.shell import ShellExecuteEx
+        from win32com.shell import shellcon
+        logging.debug(command + ' ' + args)
+        process_info = ShellExecuteEx(nShow=win32con.SW_SHOWNORMAL,
+                                      fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
+                                      lpVerb='runas',
+                                      lpFile=command,
+                                      lpParameters=args)
+        win32event.WaitForSingleObject(process_info['hProcess'], win32event.INFINITE)
+        ret = win32process.GetExitCodeProcess(process_info['hProcess'])
+        win32api.CloseHandle(process_info['hProcess'])
+    else:
+        logging.debug('sudo ' + command + ' ' + args)
+        ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
+    return ret

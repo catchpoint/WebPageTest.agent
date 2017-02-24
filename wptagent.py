@@ -49,7 +49,6 @@ class WPTAgent(object):
                                 browser.launch(self.task)
                                 if self.shaper.configure(self.job):
                                     # Run the actual test
-                                    browser.wait_for_idle()
                                     browser.run_task(self.task)
                                 else:
                                     self.task.error = "Error configuring traffic-shaping"
@@ -72,7 +71,7 @@ class WPTAgent(object):
                 else:
                     self.sleep(5)
             except BaseException as err:
-                logging.critical("Unhandled exception: %s", err.__str__)
+                logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
 
     def process_video(self):
@@ -130,15 +129,21 @@ class WPTAgent(object):
             ret = False
 
         try:
-            import requests as _
+            from PIL import Image as _
         except ImportError:
-            print "Missing requests module. Please run 'pip install requests'"
+            print "Missing PIL module. Please run 'pip install pillow'"
             ret = False
 
         try:
-            import websocket as _
+            import psutil as _
         except ImportError:
-            print "Missing websocket module. Please run 'pip install websocket-client'"
+            print "Missing psutil module. Please run 'pip install psutil'"
+            ret = False
+
+        try:
+            import requests as _
+        except ImportError:
+            print "Missing requests module. Please run 'pip install requests'"
             ret = False
 
         try:
@@ -148,9 +153,9 @@ class WPTAgent(object):
             ret = False
 
         try:
-            from PIL import Image as _
+            import websocket as _
         except ImportError:
-            print "Missing PIL module. Please run 'pip install pillow'"
+            print "Missing websocket module. Please run 'pip install websocket-client'"
             ret = False
 
         if subprocess.call(['python', '--version']):
