@@ -39,17 +39,6 @@ class DevtoolsBrowser(object):
     def prepare_browser(self):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
-            # UA String
-            if 'uastring' in self.job:
-                ua_string = self.job['uastring']
-            else:
-                ua_string = self.devtools.execute_js("navigator.userAgent")
-            if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
-                ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
-            if ua_string is not None:
-                self.devtools.send_command('Network.setUserAgentOverride',
-                                           {'userAgent': ua_string},
-                                           wait=True)
             # Mobile Emulation
             if 'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
@@ -64,8 +53,17 @@ class DevtoolsBrowser(object):
                                             "deviceScaleFactor": float(self.job['dpr']),
                                             "mobile": True, "fitWindow": True},
                                            wait=True)
-                time.sleep(5)
-
+            # UA String
+            if 'uastring' in self.job:
+                ua_string = self.job['uastring']
+            else:
+                ua_string = self.devtools.execute_js("navigator.userAgent")
+            if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
+                ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
+            if ua_string is not None:
+                self.devtools.send_command('Network.setUserAgentOverride',
+                                           {'userAgent': ua_string},
+                                           wait=True)
 
     def run_task(self, task):
         """Run an individual test"""
