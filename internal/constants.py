@@ -3,4 +3,5 @@
 # found in the LICENSE file.
 """Global Constants"""
 
+CURRENT_VERSION = 1
 START_BROWSER_TIME_LIMIT = 30

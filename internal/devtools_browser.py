@@ -5,6 +5,7 @@
 import gzip
 import logging
 import os
+import time
 import monotonic
 import ujson as json
 import constants
@@ -12,7 +13,7 @@ import constants
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
     def __init__(self, job):
-        self.devtools_job = job
+        self.job = job
         self.devtools = None
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -20,7 +21,7 @@ class DevtoolsBrowser(object):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.devtools_job, task)
+        self.devtools = DevTools(self.job, task)
         if self.devtools.connect(constants.START_BROWSER_TIME_LIMIT):
             logging.debug("Devtools connected")
             ret = True
@@ -35,6 +36,37 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.devtools.close()
 
+    def prepare_browser(self):
+        """Prepare the running browser (mobile emulation, UA string, etc"""
+        if self.devtools is not None:
+            # UA String
+            if 'uastring' in self.job:
+                ua_string = self.job['uastring']
+            else:
+                ua_string = self.devtools.execute_js("navigator.userAgent")
+            if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
+                ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
+            if ua_string is not None:
+                self.devtools.send_command('Network.setUserAgentOverride',
+                                           {'userAgent': ua_string},
+                                           wait=True)
+            # Mobile Emulation
+            if 'mobile' in self.job and self.job['mobile'] and \
+                    'width' in self.job and 'height' in self.job and \
+                    'dpr' in self.job:
+                self.devtools.send_command("Emulation.setDeviceMetricsOverride",
+                                           {"width": int(self.job['width']),
+                                            "height": int(self.job['height']),
+                                            "screenWidth": int(self.job['width']),
+                                            "screenHeight": int(self.job['height']),
+                                            "positionX": 0,
+                                            "positionY": 0,
+                                            "deviceScaleFactor": float(self.job['dpr']),
+                                            "mobile": True, "fitWindow": True},
+                                           wait=True)
+                time.sleep(5)
+
+
     def run_task(self, task):
         """Run an individual test"""
         if self.devtools is not None:
@@ -48,7 +80,7 @@ class DevtoolsBrowser(object):
                 if command['record']:
                     self.devtools.wait_for_page_load()
                     self.devtools.stop_recording()
-                    if self.devtools_job['pngss']:
+                    if self.job['pngss']:
                         screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.png')
                         self.devtools.grab_screenshot(screen_shot, png=True)
                     else:
@@ -80,11 +112,11 @@ class DevtoolsBrowser(object):
             path = os.path.join(task['dir'], task['prefix'] + 'page_data.json.gz')
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(page_data))
-        if 'customMetrics' in self.devtools_job:
+        if 'customMetrics' in self.job:
             custom_metrics = {}
-            for name in self.devtools_job['customMetrics']:
+            for name in self.job['customMetrics']:
                 script = 'var wptCustomMetric = function() {' +\
-                         self.devtools_job['customMetrics'][name] +\
+                         self.job['customMetrics'][name] +\
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + 'metrics.json.gz')

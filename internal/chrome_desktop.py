@@ -56,6 +56,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     def run_task(self, task):
         """Run an individual test"""
         if DevtoolsBrowser.connect(self, task):
+            DevtoolsBrowser.prepare_browser(self)
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.run_task(self, task)
             DevtoolsBrowser.disconnect(self)
