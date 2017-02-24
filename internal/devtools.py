@@ -152,7 +152,7 @@ class DevTools(object):
             except BaseException as _:
                 pass
 
-    def send_command(self, method, params, wait=False):
+    def send_command(self, method, params, wait=False, timeout=30):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
         if self.websocket:
@@ -164,7 +164,7 @@ class DevTools(object):
                 self.websocket.send(out)
                 if wait:
                     self.websocket.settimeout(1)
-                    end_time = monotonic.monotonic() + 10
+                    end_time = monotonic.monotonic() + timeout
                     while ret is None and monotonic.monotonic() < end_time:
                         try:
                             raw = self.websocket.recv()
@@ -210,7 +210,7 @@ class DevTools(object):
 
     def grab_screenshot(self, path, png=True):
         """Save the screen shot (png or jpeg)"""
-        response = self.send_command("Page.captureScreenshot", {}, True)
+        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=5)
         if response is not None and 'result' in response and 'data' in response['result']:
             if png:
                 with open(path, 'wb') as image_file:
@@ -225,6 +225,18 @@ class DevTools(object):
                 subprocess.call(command, shell=True)
                 if os.path.isfile(tmp_file):
                     os.remove(tmp_file)
+
+    def execute_js(self, script):
+        """Run the provided JS in the browser and return the result"""
+        ret = None
+        response = self.send_command("Runtime.evaluate",
+                                     {'expression': script, 'returnByValue': True},
+                                     wait=True)
+        if response is not None and 'result' in response and\
+                'result' in response['result'] and\
+                'value' in response['result']['result']:
+            ret = response['result']['result']['value']
+        return ret
 
     def process_message(self, msg):
         """Process an inbound dev tools message"""

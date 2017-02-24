@@ -84,7 +84,7 @@ def run_elevated(command, args):
         from win32com.shell.shell import ShellExecuteEx
         from win32com.shell import shellcon
         logging.debug(command + ' ' + args)
-        process_info = ShellExecuteEx(nShow=win32con.SW_SHOWNORMAL,
+        process_info = ShellExecuteEx(nShow=win32con.SW_HIDE,
                                       fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
                                       lpVerb='runas',
                                       lpFile=command,

@@ -25,7 +25,10 @@ class WebPageTest(object):
             self.pc_name = options.name
         self.workdir = os.path.join(workdir, self.pc_name)
         if os.path.isdir(self.workdir):
-            shutil.rmtree(self.workdir)
+            try:
+                shutil.rmtree(self.workdir)
+            except BaseException as _:
+                pass
         self.profile_dir = os.path.join(self.workdir, 'browser')
 
     def get_test(self):
