@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import re
+import shutil
 import subprocess
 import threading
 
@@ -28,6 +29,8 @@ class VideoProcessing(object):
             from PIL import Image
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
             count = len(files)
+            width = 0
+            height = 0
             if count > 1:
                 with Image.open(files[1]) as image:
                     width, height = image.size
@@ -35,20 +38,22 @@ class VideoProcessing(object):
                         files[0], width, height)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
-            # Eliminate duplicate frames (allow for a 10% difference on the first frame)
+            # Eliminate duplicate frames ignoring 25 pixels across the bottom and
+            # right sides for status and scroll bars
+            crop = None
+            if width > 25 and height > 25:
+                crop = '{0:d}x{1:d}+0+0'.format(width - 25, height - 25)
             logging.debug("Removing duplicate video frames")
             self.cap_frame_count(self.video_path, 50)
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
             count = len(files)
             if count > 1:
-                fuzz = 10
                 baseline = files[0]
                 for index in xrange(1, count):
-                    if self.frames_match(baseline, files[index], fuzz, 0):
+                    if self.frames_match(baseline, files[index], crop, 1, 0):
                         logging.debug('Removing similar frame %s', os.path.basename(files[index]))
                         os.remove(files[index])
                     else:
-                        fuzz = 1
                         baseline = files[index]
             # start a background thread to convert the images to jpeg
             logging.debug("Converting video frames to jpeg")
@@ -77,13 +82,16 @@ class VideoProcessing(object):
             logging.debug(command)
             subprocess.call(command, shell=True)
 
-    def frames_match(self, image1, image2, fuzz_percent, max_differences):
+    def frames_match(self, image1, image2, crop_region, fuzz_percent, max_differences):
         """Compare video frames"""
+        crop = ''
+        if crop_region is not None:
+            crop = '-crop {0} '.format(crop_region)
         match = False
-        command = 'compare -metric AE'
+        command = 'convert {0} {1} {2}miff:- | compare -metric AE -'.format(image1, image2, crop)
         if fuzz_percent > 0:
             command += ' -fuzz {0:d}%'.format(fuzz_percent)
-        command += ' "{0}" "{1}" null:'.format(image1, image2)
+        command += ' null:'.format()
         compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
         _, err = compare.communicate()
         if re.match('^[0-9]+$', err):

@@ -35,6 +35,7 @@ class DevtoolsBrowser(object):
         """Disconnect from dev tools"""
         if self.devtools is not None:
             self.devtools.close()
+            self.devtools = None
 
     def prepare_browser(self):
         """Prepare the running browser (mobile emulation, UA string, etc"""

@@ -64,6 +64,10 @@ class WPTAgent(object):
                             self.process_video()
                             trace_thread.join()
                             self.wpt.upload_task_result(self.task)
+                            # Delete the browser profile if needed
+                            if self.task['cached'] or self.job['fvonly']:
+                                browser.clear_profile(self.task)
+                            browser = None
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
                 if self.job is not None:

@@ -51,6 +51,8 @@ class WebPageTest(object):
                     job['iq'] = DEFAULT_JPEG_QUALITY
                 if 'pngss' not in job:
                     job['pngss'] = 0
+                if 'fvonly' not in job:
+                    job['fvonly'] = 0
                 if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                     job = None
         except requests.exceptions.RequestException as err:
@@ -82,6 +84,13 @@ class WebPageTest(object):
                 # Set up the task configuration options
                 task['width'] = 1024
                 task['height'] = 768
+                if 'width' in job and 'height' in job:
+                    if 'mobile' in job and job['mobile']:
+                        task['width'] = job['width'] + 20
+                        task['height'] = job['height'] + 120
+                    else:
+                        task['width'] = job['width']
+                        task['height'] = job['height']
                 task['port'] = 9222
                 task['prefix'] = "{0:d}_".format(run)
                 if task['cached']:

@@ -9,7 +9,6 @@ import subprocess
 
 def kill_all(exe, force, timeout=30):
     """Terminate all instances of the given process"""
-    import psutil
     logging.debug("Terminating all instances of %s", exe)
     plat = platform.system()
     if plat == "Windows":
@@ -22,7 +21,11 @@ def kill_all(exe, force, timeout=30):
             subprocess.call(['killall', '-s', 'SIGKILL', exe])
         else:
             subprocess.call(['killall', exe])
-    # Wait up to Timeout time for all instances to exit
+    wait_for_all(exe, timeout)
+
+def wait_for_all(exe, timeout=30):
+    """Wait for the given process to exit"""
+    import psutil
     processes = []
     for proc in psutil.process_iter():
         try:

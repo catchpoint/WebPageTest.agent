@@ -5,6 +5,7 @@
 import logging
 import os
 import shutil
+import time
 import constants
 import monotonic
 
@@ -35,7 +36,6 @@ class DesktopBrowser(object):
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
         from .os_util import launch_process
-        logging.debug(command_line)
         self.proc = launch_process(command_line)
 
     def stop(self):
@@ -68,3 +68,13 @@ class DesktopBrowser(object):
                         idle = True
                 else:
                     idle_start = None
+
+    def clear_profile(self, task):
+        """Delete the browser profile directory"""
+        end_time = monotonic.monotonic() + 30
+        while monotonic.monotonic() < end_time:
+            shutil.rmtree(task['profile'])
+            if os.path.isdir(task['profile']):
+                time.sleep(0.1)
+            else:
+                break
