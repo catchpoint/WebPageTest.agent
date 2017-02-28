@@ -40,41 +40,6 @@ def wait_for_all(exe, timeout=30):
         logging.debug("Waiting up to %d seconds for %s to exit", timeout, exe)
         psutil.wait_procs(processes, timeout=timeout)
 
-def launch_process(command_line):
-    """Start a process using platform-specific support"""
-    logging.debug(command_line)
-    if platform.system() == 'Windows':
-        import win32api
-        import win32con
-        import win32process
-        startupinfo = win32process.STARTUPINFO()
-        startupinfo.wShowWindow = 1 #SW_SHOWNORMAL
-        process_handle, thread_handle, proc, _ = \
-            win32process.CreateProcess(None,             # executable
-                                       command_line,     # command-line
-                                       None,             # process attributes
-                                       None,             # security attributes
-                                       0,                # inherit handles
-                                       win32con.NORMAL_PRIORITY_CLASS,
-                                       None,             # new environment
-                                       None,             # current directory
-                                       startupinfo)      #startupinfo
-        if process_handle:
-            win32api.CloseHandle(process_handle)
-        if thread_handle:
-            win32api.CloseHandle(thread_handle)
-    else:
-        proc = subprocess.Popen(command_line, shell=True)
-    return proc
-
-
-def stop_process(proc):
-    """Stop a process using platform-specific support"""
-    if platform.system() != 'Windows':
-        proc.terminate()
-        proc.kill()
-
-
 def flush_dns():
     """Flush the OS DNS resolver"""
     logging.debug("Flushing DNS")

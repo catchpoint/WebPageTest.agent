@@ -130,3 +130,8 @@ class DevtoolsBrowser(object):
         """Process an individual script command"""
         if command['command'] == 'navigate':
             self.devtools.send_command('Page.navigate', {'url': command['target']})
+
+    def navigate(self, url):
+        """Navigate to the given URL"""
+        if self.devtools is not None:
+            self.devtools.send_command('Page.navigate', {'url': url}, wait=True)

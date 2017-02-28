@@ -45,7 +45,6 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
-        args.append(START_PAGE)
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
@@ -57,6 +56,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         """Run an individual test"""
         if DevtoolsBrowser.connect(self, task):
             DevtoolsBrowser.prepare_browser(self)
+            DevtoolsBrowser.navigate(self, START_PAGE)
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.run_task(self, task)
             DevtoolsBrowser.disconnect(self)

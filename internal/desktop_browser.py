@@ -5,6 +5,7 @@
 import logging
 import os
 import shutil
+import subprocess
 import time
 import constants
 import monotonic
@@ -35,17 +36,17 @@ class DesktopBrowser(object):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
-        from .os_util import launch_process
-        self.proc = launch_process(command_line)
+        logging.debug(command_line)
+        self.proc = subprocess.Popen(command_line, shell=True)
 
     def stop(self):
         """Terminate the browser (gently at first but forced if needed)"""
-        from .os_util import stop_process
         from .os_util import kill_all
         logging.debug("Stopping browser")
         if self.proc:
             kill_all(os.path.basename(self.path), False)
-            stop_process(self.proc)
+            self.proc.terminate()
+            self.proc.kill()
             self.proc = None
 
     def wait_for_idle(self):
@@ -71,10 +72,11 @@ class DesktopBrowser(object):
 
     def clear_profile(self, task):
         """Delete the browser profile directory"""
-        end_time = monotonic.monotonic() + 30
-        while monotonic.monotonic() < end_time:
-            shutil.rmtree(task['profile'])
-            if os.path.isdir(task['profile']):
-                time.sleep(0.1)
-            else:
-                break
+        if os.path.isdir(task['profile']):
+            end_time = monotonic.monotonic() + 30
+            while monotonic.monotonic() < end_time:
+                shutil.rmtree(task['profile'])
+                if os.path.isdir(task['profile']):
+                    time.sleep(0.1)
+                else:
+                    break
