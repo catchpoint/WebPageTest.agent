@@ -33,7 +33,8 @@ START_PAGE = 'about:blank'
 
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
-    def __init__(self, path, job):
+    def __init__(self, path, options, job):
+        self.options = options
         DesktopBrowser.__init__(self, path, job)
         DevtoolsBrowser.__init__(self, job)
 
@@ -45,6 +46,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
+        if self.options.xvfb:
+            args.append('--disable-gpu')
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
