@@ -4,6 +4,7 @@
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
 import base64
 import gzip
+import io
 import logging
 import os
 import subprocess
@@ -33,6 +34,8 @@ class DevTools(object):
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_ts_start = None
+        self.trace_enabled = False
+        self.requests = {}
 
     def connect(self, timeout):
         """Connect to the browser"""
@@ -81,6 +84,7 @@ class DevTools(object):
         self.page_loaded = False
         self.is_navigating = True
         self.error = None
+        self.request_ids = []
         if 'Capture Video' in self.job and self.job['Capture Video']:
             self.grab_screenshot(self.video_prefix + '000000.png')
         self.flush_pending_messages()
@@ -102,6 +106,7 @@ class DevTools(object):
         if 'Capture Video' in self.job and self.job['Capture Video']:
             trace += ",disabled-by-default-devtools.screenshot"
         trace += ",blink.user_timing"
+        self.trace_enabled = True
         self.send_command('Tracing.start',
                           {'categories': trace, 'options': 'record-as-much-as-possible'})
         if 'web10' not in self.task or not self.task['web10']:
@@ -110,39 +115,84 @@ class DevTools(object):
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
         self.send_command('Page.disable', {})
-        self.send_command('Network.disable', {})
         self.send_command('Security.disable', {})
         self.send_command('Console.disable', {})
+        self.get_response_bodies()
+        self.send_command('Network.disable', {})
         if self.dev_tools_file is not None:
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
+        self.collect_trace()
 
-        self.send_command('Tracing.end', {})
-        # Keep pumping messages until we get tracingComplete or
-        # we get a gap of 30 seconds between messages
-        if self.websocket:
-            logging.info('Collecting trace events')
-            done = False
-            last_message = monotonic.monotonic()
-            self.websocket.settimeout(1)
-            while not done and monotonic.monotonic() - last_message < 30:
-                try:
-                    raw = self.websocket.recv()
-                    if raw is not None and len(raw):
-                        msg = json.loads(raw)
-                        if 'method' in msg:
-                            if msg['method'] == 'Tracing.tracingComplete':
-                                done = True
-                            elif msg['method'] == 'Tracing.dataCollected':
-                                last_message = monotonic.monotonic()
-                                self.process_trace_event(msg)
-                except BaseException as _:
-                    pass
-        if self.trace_file is not None:
-            self.trace_file.write("\n]}")
-            self.trace_file.close()
-            self.trace_file = None
+    def collect_trace(self):
+        """Stop tracing and collect the results"""
+        if self.trace_enabled:
+            self.trace_enabled = False
+            self.send_command('Tracing.end', {})
+            # Keep pumping messages until we get tracingComplete or
+            # we get a gap of 30 seconds between messages
+            if self.websocket:
+                logging.info('Collecting trace events')
+                done = False
+                last_message = monotonic.monotonic()
+                self.websocket.settimeout(1)
+                while not done and monotonic.monotonic() - last_message < 30:
+                    try:
+                        raw = self.websocket.recv()
+                        if raw is not None and len(raw):
+                            msg = json.loads(raw)
+                            if 'method' in msg:
+                                if msg['method'] == 'Tracing.tracingComplete':
+                                    done = True
+                                elif msg['method'] == 'Tracing.dataCollected':
+                                    last_message = monotonic.monotonic()
+                                    self.process_trace_event(msg)
+                    except BaseException as _:
+                        pass
+            if self.trace_file is not None:
+                self.trace_file.write("\n]}")
+                self.trace_file.close()
+                self.trace_file = None
+
+    def get_response_bodies(self):
+        """Retrieve all of the response bodies for the requests that we know about"""
+        import zipfile
+        if self.requests:
+            # see if we also need to zip them up
+            zip_file = None
+            if 'bodies' in self.job and self.job['bodies']:
+                zip_file = zipfile.ZipFile(self.path_base + 'bodies.zip', 'w', zipfile.ZIP_DEFLATED)
+            path = os.path.join(self.task['dir'], 'bodies')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            index = 0
+            for request_id in self.requests:
+                if 'finished' in self.requests[request_id] and \
+                        'fromNet' in self.requests[request_id] and \
+                        self.requests[request_id]['fromNet']:
+                    index += 1
+                    body_file_path = os.path.join(path, request_id)
+                    if not os.path.exists(body_file_path):
+                        response = self.send_command("Network.getResponseBody",
+                                                     {'requestId': request_id}, wait=True)
+                        if response is not None and 'result' in response and \
+                                'body' in response['result'] and len(response['result']['body']):
+                            # Write the raw body to a file (all bodies)
+                            if 'base64Encoded' in response['result'] and \
+                                    response['result']['base64Encoded']:
+                                with open(body_file_path, 'wb') as body_file:
+                                    body_file.write(base64.b64decode(response['result']['body']))
+                            else:
+                                body = response['result']['body'].encode('utf-8')
+                                with open(body_file_path, 'wb') as body_file:
+                                    body_file.write(body)
+                                # Add text bodies to the zip archive
+                                if zip_file is not None:
+                                    name = '{0:03d}-{1}-body.txt'.format(index, request_id)
+                                    zip_file.writestr(name, body)
+            if zip_file is not None:
+                zip_file.close()
 
     def flush_pending_messages(self):
         """Clear out any pending websocket messages"""
@@ -175,7 +225,7 @@ class DevTools(object):
                             if raw is not None and len(raw):
                                 logging.debug(raw[:1000])
                                 msg = json.loads(raw)
-                                if 'id' in msg and int(msg['id']) == msg['id']:
+                                if 'id' in msg and int(msg['id']) == self.command_id:
                                     ret = msg
                         except BaseException as _:
                             pass
@@ -252,7 +302,7 @@ class DevTools(object):
                 self.process_page_event(event, msg)
                 self.log_dev_tools_event(msg)
             elif category == 'Network':
-                self.process_network_event()
+                self.process_network_event(event, msg)
                 self.log_dev_tools_event(msg)
             elif category == 'Inspector':
                 self.process_inspector_event(event)
@@ -276,10 +326,36 @@ class DevTools(object):
         elif event == 'javascriptDialogOpening':
             self.error = "Page opened a modal dailog"
 
-    def process_network_event(self):
+    def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
         if 'web10' not in self.task or not self.task['web10']:
             self.last_activity = monotonic.monotonic()
+        if 'requestId' in msg['params']:
+            request_id = msg['params']['requestId']
+            if request_id not in self.requests:
+                request = {'id': request_id}
+                self.requests[request_id] = request
+            if event == 'requestWillBeSent':
+                self.requests[request_id]['request'] = msg['params']
+                self.requests[request_id]['fromNet'] = True
+            elif event == 'resourceChangedPriority':
+                self.requests[request_id]['priority'] = msg['params']
+            elif event == 'requestServedFromCache':
+                self.requests[request_id]['fromNet'] = False
+            elif event == 'responseReceived':
+                self.requests[request_id]['response'] = msg['params']
+                if 'response' in msg['params'] and \
+                        'fromDiskCache' in msg['params']['response'] and \
+                        msg['params']['response']['fromDiskCache']:
+                    self.requests[request_id]['fromNet'] = False
+            elif event == 'dataReceived':
+                if 'data' not in self.requests[request_id]:
+                    self.requests[request_id]['data'] = []
+                self.requests[request_id]['data'].append(msg['params'])
+            elif event == 'loadingFinished':
+                self.requests[request_id]['finished'] = msg['params']
+            elif event == 'loadingFailed':
+                self.requests[request_id]['failed'] = msg['params']
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
