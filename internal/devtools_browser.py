@@ -244,6 +244,20 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'setuseragent':
             self.devtools.send_command('Network.setUserAgentOverride',
                                        {'userAgent': command['target']})
+        elif command['command'] == 'setcookie':
+            if 'target' in command and 'value' in command:
+                url = command['target'].strip()
+                cookie = command['value']
+                pos = cookie.find(';')
+                if pos > 0:
+                    cookie = cookie[:pos]
+                pos = cookie.find('=')
+                if pos > 0:
+                    name = cookie[:pos].strip()
+                    value = cookie[pos+1:].strip()
+                    if len(name) and len(value) and len(url):
+                        self.devtools.send_command('Network.setCookie',
+                                                   {'url': url, 'name': name, 'value': value})
 
     def navigate(self, url):
         """Navigate to the given URL"""

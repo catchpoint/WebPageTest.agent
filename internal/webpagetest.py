@@ -222,6 +222,7 @@ class WebPageTest(object):
                          command == 'block' or \
                          command == 'sleep' or \
                          command == 'setuseragent' or \
+                         command == 'setcookie' or \
                          command == 'exec':
                         pass
                     else:

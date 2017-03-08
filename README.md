@@ -18,7 +18,10 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Visual metrics (Start render, Speed Index, Visually Complete)
 * User Timing Marks
 * Navigation Timing
+* Ignoring TLS Errors
+* Custom user agent strings
 * Custom headers
+* Custom command-line options
 * Custom Metrics
 * Dev Tools Timeline
 * Javascript timing (execution/parse)
@@ -45,6 +48,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setDns
     * addHeader
     * setHeader (aliased to addHeader until devtools supports overriding headers)
+    * setCookie
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
@@ -54,12 +58,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * HTTP/2 Stream Details
 * Lighthouse integration
 * Test sharding
-* Ignoring SSL Errors
 * Disable Javascript
 * tcpdump
-* Custom user agent strings
 * Minimum test duration
-* Custom command-line options
 * Traceroute tests
 * Script Commands that will be translated into exec:
     * click (clickAndWait)
@@ -75,7 +76,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * requiredRequest
     * setDOMRequest
     * waitForJSDone (change semantics to console log message)
-    * setCookie
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
 
