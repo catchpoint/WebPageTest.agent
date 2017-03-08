@@ -6,6 +6,7 @@ import gzip
 import logging
 import os
 import subprocess
+import time
 import threading
 import monotonic
 import ujson as json
@@ -219,12 +220,23 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'combinesteps':
             self.task['log_data'] = True
             self.task['combine_steps'] = True
+        elif command['command'] == 'seteventname':
+            self.event_name = command['target']
         elif command['command'] == 'exec':
             if command['record']:
                 self.devtools.start_navigating()
             self.devtools.execute_js(command['target'])
-        elif command['command'] == 'seteventname':
-            self.event_name = command['target']
+        elif command['command'] == 'sleep':
+            delay = min(60, max(0, int(command['target'])))
+            if delay > 0:
+                time.sleep(delay)
+        elif command['command'] == 'block':
+            block_list = command['target'].split()
+            for block in block_list:
+                block = block.strip()
+                if len(block):
+                    logging.debug("Blocking: %s", block)
+                    self.devtools.send_command('Network.addBlockedURL', {'url': block})
 
     def navigate(self, url):
         """Navigate to the given URL"""

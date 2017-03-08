@@ -128,8 +128,11 @@ class WebPageTest(object):
 
     def build_script(self, job, task):
         """Build the actual script that will be used for testing"""
+        task['script'] = []
+        # Add script commands for any static options that need them
+        if 'block' in job:
+            task['script'].append({'command': 'block', 'target': job['block'], 'record': False})
         if 'script' in job:
-            task['script'] = []
             lines = job['script'].splitlines()
             for line in lines:
                 parts = line.split("\t", 2)
@@ -152,6 +155,8 @@ class WebPageTest(object):
                     elif command == 'logdata' or \
                          command == 'combinesteps' or \
                          command == 'seteventname' or \
+                         command == 'block' or \
+                         command == 'sleep' or \
                          command == 'exec':
                         pass
                     else:
@@ -164,7 +169,7 @@ class WebPageTest(object):
         elif 'url' in job:
             if job['url'][:4] != 'http':
                 job['url'] = 'http://' + job['url']
-            task['script'] = [{'command': 'navigate', 'target': job['url'], 'record': True}]
+            task['script'].append({'command': 'navigate', 'target': job['url'], 'record': True})
         logging.debug(task['script'])
 
     def upload_task_result(self, task):
