@@ -17,6 +17,7 @@ class DevtoolsBrowser(object):
         self.job = job
         self.devtools = None
         self.task = None
+        self.event_name = None
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -118,6 +119,7 @@ class DevtoolsBrowser(object):
                             trace_thread.join()
                             # Move on to the next step
                             task['current_step'] += 1
+                            self.event_name = None
             self.task = None
 
     def prepare_task(self, task):
@@ -131,6 +133,10 @@ class DevtoolsBrowser(object):
                                                             task['current_step'])
         if task['video_subdirectory'] not in task['video_directories']:
             task['video_directories'].append(task['video_subdirectory'])
+        if self.event_name is not None:
+            task['step_name'] = self.event_name
+        else:
+            task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
 
     def process_video(self):
         """Post process the video"""
@@ -176,6 +182,10 @@ class DevtoolsBrowser(object):
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
+        if 'step_name' in task:
+            if page_data is None:
+                page_data = {}
+            page_data['eventName'] = task['step_name']
         if page_data is not None:
             path = os.path.join(task['dir'], task['prefix'] + 'page_data.json.gz')
             with gzip.open(path, 'wb') as outfile:
@@ -213,6 +223,8 @@ class DevtoolsBrowser(object):
             if command['record']:
                 self.devtools.start_navigating()
             self.devtools.execute_js(command['target'])
+        elif command['command'] == 'seteventname':
+            self.event_name = command['target']
 
     def navigate(self, url):
         """Navigate to the given URL"""

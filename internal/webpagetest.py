@@ -151,6 +151,7 @@ class WebPageTest(object):
                     # commands that are known but don't need any special processing
                     elif command == 'logdata' or \
                          command == 'combinesteps' or \
+                         command == 'seteventname' or \
                          command == 'exec':
                         pass
                     else:
