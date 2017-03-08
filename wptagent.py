@@ -70,6 +70,8 @@ class WPTAgent(object):
             except BaseException as err:
                 logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
+                if browser is not None:
+                    browser.on_stop_recording(None)
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""

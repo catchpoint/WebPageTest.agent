@@ -19,6 +19,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * User Timing Marks
 * Navigation Timing
 * Ignoring TLS Errors
+* Minimum test duration
 * Custom user agent strings
 * Custom headers
 * Custom command-line options
@@ -60,7 +61,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Test sharding
 * Disable Javascript
 * tcpdump
-* Minimum test duration
 * Traceroute tests
 * Script Commands that will be translated into exec:
     * click (clickAndWait)

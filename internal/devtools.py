@@ -245,8 +245,8 @@ class DevTools(object):
         """Wait for the page load and activity to finish"""
         if self.websocket:
             self.websocket.settimeout(1)
-            now = monotonic.monotonic()
-            end_time = now + self.task['time_limit']
+            start_time = monotonic.monotonic()
+            end_time = start_time + self.task['time_limit']
             done = False
             while not done:
                 try:
@@ -260,14 +260,16 @@ class DevTools(object):
                     # ignore timeouts when we're in a polling read loop
                     pass
                 now = monotonic.monotonic()
-                elapsed_activity = now - self.last_activity
-                if self.page_loaded and elapsed_activity >= 2:
-                    done = True
-                elif self.task['error'] is not None:
-                    done = True
-                elif now >= end_time:
+                elapsed_test = now - start_time
+                if now >= end_time:
                     done = True
                     self.task['error'] = "Page Load Timeout"
+                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                    elapsed_activity = now - self.last_activity
+                    if self.page_loaded and elapsed_activity >= 2:
+                        done = True
+                    elif self.task['error'] is not None:
+                        done = True
 
     def grab_screenshot(self, path, png=True):
         """Save the screen shot (png or jpeg)"""

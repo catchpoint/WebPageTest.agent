@@ -93,6 +93,7 @@ class DesktopBrowser(object):
             self.recording = True
             self.usage_queue = Queue.Queue()
             self.thread = threading.Thread(target=self.background_thread)
+            self.thread.daemon = True
             self.thread.start()
 
     def on_stop_recording(self, task):
@@ -102,7 +103,7 @@ class DesktopBrowser(object):
             self.thread.join()
             self.thread = None
         # record the CPU/Bandwidth/memory info
-        if self.usage_queue is not None and not self.usage_queue.empty():
+        if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
             file_path = os.path.join(task['dir'], task['prefix']) + 'progress.csv.gz'
             gzfile = gzip.open(file_path, 'wb')
             if gzfile:
