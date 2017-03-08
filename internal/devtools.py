@@ -95,6 +95,7 @@ class DevTools(object):
             self.grab_screenshot(self.video_prefix + '000000.png')
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
+        self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
@@ -103,24 +104,27 @@ class DevTools(object):
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
                 else:
-                    trace = "-*,blink,v8,cc,gpu,blink.net,netlog,disabled-by-default-v8.runtime_stats"
+                    trace = "-*,blink,v8,cc,gpu,blink.net,netlog" + \
+                            ",disabled-by-default-v8.runtime_stats"
             else:
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
                 trace += ",blink.console,disabled-by-default-devtools.timeline,devtools.timeline"
                 trace += ",disabled-by-default-blink.feature_usage"
-                trace += ",toplevel,disabled-by-default-devtools.timeline.frame,devtools.timeline.frame"
+                trace += ",toplevel,disabled-by-default-devtools.timeline.frame"
+                trace += "devtools.timeline.frame"
             if 'Capture Video' in self.job and self.job['Capture Video']:
                 trace += ",disabled-by-default-devtools.screenshot"
             trace += ",blink.user_timing"
             self.trace_enabled = True
             self.send_command('Tracing.start',
-                            {'categories': trace, 'options': 'record-as-much-as-possible'})
+                              {'categories': trace, 'options': 'record-as-much-as-possible'})
         if 'web10' not in self.task or not self.task['web10']:
             self.last_activity = monotonic.monotonic()
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
+        self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         if self.task['log_data']:
             self.send_command('Security.disable', {})

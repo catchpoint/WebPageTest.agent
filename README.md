@@ -59,7 +59,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * HTTP/2 Stream Details
 * Lighthouse integration
 * Test sharding
-* Disable Javascript
 * tcpdump
 * Traceroute tests
 * Script Commands that will be translated into exec:
@@ -81,6 +80,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ## Not Supported (no plans to implement)
 * Netlog (rely on netlog trace events instead)
+* Disable Javascript
 * Script Commands:
     * setABM
     * setDOMElement
