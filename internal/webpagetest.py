@@ -82,6 +82,8 @@ class WebPageTest(object):
                         'profile': profile_dir,
                         'time_limit': 120,
                         'error': None,
+                        'log_data': True,
+                        'combine_steps': False,
                         'video_directories': []}
                 # Set up the task configuration options
                 task['width'] = 1024
@@ -146,7 +148,10 @@ class WebPageTest(object):
                         if target[:4] != 'http':
                             target = 'http://' + target
                         record = True
-                    elif command == 'exec':
+                    # commands that are known but don't need any special processing
+                    elif command == 'logdata' or \
+                         command == 'combinesteps' or \
+                         command == 'exec':
                         pass
                     else:
                         valid = False

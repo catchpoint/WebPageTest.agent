@@ -88,29 +88,36 @@ class DevtoolsBrowser(object):
             logging.debug("Running test")
             end_time = monotonic.monotonic() + task['time_limit']
             task['current_step'] = 1
+            recording = False
             while len(task['script']) and monotonic.monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
-                if command['record']:
+                if not recording and command['record']:
+                    recording = True
                     self.on_start_recording(task)
                 self.process_command(command)
                 if command['record']:
                     self.devtools.wait_for_page_load()
-                    self.on_stop_recording(task)
-                    if self.job['pngss']:
-                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.png')
-                        self.devtools.grab_screenshot(screen_shot, png=True)
-                    else:
-                        screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.jpg')
-                        self.devtools.grab_screenshot(screen_shot, png=False)
-                    self.collect_browser_metrics(task)
-                    # Post-process each step separately
-                    trace_thread = threading.Thread(target=self.process_trace)
-                    trace_thread.start()
-                    self.process_video()
-                    trace_thread.join()
-                    # Move on to the next step
-                    task['current_step'] += 1
+                    if not task['combine_steps'] or not len(task['script']):
+                        self.on_stop_recording(task)
+                        recording = False
+                        if task['log_data']:
+                            if self.job['pngss']:
+                                screen_shot = os.path.join(task['dir'],
+                                                           task['prefix'] + 'screen.png')
+                                self.devtools.grab_screenshot(screen_shot, png=True)
+                            else:
+                                screen_shot = os.path.join(task['dir'],
+                                                           task['prefix'] + 'screen.jpg')
+                                self.devtools.grab_screenshot(screen_shot, png=False)
+                            self.collect_browser_metrics(task)
+                            # Post-process each step separately
+                            trace_thread = threading.Thread(target=self.process_trace)
+                            trace_thread.start()
+                            self.process_video()
+                            trace_thread.join()
+                            # Move on to the next step
+                            task['current_step'] += 1
             self.task = None
 
     def prepare_task(self, task):
@@ -122,7 +129,8 @@ class DevtoolsBrowser(object):
             task['prefix'] = '{0}{1:d}_'.format(task['task_prefix'], task['current_step'])
             task['video_subdirectory'] = '{0}_{1:d}'.format(task['task_video_prefix'],
                                                             task['current_step'])
-        task['video_directories'].append(task['video_subdirectory'])
+        if task['video_subdirectory'] not in task['video_directories']:
+            task['video_directories'].append(task['video_subdirectory'])
 
     def process_video(self):
         """Post process the video"""
@@ -185,9 +193,22 @@ class DevtoolsBrowser(object):
 
     def process_command(self, command):
         """Process an individual script command"""
+        logging.debug("Processing script command:")
+        logging.debug(command)
         if command['command'] == 'navigate':
             self.devtools.start_navigating()
             self.devtools.send_command('Page.navigate', {'url': command['target']})
+        elif command['command'] == 'logdata':
+            self.task['combine_steps'] = False
+            if int(command['target']):
+                logging.debug("Data logging enabled")
+                self.task['log_data'] = True
+            else:
+                logging.debug("Data logging disabled")
+                self.task['log_data'] = False
+        elif command['command'] == 'combinesteps':
+            self.task['log_data'] = True
+            self.task['combine_steps'] = True
 
     def navigate(self, url):
         """Navigate to the given URL"""

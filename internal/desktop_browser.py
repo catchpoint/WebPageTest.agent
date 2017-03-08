@@ -87,12 +87,13 @@ class DesktopBrowser(object):
                 else:
                     break
 
-    def on_start_recording(self, _):
+    def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        self.recording = True
-        self.usage_queue = Queue.Queue()
-        self.thread = threading.Thread(target=self.background_thread)
-        self.thread.start()
+        if task['log_data']:
+            self.recording = True
+            self.usage_queue = Queue.Queue()
+            self.thread = threading.Thread(target=self.background_thread)
+            self.thread.start()
 
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
