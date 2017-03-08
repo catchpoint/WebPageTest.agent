@@ -7,7 +7,6 @@ import logging
 import math
 import os
 import re
-import shutil
 import subprocess
 import threading
 
@@ -61,8 +60,13 @@ class VideoProcessing(object):
             jpeg_thread.start()
             # Run visualmetrics against them
             logging.debug("Processing video frames")
-            filename = '{0:d}.{1:d}.histograms.json.gz'.format(self.task['run'],
-                                                               self.task['cached'])
+            if self.task['current_step'] == 1:
+                filename = '{0:d}.{1:d}.histograms.json.gz'.format(self.task['run'],
+                                                                   self.task['cached'])
+            else:
+                filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(self.task['run'],
+                                                                         self.task['cached'],
+                                                                         self.task['current_step'])
             histograms = os.path.join(self.task['dir'], filename)
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
             subprocess.call(['python', visualmetrics, '-d', self.video_path,

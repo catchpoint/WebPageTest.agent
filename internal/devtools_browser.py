@@ -5,7 +5,8 @@
 import gzip
 import logging
 import os
-import time
+import subprocess
+import threading
 import monotonic
 import ujson as json
 import constants
@@ -15,6 +16,8 @@ class DevtoolsBrowser(object):
     def __init__(self, job):
         self.job = job
         self.devtools = None
+        self.task = None
+        self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
     def connect(self, task):
@@ -73,9 +76,12 @@ class DevtoolsBrowser(object):
     def run_task(self, task):
         """Run an individual test"""
         if self.devtools is not None:
-            logging.debug("Devtools connected")
+            self.task = task
+            logging.debug("Running test")
             end_time = monotonic.monotonic() + task['time_limit']
+            task['current_step'] = 1
             while len(task['script']) and monotonic.monotonic() < end_time:
+                self.prepare_task(task)
                 command = task['script'].pop(0)
                 if command['record']:
                     self.devtools.start_recording()
@@ -90,6 +96,49 @@ class DevtoolsBrowser(object):
                         screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.jpg')
                         self.devtools.grab_screenshot(screen_shot, png=False)
                     self.collect_browser_metrics(task)
+                    # Post-process each step separately
+                    trace_thread = threading.Thread(target=self.process_trace)
+                    trace_thread.start()
+                    self.process_video()
+                    trace_thread.join()
+                    # Move on to the next step
+                    task['current_step'] += 1
+            self.task = None
+
+    def prepare_task(self, task):
+        """Format the file prefixes for multi-step testing"""
+        if task['current_step'] == 1:
+            task['prefix'] = task['task_prefix']
+            task['video_subdirectory'] = task['task_video_prefix']
+        else:
+            task['prefix'] = '{0}{1:d}_'.format(task['task_prefix'], task['current_step'])
+            task['video_subdirectory'] = '{0}_{1:d}'.format(task['task_video_prefix'],
+                                                            task['current_step'])
+        task['video_directories'].append(task['video_subdirectory'])
+
+    def process_video(self):
+        """Post process the video"""
+        from internal.video_processing import VideoProcessing
+        video = VideoProcessing(self.job, self.task)
+        video.process()
+
+    def process_trace(self):
+        """Post-process the trace file"""
+        path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        trace_file = path_base + 'trace.json.gz'
+        if os.path.isfile(trace_file):
+            user_timing = path_base + 'user_timing.json.gz'
+            cpu_slices = path_base + 'timeline_cpu.json.gz'
+            script_timing = path_base + 'script_timing.json.gz'
+            feature_usage = path_base + 'feature_usage.json.gz'
+            interactive = path_base + 'interactive.json.gz'
+            v8_stats = path_base + 'v8stats.json.gz'
+            trace_parser = os.path.join(self.support_path, "trace-parser.py")
+            cmd = ['python', trace_parser, '-t', trace_file, '-u', user_timing,
+                   '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
+                   '-i', interactive, '-s', v8_stats]
+            logging.debug(cmd)
+            subprocess.call(cmd)
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
@@ -129,6 +178,7 @@ class DevtoolsBrowser(object):
     def process_command(self, command):
         """Process an individual script command"""
         if command['command'] == 'navigate':
+            self.devtools.start_navigating()
             self.devtools.send_command('Page.navigate', {'url': command['target']})
 
     def navigate(self, url):

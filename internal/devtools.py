@@ -4,7 +4,6 @@
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
 import base64
 import gzip
-import io
 import logging
 import os
 import subprocess
@@ -16,12 +15,6 @@ class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, job, task):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
-        self.path_base = os.path.join(task['dir'], task['prefix'])
-        self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-        self.video_path = os.path.join(task['dir'], task['video_subdirectory'])
-        self.video_prefix = os.path.join(self.video_path, 'ms_')
-        if not os.path.isdir(self.video_path):
-            os.makedirs(self.video_path)
         self.websocket = None
         self.job = job
         self.task = task
@@ -30,12 +23,28 @@ class DevTools(object):
         self.main_frame = None
         self.is_navigating = False
         self.last_activity = monotonic.monotonic()
-        self.error = None
         self.dev_tools_file = None
         self.trace_file = None
-        self.trace_ts_start = None
         self.trace_enabled = False
+        self.prepare()
+
+    def prepare(self):
+        """Set up the various paths and states"""
         self.requests = {}
+        self.trace_ts_start = None
+        self.nav_error = None
+        self.main_request = None
+        self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+        self.video_path = os.path.join(self.task['dir'], self.task['video_subdirectory'])
+        self.video_prefix = os.path.join(self.video_path, 'ms_')
+        if not os.path.isdir(self.video_path):
+            os.makedirs(self.video_path)
+
+    def start_navigating(self):
+        """Indicate that we are about to start a known-navigation"""
+        self.main_frame = None
+        self.is_navigating = True
 
     def connect(self, timeout):
         """Connect to the browser"""
@@ -81,10 +90,7 @@ class DevTools(object):
 
     def start_recording(self):
         """Start capturing dev tools, timeline and trace data"""
-        self.page_loaded = False
-        self.is_navigating = True
-        self.error = None
-        self.request_ids = []
+        self.prepare()
         if 'Capture Video' in self.job and self.job['Capture Video']:
             self.grab_screenshot(self.video_prefix + '000000.png')
         self.flush_pending_messages()
@@ -255,12 +261,11 @@ class DevTools(object):
                 elapsed_activity = now - self.last_activity
                 if self.page_loaded and elapsed_activity >= 2:
                     done = True
-                elif self.error is not None:
+                elif self.task['error'] is not None:
                     done = True
                 elif now >= end_time:
                     done = True
-                    self.error = "Timeout"
-        return self.error
+                    self.task['error'] = "Page Load Timeout"
 
     def grab_screenshot(self, path, png=True):
         """Save the screen shot (png or jpeg)"""
@@ -323,8 +328,16 @@ class DevTools(object):
                 logging.debug("Navigating main frame")
                 self.last_activity = monotonic.monotonic()
                 self.page_loaded = False
+        elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
+            if self.main_frame is not None and \
+                    not self.page_loaded and \
+                    self.main_frame == msg['params']['frameId']:
+                if self.nav_error is not None:
+                    self.task['error'] = self.nav_error
+                    logging.debug("Page load failed: %s", self.nav_error)
+                self.page_loaded = True
         elif event == 'javascriptDialogOpening':
-            self.error = "Page opened a modal dailog"
+            self.task['error'] = "Page opened a modal dailog"
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
@@ -338,6 +351,12 @@ class DevTools(object):
             if event == 'requestWillBeSent':
                 self.requests[request_id]['request'] = msg['params']
                 self.requests[request_id]['fromNet'] = True
+                if self.main_frame is not None and \
+                        self.main_request is None and \
+                        'frameId' in msg['params'] and \
+                        msg['params']['frameId'] == self.main_frame:
+                    logging.debug('Main request detected')
+                    self.main_request = request_id
             elif event == 'resourceChangedPriority':
                 self.requests[request_id]['priority'] = msg['params']
             elif event == 'requestServedFromCache':
@@ -356,13 +375,20 @@ class DevTools(object):
                 self.requests[request_id]['finished'] = msg['params']
             elif event == 'loadingFailed':
                 self.requests[request_id]['failed'] = msg['params']
+                if self.main_request is not None and \
+                        request_id == self.main_request and \
+                        'errorText' in msg['params'] and \
+                        'canceled' in msg['params'] and \
+                        not msg['params']['canceled']:
+                    self.nav_error = msg['params']['errorText']
+                    logging.debug('Navigation error: %s', self.nav_error)
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
         if event == 'detached':
-            self.error = 'Inspector detached, possibly crashed.'
+            self.task['error'] = 'Inspector detached, possibly crashed.'
         elif event == 'targetCrashed':
-            self.error = 'Browser crashed.'
+            self.task['error'] = 'Browser crashed.'
 
     def process_trace_event(self, msg):
         """Process Tracing.* dev tools events"""

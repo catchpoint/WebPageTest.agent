@@ -10,7 +10,6 @@ import platform
 import signal
 import subprocess
 import sys
-import threading
 import time
 import traceback
 
@@ -24,7 +23,6 @@ class WPTAgent(object):
         self.options = options
         self.browsers = Browsers(options, browsers)
         self.root_path = os.path.abspath(os.path.dirname(__file__))
-        self.support_path = os.path.join(os.path.join(self.root_path, "internal"), "support")
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
         self.shaper = TrafficShaper()
         self.job = None
@@ -58,11 +56,6 @@ class WPTAgent(object):
                                 err = "Invalid browser - {0}".format(self.job['browser'])
                                 logging.critical(err)
                                 self.task['error'] = err
-                            # Post-process the results before uploading
-                            trace_thread = threading.Thread(target=self.process_trace)
-                            trace_thread.start()
-                            self.process_video()
-                            trace_thread.join()
                             self.wpt.upload_task_result(self.task)
                             # Delete the browser profile if needed
                             if self.task['cached'] or self.job['fvonly']:
@@ -77,28 +70,6 @@ class WPTAgent(object):
             except BaseException as err:
                 logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
-
-    def process_video(self):
-        """Post process the video"""
-        from internal.video_processing import VideoProcessing
-        video = VideoProcessing(self.job, self.task)
-        video.process()
-
-    def process_trace(self):
-        """Post-process the trace file"""
-        path_base = os.path.join(self.task['dir'], self.task['prefix'])
-        trace_file = path_base + 'trace.json.gz'
-        if os.path.isfile(trace_file):
-            user_timing = path_base + 'user_timing.json.gz'
-            cpu_slices = path_base + 'timeline_cpu.json.gz'
-            script_timing = path_base + 'script_timing.json.gz'
-            feature_usage = path_base + 'feature_usage.json.gz'
-            interactive = path_base + 'interactive.json.gz'
-            v8_stats = path_base + 'v8stats.json.gz'
-            trace_parser = os.path.join(self.support_path, "trace-parser.py")
-            subprocess.call(['python', trace_parser, '-t', trace_file, '-u', user_timing,
-                             '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
-                             '-i', interactive, '-s', v8_stats])
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""

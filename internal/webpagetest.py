@@ -80,7 +80,9 @@ class WebPageTest(object):
                         'cached': 1 if job['current_state']['repeat_view'] else 0,
                         'done': False,
                         'profile': profile_dir,
-                        'time_limit': 120}
+                        'time_limit': 120,
+                        'error': None,
+                        'video_directories': []}
                 # Set up the task configuration options
                 task['width'] = 1024
                 task['height'] = 768
@@ -92,14 +94,16 @@ class WebPageTest(object):
                         task['width'] = job['width']
                         task['height'] = job['height']
                 task['port'] = 9222
-                task['prefix'] = "{0:d}_".format(run)
+                task['task_prefix'] = "{0:d}_".format(run)
                 if task['cached']:
-                    task['prefix'] += "Cached_"
+                    task['task_prefix'] += "Cached_"
+                task['prefix'] = task['task_prefix']
                 short_id = "{0}.{1}.{2}".format(task['id'], run, task['cached'])
                 task['dir'] = os.path.join(self.workdir, short_id)
-                task['video_subdirectory'] = 'video_{0:d}'.format(run)
+                task['task_video_prefix'] = 'video_{0:d}'.format(run)
                 if task['cached']:
-                    task['video_subdirectory'] += "_cached"
+                    task['task_video_prefix'] += "_cached"
+                task['video_subdirectory'] = task['task_video_prefix']
                 if os.path.isdir(task['dir']):
                     shutil.rmtree(task['dir'])
                 os.makedirs(task['dir'])
@@ -123,10 +127,39 @@ class WebPageTest(object):
     def build_script(self, job, task):
         """Build the actual script that will be used for testing"""
         if 'script' in job:
-            #TODO: parse the script
-            pass
+            task['script'] = []
+            lines = job['script'].splitlines()
+            for line in lines:
+                parts = line.split("\t", 2)
+                if parts is not None and len(parts):
+                    valid = True
+                    record = False
+                    command = parts[0].lower().strip()
+                    target = parts[1] if len(parts) > 1 else None
+                    value = parts[2] if len(parts) > 2 else None
+                    andwait = command.find('andwait')
+                    if andwait > -1:
+                        command = command[:andwait]
+                        record = True
+                    # go through the known commands
+                    if command == 'navigate':
+                        if target[:4] != 'http':
+                            target = 'http://' + target
+                        record = True
+                    elif command == 'exec':
+                        pass
+                    else:
+                        valid = False
+                    if valid:
+                        task['script'].append({'command': command,
+                                               'target': target,
+                                               'value': value,
+                                               'record': record})
         elif 'url' in job:
+            if job['url'][:4] != 'http':
+                job['url'] = 'http://' + job['url']
             task['script'] = [{'command': 'navigate', 'target': job['url'], 'record': True}]
+        logging.debug(task['script'])
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
@@ -140,21 +173,23 @@ class WebPageTest(object):
         zip_path = None
         if os.path.isdir(task['dir']):
             # upload any video images
-            video_dir = os.path.join(task['dir'], task['video_subdirectory'])
-            if os.path.isdir(video_dir):
-                for filename in os.listdir(video_dir):
-                    filepath = os.path.join(video_dir, filename)
-                    if os.path.isfile(filepath):
-                        name = task['video_subdirectory'] + '/' + filename
-                        if os.path.getsize(filepath) > 100000:
-                            logging.debug('Uploading %s', filename)
-                            if self.post_data(self.url + "resultimage.php", data,
-                                              filepath, task['prefix'] + filename):
-                                os.remove(filepath)
-                            else:
-                                needs_zip.append({'path': filepath, 'name': name})
-                        else:
-                            needs_zip.append({'path': filepath, 'name': name})
+            if len(task['video_directories']):
+                for video_subdirectory in task['video_directories']:
+                    video_dir = os.path.join(task['dir'], video_subdirectory)
+                    if os.path.isdir(video_dir):
+                        for filename in os.listdir(video_dir):
+                            filepath = os.path.join(video_dir, filename)
+                            if os.path.isfile(filepath):
+                                name = video_subdirectory + '/' + filename
+                                if os.path.getsize(filepath) > 100000:
+                                    logging.debug('Uploading %s', filename)
+                                    if self.post_data(self.url + "resultimage.php", data,
+                                                      filepath, task['prefix'] + filename):
+                                        os.remove(filepath)
+                                    else:
+                                        needs_zip.append({'path': filepath, 'name': name})
+                                else:
+                                    needs_zip.append({'path': filepath, 'name': name})
             # Upload the separate large files (> 100KB)
             for filename in os.listdir(task['dir']):
                 filepath = os.path.join(task['dir'], filename)
@@ -178,6 +213,8 @@ class WebPageTest(object):
         # Post the workdone event for the task (with the zip attached)
         if task['done']:
             data['done'] = '1'
+        if task['error'] is not None:
+            data['error'] = task['error']
         logging.debug('Uploading result zip')
         self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around
@@ -200,6 +237,7 @@ class WebPageTest(object):
         url += "?"
         for key in data:
             url += key + '=' + urllib.quote_plus(data[key]) + '&'
+        logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
                 requests.post(url,
