@@ -25,8 +25,11 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
-    '--disable-background-timer-throttling',
-    '--host-rules="MAP cache.pack.google.com 127.0.0.1"'
+    '--disable-background-timer-throttling'
+]
+
+HOST_RULES = [
+    '"MAP cache.pack.google.com 127.0.0.1"'
 ]
 
 START_PAGE = 'about:blank'
@@ -41,6 +44,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     def launch(self, task):
         """Launch the browser"""
         args = CHROME_COMMAND_LINE_OPTIONS
+        host_rules = HOST_RULES
+        if 'host_rules' in task:
+            host_rules.extend(task['host_rules'])
+        args.append('--host-rules=' + ','.join(host_rules))
         args.extend(['--window-position="0,0"',
                      '--window-size="{0:d},{1:d}"'.format(task['width'], task['height'])])
         args.append('--remote-debugging-port={0:d}'.format(task['port']))

@@ -178,6 +178,30 @@ class WebPageTest(object):
                         time_limit = int(target)
                         if time_limit > 0 and time_limit < 1200:
                             job['timeout'] = time_limit
+                    elif command == 'blockdomains':
+                        if 'host_rules' not in task:
+                            task['host_rules'] = []
+                        domains = target.split()
+                        for domain in domains:
+                            domain = domain.strip()
+                            if len(domain) and domain.find('"') == -1:
+                                task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
+                    elif command == 'blockdomainsexcept':
+                        if 'host_rules' not in task:
+                            task['host_rules'] = []
+                        domains = target.split()
+                        for domain in domains:
+                            domain = domain.strip()
+                            if len(domain) and domain.find('"') == -1:
+                                task['host_rules'].append(
+                                    '"MAP * 127.0.0.1, EXCLUDE {0}"'.format(domain))
+                    elif command == 'setdns':
+                        if target is not None and value is not None and len(target) and len(value):
+                            if target.find('"') == -1 and value.find('"') == -1:
+                                if 'host_rules' not in task:
+                                    task['host_rules'] = []
+                                task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
+
                     # commands that are known but don't need any special processing
                     elif command == 'logdata' or \
                          command == 'combinesteps' or \

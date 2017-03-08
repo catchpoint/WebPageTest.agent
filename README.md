@@ -38,6 +38,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setViewportSize
     * setDeviceScaleFactor
     * setTimeout
+    * blockDomains
+    * blockDomainsExcept
+    * setDns
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
@@ -69,11 +72,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setActivityTimeout
     * requiredRequest
     * setDOMRequest
-    * setTimeout
     * waitForJSDone (change semantics to console log message)
-    * blockDomains
     * setCookie
-    * setDns
     * overrideHost (depends on support being added to dev tools)
     * addHeader
     * setHeader (depends on support being added to dev tools)
@@ -87,7 +87,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setABM
     * setDOMElement
     * waitForComplete
-    * blockDomainsExcept
     * setDnsName
     * overrideHostUrl
     * ignoreErrors
