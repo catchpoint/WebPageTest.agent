@@ -53,6 +53,16 @@ class WebPageTest(object):
                     job['pngss'] = 0
                 if 'fvonly' not in job:
                     job['fvonly'] = 0
+                if 'width' not in job:
+                    job['width'] = 1024
+                if 'height' not in job:
+                    job['height'] = 768
+                if 'browser_width' in job:
+                    job['width'] = job['browser_width']
+                if 'browser_height' in job:
+                    job['height'] = job['browser_height']
+                if 'timeout' not in job:
+                    job['timeout'] = 120
                 if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                     job = None
         except requests.exceptions.RequestException as err:
@@ -80,21 +90,11 @@ class WebPageTest(object):
                         'cached': 1 if job['current_state']['repeat_view'] else 0,
                         'done': False,
                         'profile': profile_dir,
-                        'time_limit': 120,
                         'error': None,
                         'log_data': True,
                         'combine_steps': False,
                         'video_directories': []}
                 # Set up the task configuration options
-                task['width'] = 1024
-                task['height'] = 768
-                if 'width' in job and 'height' in job:
-                    if 'mobile' in job and job['mobile']:
-                        task['width'] = job['width'] + 20
-                        task['height'] = job['height'] + 120
-                    else:
-                        task['width'] = job['width']
-                        task['height'] = job['height']
                 task['port'] = 9222
                 task['task_prefix'] = "{0:d}_".format(run)
                 if task['cached']:
@@ -119,6 +119,16 @@ class WebPageTest(object):
                         job['current_state']['done'] = True
                         task['done'] = True
                 self.build_script(job, task)
+                task['width'] = job['width']
+                task['height'] = job['height']
+                if 'width' in job and 'height' in job:
+                    if 'mobile' in job and job['mobile']:
+                        task['width'] = job['width'] + 20
+                        task['height'] = job['height'] + 120
+                    else:
+                        task['width'] = job['width']
+                        task['height'] = job['height']
+                task['time_limit'] = job['timeout']
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
@@ -137,7 +147,7 @@ class WebPageTest(object):
             for line in lines:
                 parts = line.split("\t", 2)
                 if parts is not None and len(parts):
-                    valid = True
+                    keep = True
                     record = False
                     command = parts[0].lower().strip()
                     target = parts[1] if len(parts) > 1 else None
@@ -151,6 +161,23 @@ class WebPageTest(object):
                         if target[:4] != 'http':
                             target = 'http://' + target
                         record = True
+                    # commands that get pre-processed
+                    elif command == 'setbrowsersize' or command == 'setviewportsize':
+                        keep = False
+                        if target is not None and value is not None:
+                            width = int(target)
+                            height = int(value)
+                            if width > 0 and height > 0 and width < 10000 and height < 10000:
+                                job['width'] = width
+                                job['height'] = height
+                    elif command == 'setdevicescalefactor':
+                        keep = False
+                        job['dpr'] = target
+                    elif command == 'settimeout':
+                        keep = False
+                        time_limit = int(target)
+                        if time_limit > 0 and time_limit < 1200:
+                            job['timeout'] = time_limit
                     # commands that are known but don't need any special processing
                     elif command == 'logdata' or \
                          command == 'combinesteps' or \
@@ -161,8 +188,8 @@ class WebPageTest(object):
                          command == 'exec':
                         pass
                     else:
-                        valid = False
-                    if valid:
+                        keep = False
+                    if keep:
                         task['script'].append({'command': command,
                                                'target': target,
                                                'value': value,

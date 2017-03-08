@@ -34,6 +34,10 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * combineSteps
     * setEventName
     * setUserAgent
+    * setBrowserSize
+    * setViewportSize
+    * setDeviceScaleFactor
+    * setTimeout
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
