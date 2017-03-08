@@ -2,10 +2,13 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for desktop browsers"""
+import gzip
 import logging
 import os
+import Queue
 import shutil
 import subprocess
+import threading
 import time
 import constants
 import monotonic
@@ -16,6 +19,9 @@ class DesktopBrowser(object):
         self.path = path
         self.proc = None
         self.job = job
+        self.recording = False
+        self.usage_queue = None
+        self.thread = None
 
     def prepare(self, task):
         """Prepare the profile/OS for the browser"""
@@ -80,3 +86,58 @@ class DesktopBrowser(object):
                     time.sleep(0.1)
                 else:
                     break
+
+    def on_start_recording(self, _):
+        """Notification that we are about to start an operation that needs to be recorded"""
+        self.recording = True
+        self.usage_queue = Queue.Queue()
+        self.thread = threading.Thread(target=self.background_thread)
+        self.thread.start()
+
+    def on_stop_recording(self, task):
+        """Notification that we are about to start an operation that needs to be recorded"""
+        self.recording = False
+        if self.thread is not None:
+            self.thread.join()
+            self.thread = None
+        # record the CPU/Bandwidth/memory info
+        if self.usage_queue is not None and not self.usage_queue.empty():
+            file_path = os.path.join(task['dir'], task['prefix']) + 'progress.csv.gz'
+            gzfile = gzip.open(file_path, 'wb')
+            if gzfile:
+                gzfile.write("Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n")
+                while not self.usage_queue.empty():
+                    snapshot = self.usage_queue.get_nowait()
+                    gzfile.write('{0:d},{1:d},{2:0.2f},-1\n'.format(
+                        snapshot['time'], snapshot['bw'], snapshot['cpu']))
+                gzfile.close()
+
+    def get_net_bytes(self):
+        """Get the bytes received, ignoring the loopback interface"""
+        import psutil
+        bytes_in = 0
+        net = psutil.net_io_counters(True)
+        for interface in net:
+            if interface != 'lo':
+                bytes_in += net[interface].bytes_recv
+        return bytes_in
+
+    def background_thread(self):
+        """Background thread for monitoring CPU and bandwidth usage"""
+        import psutil
+        last_time = start_time = monotonic.monotonic()
+        last_bytes = self.get_net_bytes()
+        snapshot = {'time': 0, 'cpu': 0.0, 'bw': 0}
+        self.usage_queue.put(snapshot)
+        while self.recording:
+            snapshot = {'bw': 0}
+            snapshot['cpu'] = psutil.cpu_percent(interval=0.1)
+            now = monotonic.monotonic()
+            snapshot['time'] = int((now - start_time) * 1000)
+            # calculate the bandwidth over the last interval in Kbps
+            bytes_in = self.get_net_bytes()
+            if now > last_time:
+                snapshot['bw'] = int((bytes_in - last_bytes) * 8.0 / (now - last_time))
+            last_time = now
+            last_bytes = bytes_in
+            self.usage_queue.put(snapshot)

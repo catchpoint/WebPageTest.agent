@@ -63,3 +63,13 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.run_task(self, task)
             DevtoolsBrowser.disconnect(self)
+
+    def on_start_recording(self, task):
+        """Notification that we are about to start an operation that needs to be recorded"""
+        DevtoolsBrowser.on_start_recording(self, task)
+        DesktopBrowser.on_start_recording(self, task)
+
+    def on_stop_recording(self, task):
+        """Notification that we are about to start an operation that needs to be recorded"""
+        DesktopBrowser.on_stop_recording(self, task)
+        DevtoolsBrowser.on_stop_recording(self, task)

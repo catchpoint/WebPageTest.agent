@@ -73,6 +73,14 @@ class DevtoolsBrowser(object):
                                            {'userAgent': ua_string},
                                            wait=True)
 
+    def on_start_recording(self, _):
+        """Start recording"""
+        self.devtools.start_recording()
+
+    def on_stop_recording(self, _):
+        """Stop recording"""
+        self.devtools.stop_recording()
+
     def run_task(self, task):
         """Run an individual test"""
         if self.devtools is not None:
@@ -84,11 +92,11 @@ class DevtoolsBrowser(object):
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if command['record']:
-                    self.devtools.start_recording()
+                    self.on_start_recording(task)
                 self.process_command(command)
                 if command['record']:
                     self.devtools.wait_for_page_load()
-                    self.devtools.stop_recording()
+                    self.on_stop_recording(task)
                     if self.job['pngss']:
                         screen_shot = os.path.join(task['dir'], task['prefix'] + 'screen.png')
                         self.devtools.grab_screenshot(screen_shot, png=True)
