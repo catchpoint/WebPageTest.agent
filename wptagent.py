@@ -43,8 +43,8 @@ class WPTAgent(object):
                             # - Prepare the browser
                             browser = self.browsers.get_browser(self.job['browser'], self.job)
                             if browser is not None:
-                                browser.prepare(self.task)
-                                browser.launch(self.task)
+                                browser.prepare(self.job, self.task)
+                                browser.launch(self.job, self.task)
                                 if self.shaper.configure(self.job):
                                     # Run the actual test
                                     browser.run_task(self.task)

@@ -41,7 +41,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         DesktopBrowser.__init__(self, path, job)
         DevtoolsBrowser.__init__(self, job)
 
-    def launch(self, task):
+    def launch(self, job, task):
         """Launch the browser"""
         args = CHROME_COMMAND_LINE_OPTIONS
         host_rules = HOST_RULES
@@ -51,6 +51,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.extend(['--window-position="0,0"',
                      '--window-size="{0:d},{1:d}"'.format(task['width'], task['height'])])
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
+        if 'ignoreSSL' in job and job['ignoreSSL']:
+            args.append('--ignore-certificate-errors')
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
         if self.options.xvfb:
@@ -60,6 +62,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         else:
             command_line = self.path
         command_line += ' ' + ' '.join(args)
+        if 'addCmdLine' in job:
+            command_line += ' ' + job['addCmdLine']
         DesktopBrowser.launch_browser(self, command_line)
 
     def run_task(self, task):

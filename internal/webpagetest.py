@@ -179,6 +179,7 @@ class WebPageTest(object):
                         if time_limit > 0 and time_limit < 1200:
                             job['timeout'] = time_limit
                     elif command == 'blockdomains':
+                        keep = False
                         if 'host_rules' not in task:
                             task['host_rules'] = []
                         domains = target.split()
@@ -187,6 +188,7 @@ class WebPageTest(object):
                             if len(domain) and domain.find('"') == -1:
                                 task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                     elif command == 'blockdomainsexcept':
+                        keep = False
                         if 'host_rules' not in task:
                             task['host_rules'] = []
                         domains = target.split()
@@ -196,12 +198,23 @@ class WebPageTest(object):
                                 task['host_rules'].append(
                                     '"MAP * 127.0.0.1, EXCLUDE {0}"'.format(domain))
                     elif command == 'setdns':
+                        keep = False
                         if target is not None and value is not None and len(target) and len(value):
                             if target.find('"') == -1 and value.find('"') == -1:
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
 
+                    elif command == 'addheader' or command == 'setheader':
+                        keep = False
+                        if target is not None:
+                            if 'headers' not in job:
+                                job['headers'] = {}
+                            separator = target.find(':')
+                            if separator > 0:
+                                name = target[:separator].strip()
+                                value = target[separator + 1:].strip()
+                                job['headers'][name] = value
                     # commands that are known but don't need any special processing
                     elif command == 'logdata' or \
                          command == 'combinesteps' or \

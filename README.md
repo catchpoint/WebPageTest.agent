@@ -18,6 +18,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Visual metrics (Start render, Speed Index, Visually Complete)
 * User Timing Marks
 * Navigation Timing
+* Custom headers
 * Custom Metrics
 * Dev Tools Timeline
 * Javascript timing (execution/parse)
@@ -25,6 +26,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Trace Capture
 * Multi-step tests
 * Request blocking
+* SPOF testing
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -41,6 +43,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * blockDomains
     * blockDomainsExcept
     * setDns
+    * addHeader
+    * setHeader (aliased to addHeader until devtools supports overriding headers)
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
@@ -55,9 +59,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * tcpdump
 * Custom user agent strings
 * Minimum test duration
-* Custom headers
 * Custom command-line options
-* SPOF
 * Traceroute tests
 * Script Commands that will be translated into exec:
     * click (clickAndWait)
@@ -75,13 +77,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * waitForJSDone (change semantics to console log message)
     * setCookie
     * overrideHost (depends on support being added to dev tools)
-    * addHeader
-    * setHeader (depends on support being added to dev tools)
-    * resetHeaders
     * if/else/endif
-    * setViewportSize
 
-## No Supported (no plans to implement)
+## Not Supported (no plans to implement)
 * Netlog (rely on netlog trace events instead)
 * Script Commands:
     * setABM
@@ -97,3 +95,4 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * endInterval
     * expireCache
     * firefoxPref
+    * resetHeaders

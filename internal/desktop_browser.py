@@ -23,7 +23,7 @@ class DesktopBrowser(object):
         self.usage_queue = None
         self.thread = None
 
-    def prepare(self, task):
+    def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
         try:
             from .os_util import kill_all

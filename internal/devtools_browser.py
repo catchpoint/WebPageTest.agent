@@ -74,6 +74,10 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command('Network.setUserAgentOverride',
                                            {'userAgent': ua_string},
                                            wait=True)
+            # Headers
+            if 'headers' in self.job:
+                self.devtools.send_command('Network.setExtraHTTPHeaders',
+                                           {'headers': self.job['headers']})
 
     def on_start_recording(self, _):
         """Start recording"""
@@ -239,7 +243,7 @@ class DevtoolsBrowser(object):
                     self.devtools.send_command('Network.addBlockedURL', {'url': block})
         elif command['command'] == 'setuseragent':
             self.devtools.send_command('Network.setUserAgentOverride',
-                                        {'userAgent': command['target']}, wait=True)
+                                       {'userAgent': command['target']})
 
     def navigate(self, url):
         """Navigate to the given URL"""
