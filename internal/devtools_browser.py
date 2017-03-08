@@ -209,6 +209,10 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'combinesteps':
             self.task['log_data'] = True
             self.task['combine_steps'] = True
+        elif command['command'] == 'exec':
+            if command['record']:
+                self.devtools.start_navigating()
+            self.devtools.execute_js(command['target'])
 
     def navigate(self, url):
         """Navigate to the given URL"""
