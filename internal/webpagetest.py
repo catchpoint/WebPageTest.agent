@@ -157,6 +157,7 @@ class WebPageTest(object):
                          command == 'seteventname' or \
                          command == 'block' or \
                          command == 'sleep' or \
+                         command == 'setuseragent' or \
                          command == 'exec':
                         pass
                     else:

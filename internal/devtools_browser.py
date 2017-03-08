@@ -237,6 +237,9 @@ class DevtoolsBrowser(object):
                 if len(block):
                     logging.debug("Blocking: %s", block)
                     self.devtools.send_command('Network.addBlockedURL', {'url': block})
+        elif command['command'] == 'setuseragent':
+            self.devtools.send_command('Network.setUserAgentOverride',
+                                        {'userAgent': command['target']}, wait=True)
 
     def navigate(self, url):
         """Navigate to the given URL"""

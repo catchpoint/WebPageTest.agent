@@ -33,6 +33,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * logData
     * combineSteps
     * setEventName
+    * setUserAgent
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
@@ -69,7 +70,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * blockDomains
     * setCookie
     * setDns
-    * setUserAgent
     * overrideHost (depends on support being added to dev tools)
     * addHeader
     * setHeader (depends on support being added to dev tools)
