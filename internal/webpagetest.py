@@ -15,6 +15,8 @@ DEFAULT_JPEG_QUALITY = 30
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     def __init__(self, options, workdir):
+        import requests
+        self.session = requests.Session()
         self.options = options
         self.url = options.server
         self.location = options.location
@@ -42,7 +44,7 @@ class WebPageTest(object):
             url += "&key=" + self.key
         logging.info("Checking for work: %s", url)
         try:
-            response = requests.get(url, timeout=30)
+            response = self.session.get(url, timeout=30)
             if len(response.text):
                 job = response.json()
                 logging.debug("Job: %s", json.dumps(job))
@@ -317,11 +319,11 @@ class WebPageTest(object):
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
-                requests.post(url,
+                self.session.post(url,
                               files={'file':(filename, open(file_path, 'rb'))},
                               timeout=300)
             else:
-                requests.post(url)
+                self.session.post(url)
         except requests.exceptions.RequestException as err:
             logging.critical("Upload: %s", err.strerror)
             ret = False
