@@ -26,6 +26,14 @@ class DevTools(object):
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_enabled = False
+        self.requests = {}
+        self.trace_ts_start = None
+        self.nav_error = None
+        self.main_request = None
+        self.path_base = None
+        self.support_path = None
+        self.video_path = None
+        self.video_prefix = None
         self.prepare()
 
     def prepare(self):
@@ -206,6 +214,58 @@ class DevTools(object):
             if zip_file is not None:
                 zip_file.close()
 
+    def get_requests(self):
+        """Get a dictionary of all of the requests and the details (headers, body file)"""
+        requests = None
+        if self.requests:
+            body_path = os.path.join(self.task['dir'], 'bodies')
+            for request_id in self.requests:
+                if 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
+                    events = self.requests[request_id]
+                    request = {'id': request_id}
+                    # See if we have a body
+                    body_file_path = os.path.join(body_path, request_id)
+                    if os.path.isfile(body_file_path):
+                        request['body'] = body_file_path
+                    # Get the headers from responseReceived
+                    if 'response' in events:
+                        response = events['response'][-1]
+                        if 'response' in response:
+                            if 'url' in response['response']:
+                                request['url'] = response['response']['url']
+                            if 'status' in response['response']:
+                                request['status'] = response['response']['status']
+                            if 'headers' in response['response']:
+                                request['response_headers'] = response['response']['headers']
+                            if 'requestHeaders' in response['response']:
+                                request['request_headers'] = response['response']['requestHeaders']
+                            if 'connectionId' in response['response']:
+                                request['connection'] = response['response']['connectionId']
+                    # Fill in any missing details from the requestWillBeSent event
+                    if 'request' in events:
+                        req = events['request'][-1]
+                        if 'request' in req:
+                            if 'url' not in request and 'url' in req['request']:
+                                request['url'] = req['request']['url']
+                            if 'request_headers' not in request and 'headers' in req['request']:
+                                request['request_headers'] = req['request']['headers']
+                    # Get the response length from the data events
+                    if 'finished' in events and 'encodedDataLength' in events['finished']:
+                        request['transfer_size'] = events['finished']['encodedDataLength']
+                    elif 'data' in events:
+                        transfer_size = 0
+                        for data in events['data']:
+                            if 'encodedDataLength' in events['data']:
+                                transfer_size += events['data']['encodedDataLength']
+                            elif 'dataLength' in events['data']:
+                                transfer_size += events['data']['dataLength']
+                        request['transfer_size'] = transfer_size
+
+                    if requests is None:
+                        requests = {}
+                    requests[request_id] = request
+        return requests
+
     def flush_pending_messages(self):
         """Clear out any pending websocket messages"""
         if self.websocket:
@@ -357,7 +417,9 @@ class DevTools(object):
                 request = {'id': request_id}
                 self.requests[request_id] = request
             if event == 'requestWillBeSent':
-                self.requests[request_id]['request'] = msg['params']
+                if 'request' not in self.requests[request_id]:
+                    self.requests[request_id]['request'] = []
+                self.requests[request_id]['request'].append(msg['params'])
                 self.requests[request_id]['fromNet'] = True
                 if self.main_frame is not None and \
                         self.main_request is None and \
@@ -366,11 +428,15 @@ class DevTools(object):
                     logging.debug('Main request detected')
                     self.main_request = request_id
             elif event == 'resourceChangedPriority':
-                self.requests[request_id]['priority'] = msg['params']
+                if 'priority' not in self.requests[request_id]:
+                    self.requests[request_id]['priority'] = []
+                self.requests[request_id]['priority'].append(msg['params'])
             elif event == 'requestServedFromCache':
                 self.requests[request_id]['fromNet'] = False
             elif event == 'responseReceived':
-                self.requests[request_id]['response'] = msg['params']
+                if 'response' not in self.requests[request_id]:
+                    self.requests[request_id]['response'] = []
+                self.requests[request_id]['response'].append(msg['params'])
                 if 'response' in msg['params'] and \
                         'fromDiskCache' in msg['params']['response'] and \
                         msg['params']['response']['fromDiskCache']:

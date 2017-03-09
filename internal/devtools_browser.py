@@ -11,6 +11,7 @@ import threading
 import monotonic
 import ujson as json
 import constants
+from .optimization_checks import OptimizationChecks
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
@@ -118,10 +119,13 @@ class DevtoolsBrowser(object):
                                 self.devtools.grab_screenshot(screen_shot, png=False)
                             self.collect_browser_metrics(task)
                             # Post-process each step separately
+                            optimization = OptimizationChecks(self.job, task, self.get_requests())
+                            optimization.start()
                             trace_thread = threading.Thread(target=self.process_trace)
                             trace_thread.start()
                             self.process_video()
                             trace_thread.join()
+                            optimization.join()
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
@@ -263,3 +267,10 @@ class DevtoolsBrowser(object):
         """Navigate to the given URL"""
         if self.devtools is not None:
             self.devtools.send_command('Page.navigate', {'url': url}, wait=True)
+    
+    def get_requests(self):
+        """Get the request details for running an optimization check"""
+        requests = None
+        if self.devtools is not None:
+            requests = self.devtools.get_requests()
+        return requests
