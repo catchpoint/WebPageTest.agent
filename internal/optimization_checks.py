@@ -36,7 +36,7 @@ class OptimizationChecks(object):
             self.image_thread = threading.Thread(target=self.check_images)
             self.image_thread.start()
             # collect the miscellaneous results directly
-            self.check_misc()
+            self.check_keep_alive()
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
@@ -69,6 +69,36 @@ class OptimizationChecks(object):
             if gz_file:
                 gz_file.write(json.dumps(self.results))
                 gz_file.close()
+
+    def check_keep_alive(self):
+        """Check for requests where the connection is force-closed"""
+        from urlparse import urlparse
+        for request_id in self.requests:
+            try:
+                request = self.requests[request_id]
+                if 'url' in request:
+                    check = {'score': 100}
+                    domain = urlparse(request['url']).hostname
+                    # See if there are any other requests on the same domain
+                    other_requests = False
+                    for r_id in self.requests:
+                        if r_id != request_id:
+                            if 'url' in self.requests[r_id]:
+                                other_domain = urlparse(self.requests[r_id]['url']).hostname
+                                if other_domain == domain:
+                                    other_requests = True
+                                    break
+                    if other_requests:
+                        check['score'] = 100
+                        keep_alive = self.get_header_value(request['response_headers'],
+                                                           'Connection')
+                        if keep_alive is not None and keep_alive.lower().strip().find('close') > -1:
+                            check['score'] = 0
+                    if request_id not in self.results:
+                        self.results[request_id] = {}
+                    self.results[request_id]['keep_alive'] = check
+            except Exception:
+                pass
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
@@ -237,9 +267,6 @@ class OptimizationChecks(object):
                         self.image_results[request_id] = check
             except Exception:
                 pass
-
-    def check_misc(self):
-        """Check each request to see if various other optimizations can be done"""
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
