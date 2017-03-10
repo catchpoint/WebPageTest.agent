@@ -65,7 +65,7 @@ class OptimizationChecks(object):
         # Add the URLs to the results
         for request_id in self.results:
             if request_id in self.requests and 'url' in self.requests[request_id]:
-                self.results[request_id] = self.requests[request_id]['url']
+                self.results[request_id]['url'] = self.requests[request_id]['url']
         # Save the results
         if self.results:
             path = os.path.join(self.task['dir'], self.task['prefix']) + 'optimization.json.gz'
