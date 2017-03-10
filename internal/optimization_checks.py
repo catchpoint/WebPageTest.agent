@@ -62,6 +62,10 @@ class OptimizationChecks(object):
             if request_id not in self.results:
                 self.results[request_id] = {}
             self.results[request_id]['image'] = self.image_results[request_id]
+        # Add the URLs to the results
+        for request_id in self.results:
+            if request_id in self.requests and 'url' in self.requests[request_id]:
+                self.results[request_id] = self.requests[request_id]['url']
         # Save the results
         if self.results:
             path = os.path.join(self.task['dir'], self.task['prefix']) + 'optimization.json.gz'
@@ -85,8 +89,6 @@ class OptimizationChecks(object):
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
                 check = {'score': 0, 'size': content_length, 'target_size': content_length}
-                if 'url' in request:
-                    check['url'] = request['url']
                 encoding = None
                 if 'response_headers' in request:
                     encoding = self.get_header_value(request['response_headers'],
@@ -144,8 +146,6 @@ class OptimizationChecks(object):
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
                 check = {'score': -1, 'size': content_length, 'target_size': content_length}
-                if 'url' in request:
-                    check['url'] = request['url']
                 if content_length and 'body' in request:
                     sniff_type = self.sniff_content(request['body'])
                     if sniff_type == 'jpeg':
