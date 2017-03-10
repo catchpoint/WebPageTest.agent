@@ -22,9 +22,11 @@ class OptimizationChecks(object):
         self.cdn_thread = None
         self.gzip_thread = None
         self.image_thread = None
+        self.progressive_thread = None
         self.cdn_results = {}
         self.gzip_results = {}
         self.image_results = {}
+        self.progressive_results = {}
         self.results = {}
 
     def start(self):
@@ -37,6 +39,8 @@ class OptimizationChecks(object):
             self.gzip_thread.start()
             self.image_thread = threading.Thread(target=self.check_images)
             self.image_thread.start()
+            self.progressive_thread = threading.Thread(target=self.check_progressive)
+            self.progressive_thread.start()
             # collect the miscellaneous results directly
             self.check_keep_alive()
             self.check_cache_static()
@@ -52,6 +56,9 @@ class OptimizationChecks(object):
         if self.image_thread is not None:
             self.image_thread.join()
             self.image_thread = None
+        if self.progressive_thread is not None:
+            self.progressive_thread.join()
+            self.progressive_thread = None
         # Merge the results together
         for request_id in self.cdn_results:
             if request_id not in self.results:
@@ -65,6 +72,10 @@ class OptimizationChecks(object):
             if request_id not in self.results:
                 self.results[request_id] = {}
             self.results[request_id]['image'] = self.image_results[request_id]
+        for request_id in self.progressive_results:
+            if request_id not in self.results:
+                self.results[request_id] = {}
+            self.results[request_id]['progressive'] = self.progressive_results[request_id]
         # Save the results
         if self.results:
             path = os.path.join(self.task['dir'], self.task['prefix']) + 'optimization.json.gz'
@@ -328,6 +339,48 @@ class OptimizationChecks(object):
                         check['score'] = 100
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
+            except Exception:
+                pass
+
+    def check_progressive(self):
+        """Count the number of scan lines in each jpeg"""
+        for request_id in self.requests:
+            try:
+                request = self.requests[request_id]
+                if 'body' in request:
+                    sniff_type = self.sniff_content(request['body'])
+                    if sniff_type == 'jpeg':
+                        content_length = os.path.getsize(request['body'])
+                        check = {'size': content_length, 'scan_count': 0}
+                        with open(request['body'], 'rb') as jpeg:
+                            try:
+                                while True:
+                                    block = struct.unpack('B', jpeg.read(1))[0]
+                                    if block != 0xff:
+                                        break
+                                    block = struct.unpack('B', jpeg.read(1))[0]
+                                    while block == 0xff:
+                                        block = struct.unpack('B', jpeg.read(1))[0]
+                                    if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
+                                        continue
+                                    elif block == 0xda: # Image data
+                                        check['scan_count'] += 1
+                                        # Seek to the next non-padded 0xff to find the next marker
+                                        found = False
+                                        while not found:
+                                            value = struct.unpack('B', jpeg.read(1))[0]
+                                            if value == 0xff:
+                                                value = struct.unpack('B', jpeg.read(1))[0]
+                                                if value != 0x00:
+                                                    found = True
+                                                    jpeg.seek(-2, 1)
+                                    else:
+                                        block_size = struct.unpack('2B', jpeg.read(2))
+                                        block_size = block_size[0] * 256 + block_size[1] - 2
+                                        jpeg.seek(block_size, 1)
+                            except Exception:
+                                pass
+                        self.progressive_results[request_id] = check
             except Exception:
                 pass
 
