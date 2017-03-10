@@ -85,6 +85,7 @@ class WPTAgent(object):
 
     def cleanup(self):
         """Do any cleanup that needs to be run regardless of how we exit."""
+        logging.debug('Cleaning up')
         self.shaper.remove()
         if self.xvfb is not None:
             self.xvfb.stop()
@@ -163,6 +164,7 @@ class WPTAgent(object):
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
+        self.shaper.remove()
         if not self.shaper.install():
             print "Error configuring traffic shaping, make sure it is installed."
             ret = False
