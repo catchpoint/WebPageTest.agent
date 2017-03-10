@@ -109,6 +109,12 @@ class DevtoolsBrowser(object):
                         self.on_stop_recording(task)
                         recording = False
                         if task['log_data']:
+                            # Start the processing that can run in a background thread
+                            optimization = OptimizationChecks(self.job, task, self.get_requests())
+                            optimization.start()
+                            trace_thread = threading.Thread(target=self.process_trace)
+                            trace_thread.start()
+                            # Collect end of test data from the browser
                             if self.job['pngss']:
                                 screen_shot = os.path.join(task['dir'],
                                                            task['prefix'] + 'screen.png')
@@ -118,13 +124,11 @@ class DevtoolsBrowser(object):
                                                            task['prefix'] + 'screen.jpg')
                                 self.devtools.grab_screenshot(screen_shot, png=False)
                             self.collect_browser_metrics(task)
-                            # Post-process each step separately
-                            optimization = OptimizationChecks(self.job, task, self.get_requests())
-                            optimization.start()
-                            trace_thread = threading.Thread(target=self.process_trace)
-                            trace_thread.start()
+                            # Run the rest of the post-processing
                             self.process_video()
+                            logging.debug('Waiting for trace processing to complete')
                             trace_thread.join()
+                            logging.debug('Waiting for optimization checks to complete')
                             optimization.join()
                             # Move on to the next step
                             task['current_step'] += 1
