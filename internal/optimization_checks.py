@@ -5,10 +5,12 @@
 import binascii
 import gzip
 import os
+import re
 import shutil
 import struct
 import subprocess
 import threading
+import time
 import ujson as json
 
 class OptimizationChecks(object):
@@ -37,6 +39,7 @@ class OptimizationChecks(object):
             self.image_thread.start()
             # collect the miscellaneous results directly
             self.check_keep_alive()
+            self.check_cache_static()
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
@@ -99,6 +102,66 @@ class OptimizationChecks(object):
                     self.results[request_id]['keep_alive'] = check
             except Exception:
                 pass
+
+    def check_cache_static(self):
+        """Check static resources for how long they are cacheable for"""
+        from email.utils import parsedate
+        re_max_age = re.compile(r'max-age[ ]*=[ ]*(?P<maxage>[\d]+)')
+        for request_id in self.requests:
+            try:
+                request = self.requests[request_id]
+                check = {'score': -1, 'time': 0}
+                content_type = self.get_header_value(request['response_headers'],
+                                                     'Content-Type')
+                if content_type is None or \
+                    (content_type.find('/html') == -1 and \
+                     content_type.find('/cache-manifest') == -1):
+                    is_static = True
+                    cache = self.get_header_value(request['response_headers'], 'Cache-Control')
+                    pragma = self.get_header_value(request['response_headers'], 'Pragma')
+                    expires = self.get_header_value(request['response_headers'], 'Expires')
+                    if cache is not None:
+                        cache = cache.lower()
+                        if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
+                            is_static = False
+                    if is_static and pragma is not None:
+                        pragma = pragma.lower()
+                        if pragma.find('no-cache') > -1:
+                            is_static = False
+                    if is_static:
+                        time_remaining = 0
+                        if cache is not None:
+                            matches = re.search(re_max_age, cache)
+                            if matches:
+                                time_remaining = int(matches.groupdict().get('maxage'))
+                                age = self.get_header_value(request['response_headers'], 'Age')
+                                if age is not None:
+                                    time_remaining -= int(age.strip())
+                        elif expires is not None:
+                            date = self.get_header_value(request['response_headers'], 'Date')
+                            exp = time.mktime(parsedate(expires))
+                            if date is not None:
+                                now = time.mktime(parsedate(date))
+                            else:
+                                now = time.time()
+                            time_remaining = int(exp - now)
+                            if time_remaining < 0:
+                                is_static = False
+                        if is_static:
+                            check['time'] = time_remaining
+                            if time_remaining > 604800: # 7 days
+                                check['score'] = 100
+                            elif time_remaining > 3600: # 1 hour
+                                check['score'] = 50
+                            else:
+                                check['score'] = 0
+                if check['score'] >= 0:
+                    if request_id not in self.results:
+                        self.results[request_id] = {}
+                    self.results[request_id]['cache'] = check
+            except Exception:
+                pass
+
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
