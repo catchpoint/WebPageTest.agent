@@ -221,7 +221,7 @@ class NetEm(object):
                 ret = True
             else:
                 logging.critical("Unable to identify default interface using 'route'")
-        except BaseException as err:
+        except Exception as err:
             logging.debug("Error configuring netem: %s", err.__str__())
         return ret
 

@@ -67,7 +67,7 @@ class WPTAgent(object):
                     self.job = None
                 else:
                     self.sleep(5)
-            except BaseException as err:
+            except Exception as err:
                 logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:

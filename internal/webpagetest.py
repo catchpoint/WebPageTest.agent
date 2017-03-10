@@ -29,7 +29,7 @@ class WebPageTest(object):
         if os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
-            except BaseException as _:
+            except Exception:
                 pass
         self.profile_dir = os.path.join(self.workdir, 'browser')
 
@@ -134,7 +134,7 @@ class WebPageTest(object):
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
-            except BaseException as _:
+            except Exception:
                 pass
         return task
 
@@ -276,7 +276,10 @@ class WebPageTest(object):
                     if os.path.getsize(filepath) > 100000:
                         logging.debug('Uploading %s', filename)
                         if self.post_data(self.url + "resultimage.php", data, filepath, filename):
-                            os.remove(filepath)
+                            try:
+                                os.remove(filepath)
+                            except Exception:
+                                pass
                         else:
                             needs_zip.append({'path': filepath, 'name': filename})
                     else:
@@ -288,7 +291,10 @@ class WebPageTest(object):
                     for zipitem in needs_zip:
                         logging.debug('Storing %s', zipitem['name'])
                         zip_file.write(zipitem['path'], zipitem['name'])
-                        os.remove(zipitem['path'])
+                        try:
+                            os.remove(zipitem['path'])
+                        except Exception:
+                            pass
         # Post the workdone event for the task (with the zip attached)
         if task['done']:
             data['done'] = '1'
@@ -300,12 +306,12 @@ class WebPageTest(object):
         if os.path.isdir(task['dir']):
             try:
                 shutil.rmtree(task['dir'])
-            except BaseException as _:
+            except Exception:
                 pass
         if task['done'] and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
-            except BaseException as _:
+            except Exception:
                 pass
 
     def post_data(self, url, data, file_path, filename):
@@ -320,8 +326,8 @@ class WebPageTest(object):
         try:
             if file_path is not None and os.path.isfile(file_path):
                 self.session.post(url,
-                              files={'file':(filename, open(file_path, 'rb'))},
-                              timeout=300)
+                                  files={'file':(filename, open(file_path, 'rb'))},
+                                  timeout=300)
             else:
                 self.session.post(url)
         except requests.exceptions.RequestException as err:

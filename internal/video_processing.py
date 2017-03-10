@@ -51,7 +51,10 @@ class VideoProcessing(object):
                 for index in xrange(1, count):
                     if self.frames_match(baseline, files[index], crop, 1, 0):
                         logging.debug('Removing similar frame %s', os.path.basename(files[index]))
-                        os.remove(files[index])
+                        try:
+                            os.remove(files[index])
+                        except Exception:
+                            pass
                     else:
                         baseline = files[index]
             # start a background thread to convert the images to jpeg
@@ -75,7 +78,10 @@ class VideoProcessing(object):
             logging.debug("Waiting for jpeg conversion to finish")
             jpeg_thread.join()
             for filepath in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
-                os.remove(filepath)
+                try:
+                    os.remove(filepath)
+                except Exception:
+                    pass
 
     def convert_to_jpeg(self):
         """Convert all of the pngs in the given directory to jpeg"""

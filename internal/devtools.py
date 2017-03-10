@@ -85,7 +85,7 @@ class DevTools(object):
                                 ret = True
                         else:
                             time.sleep(1)
-            except BaseException as err:
+            except Exception as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(1)
         return ret
@@ -168,7 +168,7 @@ class DevTools(object):
                                 elif msg['method'] == 'Tracing.dataCollected':
                                     last_message = monotonic.monotonic()
                                     self.process_trace_event(msg)
-                    except BaseException as _:
+                    except Exception:
                         pass
             if self.trace_file is not None:
                 self.trace_file.write("\n]}")
@@ -196,8 +196,10 @@ class DevTools(object):
                     if not os.path.exists(body_file_path):
                         response = self.send_command("Network.getResponseBody",
                                                      {'requestId': request_id}, wait=True)
-                        if response is not None and 'result' in response and \
-                                'body' in response['result'] and len(response['result']['body']):
+                        if response is None or 'result' not in response or \
+                                'body' not in response['result']:
+                            logging.warning('Missing response body for request %s', request_id)
+                        elif len(response['result']['body']):
                             # Write the raw body to a file (all bodies)
                             if 'base64Encoded' in response['result'] and \
                                     response['result']['base64Encoded']:
@@ -275,7 +277,7 @@ class DevTools(object):
                     raw = self.websocket.recv()
                     if not raw:
                         break
-            except BaseException as _:
+            except Exception:
                 pass
 
     def send_command(self, method, params, wait=False, timeout=30):
@@ -299,9 +301,9 @@ class DevTools(object):
                                 msg = json.loads(raw)
                                 if 'id' in msg and int(msg['id']) == self.command_id:
                                     ret = msg
-                        except BaseException as _:
+                        except Exception:
                             pass
-            except BaseException as err:
+            except Exception as err:
                 logging.critical("Websocket send error: %s", err.__str__())
         return ret
 
@@ -320,7 +322,7 @@ class DevTools(object):
                         msg = json.loads(raw)
                         if 'method' in msg:
                             self.process_message(msg)
-                except BaseException as _:
+                except Exception:
                     # ignore timeouts when we're in a polling read loop
                     pass
                 now = monotonic.monotonic()
@@ -351,7 +353,10 @@ class DevTools(object):
                 logging.debug(command)
                 subprocess.call(command, shell=True)
                 if os.path.isfile(tmp_file):
-                    os.remove(tmp_file)
+                    try:
+                        os.remove(tmp_file)
+                    except Exception:
+                        pass
 
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""

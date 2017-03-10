@@ -37,7 +37,7 @@ class DesktopBrowser(object):
                     shutil.rmtree(task['profile'])
                 if not os.path.isdir(task['profile']):
                     os.makedirs(task['profile'])
-        except BaseException as err:
+        except Exception as err:
             logging.critical("Exception preparing Browser: %s", err.__str__())
 
     def launch_browser(self, command_line):
