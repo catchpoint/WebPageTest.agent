@@ -86,7 +86,7 @@ class OptimizationChecks(object):
                     content_length = request['transfer_size']
                 check = {'score': 0, 'size': content_length, 'target_size': content_length}
                 if 'url' in request:
-                    check['url'] == 'url'
+                    check['url'] = request['url']
                 encoding = None
                 if 'response_headers' in request:
                     encoding = self.get_header_value(request['response_headers'],
@@ -145,7 +145,7 @@ class OptimizationChecks(object):
                     content_length = request['transfer_size']
                 check = {'score': -1, 'size': content_length, 'target_size': content_length}
                 if 'url' in request:
-                    check['url'] == 'url'
+                    check['url'] = request['url']
                 if content_length and 'body' in request:
                     sniff_type = self.sniff_content(request['body'])
                     if sniff_type == 'jpeg':
