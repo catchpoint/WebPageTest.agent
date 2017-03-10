@@ -4,6 +4,7 @@
 """Run the various optimization checks"""
 import binascii
 import gzip
+import logging
 import os
 import re
 import shutil
@@ -28,6 +29,178 @@ class OptimizationChecks(object):
         self.image_results = {}
         self.progressive_results = {}
         self.results = {}
+        self.cdn_cnames = {
+            'afxcdn.net': ['.afxcdn.net'],
+            'Akamai': ['.akamai.net',
+                       '.akamaized.net',
+                       '.akamaiedge.net',
+                       '.akamaihd.net',
+                       '.edgesuite.net',
+                       '.edgekey.net',
+                       '.srip.net',
+                       '.akamaitechnologies.com',
+                       '.akamaitechnologies.fr'],
+            'Akamai China CDN': ['.tl88.net'],
+            'Alimama': ['.gslb.tbcache.com'],
+            'Amazon CloudFront': ['.cloudfront.net'],
+            'Aryaka': ['.aads1.net',
+                       '.aads-cn.net',
+                       '.aads-cng.net'],
+            'AT&T': ['.att-dsa.net'],
+            'Azion': ['.azioncdn.net',
+                      '.azioncdn.com',
+                      '.azion.net'],
+            'Bison Grid': ['.bisongrid.net'],
+            'BitGravity': ['.bitgravity.com'],
+            'Blue Hat Network': ['.bluehatnetwork.com'],
+            'BO.LT': ['bo.lt'],
+            'BunnyCDN': ['.b-cdn.net'],
+            'Cachefly': ['.cachefly.net'],
+            'Caspowa': ['.caspowa.com'],
+            'CDN77': ['.cdn77.net',
+                      '.cdn77.org'],
+            'CDNetworks': ['.cdngc.net',
+                           '.gccdn.net',
+                           '.panthercdn.com'],
+            'CDNsun': ['.cdnsun.net'],
+            'ChinaCache': ['.ccgslb.com'],
+            'ChinaNetCenter': ['.lxdns.com',
+                               '.wscdns.com',
+                               '.wscloudcdn.com',
+                               '.ourwebpic.com'],
+            'Cloudflare': ['.cloudflare.com'],
+            'Cotendo CDN': ['.cotcdn.net'],
+            'cubeCDN': ['.cubecdn.net'],
+            'Edgecast': ['edgecastcdn.net',
+                         '.systemcdn.net',
+                         '.transactcdn.net',
+                         '.v1cdn.net',
+                         '.v2cdn.net',
+                         '.v3cdn.net',
+                         '.v4cdn.net',
+                         '.v5cdn.net',],
+            'Facebook': ['.facebook.com',
+                         '.facebook.net',
+                         '.fbcdn.net',
+                         '.cdninstagram.com'],
+            'Fastly': ['.fastly.net',
+                       '.fastlylb.net',
+                       '.nocookie.net'],
+            'GoCache': ['.cdn.gocache.net'],
+            'Google': ['.google.',
+                       'googlesyndication.',
+                       'youtube.',
+                       '.googleusercontent.com',
+                       'googlehosted.com',
+                       '.gstatic.com',
+                       '.doubleclick.net'],
+            'HiberniaCDN': ['.hiberniacdn.com'],
+            'Highwinds': ['hwcdn.net'],
+            'Hosting4CDN': ['.hosting4cdn.com'],
+            'Incapsula': ['.incapdns.net'],
+            'Instart Logic': ['.insnw.net',
+                              '.inscname.net'],
+            'Internap': ['.internapcdn.net'],
+            'jsDelivr': ['cdn.jsdelivr.net'],
+            'KeyCDN': ['.kxcdn.com'],
+            'KINX CDN': ['.kinxcdn.com',
+                         '.kinxcdn.net'],
+            'LeaseWeb CDN': ['.lswcdn.net',
+                             '.lswcdn.eu'],
+            'Level 3': ['.footprint.net',
+                        '.fpbns.net'],
+            'Limelight': ['.llnwd.net'],
+            'MediaCloud': ['.cdncloud.net.au'],
+            'Medianova': ['.mncdn.com',
+                          '.mncdn.net',
+                          '.mncdn.org'],
+            'Microsoft Azure': ['.vo.msecnd.net',
+                                '.azureedge.net'],
+            'Mirror Image': ['.instacontent.net',
+                             '.mirror-image.net'],
+            'NetDNA': ['.netdna-cdn.com',
+                       '.netdna-ssl.com',
+                       '.netdna.com'],
+            'Netlify': ['.netlify.com'],
+            'NGENIX': ['.ngenix.net'],
+            'NYI FTW': ['.nyiftw.net',
+                        '.nyiftw.com'],
+            'OnApp': ['.r.worldcdn.net',
+                      '.r.worldssl.net'],
+            'Optimal CDN': ['.optimalcdn.com'],
+            'PageRain': ['.pagerain.net'],
+            'Rackspace': ['.raxcdn.com'],
+            'Reapleaf': ['.rlcdn.com'],
+            'Reflected Networks': ['.rncdn1.com'],
+            'ReSRC.it': ['.resrc.it'],
+            'Rev Software': ['.revcn.net',
+                             '.revdn.net'],
+            'section.io': ['.squixa.net'],
+            'SFR': ['cdn.sfr.net'],
+            'Simple CDN': ['.simplecdn.net'],
+            'StackPath': ['.stackpathdns.com'],
+            'SwiftCDN': ['.swiftcdn1.com'],
+            'Taobao': ['.gslb.taobao.com',
+                       'tbcdn.cn',
+                       '.taobaocdn.com'],
+            'Telenor': ['.cdntel.net'],
+            'Twitter': ['.twimg.com'],
+            'UnicornCDN': ['.unicorncdn.net'],
+            'VoxCDN': ['.voxcdn.net'],
+            'WordPress': ['.wp.com'],
+            'Yahoo': ['.ay1.b.yahoo.com',
+                      '.yimg.',
+                      '.yahooapis.com'],
+            'Yottaa': ['.yottaa.net'],
+            'Zenedge': ['.zenedge.net']
+        }
+        self.cdn_headers = {
+            'Airee': [{'Server': 'Airee'}],
+            'Amazon CloudFront': [{'Via': 'CloudFront'}],
+            'Aryaka': [{'X-Ar-Debug': ''}],
+            'BunnyCDN': [{'Server': 'BunnyCDN'}],
+            'Caspowa': [{'Server': 'Caspowa'}],
+            'CDN': [{'X-Edge-IP': ''},
+                    {'X-Edge-Location': ''}],
+            'CDNetworks': [{'X-Px': ''}],
+            'ChinaNetCenter': [{'X-Cache': 'cache.51cdn.com'}],
+            'Cloudflare': [{'Server': 'cloudflare'}],
+            'Edgecast': [{'Server': 'ECS'},
+                         {'Server': 'ECAcc'},
+                         {'Server': 'ECD'}],
+            'Fastly': [{'Via': '', 'X-Served-By': 'cache-', 'X-Cache': ''}],
+            'GoCache': [{'Server': 'gocache'}],
+            'Google': [{'Server': 'sffe'},
+                       {'Server': 'gws'},
+                       {'Server': 'GSE'},
+                       {'Server': 'Golfe2'},
+                       {'Via': 'google'}],
+            'HiberniaCDN': [{'Server': 'hiberniacdn'}],
+            'Highwinds': [{'X-HW': ''}],
+            'Incapsula': [{'X-CDN': 'Incapsula'},
+                          {'X-Iinfo': ''}],
+            'Instart Logic': [{'X-Instart-Request-ID': 'instart'}],
+            'LeaseWeb CDN': [{'Server': 'leasewebcdn'}],
+            'Naver': [{'Server': 'Testa/'}],
+            'NetDNA': [{'Server': 'NetDNA'}],
+            'Netlify': [{'Server': 'Netlify'}],
+            'NYI FTW': [{'X-Powered-By': 'NYI FTW'},
+                        {'X-Delivered-By': 'NYI FTW'}],
+            'Optimal CDN': [{'Server': 'Optimal CDN'}],
+            'OVH CDN': [{'X-CDN-Geo': ''},
+                        {'X-CDN-Pop': ''}],
+            'ReSRC.it': [{'Server': 'ReSRC'}],
+            'Rev Software': [{'Via': 'Rev-Cache'},
+                             {'X-Rev-Cache': ''}],
+            'section.io': [{'section-io-id': ''}],
+            'Sucuri Firewall': [{'Server': 'Sucuri/Cloudproxy'},
+                                {'x-sucuri-id': ''}],
+            'Surge': [{'Server': 'SurgeCDN'}],
+            'Twitter': [{'Server': 'tsa_b'}],
+            'UnicornCDN': [{'Server': 'UnicornCDN'}],
+            'Yunjiasu': [{'Server': 'yunjiasu'}],
+            'Zenedge': [{'X-Cdn': 'Zenedge'}]
+        }
 
     def start(self):
         """Start running the optimization checks"""
@@ -47,15 +220,19 @@ class OptimizationChecks(object):
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
+        logging.debug('Waiting for CDN check to complete')
         if self.cdn_thread is not None:
             self.cdn_thread.join()
             self.cdn_thread = None
+        logging.debug('Waiting for gzip check to complete')
         if self.gzip_thread is not None:
             self.gzip_thread.join()
             self.gzip_thread = None
+        logging.debug('Waiting for image check to complete')
         if self.image_thread is not None:
             self.image_thread.join()
             self.image_thread = None
+        logging.debug('Waiting for progressive JPEG check to complete')
         if self.progressive_thread is not None:
             self.progressive_thread.join()
             self.progressive_thread = None
