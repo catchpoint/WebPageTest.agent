@@ -31,6 +31,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Multi-step tests
 * Request blocking
 * SPOF testing
+* Optimization checks
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -53,7 +54,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
-* Optimization checks
 * Improved request timing (from netlog)
 * HTTP/2 Push reporting
 * HTTP/2 Stream Details

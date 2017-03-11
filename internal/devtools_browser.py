@@ -128,7 +128,6 @@ class DevtoolsBrowser(object):
                             self.process_video()
                             logging.debug('Waiting for trace processing to complete')
                             trace_thread.join()
-                            logging.debug('Waiting for optimization checks to complete')
                             optimization.join()
                             # Move on to the next step
                             task['current_step'] += 1

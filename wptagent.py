@@ -100,6 +100,13 @@ class WPTAgent(object):
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
+
+        try:
+            import dns.resolver as _
+        except ImportError:
+            print "Missing dns module. Please run 'pip install dnspython'"
+            ret = False
+            
         try:
             import monotonic as _
         except ImportError:

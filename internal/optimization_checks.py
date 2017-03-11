@@ -6,6 +6,7 @@ import binascii
 import gzip
 import logging
 import os
+import Queue
 import re
 import shutil
 import struct
@@ -29,6 +30,8 @@ class OptimizationChecks(object):
         self.image_results = {}
         self.progressive_results = {}
         self.results = {}
+        self.dns_lookup_queue = Queue.Queue()
+        self.dns_result_queue = Queue.Queue()
         self.cdn_cnames = {
             'afxcdn.net': ['.afxcdn.net'],
             'Akamai': ['.akamai.net',
@@ -220,10 +223,10 @@ class OptimizationChecks(object):
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
-        logging.debug('Waiting for CDN check to complete')
-        if self.cdn_thread is not None:
-            self.cdn_thread.join()
-            self.cdn_thread = None
+        logging.debug('Waiting for progressive JPEG check to complete')
+        if self.progressive_thread is not None:
+            self.progressive_thread.join()
+            self.progressive_thread = None
         logging.debug('Waiting for gzip check to complete')
         if self.gzip_thread is not None:
             self.gzip_thread.join()
@@ -232,10 +235,10 @@ class OptimizationChecks(object):
         if self.image_thread is not None:
             self.image_thread.join()
             self.image_thread = None
-        logging.debug('Waiting for progressive JPEG check to complete')
-        if self.progressive_thread is not None:
-            self.progressive_thread.join()
-            self.progressive_thread = None
+        logging.debug('Waiting for CDN check to complete')
+        if self.cdn_thread is not None:
+            self.cdn_thread.join()
+            self.cdn_thread = None
         # Merge the results together
         for request_id in self.cdn_results:
             if request_id not in self.results:
@@ -291,58 +294,70 @@ class OptimizationChecks(object):
             except Exception:
                 pass
 
-    def check_cache_static(self):
-        """Check static resources for how long they are cacheable for"""
+    def get_time_remaining(self, request):
+        """See if a request is static and how long it can be cached for"""
         from email.utils import parsedate
         re_max_age = re.compile(r'max-age[ ]*=[ ]*(?P<maxage>[\d]+)')
+        is_static = False
+        time_remaining = -1
+        content_length = self.get_header_value(request['response_headers'], 'Content-Length')
+        if content_length is not None:
+            content_length = int(content_length)
+            if content_length == 0:
+                return is_static, time_remaining
+        if 'response_headers' in request:
+            content_type = self.get_header_value(request['response_headers'], 'Content-Type')
+            if content_type is None or \
+                    (content_type.find('/html') == -1 and \
+                    content_type.find('/cache-manifest') == -1):
+                is_static = True
+                cache = self.get_header_value(request['response_headers'], 'Cache-Control')
+                pragma = self.get_header_value(request['response_headers'], 'Pragma')
+                expires = self.get_header_value(request['response_headers'], 'Expires')
+                if cache is not None:
+                    cache = cache.lower()
+                    if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
+                        is_static = False
+                if is_static and pragma is not None:
+                    pragma = pragma.lower()
+                    if pragma.find('no-cache') > -1:
+                        is_static = False
+                if is_static:
+                    time_remaining = 0
+                    if cache is not None:
+                        matches = re.search(re_max_age, cache)
+                        if matches:
+                            time_remaining = int(matches.groupdict().get('maxage'))
+                            age = self.get_header_value(request['response_headers'], 'Age')
+                            if age is not None:
+                                time_remaining -= int(age.strip())
+                    elif expires is not None:
+                        date = self.get_header_value(request['response_headers'], 'Date')
+                        exp = time.mktime(parsedate(expires))
+                        if date is not None:
+                            now = time.mktime(parsedate(date))
+                        else:
+                            now = time.time()
+                        time_remaining = int(exp - now)
+                        if time_remaining < 0:
+                            is_static = False
+        return is_static, time_remaining
+
+    def check_cache_static(self):
+        """Check static resources for how long they are cacheable for"""
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
                 check = {'score': -1, 'time': 0}
-                content_type = self.get_header_value(request['response_headers'],
-                                                     'Content-Type')
-                if content_type is None or \
-                    (content_type.find('/html') == -1 and \
-                     content_type.find('/cache-manifest') == -1):
-                    is_static = True
-                    cache = self.get_header_value(request['response_headers'], 'Cache-Control')
-                    pragma = self.get_header_value(request['response_headers'], 'Pragma')
-                    expires = self.get_header_value(request['response_headers'], 'Expires')
-                    if cache is not None:
-                        cache = cache.lower()
-                        if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
-                            is_static = False
-                    if is_static and pragma is not None:
-                        pragma = pragma.lower()
-                        if pragma.find('no-cache') > -1:
-                            is_static = False
-                    if is_static:
-                        time_remaining = 0
-                        if cache is not None:
-                            matches = re.search(re_max_age, cache)
-                            if matches:
-                                time_remaining = int(matches.groupdict().get('maxage'))
-                                age = self.get_header_value(request['response_headers'], 'Age')
-                                if age is not None:
-                                    time_remaining -= int(age.strip())
-                        elif expires is not None:
-                            date = self.get_header_value(request['response_headers'], 'Date')
-                            exp = time.mktime(parsedate(expires))
-                            if date is not None:
-                                now = time.mktime(parsedate(date))
-                            else:
-                                now = time.time()
-                            time_remaining = int(exp - now)
-                            if time_remaining < 0:
-                                is_static = False
-                        if is_static:
-                            check['time'] = time_remaining
-                            if time_remaining > 604800: # 7 days
-                                check['score'] = 100
-                            elif time_remaining > 3600: # 1 hour
-                                check['score'] = 50
-                            else:
-                                check['score'] = 0
+                is_static, time_remaining = self.get_time_remaining(request)
+                if is_static:
+                    check['time'] = time_remaining
+                    if time_remaining > 604800: # 7 days
+                        check['score'] = 100
+                    elif time_remaining > 3600: # 1 hour
+                        check['score'] = 50
+                    else:
+                        check['score'] = 0
                 if check['score'] >= 0:
                     if request_id not in self.results:
                         self.results[request_id] = {}
@@ -353,6 +368,112 @@ class OptimizationChecks(object):
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
+        from urlparse import urlparse
+        # First pass, build a list of domains and see if the headers or domain matches
+        static_requests = {}
+        domains = {}
+        for request_id in self.requests:
+            request = self.requests[request_id]
+            is_static, _ = self.get_time_remaining(request)
+            if is_static:
+                static_requests[request_id] = True
+                if 'url' in request:
+                    domain = urlparse(request['url']).hostname
+                    if domain is not None:
+                        if domain not in domains:
+                            # Check the domain itself against the CDN list
+                            domains[domain] = ''
+                            provider = self.check_cdn_name(domain)
+                            if provider is not None:
+                                domains[domain] = provider
+                        if not len(domains[domain]) and 'response_headers' in request:
+                            # Check the headers on the current response_headers
+                            provider = self.check_cdn_headers(request['response_headers'])
+                            if provider is not None:
+                                domains[domain] = provider
+        # Spawn several workers to do CNAME lookups for the unknown domains
+        count = 0
+        for domain in domains:
+            if not len(domains[domain]):
+                count += 1
+                self.dns_lookup_queue.put(domain)
+        if count:
+            thread_count = min(10, count)
+            threads = []
+            for _ in xrange(thread_count):
+                thread = threading.Thread(target=self.dns_worker)
+                thread.start()
+                threads.append(thread)
+            for thread in threads:
+                thread.join()
+            try:
+                while True:
+                    dns_result = self.dns_result_queue.get_nowait()
+                    domains[dns_result['domain']] = dns_result['provider']
+            except Exception:
+                pass
+        # Final pass, populate the CDN infor for each request
+        for request_id in self.requests:
+            if request_id in static_requests:
+                request = self.requests[request_id]
+                if 'url' in request:
+                    check = {'score': 0, 'provider': ''}
+                    domain = urlparse(request['url']).hostname
+                    if domain is not None:
+                        if domain in domains and len(domains[domain]):
+                            check['score'] = 100
+                            check['provider'] = domains[domain]
+                    self.cdn_results[request_id] = check
+
+    def dns_worker(self):
+        """Handle the DNS CNAME lookups and checking in multiple threads"""
+        import dns.resolver
+        try:
+            while True:
+                domain = self.dns_lookup_queue.get_nowait()
+                try:
+                    answers = dns.resolver.query(domain, 'CNAME')
+                    if answers and len(answers):
+                        for rdata in answers:
+                            name = '.'.join(rdata.target).strip(' .')
+                            provider = self.check_cdn_name(name)
+                            if provider is not None:
+                                self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                                break
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def check_cdn_name(self, domain):
+        """Check the given domain against our cname list"""
+        if domain is not None and len(domain):
+            check_name = domain.lower()
+            for cdn in self.cdn_cnames:
+                for cname in self.cdn_cnames[cdn]:
+                    if check_name.find(cname) > -1:
+                        return cdn
+        return None
+
+    def check_cdn_headers(self, headers):
+        """Check the given headers against our header list"""
+        for cdn in self.cdn_headers:
+            for header_group in self.cdn_headers[cdn]:
+                all_match = True
+                for name in header_group:
+                    value = self.get_header_value(headers, name)
+                    if value is None:
+                        all_match = False
+                        break
+                    else:
+                        value = value.lower()
+                        check = header_group[name].lower()
+                        if len(check) and value.find(check) == -1:
+                            all_match = False
+                            break
+                if all_match:
+                    return cdn
+        return None
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
