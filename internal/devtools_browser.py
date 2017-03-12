@@ -82,11 +82,13 @@ class DevtoolsBrowser(object):
 
     def on_start_recording(self, _):
         """Start recording"""
-        self.devtools.start_recording()
+        if self.devtools is not None:
+            self.devtools.start_recording()
 
     def on_stop_recording(self, _):
         """Stop recording"""
-        self.devtools.stop_recording()
+        if self.devtools is not None:
+            self.devtools.stop_recording()
 
     def run_task(self, task):
         """Run an individual test"""

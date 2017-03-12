@@ -34,6 +34,7 @@ class DevTools(object):
         self.support_path = None
         self.video_path = None
         self.video_prefix = None
+        self.recording = False
         self.prepare()
 
     def prepare(self):
@@ -99,6 +100,7 @@ class DevTools(object):
     def start_recording(self):
         """Start capturing dev tools, timeline and trace data"""
         self.prepare()
+        self.recording = True
         if 'Capture Video' in self.job and self.job['Capture Video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.png')
         self.flush_pending_messages()
@@ -132,6 +134,7 @@ class DevTools(object):
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
+        self.recording = False
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         if self.task['log_data']:
@@ -275,6 +278,10 @@ class DevTools(object):
                 self.websocket.settimeout(0)
                 while True:
                     raw = self.websocket.recv()
+                    if raw is not None and len(raw):
+                        logging.debug(raw[:1000])
+                        msg = json.loads(raw)
+                        self.process_message(msg)
                     if not raw:
                         break
             except Exception:
@@ -299,6 +306,7 @@ class DevTools(object):
                             if raw is not None and len(raw):
                                 logging.debug(raw[:1000])
                                 msg = json.loads(raw)
+                                self.process_message(msg)
                                 if 'id' in msg and int(msg['id']) == self.command_id:
                                     ret = msg
                         except Exception:
@@ -320,8 +328,7 @@ class DevTools(object):
                     if raw is not None and len(raw):
                         logging.debug(raw[:1000])
                         msg = json.loads(raw)
-                        if 'method' in msg:
-                            self.process_message(msg)
+                        self.process_message(msg)
                 except Exception:
                     # ignore timeouts when we're in a polling read loop
                     pass
@@ -372,22 +379,23 @@ class DevTools(object):
 
     def process_message(self, msg):
         """Process an inbound dev tools message"""
-        parts = msg['method'].split('.')
-        if len(parts) >= 2:
-            category = parts[0]
-            event = parts[1]
-            if category == 'Page':
-                self.process_page_event(event, msg)
-                self.log_dev_tools_event(msg)
-            elif category == 'Network':
-                self.process_network_event(event, msg)
-                self.log_dev_tools_event(msg)
-            elif category == 'Inspector':
-                self.process_inspector_event(event)
-            elif category == 'Tracing':
-                self.process_trace_event(msg)
-            else:
-                self.log_dev_tools_event(msg)
+        if 'method' in msg and self.recording:
+            parts = msg['method'].split('.')
+            if len(parts) >= 2:
+                category = parts[0]
+                event = parts[1]
+                if category == 'Page':
+                    self.process_page_event(event, msg)
+                    self.log_dev_tools_event(msg)
+                elif category == 'Network':
+                    self.process_network_event(event, msg)
+                    self.log_dev_tools_event(msg)
+                elif category == 'Inspector':
+                    self.process_inspector_event(event)
+                elif category == 'Tracing':
+                    self.process_trace_event(msg)
+                else:
+                    self.log_dev_tools_event(msg)
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""

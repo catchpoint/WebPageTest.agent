@@ -24,7 +24,7 @@ class WPTAgent(object):
         self.browsers = Browsers(options, browsers)
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
-        self.shaper = TrafficShaper()
+        self.shaper = TrafficShaper(options.shaper)
         self.job = None
         self.task = None
         self.xvfb = None
@@ -46,10 +46,9 @@ class WPTAgent(object):
                                 browser.prepare(self.job, self.task)
                                 browser.launch(self.job, self.task)
                                 if self.shaper.configure(self.job):
-                                    # Run the actual test
                                     browser.run_task(self.task)
                                 else:
-                                    self.task.error = "Error configuring traffic-shaping"
+                                    self.task['error'] = "Error configuring traffic-shaping"
                                 self.shaper.reset()
                                 browser.stop()
                             else:
@@ -106,7 +105,7 @@ class WPTAgent(object):
         except ImportError:
             print "Missing dns module. Please run 'pip install dnspython'"
             ret = False
-            
+
         try:
             import monotonic as _
         except ImportError:
@@ -208,9 +207,10 @@ def main():
     parser.add_argument('--location', required=True,
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
-    parser.add_argument('--chrome', help="Path to Chrome executable (if configured).")
-    parser.add_argument('--canary', help="Path to Chrome canary executable (if configured).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
+    parser.add_argument('--shaper', help='Override default traffic shaper. '\
+                        'Current supported values are:\n'\
+                        '    none - Disable traffic-shaping (i.e. when root is not available')
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only)")
     options, _ = parser.parse_known_args()

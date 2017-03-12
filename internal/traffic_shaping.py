@@ -10,18 +10,22 @@ import subprocess
 
 class TrafficShaper(object):
     """Main traffic-shaper interface"""
-    def __init__(self):
+    def __init__(self, shaper_name):
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.shaper = None
-        plat = platform.system()
-        if plat == "Windows":
-            winver = float(".".join(platform.version().split('.')[:2]))
-            if winver >= 8.1:
-                self.shaper = WinShaper()
-            else:
-                self.shaper = Dummynet()
-        elif plat == "Linux":
-            self.shaper = NetEm()
+        if shaper_name is not None:
+            if shaper_name == 'none':
+                self.shaper = NoShaper()
+        else:
+            plat = platform.system()
+            if plat == "Windows":
+                winver = float(".".join(platform.version().split('.')[:2]))
+                if winver >= 8.1:
+                    self.shaper = WinShaper()
+                else:
+                    self.shaper = Dummynet()
+            elif plat == "Linux":
+                self.shaper = NetEm()
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -63,6 +67,32 @@ class TrafficShaper(object):
             ret = self.shaper.configure(in_bps, out_bps, rtt, plr)
         return ret
 
+
+#
+# NoShaper
+#
+class NoShaper(object):
+    """Allow resets but fail any explicit shaping"""
+    def __init__(self):
+        pass
+
+    def install(self):
+        """Install and configure the traffic-shaper"""
+        return True
+
+    def remove(self):
+        """Uninstall traffic-shaping"""
+        return True
+
+    def reset(self):
+        """Disable traffic-shaping"""
+        return True
+
+    def configure(self, in_bps, out_bps, rtt, plr):
+        """Enable traffic-shaping"""
+        if in_bps > 0 or out_bps > 0 or rtt > 0 or plr > 0:
+            return False
+        return True
 
 #
 # winshaper

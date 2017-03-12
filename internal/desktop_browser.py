@@ -81,7 +81,10 @@ class DesktopBrowser(object):
         if os.path.isdir(task['profile']):
             end_time = monotonic.monotonic() + 30
             while monotonic.monotonic() < end_time:
-                shutil.rmtree(task['profile'])
+                try:
+                    shutil.rmtree(task['profile'])
+                except Exception:
+                    pass
                 if os.path.isdir(task['profile']):
                     time.sleep(0.1)
                 else:

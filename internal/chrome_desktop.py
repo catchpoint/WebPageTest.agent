@@ -40,6 +40,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.options = options
         DesktopBrowser.__init__(self, path, job)
         DevtoolsBrowser.__init__(self, job)
+        self.connected = False
 
     def launch(self, job, task):
         """Launch the browser"""
@@ -65,15 +66,21 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
         DesktopBrowser.launch_browser(self, command_line)
-
-    def run_task(self, task):
-        """Run an individual test"""
         if DevtoolsBrowser.connect(self, task):
+            self.connected = True
             DevtoolsBrowser.prepare_browser(self)
             DevtoolsBrowser.navigate(self, START_PAGE)
             DesktopBrowser.wait_for_idle(self)
+
+    def run_task(self, task):
+        """Run an individual test"""
+        if self.connected:
             DevtoolsBrowser.run_task(self, task)
+
+    def stop(self):
+        if self.connected:
             DevtoolsBrowser.disconnect(self)
+        DesktopBrowser.stop(self)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
