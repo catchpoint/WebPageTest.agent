@@ -243,6 +243,11 @@ class DevtoolsBrowser(object):
             delay = min(60, max(0, int(command['target'])))
             if delay > 0:
                 time.sleep(delay)
+        elif command['command'] == 'setabm':
+            if 'target' in command and int(command['target']) == 0:
+                self.task['stop_at_onload'] = True
+            else:
+                self.task['stop_at_onload'] = False
         elif command['command'] == 'block':
             block_list = command['target'].split()
             for block in block_list:

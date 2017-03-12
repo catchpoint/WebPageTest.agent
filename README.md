@@ -51,6 +51,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * addHeader
     * setHeader (aliased to addHeader until devtools supports overriding headers)
     * setCookie
+    * setABM
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
@@ -86,7 +87,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Netlog (rely on netlog trace events instead)
 * Disable Javascript
 * Script Commands:
-    * setABM
     * setDOMElement
     * waitForComplete
     * setDnsName

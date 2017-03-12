@@ -19,7 +19,7 @@ class DevTools(object):
         self.job = job
         self.task = task
         self.command_id = 0
-        self.page_loaded = False
+        self.page_loaded = None
         self.main_frame = None
         self.is_navigating = False
         self.last_activity = monotonic.monotonic()
@@ -129,8 +129,11 @@ class DevTools(object):
             self.trace_enabled = True
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'})
-        if 'web10' not in self.task or not self.task['web10']:
-            self.last_activity = monotonic.monotonic()
+        now = monotonic.monotonic()
+        if not self.task['stop_at_onload']:
+            self.last_activity = now
+        if self.page_loaded is not None:
+            self.page_loaded = now
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
@@ -336,10 +339,13 @@ class DevTools(object):
                 elapsed_test = now - start_time
                 if now >= end_time:
                     done = True
-                    self.task['error'] = "Page Load Timeout"
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Page Load Timeout"
                 elif 'time' not in self.job or elapsed_test > self.job['time']:
                     elapsed_activity = now - self.last_activity
-                    if self.page_loaded and elapsed_activity >= 2:
+                    elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
+                    if elapsed_page_load >= 1 and elapsed_activity >= 2:
                         done = True
                     elif self.task['error'] is not None:
                         done = True
@@ -400,7 +406,7 @@ class DevTools(object):
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
         if event == 'loadEventFired':
-            self.page_loaded = True
+            self.page_loaded = monotonic.monotonic()
         elif event == 'frameStartedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.is_navigating and self.main_frame is None:
                 self.is_navigating = False
@@ -408,7 +414,7 @@ class DevTools(object):
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
                 self.last_activity = monotonic.monotonic()
-                self.page_loaded = False
+                self.page_loaded = None
         elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.main_frame is not None and \
                     not self.page_loaded and \
@@ -416,13 +422,13 @@ class DevTools(object):
                 if self.nav_error is not None:
                     self.task['error'] = self.nav_error
                     logging.debug("Page load failed: %s", self.nav_error)
-                self.page_loaded = True
+                self.page_loaded = monotonic.monotonic()
         elif event == 'javascriptDialogOpening':
             self.task['error'] = "Page opened a modal dailog"
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
-        if 'web10' not in self.task or not self.task['web10']:
+        if not self.task['stop_at_onload']:
             self.last_activity = monotonic.monotonic()
         if 'requestId' in msg['params']:
             request_id = msg['params']['requestId']

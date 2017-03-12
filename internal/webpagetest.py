@@ -131,6 +131,10 @@ class WebPageTest(object):
                         task['width'] = job['width']
                         task['height'] = job['height']
                 task['time_limit'] = job['timeout']
+                if 'web10' in job and job['web10']:
+                    task['stop_at_onload'] = True
+                else:
+                    task['stop_at_onload'] = False
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
