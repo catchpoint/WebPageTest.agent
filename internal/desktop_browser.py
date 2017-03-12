@@ -15,13 +15,14 @@ import monotonic
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
-    def __init__(self, path, job):
+    def __init__(self, path, job, options):
         self.path = path
         self.proc = None
         self.job = job
         self.recording = False
         self.usage_queue = None
         self.thread = None
+        self.options = options
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
@@ -30,7 +31,8 @@ class DesktopBrowser(object):
             from .os_util import flush_dns
             logging.debug("Preparing browser")
             kill_all(os.path.basename(self.path), True)
-            flush_dns()
+            if self.options.shaper is None or self.options.shaper != 'none':
+                flush_dns()
             if 'profile' in task:
                 if not task['cached'] and os.path.isdir(task['profile']):
                     logging.debug("Clearing profile %s", task['profile'])

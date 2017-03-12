@@ -300,47 +300,48 @@ class OptimizationChecks(object):
         re_max_age = re.compile(r'max-age[ ]*=[ ]*(?P<maxage>[\d]+)')
         is_static = False
         time_remaining = -1
-        content_length = self.get_header_value(request['response_headers'], 'Content-Length')
-        if content_length is not None:
-            content_length = int(content_length)
-            if content_length == 0:
-                return is_static, time_remaining
         if 'response_headers' in request:
-            content_type = self.get_header_value(request['response_headers'], 'Content-Type')
-            if content_type is None or \
-                    (content_type.find('/html') == -1 and \
-                    content_type.find('/cache-manifest') == -1):
-                is_static = True
-                cache = self.get_header_value(request['response_headers'], 'Cache-Control')
-                pragma = self.get_header_value(request['response_headers'], 'Pragma')
-                expires = self.get_header_value(request['response_headers'], 'Expires')
-                if cache is not None:
-                    cache = cache.lower()
-                    if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
-                        is_static = False
-                if is_static and pragma is not None:
-                    pragma = pragma.lower()
-                    if pragma.find('no-cache') > -1:
-                        is_static = False
-                if is_static:
-                    time_remaining = 0
+            content_length = self.get_header_value(request['response_headers'], 'Content-Length')
+            if content_length is not None:
+                content_length = int(content_length)
+                if content_length == 0:
+                    return is_static, time_remaining
+            if 'response_headers' in request:
+                content_type = self.get_header_value(request['response_headers'], 'Content-Type')
+                if content_type is None or \
+                        (content_type.find('/html') == -1 and \
+                        content_type.find('/cache-manifest') == -1):
+                    is_static = True
+                    cache = self.get_header_value(request['response_headers'], 'Cache-Control')
+                    pragma = self.get_header_value(request['response_headers'], 'Pragma')
+                    expires = self.get_header_value(request['response_headers'], 'Expires')
                     if cache is not None:
-                        matches = re.search(re_max_age, cache)
-                        if matches:
-                            time_remaining = int(matches.groupdict().get('maxage'))
-                            age = self.get_header_value(request['response_headers'], 'Age')
-                            if age is not None:
-                                time_remaining -= int(age.strip())
-                    elif expires is not None:
-                        date = self.get_header_value(request['response_headers'], 'Date')
-                        exp = time.mktime(parsedate(expires))
-                        if date is not None:
-                            now = time.mktime(parsedate(date))
-                        else:
-                            now = time.time()
-                        time_remaining = int(exp - now)
-                        if time_remaining < 0:
+                        cache = cache.lower()
+                        if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
                             is_static = False
+                    if is_static and pragma is not None:
+                        pragma = pragma.lower()
+                        if pragma.find('no-cache') > -1:
+                            is_static = False
+                    if is_static:
+                        time_remaining = 0
+                        if cache is not None:
+                            matches = re.search(re_max_age, cache)
+                            if matches:
+                                time_remaining = int(matches.groupdict().get('maxage'))
+                                age = self.get_header_value(request['response_headers'], 'Age')
+                                if age is not None:
+                                    time_remaining -= int(age.strip())
+                        elif expires is not None:
+                            date = self.get_header_value(request['response_headers'], 'Date')
+                            exp = time.mktime(parsedate(expires))
+                            if date is not None:
+                                now = time.mktime(parsedate(date))
+                            else:
+                                now = time.time()
+                            time_remaining = int(exp - now)
+                            if time_remaining < 0:
+                                is_static = False
         return is_static, time_remaining
 
     def check_cache_static(self):
