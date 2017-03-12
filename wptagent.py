@@ -33,6 +33,8 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
+        import monotonic
+        start_time = monotonic.monotonic()
         while not self.must_exit:
             try:
                 if self.browsers.is_ready():
@@ -71,6 +73,10 @@ class WPTAgent(object):
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
                     browser.on_stop_recording(None)
+            if self.options.exit > 0:
+                run_time = (monotonic.monotonic() - start_time) / 60.0
+                if run_time > self.options.exit:
+                    break
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""
@@ -208,6 +214,10 @@ def main():
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
+    parser.add_argument('--exit', type=int, default=0,
+                        help='Exit after the specified number of minutes.\n'\
+                        '    Useful for running in a shell script that does some maintenence\n'\
+                        '    or updates periodically (like hourly).')
     parser.add_argument('--shaper', help='Override default traffic shaper. '\
                         'Current supported values are:\n'\
                         '    none - Disable traffic-shaping (i.e. when root is not available')

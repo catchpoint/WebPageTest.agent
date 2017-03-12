@@ -17,7 +17,6 @@ class Browsers(object):
         for browser in self.browsers:
             if 'exe' in self.browsers[browser]:
                 exe = self.browsers[browser]['exe']
-                logging.debug("Checking '%s'", exe)
                 if not os.path.isfile(exe):
                     logging.critical("Browser executable is missing for %s: '%s'", browser, exe)
                     ready = False

@@ -33,6 +33,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Request blocking
 * SPOF testing
 * Optimization checks
+* Exit after running for specified time (i.e. hourly)
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -65,7 +66,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Traceroute tests
 * EC2/GCE config through user data
 * Browser installs/updates
-* Exit after running for specified time (i.e. hourly)
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
 * Script Commands that will be translated into exec:
     * click (clickAndWait)
