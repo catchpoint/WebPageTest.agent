@@ -272,7 +272,7 @@ class DevtoolsBrowser(object):
         """Navigate to the given URL"""
         if self.devtools is not None:
             self.devtools.send_command('Page.navigate', {'url': url}, wait=True)
-    
+
     def get_requests(self):
         """Get the request details for running an optimization check"""
         requests = None
