@@ -79,3 +79,16 @@ def run_elevated(command, args):
         logging.debug('sudo ' + command + ' ' + args)
         ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
     return ret
+
+def get_free_disk_space():
+    """Return the number of bytes free on the given disk in Gigabytes (floating)"""
+    path = os.path.dirname(os.path.realpath(__file__))
+    if platform.system() == 'Windows':
+        import ctypes
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path),
+                                                   None, None, ctypes.pointer(free_bytes))
+        return float(free_bytes.value / 1024 / 1024) / 1024.0
+    else:
+        stat = os.statvfs(path)
+        return float(stat.f_bavail * stat.f_frsize / 1024 / 1024) / 1024.0

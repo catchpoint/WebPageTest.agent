@@ -37,12 +37,15 @@ class WebPageTest(object):
     def get_test(self):
         """Get a job from the server"""
         import requests
+        from .os_util import get_free_disk_space
         job = None
-        url = self.url + "getwork.php?f=json"
+        url = self.url + "getwork.php?f=json&shards=1"
         url += "&location=" + urllib.quote_plus(self.location)
         url += "&pc=" + urllib.quote_plus(self.pc_name)
         if self.key is not None:
             url += "&key=" + self.key
+        free_disk = get_free_disk_space()
+        url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
         count = 0
         retry = True
@@ -83,7 +86,17 @@ class WebPageTest(object):
         """Create a task object for the next test run or return None if the job is done"""
         task = None
         if 'current_state' not in job or not job['current_state']['done']:
-            if 'current_state' not in job:
+            if 'run' in job:
+                # Sharded test, running one run only
+                if 'current_state' not in job:
+                    job['current_state'] = {"run": int(job['run']), "repeat_view": False,
+                                            "done": False}
+                elif not job['current_state']['repeat_view'] and \
+                        ('fvonly' not in job or not job['fvonly']):
+                    job['current_state']['repeat_view'] = True
+                else:
+                    return task
+            elif 'current_state' not in job:
                 job['current_state'] = {"run": 1, "repeat_view": False, "done": False}
             elif not job['current_state']['repeat_view'] and \
                     ('fvonly' not in job or not job['fvonly']):
@@ -122,7 +135,7 @@ class WebPageTest(object):
                 os.makedirs(task['dir'])
                 if not os.path.isdir(profile_dir):
                     os.makedirs(profile_dir)
-                if job['current_state']['run'] == job['runs']:
+                if job['current_state']['run'] == job['runs'] or 'run' in job:
                     if job['current_state']['repeat_view']:
                         job['current_state']['done'] = True
                         task['done'] = True

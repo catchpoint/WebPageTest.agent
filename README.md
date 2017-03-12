@@ -6,6 +6,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Mobile Emulation
 * Custom browser window size
 * Multiple runs
+* Test sharding
 * First/Repeat View
 * Ending tests at onload or by network activity (web10 test option)
 * Network Waterfalls with request/response headers
@@ -60,7 +61,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * HTTP/2 Push reporting
 * HTTP/2 Stream Details
 * Lighthouse integration
-* Test sharding
 * tcpdump
 * Traceroute tests
 * EC2/GCE config through user data
