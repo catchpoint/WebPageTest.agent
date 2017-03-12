@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import shutil
+import time
 import urllib
 import zipfile
 import ujson as json
@@ -43,32 +44,39 @@ class WebPageTest(object):
         if self.key is not None:
             url += "&key=" + self.key
         logging.info("Checking for work: %s", url)
-        try:
-            response = self.session.get(url, timeout=30)
-            if len(response.text):
-                job = response.json()
-                logging.debug("Job: %s", json.dumps(job))
-                # set some default options
-                if 'iq' not in job:
-                    job['iq'] = DEFAULT_JPEG_QUALITY
-                if 'pngss' not in job:
-                    job['pngss'] = 0
-                if 'fvonly' not in job:
-                    job['fvonly'] = 0
-                if 'width' not in job:
-                    job['width'] = 1024
-                if 'height' not in job:
-                    job['height'] = 768
-                if 'browser_width' in job:
-                    job['width'] = job['browser_width']
-                if 'browser_height' in job:
-                    job['height'] = job['browser_height']
-                if 'timeout' not in job:
-                    job['timeout'] = 120
-                if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
-                    job = None
-        except requests.exceptions.RequestException as err:
-            logging.critical("Get Work Error: %s", err.strerror)
+        count = 0
+        retry = True
+        while count < 3 and retry:
+            retry = False
+            count += 1
+            try:
+                response = self.session.get(url, timeout=30)
+                if len(response.text):
+                    job = response.json()
+                    logging.debug("Job: %s", json.dumps(job))
+                    # set some default options
+                    if 'iq' not in job:
+                        job['iq'] = DEFAULT_JPEG_QUALITY
+                    if 'pngss' not in job:
+                        job['pngss'] = 0
+                    if 'fvonly' not in job:
+                        job['fvonly'] = 0
+                    if 'width' not in job:
+                        job['width'] = 1024
+                    if 'height' not in job:
+                        job['height'] = 768
+                    if 'browser_width' in job:
+                        job['width'] = job['browser_width']
+                    if 'browser_height' in job:
+                        job['height'] = job['browser_height']
+                    if 'timeout' not in job:
+                        job['timeout'] = 120
+                    if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
+                        job = None
+            except requests.exceptions.RequestException as err:
+                logging.critical("Get Work Error: %s", err.strerror)
+                retry = True
+                time.sleep(0.1)
         return job
 
     def get_task(self, job):
@@ -222,18 +230,6 @@ class WebPageTest(object):
                                 name = target[:separator].strip()
                                 value = target[separator + 1:].strip()
                                 job['headers'][name] = value
-                    # commands that are known but don't need any special processing
-                    elif command == 'logdata' or \
-                         command == 'combinesteps' or \
-                         command == 'seteventname' or \
-                         command == 'block' or \
-                         command == 'sleep' or \
-                         command == 'setuseragent' or \
-                         command == 'setcookie' or \
-                         command == 'exec':
-                        pass
-                    else:
-                        keep = False
                     if keep:
                         task['script'].append({'command': command,
                                                'target': target,
