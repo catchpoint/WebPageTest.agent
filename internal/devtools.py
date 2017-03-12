@@ -107,6 +107,12 @@ class DevTools(object):
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
+        if 'user_agent_string' in self.task:
+            self.send_command('Network.setUserAgentOverride',
+                              {'userAgent': self.task['user_agent_string']}, wait=True)
+        if 'headers' in self.task:
+            self.send_command('Network.setExtraHTTPHeaders',
+                              {'headers': self.task['headers']}, wait=True)
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})

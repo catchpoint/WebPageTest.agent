@@ -72,13 +72,10 @@ class DevtoolsBrowser(object):
             if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
                 ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
             if ua_string is not None:
-                self.devtools.send_command('Network.setUserAgentOverride',
-                                           {'userAgent': ua_string},
-                                           wait=True)
+                self.task['user_agent_string'] = ua_string
             # Headers
             if 'headers' in self.job:
-                self.devtools.send_command('Network.setExtraHTTPHeaders',
-                                           {'headers': self.job['headers']})
+                self.task['headers'] = self.job['headers']
 
     def on_start_recording(self, _):
         """Start recording"""
@@ -256,8 +253,7 @@ class DevtoolsBrowser(object):
                     logging.debug("Blocking: %s", block)
                     self.devtools.send_command('Network.addBlockedURL', {'url': block})
         elif command['command'] == 'setuseragent':
-            self.devtools.send_command('Network.setUserAgentOverride',
-                                       {'userAgent': command['target']})
+            self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
             if 'target' in command and 'value' in command:
                 url = command['target'].strip()
