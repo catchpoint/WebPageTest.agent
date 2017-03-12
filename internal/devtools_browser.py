@@ -242,6 +242,9 @@ class DevtoolsBrowser(object):
                 self.task['stop_at_onload'] = True
             else:
                 self.task['stop_at_onload'] = False
+        elif command['command'] == 'setActivityTimeout':
+            if 'target' in command:
+                self.task['activity_time'] = max(0, min(30, int(command['target'])))
         elif command['command'] == 'block':
             block_list = command['target'].split()
             for block in block_list:

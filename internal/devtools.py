@@ -351,7 +351,7 @@ class DevTools(object):
                 elif 'time' not in self.job or elapsed_test > self.job['time']:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
-                    if elapsed_page_load >= 1 and elapsed_activity >= 2:
+                    if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
                         done = True
                     elif self.task['error'] is not None:
                         done = True

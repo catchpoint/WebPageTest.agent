@@ -44,6 +44,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setBrowserSize
     * setViewportSize
     * setDeviceScaleFactor
+    * setActivityTimeout
     * setTimeout
     * blockDomains
     * blockDomainsExcept
@@ -76,7 +77,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setValue
     * submitForm
 * Other Script Commands:
-    * setActivityTimeout
     * requiredRequest
     * setDOMRequest
     * waitForJSDone (change semantics to console log message)
