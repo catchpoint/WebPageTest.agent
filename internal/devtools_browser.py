@@ -72,10 +72,7 @@ class DevtoolsBrowser(object):
             if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
                 ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
             if ua_string is not None:
-                self.task['user_agent_string'] = ua_string
-            # Headers
-            if 'headers' in self.job:
-                self.task['headers'] = self.job['headers']
+                self.job['user_agent_string'] = ua_string
 
     def on_start_recording(self, _):
         """Start recording"""
