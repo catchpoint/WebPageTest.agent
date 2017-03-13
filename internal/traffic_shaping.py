@@ -242,8 +242,8 @@ class NetEm(object):
                 # Set up the ifb interface so inbound traffic can be shaped
                 subprocess.call(['sudo', 'modprobe', 'ifb'])
                 subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'up'])
-                subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', 'ens33', 'ingress'])
-                subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', 'ens33', 'parent',
+                subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', self.interface, 'ingress'])
+                subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
                                  'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
                                  'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
                                  'dev', 'ifb0'])
