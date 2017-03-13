@@ -35,6 +35,7 @@ class DevTools(object):
         self.video_path = None
         self.video_prefix = None
         self.recording = False
+        self.mobile_viewport = None
         self.prepare()
 
     def prepare(self):
@@ -363,10 +364,12 @@ class DevTools(object):
             if png:
                 with open(path, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
+                self.crop_screen_shot(path)
             else:
                 tmp_file = path + '.png'
                 with open(tmp_file, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
+                self.crop_screen_shot(tmp_file)
                 command = 'convert -quality {0:d} "{1}" "{2}"'.format(
                     self.job['iq'], tmp_file, path)
                 logging.debug(command)
@@ -376,6 +379,61 @@ class DevTools(object):
                         os.remove(tmp_file)
                     except Exception:
                         pass
+
+    def colors_are_similar(self, color1, color2, threshold=15):
+        """See if 2 given pixels are of similar color"""
+        similar = True
+        delta_sum = 0
+        for value in xrange(3):
+            delta = abs(color1[value] - color2[value])
+            delta_sum += delta
+            if delta > threshold:
+                similar = False
+        if delta_sum > threshold:
+            similar = False
+        return similar
+
+    def crop_screen_shot(self, path):
+        """Crop to the viewport (for mobile tests)"""
+        if 'mobile' in self.job and self.job['mobile']:
+            try:
+                # detect the viewport if we haven't already
+                if self.mobile_viewport is None:
+                    from PIL import Image
+                    image = Image.open(path)
+                    width, height = image.size
+                    pixels = image.load()
+                    background = pixels[10, 10]
+                    viewport_width = None
+                    viewport_height = None
+                    x_pos = 10
+                    y_pos = 10
+                    while viewport_width is None and x_pos < width:
+                        pixel_color = pixels[x_pos, y_pos]
+                        if not self.colors_are_similar(background, pixel_color):
+                            viewport_width = x_pos
+                        else:
+                            x_pos += 1
+                    if viewport_width is None:
+                        viewport_width = width
+                    x_pos = 10
+                    while viewport_height is None and y_pos < height:
+                        pixel_color = pixels[x_pos, y_pos]
+                        if not self.colors_are_similar(background, pixel_color):
+                            viewport_height = y_pos
+                        else:
+                            y_pos += 1
+                    if viewport_height is None:
+                        viewport_height = height
+                    self.mobile_viewport = '{0:d}x{1:d}+0+0'.format(viewport_width, viewport_height)
+                    logging.debug('Mobile viewport found: %s in %dx%d screen shot',
+                                  self.mobile_viewport, width, height)
+                if self.mobile_viewport is not None:
+                    command = 'mogrify -crop {0} "{1}"'.format(self.mobile_viewport, path)
+                    logging.debug(command)
+                    subprocess.call(command, shell=True)
+            except Exception:
+                pass
 
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""

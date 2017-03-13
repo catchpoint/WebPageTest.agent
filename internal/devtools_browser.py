@@ -55,10 +55,12 @@ class DevtoolsBrowser(object):
                                             "height": int(self.job['height']),
                                             "screenWidth": int(self.job['width']),
                                             "screenHeight": int(self.job['height']),
+                                            "scale": 1,
                                             "positionX": 0,
                                             "positionY": 0,
                                             "deviceScaleFactor": float(self.job['dpr']),
-                                            "mobile": True, "fitWindow": True},
+                                            "mobile": True,
+                                            "fitWindow": False},
                                            wait=True)
                 self.devtools.send_command("Emulation.setVisibleSize",
                                            {"width": int(self.job['width']),
