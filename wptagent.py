@@ -220,9 +220,9 @@ def main():
                         '    or updates periodically (like hourly).')
     parser.add_argument('--shaper', help='Override default traffic shaper. '\
                         'Current supported values are:\n'\
-                        '    none - Disable traffic-shaping (i.e. when root is not available')
+                        '    none - Disable traffic-shaping (i.e. when root is not available).')
     parser.add_argument('--xvfb', action='store_true', default=False,
-                        help="Use an xvfb virtual display (Linux only)")
+                        help="Use an xvfb virtual display (Linux only).")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
