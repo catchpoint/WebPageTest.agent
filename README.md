@@ -3,7 +3,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ## Known Issues
 * Not all features have been implemented yet (see list below)
-* Screen shots and video capture when emulating mobile may include an extra gray border when running headless on Linux
 
 ## Installation
 * Install docs are [here](docs/install.md)
