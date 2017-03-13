@@ -5,16 +5,16 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Install docs are [here](docs/install.md)
 
 ## Command-line options
-* -v : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
-* --server (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
-* --location (required): Location ID (as configured in locations.ini on the server).
-* --key : Location key (if configured in locations.ini).
-* --name : Agent name (defaults to the machine's hostname).
-* --exit : Exit after the specified number of minutes.
+* **-v** : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
+* **--server** (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
+* **--location** (required): Location ID (as configured in locations.ini on the server).
+* **--key** : Location key (if configured in locations.ini).
+* **--name** : Agent name (defaults to the machine's hostname).
+* **--exit** : Exit after the specified number of minutes.
     * Useful for running in a shell script that does some maintenence or updates periodically (like hourly).
-* --shaper : Override default traffic shaper. Current supported values are:
+* **--shaper** : Override default traffic shaper. Current supported values are:
     * none - Disable traffic-shaping (i.e. when root is not available).
-* --xvfb : Use an xvfb virtual display for headless testing (Linux only).
+* **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
 
 ## Currently supported features
 * Page Navigation
