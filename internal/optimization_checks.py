@@ -184,6 +184,7 @@ class OptimizationChecks(object):
                           {'X-Iinfo': ''}],
             'Instart Logic': [{'X-Instart-Request-ID': 'instart'}],
             'LeaseWeb CDN': [{'Server': 'leasewebcdn'}],
+            'Medianova': [{'Server': 'MNCDN'}],
             'Naver': [{'Server': 'Testa/'}],
             'NetDNA': [{'Server': 'NetDNA'}],
             'Netlify': [{'Server': 'Netlify'}],
