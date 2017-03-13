@@ -157,6 +157,11 @@ class WPTAgent(object):
                   "and make sure it is in the path."
             ret = False
 
+        if subprocess.call('mogrify -version', shell=True):
+            print "Missing mogrify utility. Please install ImageMagick " \
+                  "and make sure it is in the path."
+            ret = False
+
         if self.options.xvfb:
             try:
                 from xvfbwrapper import Xvfb
