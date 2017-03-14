@@ -138,7 +138,11 @@ class WebPageTest(object):
         url += "&location=" + urllib.quote_plus(self.location)
         url += "&pc=" + urllib.quote_plus(self.pc_name)
         if self.key is not None:
-            url += "&key=" + self.key
+            url += "&key=" + urllib.quote_plus(self.key)
+        if self.instance_id is not None:
+            url += "&ec2=" + urllib.quote_plus(self.instance_id)
+        if self.zone is not None:
+            url += "&ec2zone=" + urllib.quote_plus(self.zone)
         free_disk = get_free_disk_space()
         url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
@@ -358,9 +362,15 @@ class WebPageTest(object):
         logging.info('Uploading result')
         data = {'id': task['id'],
                 'location': self.location,
-                'key': self.key,
                 'run': str(task['run']),
-                'cached': str(task['cached'])}
+                'cached': str(task['cached']),
+                'pc': self.pc_name}
+        if self.key is not None:
+            data['key'] = self.key
+        if self.instance_id is not None:
+            data['ec2'] = self.instance_id
+        if self.zone is not None:
+            data['ec2zone'] = self.zone
         needs_zip = []
         zip_path = None
         if os.path.isdir(task['dir']):
