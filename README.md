@@ -18,6 +18,15 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--shaper** : Override default traffic shaper. Current supported values are:
     * none - Disable traffic-shaping (i.e. when root is not available).
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
+* **--ec2** : Load config settings from EC2 user data.
+* **--gce** : Load config settings from GCE user data.
+
+Options for authenticating the agent with the server:
+* **--username** : User name if using HTTP Basic auth with WebPageTest server.
+* **--password** : Password if using HTTP Basic auth with WebPageTest server.
+* **--cert** : Client certificate if using certificates to authenticate the WebPageTest server connection.
+* **--certkey** : Client-side private key (if not embedded in the cert).
+
 
 ## Currently supported features
 * Page Navigation

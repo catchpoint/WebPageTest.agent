@@ -213,9 +213,9 @@ def main():
     parser.add_argument('-v', '--verbose', action='count',
                         help="Increase verbosity (specify multiple times for more)."
                         " -vvvv for full debug output.")
-    parser.add_argument('--server', required=True,
+    parser.add_argument('--server',
                         help="URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).")
-    parser.add_argument('--location', required=True,
+    parser.add_argument('--location',
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
@@ -228,6 +228,17 @@ def main():
                         '    none - Disable traffic-shaping (i.e. when root is not available).')
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
+    parser.add_argument('--ec2', action='store_true', default=False,
+                        help="Load config settings from EC2 user data.")
+    parser.add_argument('--gce', action='store_true', default=False,
+                        help="Load config settings from GCE user data.")
+    parser.add_argument('--username',
+                        help="User name if using HTTP Basic auth with WebPageTest server.")
+    parser.add_argument('--password',
+                        help="Password if using HTTP Basic auth with WebPageTest server.")
+    parser.add_argument('--cert', help="Client certificate if using certificates to "\
+                        "authenticate the WebPageTest server connection.")
+    parser.add_argument('--certkey', help="Client-side private key (if not embedded in the cert).")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
