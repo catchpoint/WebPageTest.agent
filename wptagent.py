@@ -102,6 +102,28 @@ class WPTAgent(object):
         except IOError:
             pass
 
+    def wait_for_idle(self, timeout=30):
+        """Wait for the system to go idle"""
+        import monotonic
+        import psutil
+        logging.debug("Waiting for Idle...")
+        cpu_count = psutil.cpu_count()
+        if cpu_count > 0:
+            target_pct = 20. / float(cpu_count)
+            idle_start = None
+            end_time = monotonic.monotonic() + timeout
+            idle = False
+            while not idle and monotonic.monotonic() < end_time:
+                check_start = monotonic.monotonic()
+                pct = psutil.cpu_percent(interval=1)
+                if pct <= target_pct:
+                    if idle_start is None:
+                        idle_start = check_start
+                    if monotonic.monotonic() - idle_start > 2:
+                        idle = True
+                else:
+                    idle_start = None
+
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
@@ -181,6 +203,7 @@ class WPTAgent(object):
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
+        self.wait_for_idle(300)
         self.shaper.remove()
         if not self.shaper.install():
             print "Error configuring traffic shaping, make sure it is installed."
