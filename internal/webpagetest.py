@@ -74,6 +74,8 @@ class WebPageTest(object):
                         job['height'] = job['browser_height']
                     if 'timeout' not in job:
                         job['timeout'] = 120
+                    if 'noscript' not in job:
+                        job['noscript'] = 0
                     if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                         job = None
             except requests.exceptions.RequestException as err:

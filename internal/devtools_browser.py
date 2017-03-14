@@ -75,6 +75,10 @@ class DevtoolsBrowser(object):
                 ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
+            # Disable js
+            if self.job['noscript']:
+                self.devtools.send_command("Emulation.setScriptExecutionDisabled",
+                                           {"value": True}, wait=True)
 
     def on_start_recording(self, _):
         """Start recording"""

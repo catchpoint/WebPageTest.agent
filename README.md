@@ -28,6 +28,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * First/Repeat View
 * Ending tests at onload or by network activity (web10 test option)
 * Network Waterfalls with request/response headers
+* Disable Javascript
 * Response Bodies
 * CPU Utilization
 * Bandwidth Utilization
@@ -103,7 +104,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ## Not Supported (no plans to implement)
 * Netlog (rely on netlog trace events instead)
-* Disable Javascript
 * Script Commands:
     * setDOMElement
     * waitForComplete
