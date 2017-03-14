@@ -62,6 +62,8 @@ Options for authenticating the agent with the server:
 * SPOF testing
 * Optimization checks
 * Exit after running for specified time (i.e. hourly)
+* EC2/GCE config through user data
+* Basic auth and client certificates for communicating with WebPageTest server
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -92,7 +94,6 @@ Options for authenticating the agent with the server:
 * Lighthouse integration
 * tcpdump
 * Traceroute tests
-* EC2/GCE config through user data
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
 * Script Commands that will be translated into exec:
