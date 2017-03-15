@@ -4,6 +4,7 @@ FROM ubuntu
 RUN apt-get update && \
   apt-get install -y \
     wget \
+    curl \
     python \
     python-pip \
     xvfb \
@@ -17,15 +18,17 @@ RUN apt-get update && \
     kmod \
     ffmpeg \
     net-tools \
-    tcpdump \
-    nodejs \
-    npm
+    tcpdump
 
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+  wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
 
 RUN apt-get update && \
-  apt-get install -y google-chrome-stable
+  apt-get install -y \
+    google-chrome-stable \
+    nodejs \
+    npm
 
 RUN npm install -g lighthouse
 
