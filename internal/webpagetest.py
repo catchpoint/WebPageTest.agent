@@ -177,6 +177,8 @@ class WebPageTest(object):
                         job['noscript'] = 0
                     if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                         job = None
+                    if 'type' in job and job['type'] == 'traceroute':
+                        job['fvonly'] = 1
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True

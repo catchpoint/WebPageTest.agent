@@ -25,8 +25,10 @@ class Browsers(object):
     def get_browser(self, name, job):
         """Return an instance of the browser logic"""
         browser = None
-        # only support desktop browsers for now
-        if name in self.browsers and 'exe' in self.browsers[name]:
+        if 'type' in job and job['type'] == 'traceroute':
+            from .traceroute import Traceroute
+            browser = Traceroute(self.options, job)
+        elif name in self.browsers and 'exe' in self.browsers[name]:
             from .chrome_desktop import ChromeDesktop
             browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)
         return browser
