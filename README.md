@@ -64,6 +64,7 @@ Options for authenticating the agent with the server:
 * Exit after running for specified time (i.e. hourly)
 * EC2/GCE config through user data
 * Basic auth and client certificates for communicating with WebPageTest server
+* Traceroute tests
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -93,7 +94,6 @@ Options for authenticating the agent with the server:
 * HTTP/2 Stream Details
 * Lighthouse integration
 * tcpdump
-* Traceroute tests
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
 * Script Commands that will be translated into exec:

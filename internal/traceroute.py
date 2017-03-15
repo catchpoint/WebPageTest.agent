@@ -59,32 +59,17 @@ class Traceroute(object):
         out = subprocess.check_output(command)
         lines = out.splitlines()
         dest = re.compile(r'^Tracing route to.*\[([\d\.]+)\]')
-        timeout = re.compile(r'^[\s]*([\d]+).*Request timed out')
-        address_only = re.compile(r'^[\s]*([\d]+)[\s]+'\
-            r'\<?\*?([\d]*)[\sms]+\<?\*?([\d]*)[\sms]+\<?\*?([\d]*)[\sms]+'\
+        timeout = re.compile(r'^\s*(\d+).*Request timed out')
+        address_only = re.compile(r'^\s*(\d+)\s+'\
+            r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'\
             r'([\d\.]+)')
-        with_hostname = re.compile(r'^[\s]*([\d]+)[\s]+'\
-            r'\<?\*?([\d]*)[\sms]+\<?\*?([\d]*)[\sms]+\<?\*?([\d]*)[\sms]+'\
-            r'([^\s]*)[\s]+\[([\d\.]+)\]')
+        with_hostname = re.compile(r'^\s*(\d+)\s+'\
+            r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'\
+            r'([^\s]*)\s+\[([\d\.]+)\]')
         for line in lines:
-            fields = with_hostname.search(line)
-            if fields:
-                hop = int(fields.group(1))
-                hop_time = None if not len(fields.group(2)) else int(fields.group(2))
-                next_time = None if not len(fields.group(3)) else int(fields.group(3))
-                if next_time is not None:
-                    if hop_time is None or next_time < hop_time:
-                        hop_time = next_time
-                next_time = None if not len(fields.group(4)) else int(fields.group(4))
-                if next_time is not None:
-                    if hop_time is None or next_time < hop_time:
-                        hop_time = next_time
-                report_time = '{0:d}'.format(hop_time) if hop_time is not None else ''
-                ret[hop] = {'ms': report_time, 'hostname': fields.group(5), 'addr': fields.group(6)}
-                if hop > last_hop:
-                    last_hop = hop
-            else:
-                fields = address_only.search(line)
+            logging.debug(line)
+            try:
+                fields = with_hostname.search(line)
                 if fields:
                     hop = int(fields.group(1))
                     hop_time = None if not len(fields.group(2)) else int(fields.group(2))
@@ -97,7 +82,72 @@ class Traceroute(object):
                         if hop_time is None or next_time < hop_time:
                             hop_time = next_time
                     report_time = '{0:d}'.format(hop_time) if hop_time is not None else ''
-                    ret[hop] = {'ms': report_time, 'hostname': '', 'addr': fields.group(5)}
+                    ret[hop] = {'ms': report_time, 'hostname': fields.group(5),
+                                'addr': fields.group(6)}
+                    if hop > last_hop:
+                        last_hop = hop
+                else:
+                    fields = address_only.search(line)
+                    if fields:
+                        hop = int(fields.group(1))
+                        hop_time = None if not len(fields.group(2)) else int(fields.group(2))
+                        next_time = None if not len(fields.group(3)) else int(fields.group(3))
+                        if next_time is not None:
+                            if hop_time is None or next_time < hop_time:
+                                hop_time = next_time
+                        next_time = None if not len(fields.group(4)) else int(fields.group(4))
+                        if next_time is not None:
+                            if hop_time is None or next_time < hop_time:
+                                hop_time = next_time
+                        report_time = '{0:d}'.format(hop_time) if hop_time is not None else ''
+                        ret[hop] = {'ms': report_time, 'hostname': '', 'addr': fields.group(5)}
+                        if hop > last_hop:
+                            last_hop = hop
+                    else:
+                        fields = timeout.search(line)
+                        if fields:
+                            hop = int(fields.group(1))
+                            ret[hop] = {'ms': '', 'hostname': '', 'addr': ''}
+                        else:
+                            fields = dest.search(line)
+                            if fields:
+                                ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
+            except Exception:
+                pass
+        return last_hop, ret
+
+    def unix_traceroute(self, hostname):
+        """Run a traceroute on a system that supports bsd traceroute"""
+        ret = {}
+        last_hop = 0
+        ret = {}
+        last_hop = 0
+        command = ['traceroute', '-m', '30', '-w', '0.5', hostname]
+        logging.debug(' '.join(command))
+        out = subprocess.check_output(command)
+        lines = out.splitlines()
+        dest = re.compile(r'^traceroute to [^\(]+\(([\d\.]+)\)')
+        timeout = re.compile(r'^\s*(\d+)\s+\*\s+\*\s+\*')
+        success = re.compile(r'^\s*(\d+)\s+([^\s]+)\s+\(([\d\.]+)\)\s+'\
+                             r'\*?([\d\.]*)[\sms]+\*?([\d\.]*)[\sms]+\*?([\d\.]*)[\sms]+')
+        for line in lines:
+            logging.debug(line)
+            try:
+                fields = success.search(line)
+                if fields:
+                    hop = int(fields.group(1))
+                    hop_time = None if not len(fields.group(4)) else float(fields.group(4))
+                    next_time = None if not len(fields.group(5)) else float(fields.group(5))
+                    if next_time is not None:
+                        if hop_time is None or next_time < hop_time:
+                            hop_time = next_time
+                    next_time = None if not len(fields.group(6)) else float(fields.group(6))
+                    if next_time is not None:
+                        if hop_time is None or next_time < hop_time:
+                            hop_time = next_time
+                    report_time = '{0:0.3f}'.format(hop_time) if hop_time is not None else ''
+                    ret[hop] = {'ms': report_time, 'hostname': fields.group(2),
+                                'addr': fields.group(3)}
                     if hop > last_hop:
                         last_hop = hop
                 else:
@@ -109,12 +159,8 @@ class Traceroute(object):
                         fields = dest.search(line)
                         if fields:
                             ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
-        return last_hop, ret
-
-    def unix_traceroute(self, hostname):
-        """Run a traceroute on Windows"""
-        ret = {}
-        last_hop = 0
+            except Exception:
+                pass
         return last_hop, ret
 
     def stop(self):
