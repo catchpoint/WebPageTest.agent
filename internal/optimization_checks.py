@@ -259,7 +259,7 @@ class OptimizationChecks(object):
             self.results[request_id]['progressive'] = self.progressive_results[request_id]
         # Save the results
         if self.results:
-            path = os.path.join(self.task['dir'], self.task['prefix']) + 'optimization.json.gz'
+            path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
             gz_file = gzip.open(path, 'wb')
             if gz_file:
                 gz_file.write(json.dumps(self.results))

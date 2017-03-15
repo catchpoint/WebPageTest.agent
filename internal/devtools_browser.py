@@ -121,11 +121,11 @@ class DevtoolsBrowser(object):
                             # Collect end of test data from the browser
                             if self.job['pngss']:
                                 screen_shot = os.path.join(task['dir'],
-                                                           task['prefix'] + 'screen.png')
+                                                           task['prefix'] + '_screen.png')
                                 self.devtools.grab_screenshot(screen_shot, png=True)
                             else:
                                 screen_shot = os.path.join(task['dir'],
-                                                           task['prefix'] + 'screen.jpg')
+                                                           task['prefix'] + '_screen.jpg')
                                 self.devtools.grab_screenshot(screen_shot, png=False)
                             self.collect_browser_metrics(task)
                             # Run the rest of the post-processing
@@ -136,6 +136,7 @@ class DevtoolsBrowser(object):
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
+                        self.wait_for_processing()
             self.task = None
 
     def prepare_task(self, task):
@@ -144,7 +145,7 @@ class DevtoolsBrowser(object):
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
         else:
-            task['prefix'] = '{0}{1:d}_'.format(task['task_prefix'], task['current_step'])
+            task['prefix'] = '{0}_{1:d}'.format(task['task_prefix'], task['current_step'])
             task['video_subdirectory'] = '{0}_{1:d}'.format(task['task_video_prefix'],
                                                             task['current_step'])
         if task['video_subdirectory'] not in task['video_directories']:
@@ -163,14 +164,14 @@ class DevtoolsBrowser(object):
     def process_trace(self):
         """Post-process the trace file"""
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
-        trace_file = path_base + 'trace.json.gz'
+        trace_file = path_base + '_trace.json.gz'
         if os.path.isfile(trace_file):
-            user_timing = path_base + 'user_timing.json.gz'
-            cpu_slices = path_base + 'timeline_cpu.json.gz'
-            script_timing = path_base + 'script_timing.json.gz'
-            feature_usage = path_base + 'feature_usage.json.gz'
-            interactive = path_base + 'interactive.json.gz'
-            v8_stats = path_base + 'v8stats.json.gz'
+            user_timing = path_base + '_user_timing.json.gz'
+            cpu_slices = path_base + '_timeline_cpu.json.gz'
+            script_timing = path_base + '_script_timing.json.gz'
+            feature_usage = path_base + '_feature_usage.json.gz'
+            interactive = path_base + '_interactive.json.gz'
+            v8_stats = path_base + '_v8stats.json.gz'
             trace_parser = os.path.join(self.support_path, "trace-parser.py")
             cmd = ['python', trace_parser, '-t', trace_file, '-u', user_timing,
                    '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
@@ -194,7 +195,7 @@ class DevtoolsBrowser(object):
         """Collect all of the in-page browser metrics that we need"""
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + 'timed_events.json.gz')
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
@@ -203,7 +204,7 @@ class DevtoolsBrowser(object):
                 page_data = {}
             page_data['eventName'] = task['step_name']
         if page_data is not None:
-            path = os.path.join(task['dir'], task['prefix'] + 'page_data.json.gz')
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(page_data))
         if 'customMetrics' in self.job:
@@ -213,7 +214,7 @@ class DevtoolsBrowser(object):
                          self.job['customMetrics'][name] +\
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
-            path = os.path.join(task['dir'], task['prefix'] + 'metrics.json.gz')
+            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(custom_metrics))
 

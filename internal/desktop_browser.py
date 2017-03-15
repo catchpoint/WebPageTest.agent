@@ -5,6 +5,7 @@
 import gzip
 import logging
 import os
+import platform
 import Queue
 import shutil
 import subprocess
@@ -25,10 +26,20 @@ class DesktopBrowser(object):
         self.thread = None
         self.options = options
         self.interfaces = None
+        self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
+        self.tcpdump = None
+        self.pcap_file = None
+        self.pcap_thread = None
+        self.task = None
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
+        self.task = task
         self.find_default_interface()
+        if self.tcpdump_enabled:
+            os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
+        else:
+            os.environ["SSLKEYLOGFILE"] = None
         try:
             from .os_util import kill_all
             from .os_util import flush_dns
@@ -132,20 +143,30 @@ class DesktopBrowser(object):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
             self.recording = True
+            # Spawn tcpdump
+            if self.tcpdump_enabled:
+                self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'
+                plat = platform.system()
+                if plat == "Linux" or plat == "Darwin":
+                    args = ['sudo', 'tcpdump', '-p', '-i', 'any', '-s', '0',
+                            '-w', self.pcap_file]
+                    self.tcpdump = subprocess.Popen(args)
+
+            # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()
 
     def on_stop_recording(self, task):
-        """Notification that we are about to start an operation that needs to be recorded"""
+        """Notification that we are done with recording"""
         self.recording = False
         if self.thread is not None:
             self.thread.join()
             self.thread = None
         # record the CPU/Bandwidth/memory info
         if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
-            file_path = os.path.join(task['dir'], task['prefix']) + 'progress.csv.gz'
+            file_path = os.path.join(task['dir'], task['prefix']) + '_progress.csv.gz'
             gzfile = gzip.open(file_path, 'wb')
             if gzfile:
                 gzfile.write("Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n")
@@ -154,6 +175,51 @@ class DesktopBrowser(object):
                     gzfile.write('{0:d},{1:d},{2:0.2f},-1\n'.format(
                         snapshot['time'], snapshot['bw'], snapshot['cpu']))
                 gzfile.close()
+        if self.tcpdump is not None:
+            logging.debug('Stopping tcpdump')
+            plat = platform.system()
+            if plat == "Linux" or plat == "Darwin":
+                subprocess.call(['sudo', 'killall', 'tcpdump'])
+            self.tcpdump = None
+            from .os_util import kill_all
+            from .os_util import wait_for_all
+            kill_all('tcpdump', False)
+            wait_for_all('tcpdump')
+            if self.pcap_file is not None:
+                logging.debug('Compressing pcap')
+                if os.path.isfile(self.pcap_file):
+                    pcap_out = self.pcap_file + '.gz'
+                    with open(self.pcap_file, 'rb') as f_in:
+                        with gzip.open(pcap_out, 'wb', 7) as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                    if os.path.isfile(pcap_out):
+                        self.pcap_thread = threading.Thread(target=self.process_pcap)
+                        self.pcap_thread.daemon = True
+                        self.pcap_thread.start()
+                        try:
+                            os.remove(self.pcap_file)
+                        except Exception:
+                            pass
+
+    def wait_for_processing(self):
+        """Wait for any background processing threads to finish"""
+        if self.pcap_thread is not None:
+            logging.debug('Waiting for pcap processing to finish')
+            self.pcap_thread.join()
+            self.pcap_thread = None
+        self.pcap_file = None
+
+    def process_pcap(self):
+        """Process the pcap in a background thread"""
+        pcap_file = self.pcap_file + '.gz'
+        if os.path.isfile(pcap_file):
+            path_base = os.path.join(self.task['dir'], self.task['prefix'])
+            slices_file = path_base + '_pcap_slices.json.gz'
+            pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                       'support', "pcap-parser.py")
+            cmd = ['python', pcap_parser, '--json', '-i', pcap_file, '-d', slices_file]
+            logging.debug(cmd)
+            subprocess.call(cmd)
 
     def get_net_bytes(self):
         """Get the bytes received, ignoring the loopback interface"""

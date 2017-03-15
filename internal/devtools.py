@@ -195,7 +195,7 @@ class DevTools(object):
             # see if we also need to zip them up
             zip_file = None
             if 'bodies' in self.job and self.job['bodies']:
-                zip_file = zipfile.ZipFile(self.path_base + 'bodies.zip', 'w', zipfile.ZIP_DEFLATED)
+                zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w', zipfile.ZIP_DEFLATED)
             path = os.path.join(self.task['dir'], 'bodies')
             if not os.path.isdir(path):
                 os.makedirs(path)
@@ -554,7 +554,7 @@ class DevTools(object):
                 'value' in msg['params'] and \
                 len(msg['params']['value']):
             if self.trace_file is None:
-                self.trace_file = gzip.open(self.path_base + 'trace.json.gz', 'wb')
+                self.trace_file = gzip.open(self.path_base + '_trace.json.gz', 'wb')
                 self.trace_file.write('{"traceEvents":[{}')
             # write out the trace events one-per-line but pull out any
             # devtools screenshots as separate files.
@@ -589,7 +589,7 @@ class DevTools(object):
         """Log the dev tools events to a file"""
         if self.task['log_data']:
             if self.dev_tools_file is None:
-                path = self.path_base + 'devtools.json.gz'
+                path = self.path_base + '_devtools.json.gz'
                 self.dev_tools_file = gzip.open(path, 'wb')
                 self.dev_tools_file.write("[{}")
             if self.dev_tools_file is not None:

@@ -223,9 +223,9 @@ class WebPageTest(object):
                         'video_directories': []}
                 # Set up the task configuration options
                 task['port'] = 9222
-                task['task_prefix'] = "{0:d}_".format(run)
+                task['task_prefix'] = "{0:d}".format(run)
                 if task['cached']:
-                    task['task_prefix'] += "Cached_"
+                    task['task_prefix'] += "_Cached"
                 task['prefix'] = task['task_prefix']
                 short_id = "{0}.{1}.{2}".format(task['id'], run, task['cached'])
                 task['dir'] = os.path.join(self.workdir, short_id)
@@ -386,7 +386,7 @@ class WebPageTest(object):
                                 if os.path.getsize(filepath) > 100000:
                                     logging.debug('Uploading %s', filename)
                                     if self.post_data(self.url + "resultimage.php", data,
-                                                      filepath, task['prefix'] + filename):
+                                                      filepath, task['prefix'] + '_' + filename):
                                         os.remove(filepath)
                                     else:
                                         needs_zip.append({'path': filepath, 'name': name})

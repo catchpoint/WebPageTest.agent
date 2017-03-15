@@ -93,3 +93,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         """Notification that we are about to start an operation that needs to be recorded"""
         DesktopBrowser.on_stop_recording(self, task)
         DevtoolsBrowser.on_stop_recording(self, task)
+
+    def wait_for_processing(self):
+        """Wait for any background processing threads to finish"""
+        DesktopBrowser.wait_for_processing(self)
