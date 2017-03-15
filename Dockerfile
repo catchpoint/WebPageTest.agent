@@ -27,8 +27,7 @@ RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
 RUN apt-get update && \
   apt-get install -y \
     google-chrome-stable \
-    nodejs \
-    npm
+    nodejs
 
 RUN npm install -g lighthouse
 
