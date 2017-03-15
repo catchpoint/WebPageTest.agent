@@ -251,6 +251,8 @@ def main():
                         '    none - Disable traffic-shaping (i.e. when root is not available).')
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
+    parser.add_argument('--dockerized', action='store_true', default=False,
+                        help="Agent is running in a docker container.")
     parser.add_argument('--ec2', action='store_true', default=False,
                         help="Load config settings from EC2 user data.")
     parser.add_argument('--gce', action='store_true', default=False,

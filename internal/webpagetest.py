@@ -444,7 +444,8 @@ class WebPageTest(object):
         # pass the data fields as query params and any files as post data
         url += "?"
         for key in data:
-            url += key + '=' + urllib.quote_plus(data[key]) + '&'
+            if data[key] != None:
+                url += key + '=' + urllib.quote_plus(data[key]) + '&'
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
