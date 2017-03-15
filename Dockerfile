@@ -41,4 +41,4 @@ COPY docker/linux-headless/browsers.ini /wptagent/browsers.ini
 
 WORKDIR /wptagent
 
-ENTRYPOINT ["/wptagent/entrypoint.sh"]
+CMD ["/bin/bash", "/wptagent/entrypoint.sh"]
