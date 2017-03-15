@@ -24,9 +24,11 @@ class DesktopBrowser(object):
         self.usage_queue = None
         self.thread = None
         self.options = options
+        self.interfaces = None
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
+        self.find_default_interface()
         try:
             from .os_util import kill_all
             from .os_util import flush_dns
@@ -42,6 +44,39 @@ class DesktopBrowser(object):
                     os.makedirs(task['profile'])
         except Exception as err:
             logging.critical("Exception preparing Browser: %s", err.__str__())
+
+    def find_default_interface(self):
+        """Look through the list of interfaces for the non-loopback interface"""
+        import psutil
+        try:
+            if self.interfaces is None:
+                self.interfaces = {}
+                # Look to see which interfaces are up
+                stats = psutil.net_if_stats()
+                for interface in stats:
+                    if interface != 'lo' and interface[:3] != 'ifb' and stats[interface].isup:
+                        self.interfaces[interface] = {'packets': 0}
+                if len(self.interfaces) > 1:
+                    # See which interfaces have received data
+                    cnt = psutil.net_io_counters(True)
+                    for interface in cnt:
+                        if interface in self.interfaces:
+                            self.interfaces[interface]['packets'] = \
+                                cnt[interface].packets_sent + cnt[interface].packets_recv
+                    for interface in self.interfaces:
+                        if self.interfaces[interface]['packets'] == 0:
+                            del self.interfaces[interface]
+                if len(self.interfaces) > 1:
+                    # Eliminate any with the loopback address
+                    addresses = psutil.net_if_addrs()
+                    for interface in addresses:
+                        if interface in self.interfaces:
+                            for address in addresses[interface]:
+                                if address.address == '127.0.0.1':
+                                    del self.interfaces[interface]
+                                    break
+        except Exception:
+            pass
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
@@ -126,7 +161,10 @@ class DesktopBrowser(object):
         bytes_in = 0
         net = psutil.net_io_counters(True)
         for interface in net:
-            if interface != 'lo':
+            if self.interfaces is not None:
+                if interface in self.interfaces:
+                    bytes_in += net[interface].bytes_recv
+            elif interface != 'lo' and interface[:3] != 'ifb':
                 bytes_in += net[interface].bytes_recv
         return bytes_in
 
