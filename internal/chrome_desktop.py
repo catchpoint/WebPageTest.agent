@@ -25,8 +25,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
-    '--disable-background-timer-throttling',
-    '--no-sandbox'
+    '--disable-background-timer-throttling'
 ]
 
 HOST_RULES = [
@@ -59,6 +58,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--user-data-dir="{0}"'.format(task['profile']))
         if self.options.xvfb:
             args.append('--disable-gpu')
+        if self.options.dockerized:
+            args.append('--no-sandbox')
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:

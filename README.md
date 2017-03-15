@@ -18,6 +18,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--shaper** : Override default traffic shaper. Current supported values are:
     * none - Disable traffic-shaping (i.e. when root is not available).
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
+* **--dockerized**: The agent is running inside a docker container.
 
 ## Currently supported features
 * Page Navigation

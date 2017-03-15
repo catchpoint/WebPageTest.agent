@@ -228,6 +228,8 @@ def main():
                         '    none - Disable traffic-shaping (i.e. when root is not available).')
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
+    parser.add_argument('--dockerized', action='store_true', default=False,
+                        help="Agent is running in a docker container.")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
