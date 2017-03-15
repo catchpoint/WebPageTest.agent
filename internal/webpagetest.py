@@ -19,20 +19,115 @@ class WebPageTest(object):
         import requests
         self.session = requests.Session()
         self.options = options
+        # Configurable options
         self.url = options.server
         self.location = options.location
         self.key = options.key
-        if options.name is None:
-            self.pc_name = platform.uname()[1]
-        else:
-            self.pc_name = options.name
+        self.time_limit = 120
+        self.pc_name = platform.uname()[1] if options.name is None else options.name
+        self.auth_name = options.username
+        self.auth_password = options.password if options.password is not None else ''
+        self.validate_server_certificate = False
+        self.instance_id = None
+        self.zone = None
+        # See if we have to load dynamic config options
+        if self.options.ec2:
+            self.load_from_ec2()
+        elif self.options.gce:
+            self.load_from_gce()
+        # Set the session authentication options
+        if self.auth_name is not None:
+            self.session.auth = (self.auth_name, self.auth_password)
+        self.session.verify = self.validate_server_certificate
+        if options.cert is not None:
+            if options.certkey is not None:
+                self.session.cert = (options.cert, options.certkey)
+            else:
+                self.session.cert = options.cert
+        # Set up the temporary directories
         self.workdir = os.path.join(workdir, self.pc_name)
+        self.profile_dir = os.path.join(self.workdir, 'browser')
         if os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
-        self.profile_dir = os.path.join(self.workdir, 'browser')
+
+    def load_from_ec2(self):
+        """Load config settings from EC2 user data"""
+        import requests
+        try:
+            response = requests.get('http://169.254.169.254/latest/user-data', timeout=30)
+            if len(response.text):
+                self.parse_user_data(response.text)
+        except Exception:
+            pass
+        try:
+            response = requests.get('http://169.254.169.254/latest/meta-data/instance-id',
+                                    timeout=30)
+            if len(response.text):
+                self.instance_id = response.text.strip()
+        except Exception:
+            pass
+        try:
+            response = requests.get(
+                'http://169.254.169.254/latest/meta-data/placement/availability-zone',
+                timeout=30)
+            if len(response.text):
+                self.zone = response.text.strip()
+        except Exception:
+            pass
+
+    def load_from_gce(self):
+        """Load config settings from GCE user data"""
+        import requests
+        try:
+            response = requests.get(
+                'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
+                headers={'Metadata-Flavor':'Google'},
+                timeout=30)
+            if len(response.text):
+                self.parse_user_data(response.text)
+        except Exception:
+            pass
+        try:
+            response = requests.get('http://169.254.169.254/computeMetadata/v1/instance/id',
+                                    headers={'Metadata-Flavor':'Google'},
+                                    timeout=30)
+            if len(response.text):
+                self.instance_id = response.text.strip()
+        except Exception:
+            pass
+
+    def parse_user_data(self, user_data):
+        """Parse the provided user data and extract the config info"""
+        options = user_data.split()
+        for option in options:
+            try:
+                parts = option.split('=', 1)
+                if len(parts) == 2:
+                    key = parts[0].strip()
+                    value = parts[1].strip()
+                    logging.debug('Setting config option "%s" to "%s"', key, value)
+                    if key == 'wpt_server':
+                        self.url = 'http://{0}/work/'.format(value)
+                    if key == 'wpt_url':
+                        self.url = value
+                    elif key == 'wpt_loc' or key == 'wpt_location':
+                        self.location = value
+                    elif key == 'wpt_key':
+                        self.key = value
+                    elif key == 'wpt_timeout':
+                        self.time_limit = int(value)
+                    elif key == 'wpt_username':
+                        self.auth_name = value
+                    elif key == 'wpt_password':
+                        self.auth_password = value
+                    elif key == 'wpt_validcertificate' and value == '1':
+                        self.validate_server_certificate = True
+            except Exception:
+                pass
+
 
     def get_test(self):
         """Get a job from the server"""
@@ -43,7 +138,11 @@ class WebPageTest(object):
         url += "&location=" + urllib.quote_plus(self.location)
         url += "&pc=" + urllib.quote_plus(self.pc_name)
         if self.key is not None:
-            url += "&key=" + self.key
+            url += "&key=" + urllib.quote_plus(self.key)
+        if self.instance_id is not None:
+            url += "&ec2=" + urllib.quote_plus(self.instance_id)
+        if self.zone is not None:
+            url += "&ec2zone=" + urllib.quote_plus(self.zone)
         free_disk = get_free_disk_space()
         url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
@@ -73,13 +172,17 @@ class WebPageTest(object):
                     if 'browser_height' in job:
                         job['height'] = job['browser_height']
                     if 'timeout' not in job:
-                        job['timeout'] = 120
+                        job['timeout'] = self.time_limit
+                    if 'noscript' not in job:
+                        job['noscript'] = 0
                     if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                         job = None
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
                 time.sleep(0.1)
+            except Exception:
+                pass
         return job
 
     def get_task(self, job):
@@ -259,9 +362,15 @@ class WebPageTest(object):
         logging.info('Uploading result')
         data = {'id': task['id'],
                 'location': self.location,
-                'key': self.key,
                 'run': str(task['run']),
-                'cached': str(task['cached'])}
+                'cached': str(task['cached']),
+                'pc': self.pc_name}
+        if self.key is not None:
+            data['key'] = self.key
+        if self.instance_id is not None:
+            data['ec2'] = self.instance_id
+        if self.zone is not None:
+            data['ec2zone'] = self.zone
         needs_zip = []
         zip_path = None
         if os.path.isdir(task['dir']):
@@ -342,7 +451,7 @@ class WebPageTest(object):
             if file_path is not None and os.path.isfile(file_path):
                 self.session.post(url,
                                   files={'file':(filename, open(file_path, 'rb'))},
-                                  timeout=300)
+                                  timeout=300,)
             else:
                 self.session.post(url)
         except requests.exceptions.RequestException as err:
@@ -350,5 +459,8 @@ class WebPageTest(object):
             ret = False
         except IOError as err:
             logging.error("Upload Error: %s", err.strerror)
+            ret = False
+        except Exception:
+            logging.error("Upload Exception")
             ret = False
         return ret

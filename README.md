@@ -19,6 +19,14 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * none - Disable traffic-shaping (i.e. when root is not available).
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
 * **--dockerized**: The agent is running inside a docker container.
+* **--ec2** : Load config settings from EC2 user data.
+* **--gce** : Load config settings from GCE user data.
+
+Options for authenticating the agent with the server:
+* **--username** : User name if using HTTP Basic auth with WebPageTest server.
+* **--password** : Password if using HTTP Basic auth with WebPageTest server.
+* **--cert** : Client certificate if using certificates to authenticate the WebPageTest server connection.
+* **--certkey** : Client-side private key (if not embedded in the cert).
 
 ## Currently supported features
 * Page Navigation
@@ -29,6 +37,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * First/Repeat View
 * Ending tests at onload or by network activity (web10 test option)
 * Network Waterfalls with request/response headers
+* Disable Javascript
 * Response Bodies
 * CPU Utilization
 * Bandwidth Utilization
@@ -53,6 +62,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * SPOF testing
 * Optimization checks
 * Exit after running for specified time (i.e. hourly)
+* EC2/GCE config through user data
+* Basic auth and client certificates for communicating with WebPageTest server
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -83,7 +94,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Lighthouse integration
 * tcpdump
 * Traceroute tests
-* EC2/GCE config through user data
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
 * Script Commands that will be translated into exec:
@@ -104,7 +114,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ## Not Supported (no plans to implement)
 * Netlog (rely on netlog trace events instead)
-* Disable Javascript
 * Script Commands:
     * setDOMElement
     * waitForComplete

@@ -102,6 +102,28 @@ class WPTAgent(object):
         except IOError:
             pass
 
+    def wait_for_idle(self, timeout=30):
+        """Wait for the system to go idle"""
+        import monotonic
+        import psutil
+        logging.debug("Waiting for Idle...")
+        cpu_count = psutil.cpu_count()
+        if cpu_count > 0:
+            target_pct = 20. / float(cpu_count)
+            idle_start = None
+            end_time = monotonic.monotonic() + timeout
+            idle = False
+            while not idle and monotonic.monotonic() < end_time:
+                check_start = monotonic.monotonic()
+                pct = psutil.cpu_percent(interval=1)
+                if pct <= target_pct:
+                    if idle_start is None:
+                        idle_start = check_start
+                    if monotonic.monotonic() - idle_start > 2:
+                        idle = True
+                else:
+                    idle_start = None
+
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
@@ -181,6 +203,7 @@ class WPTAgent(object):
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
+        self.wait_for_idle(300)
         self.shaper.remove()
         if not self.shaper.install():
             print "Error configuring traffic shaping, make sure it is installed."
@@ -213,9 +236,9 @@ def main():
     parser.add_argument('-v', '--verbose', action='count',
                         help="Increase verbosity (specify multiple times for more)."
                         " -vvvv for full debug output.")
-    parser.add_argument('--server', required=True,
+    parser.add_argument('--server',
                         help="URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).")
-    parser.add_argument('--location', required=True,
+    parser.add_argument('--location',
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
@@ -230,6 +253,17 @@ def main():
                         help="Use an xvfb virtual display (Linux only).")
     parser.add_argument('--dockerized', action='store_true', default=False,
                         help="Agent is running in a docker container.")
+    parser.add_argument('--ec2', action='store_true', default=False,
+                        help="Load config settings from EC2 user data.")
+    parser.add_argument('--gce', action='store_true', default=False,
+                        help="Load config settings from GCE user data.")
+    parser.add_argument('--username',
+                        help="User name if using HTTP Basic auth with WebPageTest server.")
+    parser.add_argument('--password',
+                        help="Password if using HTTP Basic auth with WebPageTest server.")
+    parser.add_argument('--cert', help="Client certificate if using certificates to "\
+                        "authenticate the WebPageTest server connection.")
+    parser.add_argument('--certkey', help="Client-side private key (if not embedded in the cert).")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)

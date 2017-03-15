@@ -10,11 +10,13 @@ import time
 import threading
 import monotonic
 import ujson as json
-import constants
 from .optimization_checks import OptimizationChecks
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
+    CONNECT_TIME_LIMIT = 30
+    CURRENT_VERSION = 1
+
     def __init__(self, job):
         self.job = job
         self.devtools = None
@@ -28,7 +30,7 @@ class DevtoolsBrowser(object):
         ret = False
         from internal.devtools import DevTools
         self.devtools = DevTools(self.job, task)
-        if self.devtools.connect(constants.START_BROWSER_TIME_LIMIT):
+        if self.devtools.connect(self.CONNECT_TIME_LIMIT):
             logging.debug("Devtools connected")
             ret = True
         else:
@@ -72,9 +74,13 @@ class DevtoolsBrowser(object):
             else:
                 ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
-                ua_string += ' PTST/{0:d}'.format(constants.CURRENT_VERSION)
+                ua_string += ' PTST/{0:d}'.format(self.CURRENT_VERSION)
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
+            # Disable js
+            if self.job['noscript']:
+                self.devtools.send_command("Emulation.setScriptExecutionDisabled",
+                                           {"value": True}, wait=True)
 
     def on_start_recording(self, _):
         """Start recording"""
@@ -240,10 +246,7 @@ class DevtoolsBrowser(object):
             if delay > 0:
                 time.sleep(delay)
         elif command['command'] == 'setabm':
-            if 'target' in command and int(command['target']) == 0:
-                self.task['stop_at_onload'] = True
-            else:
-                self.task['stop_at_onload'] = False
+            self.task['stop_at_onload'] = bool('target' in command and int(command['target']) == 0)
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
                 self.task['activity_time'] = max(0, min(30, int(command['target'])))

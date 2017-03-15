@@ -270,10 +270,10 @@ class DevTools(object):
                     elif 'data' in events:
                         transfer_size = 0
                         for data in events['data']:
-                            if 'encodedDataLength' in events['data']:
-                                transfer_size += events['data']['encodedDataLength']
-                            elif 'dataLength' in events['data']:
-                                transfer_size += events['data']['dataLength']
+                            if 'encodedDataLength' in data:
+                                transfer_size += data['encodedDataLength']
+                            elif 'dataLength' in data:
+                                transfer_size += data['dataLength']
                         request['transfer_size'] = transfer_size
 
                     if requests is None:

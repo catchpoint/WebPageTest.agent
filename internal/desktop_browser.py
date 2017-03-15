@@ -10,11 +10,12 @@ import shutil
 import subprocess
 import threading
 import time
-import constants
 import monotonic
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
+    START_BROWSER_TIME_LIMIT = 30
+
     def __init__(self, path, job, options):
         self.path = path
         self.proc = None
@@ -65,7 +66,7 @@ class DesktopBrowser(object):
         if cpu_count > 0:
             target_pct = 20. / float(cpu_count)
             idle_start = None
-            end_time = monotonic.monotonic() + constants.START_BROWSER_TIME_LIMIT
+            end_time = monotonic.monotonic() + self.START_BROWSER_TIME_LIMIT
             idle = False
             while not idle and monotonic.monotonic() < end_time:
                 check_start = monotonic.monotonic()
