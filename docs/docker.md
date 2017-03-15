@@ -4,7 +4,7 @@ To run the agent, simply specify a few environment variables with docker:
 
 * `SERVER_URL` will be passed as `--server`
 * `LOCATION` will be passed as `--location`
-* `NAME` will be passed as `--name`
+* `NAME` will be passed as `--name` (optional)
 
 ## Example
 

@@ -11,9 +11,10 @@ if [ -z "$LOCATION" ]; then
   exit 1
 fi
 
-if [ -z "$NAME" ]; then
-  echo >&2 'NAME not set'
-  exit 1
+EXTRA_ARGS=""
+
+if [ -n "$NAME" ]; then
+  EXTRA_ARGS="$EXTRA_ARGS --name $NAME"
 fi
 
-python /wptagent/wptagent.py --server $SERVER_URL --location $LOCATION --name $NAME --xvfb -vvvvv --shaper none
+python /wptagent/wptagent.py --server $SERVER_URL --location $LOCATION $EXTRA_ARGS --xvfb -vvvvv --shaper none
