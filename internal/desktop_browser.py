@@ -31,6 +31,7 @@ class DesktopBrowser(object):
         self.pcap_file = None
         self.pcap_thread = None
         self.task = None
+        self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
@@ -146,11 +147,13 @@ class DesktopBrowser(object):
             # Spawn tcpdump
             if self.tcpdump_enabled:
                 self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'
-                plat = platform.system()
-                if plat == "Linux" or plat == "Darwin":
+                if platform.system() == 'Windows':
+                    tcpdump = os.path.join(self.support_path, 'tcpdump.exe')
+                    args = [tcpdump, 'start', self.pcap_file]
+                else:
                     args = ['sudo', 'tcpdump', '-p', '-i', 'any', '-s', '0',
                             '-w', self.pcap_file]
-                    self.tcpdump = subprocess.Popen(args)
+                self.tcpdump = subprocess.Popen(args)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
@@ -177,8 +180,10 @@ class DesktopBrowser(object):
                 gzfile.close()
         if self.tcpdump is not None:
             logging.debug('Stopping tcpdump')
-            plat = platform.system()
-            if plat == "Linux" or plat == "Darwin":
+            if platform.system() == 'Windows':
+                tcpdump = os.path.join(self.support_path, 'tcpdump.exe')
+                subprocess.call([tcpdump, 'stop'])
+            else:
                 subprocess.call(['sudo', 'killall', 'tcpdump'])
             self.tcpdump = None
             from .os_util import kill_all
