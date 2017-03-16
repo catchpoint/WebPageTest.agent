@@ -40,7 +40,7 @@ class DesktopBrowser(object):
         if self.tcpdump_enabled:
             os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
         else:
-            os.environ["SSLKEYLOGFILE"] = None
+            os.environ["SSLKEYLOGFILE"] = ''
         try:
             from .os_util import kill_all
             from .os_util import flush_dns
