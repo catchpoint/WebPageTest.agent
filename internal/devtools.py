@@ -121,8 +121,7 @@ class DevTools(object):
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
                 else:
-                    trace = "-*,blink,v8,cc,gpu,blink.net,netlog" + \
-                            ",disabled-by-default-v8.runtime_stats"
+                    trace = "-*,blink,v8,cc,gpu,blink.net,disabled-by-default-v8.runtime_stats"
             else:
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
@@ -132,7 +131,7 @@ class DevTools(object):
                 trace += "devtools.timeline.frame"
             if 'Capture Video' in self.job and self.job['Capture Video']:
                 trace += ",disabled-by-default-devtools.screenshot"
-            trace += ",blink.user_timing"
+            trace += ",blink.user_timing,netlog"
             self.trace_enabled = True
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'})

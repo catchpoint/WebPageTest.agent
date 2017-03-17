@@ -171,13 +171,22 @@ class DevtoolsBrowser(object):
             script_timing = path_base + '_script_timing.json.gz'
             feature_usage = path_base + '_feature_usage.json.gz'
             interactive = path_base + '_interactive.json.gz'
+            netlog = path_base + '_netlog_requests.json.gz'
             v8_stats = path_base + '_v8stats.json.gz'
             trace_parser = os.path.join(self.support_path, "trace-parser.py")
             cmd = ['python', trace_parser, '-t', trace_file, '-u', user_timing,
                    '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
-                   '-i', interactive, '-s', v8_stats]
+                   '-i', interactive, '-n', netlog, '-s', v8_stats]
             logging.debug(cmd)
             subprocess.call(cmd)
+            # delete the trace file if it wasn't requested
+            trace_enabled = bool('trace' in self.job and self.job['trace'])
+            timeline_enabled = bool('timeline' in self.job and self.job['timeline'])
+            if not trace_enabled and not timeline_enabled:
+                try:
+                    os.remove(trace_file)
+                except Exception:
+                    pass
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
