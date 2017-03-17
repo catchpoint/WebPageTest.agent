@@ -18,6 +18,7 @@ import gzip
 import logging
 import math
 import os
+import re
 import time
 import urlparse
 
@@ -50,7 +51,7 @@ class Trace():
         self.cpu = {'main_thread': None}
         self.feature_usage = None
         self.feature_usage_start_time = None
-        self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_redirect_id': 1000000}
+        self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
         self.v8stats = None
         self.v8stack = {}
         return
@@ -560,6 +561,13 @@ class Trace():
                                 request['parent_stream_id'] = stream['parent_stream_id']
                             if 'weight' in stream:
                                 request['weight'] = stream['weight']
+                            if 'first_byte' not in request and 'first_byte' in stream:
+                                request['first_byte'] = stream['first_byte']
+                            if 'end' not in request and 'end' in stream:
+                                request['end'] = stream['end']
+                            if stream['bytes_in'] > request['bytes_in']:
+                                request['bytes_in'] = stream['bytes_in']
+                                request['chunks'] = stream['chunks']
                     requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
@@ -683,18 +691,18 @@ class Trace():
         """Raw H2 session information (linked to sockets and requests)"""
         if 'h2_session' not in self.netlog:
             self.netlog['h2_session'] = {}
-        request_id = trace_event['id']
-        if request_id not in self.netlog['h2_session']:
-            self.netlog['h2_session'][request_id] = {'stream': {}}
+        session_id = trace_event['id']
+        if session_id not in self.netlog['h2_session']:
+            self.netlog['h2_session'][session_id] = {'stream': {}}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
-        entry = self.netlog['h2_session'][request_id]
+        entry = self.netlog['h2_session'][session_id]
         name = trace_event['name']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'HTTP2_SESSION_INITIALIZED':
                 socket_id = params['source_dependency']['id']
                 entry['socket'] = socket_id
                 if 'socket' in self.netlog and socket_id in self.netlog['socket']:
-                    self.netlog['socket']['h2_session'] = request_id
+                    self.netlog['socket']['h2_session'] = session_id
         if 'host' not in entry and 'host' in params:
             entry['host'] = params['host']
         if 'protocol' not in entry and 'protocol' in params:
@@ -702,22 +710,77 @@ class Trace():
         if 'stream_id' in params:
             stream_id = params['stream_id']
             if stream_id not in entry['stream']:
-                entry['stream'][stream_id] = {'bytes_in': 0, 'bytes_out': 0}
+                entry['stream'][stream_id] = {'bytes_in': 0, 'chunks': []}
             stream = entry['stream'][stream_id]
+            if 'exclusive' in params:
+                stream['exclusive'] = params['exclusive']
+            if 'parent_stream_id' in params:
+                stream['parent_stream_id'] = params['parent_stream_id']
+            if 'weight' in params:
+                stream['weight'] = params['weight']
+            if 'url' in params:
+                stream['url'] = params['url']
+                if 'url_request' in stream:
+                    request_id = stream['url_request']
+                    if 'url_request' in self.netlog and request_id in self.netlog['url_request']:
+                        request = self.netlog['url_request'][request_id]
+                        request['url'] = params['url']
             if name == 'HTTP2_SESSION_RECV_DATA' and 'size' in params:
+                stream['end'] = trace_event['ts']
+                if 'first_byte' not in stream:
+                    stream['first_byte'] = trace_event['ts']
                 stream['bytes_in'] += params['size']
+                stream['chunks'].append({'ts': trace_event['ts'], 'bytes': params['size']})
             if name == 'HTTP2_SESSION_SEND_HEADERS':
                 if 'headers' in params:
                     stream['request_headers'] = params['headers']
-                if 'exclusive' in params:
-                    stream['exclusive'] = params['exclusive']
-                if 'parent_stream_id' in params:
-                    stream['parent_stream_id'] = params['parent_stream_id']
-                if 'weight' in params:
-                    stream['weight'] = params['weight']
             if name == 'HTTP2_SESSION_RECV_HEADERS':
+                if 'first_byte' not in stream:
+                    stream['first_byte'] = trace_event['ts']
+                stream['end'] = trace_event['ts']
                 if 'headers' in params:
                     stream['response_headers'] = params['headers']
+        if name == 'HTTP2_SESSION_RECV_PUSH_PROMISE' and 'promised_stream_id' in params:
+            # Create a fake request to match the push
+            if 'url_request' not in self.netlog:
+                self.netlog['url_request'] = {}
+            request_id = self.netlog['next_request_id']
+            self.netlog['next_request_id'] += 1
+            self.netlog['url_request'][request_id] = {'bytes_in': 0, 'chunks': []}
+            request = self.netlog['url_request'][request_id]
+            stream_id = params['promised_stream_id']
+            if stream_id not in entry['stream']:
+                entry['stream'][stream_id] = {'bytes_in': 0, 'chunks': []}
+            stream = entry['stream'][stream_id]
+            if 'headers' in params:
+                stream['request_headers'] = params['headers']
+                # synthesize a URL from the request headers
+                scheme = None
+                authority = None
+                path = None
+                for header in params['headers']:
+                    match = re.search(r':scheme: (.+)', header)
+                    if match:
+                        scheme = match.group(1)
+                    match = re.search(r':authority: (.+)', header)
+                    if match:
+                        authority = match.group(1)
+                    match = re.search(r':path: (.+)', header)
+                    if match:
+                        path = match.group(1)
+                if scheme is not None and authority is not None and path is not None:
+                    url = '{0}://{1}{2}'.format(scheme, authority, path)
+                    request['url'] = url
+                    stream['url'] = url
+            request['protocol'] = 'HTTP/2'
+            request['h2_session'] = session_id
+            request['stream_id'] = stream_id
+            request['start'] = trace_event['ts']
+            request['pushed'] = True
+            stream['pushed'] = True
+            stream['url_request'] = request_id
+            if 'socket' in entry:
+                request['socket'] = entry['socket']
 
     def ProcessNetlogDnsEvent(self, trace_event):
         if 'dns' not in self.netlog:
@@ -819,8 +882,8 @@ class Trace():
         if 'stream_id' in params:
             entry['stream_id'] = params['stream_id']
         if name == 'URL_REQUEST_REDIRECTED':
-            new_id = self.netlog['next_redirect_id']
-            self.netlog['next_redirect_id'] += 1
+            new_id = self.netlog['next_request_id']
+            self.netlog['next_request_id'] += 1
             self.netlog['url_request'][new_id] = entry
             del self.netlog['url_request'][request_id]
 
