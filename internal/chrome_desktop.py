@@ -86,8 +86,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        DevtoolsBrowser.on_start_recording(self, task)
         DesktopBrowser.on_start_recording(self, task)
+        DevtoolsBrowser.on_start_recording(self, task)
 
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
