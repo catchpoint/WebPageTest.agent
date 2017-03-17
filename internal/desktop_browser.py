@@ -151,9 +151,13 @@ class DesktopBrowser(object):
                     tcpdump = os.path.join(self.support_path, 'tcpdump.exe')
                     args = [tcpdump, 'start', self.pcap_file]
                 else:
-                    args = ['sudo', 'tcpdump', '-p', '-i', 'any', '-s', '0',
+                    interface = 'any' if self.job['interface'] is None else self.job['interface']
+                    args = ['sudo', 'tcpdump', '-p', '-i', interface, '-s', '0',
                             '-w', self.pcap_file]
+                logging.debug(' '.join(args))
                 self.tcpdump = subprocess.Popen(args)
+                # give it time to actually start capturing
+                time.sleep(1)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
@@ -198,9 +202,9 @@ class DesktopBrowser(object):
                         with gzip.open(pcap_out, 'wb', 7) as f_out:
                             shutil.copyfileobj(f_in, f_out)
                     if os.path.isfile(pcap_out):
-                        self.pcap_thread = threading.Thread(target=self.process_pcap)
-                        self.pcap_thread.daemon = True
-                        self.pcap_thread.start()
+                        #self.pcap_thread = threading.Thread(target=self.process_pcap)
+                        #self.pcap_thread.daemon = True
+                        #self.pcap_thread.start()
                         try:
                             os.remove(self.pcap_file)
                         except Exception:

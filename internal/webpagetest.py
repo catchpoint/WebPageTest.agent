@@ -179,6 +179,7 @@ class WebPageTest(object):
                         job = None
                     if 'type' in job and job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    job['interface'] = None
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True

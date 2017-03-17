@@ -65,6 +65,7 @@ class TrafficShaper(object):
             plr = float(job['plr'])
         if self.shaper is not None:
             ret = self.shaper.configure(in_bps, out_bps, rtt, plr)
+            job['interface'] = self.shaper.interface
         return ret
 
 
@@ -74,7 +75,7 @@ class TrafficShaper(object):
 class NoShaper(object):
     """Allow resets but fail any explicit shaping"""
     def __init__(self):
-        pass
+        self.interface = None
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -100,6 +101,7 @@ class NoShaper(object):
 class WinShaper(object):
     """Windows 8.1+ traffic-shaper using winshaper"""
     def __init__(self):
+        self.interface = None
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "winshaper", "shaper.exe")
 
@@ -134,6 +136,7 @@ class WinShaper(object):
 class Dummynet(object):
     """Dummynet support (windows only currently)"""
     def __init__(self):
+        self.interface = None
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "dummynet")
         if platform.machine().endswith('64'):
