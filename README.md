@@ -66,6 +66,8 @@ Options for authenticating the agent with the server:
 * Basic auth and client certificates for communicating with WebPageTest server
 * Traceroute tests
 * tcpdump
+* Improved request timing (from netlog)
+* HTTP/2 Stream Details
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -90,9 +92,7 @@ Options for authenticating the agent with the server:
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
-* Improved request timing (from netlog)
 * HTTP/2 Push reporting
-* HTTP/2 Stream Details
 * Lighthouse integration
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
