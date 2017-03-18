@@ -146,6 +146,7 @@ class DevTools(object):
         self.recording = False
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        self.collect_trace()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Console.disable', {})
@@ -155,7 +156,6 @@ class DevTools(object):
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
-        self.collect_trace()
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
