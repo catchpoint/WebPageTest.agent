@@ -190,41 +190,87 @@ class DevTools(object):
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
         import zipfile
-        if self.requests:
+        requests = self.get_requests()
+        if requests:
             # see if we also need to zip them up
             zip_file = None
             if 'bodies' in self.job and self.job['bodies']:
-                zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w', zipfile.ZIP_DEFLATED)
+                zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
+                                           zipfile.ZIP_DEFLATED)
             path = os.path.join(self.task['dir'], 'bodies')
             if not os.path.isdir(path):
                 os.makedirs(path)
             index = 0
-            for request_id in self.requests:
-                if 'finished' in self.requests[request_id] and \
-                        'fromNet' in self.requests[request_id] and \
-                        self.requests[request_id]['fromNet']:
-                    index += 1
-                    body_file_path = os.path.join(path, request_id)
-                    if not os.path.exists(body_file_path):
-                        response = self.send_command("Network.getResponseBody",
-                                                     {'requestId': request_id}, wait=True)
-                        if response is None or 'result' not in response or \
-                                'body' not in response['result']:
-                            logging.warning('Missing response body for request %s', request_id)
-                        elif len(response['result']['body']):
-                            # Write the raw body to a file (all bodies)
-                            if 'base64Encoded' in response['result'] and \
-                                    response['result']['base64Encoded']:
-                                with open(body_file_path, 'wb') as body_file:
-                                    body_file.write(base64.b64decode(response['result']['body']))
-                            else:
-                                body = response['result']['body'].encode('utf-8')
-                                with open(body_file_path, 'wb') as body_file:
-                                    body_file.write(body)
-                                # Add text bodies to the zip archive
-                                if zip_file is not None:
-                                    name = '{0:03d}-{1}-body.txt'.format(index, request_id)
-                                    zip_file.writestr(name, body)
+            for request_id in requests:
+                request = requests[request_id]
+                if 'status' in request and \
+                        request['status'] == 200 and \
+                        'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'],
+                                                           'Content-Length')
+                    if content_length is not None:
+                        content_length = int(content_length)
+                    elif 'transfer_size' in request:
+                        content_length = request['transfer_size']
+                    if content_length > 0:
+                        body_file_path = os.path.join(path, request_id)
+                        if not os.path.exists(body_file_path):
+                            # Only grab bodies needed for optimization checks
+                            # or if we are saving full bodies
+                            need_body = False
+                            content_type = self.get_header_value(request['response_headers'],
+                                                                 'Content-Type')
+                            content_encoding = self.get_header_value(request['response_headers'],
+                                                                     'Content-Encoding')
+                            is_image = False
+                            is_text = False
+                            is_video = False
+                            if content_type is not None:
+                                content_type = content_type.lower()
+                                if content_type[:6] or \
+                                        content_type.find('javascript') >= 0 or \
+                                        content_type.find('json') >= 0:
+                                    is_text = True
+                                if content_type[:6] == 'image/':
+                                    is_image = True
+                                if content_type[:6] == 'video/':
+                                    is_video = True
+                            is_compressed = False
+                            if content_encoding is not None:
+                                content_encoding = content_encoding.lower()
+                                if content_encoding.find('gzip') >= 0 or \
+                                        content_encoding.find('deflate') >= 0 or \
+                                        content_encoding.find('br') >= 0:
+                                    is_compressed = True
+                            if is_image and content_length >= 1400:
+                                need_body = True
+                            if not is_compressed and not is_video and content_length >= 1400:
+                                need_body = True
+                            elif zip_file is not None and is_text:
+                                need_body = True
+                            if need_body:
+                                response = self.send_command("Network.getResponseBody",
+                                                             {'requestId': request_id}, wait=True)
+                                if response is None or 'result' not in response or \
+                                        'body' not in response['result']:
+                                    logging.warning('Missing response body for request %s',
+                                                    request_id)
+                                elif len(response['result']['body']):
+                                    # Write the raw body to a file (all bodies)
+                                    if 'base64Encoded' in response['result'] and \
+                                            response['result']['base64Encoded']:
+                                        with open(body_file_path, 'wb') as body_file:
+                                            body_file.write(
+                                                base64.b64decode(response['result']['body']))
+                                    else:
+                                        body = response['result']['body'].encode('utf-8')
+                                        with open(body_file_path, 'wb') as body_file:
+                                            body_file.write(body)
+                                        # Add text bodies to the zip archive
+                                        if zip_file is not None:
+                                            index += 1
+                                            name = '{0:03d}-{1}-body.txt'.format(index, request_id)
+                                            zip_file.writestr(name, body)
             if zip_file is not None:
                 zip_file.close()
 
@@ -594,3 +640,18 @@ class DevTools(object):
             if self.dev_tools_file is not None:
                 self.dev_tools_file.write(",\n")
                 self.dev_tools_file.write(json.dumps(msg))
+
+    def get_header_value(self, headers, name):
+        """Get the value for the requested header"""
+        value = None
+        if headers:
+            if name in headers:
+                value = headers[name]
+            else:
+                find = name.lower()
+                for header_name in headers:
+                    check = header_name.lower()
+                    if check == find or (check[0] == ':' and check[1:] == find):
+                        value = headers[header_name]
+                        break
+        return value

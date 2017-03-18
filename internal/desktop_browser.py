@@ -75,18 +75,26 @@ class DesktopBrowser(object):
                         if interface in self.interfaces:
                             self.interfaces[interface]['packets'] = \
                                 cnt[interface].packets_sent + cnt[interface].packets_recv
+                    remove = []
                     for interface in self.interfaces:
                         if self.interfaces[interface]['packets'] == 0:
+                            remove.append(interface)
+                    if len(remove):
+                        for interface in remove:
                             del self.interfaces[interface]
                 if len(self.interfaces) > 1:
                     # Eliminate any with the loopback address
+                    remove = []
                     addresses = psutil.net_if_addrs()
                     for interface in addresses:
                         if interface in self.interfaces:
                             for address in addresses[interface]:
                                 if address.address == '127.0.0.1':
-                                    del self.interfaces[interface]
+                                    remove.append(interface)
                                     break
+                    if len(remove):
+                        for interface in remove:
+                            del self.interfaces[interface]
         except Exception:
             pass
 
