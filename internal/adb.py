@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 """ADB command-line interface"""
 import logging
-import monotonic
 import re
 import subprocess
 from threading import Timer
@@ -13,7 +12,6 @@ class Adb(object):
     def __init__(self, options):
         self.device = options.device
         self.ping_address = None
-        self.last_check = None
 
     def run(self, cmd, timeout_sec=60):
         """Run a shell command with a time limit and get the output"""
@@ -36,6 +34,21 @@ class Adb(object):
         cmd = ['adb', 'shell']
         cmd.extend(args)
         return self.run(cmd, timeout_sec)
+
+    def su(self, command, timeout_sec=60):
+        """Ren a command as su"""
+        cmd = ['su', '-c', command]
+        return self.shell(cmd)
+
+    def adb(self, args):
+        """Run an arbitrary adb command"""
+        ret = False
+        cmd = ['adb']
+        cmd.extend(args)
+        result = subprocess.call(cmd)
+        if result == 0:
+            ret = True
+        return ret
 
     def start(self):
         """ Do some startup check to make sure adb is installed"""
@@ -83,50 +96,46 @@ class Adb(object):
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
-        now = monotonic.monotonic()
-        if self.last_check is None or now - self.last_check > 60:
-            battery = self.get_battery_stats()
-            logging.debug(battery)
-            if 'level' in battery and battery['level'] < 50:
-                logging.info("Device not ready, low battery: %d %%", battery['level'])
-                is_ready = False
-            if 'temp' in battery and battery['temp'] > 35:
-                logging.info("Device not ready, high temperature: %0.1f degrees", battery['temp'])
-                is_ready = False
-            # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
-            net_ok = False
-            if self.ping(self.ping_address) is not None:
-                net_ok = True
-            else:
-                addresses = []
-                props = self.shell(['getprop'])
-                gateway = None
-                if props is not None:
-                    for line in props.splitlines():
-                        match = re.search(r'^\[net\.dns\d\]:\s+\[([^\]]*)\]', line)
-                        if match:
-                            dns = match.group(1)
-                            if dns not in addresses:
-                                addresses.append(dns)
-                        match = re.search(r'^\[dhcp\.[^\.]+\.dns\d\]:\s+\[([^\]]*)\]', line)
-                        if match:
-                            dns = match.group(1)
-                            if dns not in addresses:
-                                addresses.append(dns)
-                        match = re.search(r'^\[dhcp\.[^\.]+\.gateway\]:\s+\[([^\]]*)\]', line)
-                        if match:
-                            gateway = match.group(1)
-                if gateway is not None:
-                    addresses.insert(0, gateway)
-                addresses.append('8.8.8.8')
-                for address in addresses:
-                    if self.ping(address) is not None:
-                        self.ping_address = address
-                        net_ok = True
-                        break
-            if not net_ok:
-                logging.info("Device not ready, network not responding")
-                is_ready = False
-            if is_ready:
-                self.last_check = now
+        battery = self.get_battery_stats()
+        logging.debug(battery)
+        if 'level' in battery and battery['level'] < 50:
+            logging.info("Device not ready, low battery: %d %%", battery['level'])
+            is_ready = False
+        if 'temp' in battery and battery['temp'] > 35.0:
+            logging.info("Device not ready, high temperature: %0.1f degrees", battery['temp'])
+            is_ready = False
+        # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
+        net_ok = False
+        if self.ping(self.ping_address) is not None:
+            net_ok = True
+        else:
+            addresses = []
+            props = self.shell(['getprop'])
+            gateway = None
+            if props is not None:
+                for line in props.splitlines():
+                    match = re.search(r'^\[net\.dns\d\]:\s+\[([^\]]*)\]', line)
+                    if match:
+                        dns = match.group(1)
+                        if dns not in addresses:
+                            addresses.append(dns)
+                    match = re.search(r'^\[dhcp\.[^\.]+\.dns\d\]:\s+\[([^\]]*)\]', line)
+                    if match:
+                        dns = match.group(1)
+                        if dns not in addresses:
+                            addresses.append(dns)
+                    match = re.search(r'^\[dhcp\.[^\.]+\.gateway\]:\s+\[([^\]]*)\]', line)
+                    if match:
+                        gateway = match.group(1)
+            if gateway is not None:
+                addresses.insert(0, gateway)
+            addresses.append('8.8.8.8')
+            for address in addresses:
+                if self.ping(address) is not None:
+                    self.ping_address = address
+                    net_ok = True
+                    break
+        if not net_ok:
+            logging.info("Device not ready, network not responding")
+            is_ready = False
         return is_ready

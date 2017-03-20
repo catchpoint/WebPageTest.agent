@@ -11,7 +11,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-first-run',
     '--process-per-tab',
     '--new-window',
-    '--silent-debugger-extension-api',
     '--disable-infobars',
     '--disable-translate',
     '--disable-notifications',

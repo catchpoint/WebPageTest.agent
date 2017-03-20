@@ -11,7 +11,7 @@ import subprocess
 import urlparse
 
 class Traceroute(object):
-    """Desktop Chrome"""
+    """Traceroute (desktop)"""
     def __init__(self, options, job):
         self.options = options
         self.job = job

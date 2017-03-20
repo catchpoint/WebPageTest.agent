@@ -8,9 +8,14 @@ import os
 class Browsers(object):
     """Controller for handling several browsers"""
     def __init__(self, options, browsers, adb):
+        import ujson as json
         self.options = options
         self.browsers = browsers
         self.adb = adb
+        android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'android_browsers.json')
+        with open(android_file, 'rb') as f_in:
+            self.android_browsers = json.load(f_in)
 
     def is_ready(self):
         """Check to see if the configured browsers are ready to go"""
@@ -29,7 +34,16 @@ class Browsers(object):
     def get_browser(self, name, job):
         """Return an instance of the browser logic"""
         browser = None
-        if 'type' in job and job['type'] == 'traceroute':
+        if self.options.android:
+            separator = name.find('-')
+            if separator >= 0:
+                name = name[separator + 1:].strip()
+            if name in self.android_browsers:
+                config = self.android_browsers[name]
+                if config['type'] == 'chrome':
+                    from .chrome_android import ChromeAndroid
+                    browser = ChromeAndroid(self.adb, config, self.options, job)
+        elif 'type' in job and job['type'] == 'traceroute':
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
         elif name in self.browsers and 'exe' in self.browsers[name]:
