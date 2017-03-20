@@ -13,15 +13,19 @@ class Adb(object):
         self.device = options.device
         self.ping_address = None
 
-    def run(self, cmd, timeout_sec=60):
+    def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
         stdout = None
         timer = None
         try:
+            if not silent:
+                logging.debug(' '.join(cmd))
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             timer = Timer(timeout_sec, proc.kill)
             timer.start()
             stdout, _ = proc.communicate()
+            if not silent:
+                logging.debug(stdout[:100])
         except Exception:
             logging.debug('Error running command')
         finally:
@@ -29,22 +33,24 @@ class Adb(object):
                 timer.cancel()
         return stdout
 
-    def shell(self, args, timeout_sec=60):
+    def shell(self, args, timeout_sec=60, silent=False):
         """Run an adb shell command"""
         cmd = ['adb', 'shell']
         cmd.extend(args)
-        return self.run(cmd, timeout_sec)
+        return self.run(cmd, timeout_sec, silent)
 
-    def su(self, command, timeout_sec=60):
+    def su(self, command, timeout_sec=60, silent=False):
         """Ren a command as su"""
         cmd = ['su', '-c', command]
-        return self.shell(cmd)
+        return self.shell(cmd, timeout_sec, silent)
 
-    def adb(self, args):
+    def adb(self, args, silent=False):
         """Run an arbitrary adb command"""
         ret = False
         cmd = ['adb']
         cmd.extend(args)
+        if not silent:
+            logging.debug(' '.join(cmd))
         result = subprocess.call(cmd)
         if result == 0:
             ret = True
@@ -66,7 +72,7 @@ class Adb(object):
     def get_battery_stats(self):
         """Get the temperature andlevel of the battery"""
         ret = {}
-        out = self.shell(['dumpsys', 'battery'])
+        out = self.shell(['dumpsys', 'battery'], silent=True)
         if out is not None:
             for line in out.splitlines():
                 match = re.search(r'^\s*level:\s*(\d+)', line)
@@ -81,7 +87,7 @@ class Adb(object):
         """Ping the provided network address"""
         ret = None
         if address is not None:
-            out = self.shell(['ping', '-n', '-c3', '-i0.2', '-w5', address])
+            out = self.shell(['ping', '-n', '-c3', '-i0.2', '-w5', address], silent=True)
             if out is not None:
                 for line in out.splitlines():
                     match = re.search(r'^\s*rtt\s[^=]*=\s*([\d\.]*)', line)
