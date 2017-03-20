@@ -19,9 +19,11 @@ class WPTAgent(object):
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
         from internal.traffic_shaping import TrafficShaper
+        from internal.adb import Adb
         self.must_exit = False
         self.options = options
-        self.browsers = Browsers(options, browsers)
+        self.adb = Adb(self.options) if self.options.android else None
+        self.browsers = Browsers(options, browsers, self.adb)
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
         self.shaper = TrafficShaper(options.shaper)
@@ -209,6 +211,10 @@ class WPTAgent(object):
             print "Error configuring traffic shaping, make sure it is installed."
             ret = False
 
+        if self.adb is not None:
+            if not self.adb.start():
+                print "Error configuring adb. Make sure it is installed and in the path."
+                ret = False
         return ret
 
 
@@ -257,6 +263,10 @@ def main():
                         help="Load config settings from EC2 user data.")
     parser.add_argument('--gce', action='store_true', default=False,
                         help="Load config settings from GCE user data.")
+    parser.add_argument('--android', action='store_true', default=False,
+                        help="Run tests on an attached android device.")
+    parser.add_argument('--device',
+                        help="Device ID (only needed if more than one android device attached).")
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
     parser.add_argument('--password',

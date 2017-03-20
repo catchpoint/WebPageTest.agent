@@ -21,6 +21,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
+* **--android** : Run tests on an attached android device.
+* **--device** : Device ID (only needed if more than one android device attached).
 
 Options for authenticating the agent with the server:
 * **--username** : User name if using HTTP Basic auth with WebPageTest server.

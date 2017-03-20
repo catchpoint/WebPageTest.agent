@@ -1,0 +1,77 @@
+{
+  "Chrome": {
+    "package": "com.android.chrome",
+    "activity": "com.google.android.apps.chrome.Main",
+    "type": "chrome"
+  },
+  "Chrome Beta": {
+    "package": "com.chrome.beta",
+    "activity": "com.google.android.apps.chrome.Main",
+    "type": "chrome"
+  },
+  "Chrome Dev": {
+    "package": "com.chrome.dev",
+    "activity": "com.google.android.apps.chrome.Main",
+    "type": "chrome"
+  },
+  "Chrome Canary": {
+    "package": "com.chrome.canary",
+    "activity": "com.google.android.apps.chrome.Main",
+    "type": "chrome"
+  },
+  "UC Mini": {
+    "package": "com.uc.browser.en", 
+    "activity": "com.uc.browser.ActivityBrowser",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "directories": ["cache", "databases", "files", "app_webview", "user", "wa"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  },
+  "UC Browser": {
+    "package": "com.UCMobile.intl",
+    "activity": "com.UCMobile.main.UCMobile",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "directories": ["cache", "databases", "files", "app_webview", "crash", "temp", "user", "wa"],
+    "startupDelay": 15000,
+    "type": "blackbox"
+  },
+  "Opera Mini": {
+    "package": "com.opera.mini.native",
+    "activity": "com.opera.mini.android.Browser",
+    "videoFlags": ["--findstart", 75, "--notification", "--renderignore", 40,
+                    "--forceblank"],
+    "directories": ["cache", "databases", "files", "app_opera", "app_webview"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  },
+  "Samsung Browser": {
+    "package": "com.sec.android.app.sbrowser",
+    "activity": ".SBrowserMainActivity",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "directories": ["cache", "databases", "files", "app_sbrowser", "code_cache"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  },
+  "QQ Browser": {
+    "package": "com.tencent.mtt.intl",
+    "activity": "com.tencent.mtt.SplashActivity",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "directories": ["cache", "databases", "files", "app_appcache", "app_databases", "app_databases_tmp", "app_x5_share"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  },
+  "Firefox": {
+    "package": "org.mozilla.firefox",
+    "activity": ".App",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  },
+  "Firefox Beta": {
+    "package": "org.mozilla.firefox_beta",
+    "activity": ".App",
+    "videoFlags": ["--findstart", 25, "--notification"],
+    "startupDelay": 10000,
+    "type": "blackbox"
+  }
+}

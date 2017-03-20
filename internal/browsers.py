@@ -7,19 +7,23 @@ import os
 
 class Browsers(object):
     """Controller for handling several browsers"""
-    def __init__(self, options, browsers):
+    def __init__(self, options, browsers, adb):
         self.options = options
         self.browsers = browsers
+        self.adb = adb
 
     def is_ready(self):
         """Check to see if the configured browsers are ready to go"""
         ready = True
-        for browser in self.browsers:
-            if 'exe' in self.browsers[browser]:
-                exe = self.browsers[browser]['exe']
-                if not os.path.isfile(exe):
-                    logging.critical("Browser executable is missing for %s: '%s'", browser, exe)
-                    ready = False
+        if self.options.android and self.adb is not None:
+            ready = self.adb.is_device_ready()
+        else:
+            for browser in self.browsers:
+                if 'exe' in self.browsers[browser]:
+                    exe = self.browsers[browser]['exe']
+                    if not os.path.isfile(exe):
+                        logging.critical("Browser executable is missing for %s: '%s'", browser, exe)
+                        ready = False
         return ready
 
     def get_browser(self, name, job):
