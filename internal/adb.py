@@ -12,6 +12,7 @@ class Adb(object):
     def __init__(self, options):
         self.device = options.device
         self.ping_address = None
+        self.screenrecord = None
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
@@ -24,7 +25,7 @@ class Adb(object):
             timer = Timer(timeout_sec, proc.kill)
             timer.start()
             stdout, _ = proc.communicate()
-            if not silent:
+            if not silent and stdout is not None and len(stdout):
                 logging.debug(stdout[:100])
         except Exception:
             logging.debug('Error running command')
@@ -33,9 +34,17 @@ class Adb(object):
                 timer.cancel()
         return stdout
 
+    def build_adb_command(self, args):
+        """Build an adb command with the (optional) device ID"""
+        cmd = ['adb']
+        if self.device is not None:
+            cmd.extend(['-s', self.device])
+        cmd.extend(args)
+        return cmd
+
     def shell(self, args, timeout_sec=60, silent=False):
         """Run an adb shell command"""
-        cmd = ['adb', 'shell']
+        cmd = self.build_adb_command(['shell'])
         cmd.extend(args)
         return self.run(cmd, timeout_sec, silent)
 
@@ -47,8 +56,7 @@ class Adb(object):
     def adb(self, args, silent=False):
         """Run an arbitrary adb command"""
         ret = False
-        cmd = ['adb']
-        cmd.extend(args)
+        cmd = self.build_adb_command(args)
         if not silent:
             logging.debug(' '.join(cmd))
         result = subprocess.call(cmd)
@@ -60,7 +68,7 @@ class Adb(object):
         """ Do some startup check to make sure adb is installed"""
         import psutil
         ret = False
-        out = self.run(['adb', 'devices'])
+        out = self.run(self.build_adb_command(['devices']))
         if out is not None:
             ret = True
             # Set the CPU affinity for adb which helps avoid hangs
@@ -68,6 +76,26 @@ class Adb(object):
                 if proc.name() == "adb.exe" or proc.name() == "adb":
                     proc.cpu_affinity([0])
         return ret
+
+    def start_screenrecord(self):
+        """Start a screenrecord session on the device"""
+        self.shell(['rm', '/data/local/tmp/wpt_video.mp4'])
+        try:
+            cmd = self.build_adb_command(['shell', 'screenrecord', '--verbose',
+                                          '--bit-rate', '8000000',
+                                          '/data/local/tmp/wpt_video.mp4'])
+            self.screenrecord = subprocess.Popen(cmd)
+        except Exception:
+            pass
+
+    def stop_screenrecord(self, local_file):
+        """Stop a screen record and download the video to local_file"""
+        if self.screenrecord is not None:
+            self.shell(['killall', '-SIGINT', 'screenrecord'])
+            self.screenrecord.communicate()
+            self.screenrecord = None
+            self.adb(['pull', '/data/local/tmp/wpt_video.mp4', local_file])
+            self.shell(['rm', '/data/local/tmp/wpt_video.mp4'])
 
     def get_battery_stats(self):
         """Get the temperature andlevel of the battery"""

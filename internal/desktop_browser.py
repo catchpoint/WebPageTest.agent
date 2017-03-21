@@ -218,7 +218,7 @@ class DesktopBrowser(object):
                         except Exception:
                             pass
 
-    def wait_for_processing(self):
+    def wait_for_processing(self, _):
         """Wait for any background processing threads to finish"""
         if self.pcap_thread is not None:
             logging.debug('Waiting for pcap processing to finish')

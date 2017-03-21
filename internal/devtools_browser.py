@@ -137,14 +137,15 @@ class DevtoolsBrowser(object):
                                 self.devtools.grab_screenshot(screen_shot, png=False)
                             self.collect_browser_metrics(task)
                             # Run the rest of the post-processing
-                            self.process_video()
+                            if self.use_devtools_video and  self.job['video']:
+                                self.process_video()
                             logging.debug('Waiting for trace processing to complete')
                             trace_thread.join()
                             optimization.join()
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
-                        self.wait_for_processing()
+                        self.wait_for_processing(task)
             self.task = None
 
     def prepare_task(self, task):
@@ -263,13 +264,6 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
                 self.task['activity_time'] = max(0, min(30, int(command['target'])))
-        elif command['command'] == 'block':
-            block_list = command['target'].split()
-            for block in block_list:
-                block = block.strip()
-                if len(block):
-                    logging.debug("Blocking: %s", block)
-                    self.devtools.send_command('Network.addBlockedURL', {'url': block})
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':

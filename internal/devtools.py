@@ -121,6 +121,9 @@ class DevTools(object):
         if 'headers' in self.job:
             self.send_command('Network.setExtraHTTPHeaders',
                               {'headers': self.job['headers']}, wait=True)
+        if len(self.task['block']):
+            for block in self.task['block']:
+                self.send_command('Network.addBlockedURL', {'url': block})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})

@@ -4,12 +4,17 @@
 """Chrome browser on Android"""
 import logging
 import os
+import subprocess
 import time
 from .devtools_browser import DevtoolsBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-fre',
+    '--enable-benchmarking',
+    '--metrics-recording-only',
+    '--disable-geolocation',
     '--disable-background-networking',
+    '--no-default-browser-check',
     '--no-first-run',
     '--disable-infobars',
     '--disable-translate',
@@ -22,7 +27,15 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--disable-external-intent-requests'
+    '--safebrowsing-disable-auto-update',
+    '--disable-sync',
+    '--disable-external-intent-requests',
+    '--enable-remote-debugging'
+]
+
+HOST_RULES = [
+    '"MAP cache.pack.google.com 127.0.0.1"',
+    '"MAP clients1.google.com 127.0.0.1"'
 ]
 
 """ Orange page that changes itself to white on navigation
@@ -59,6 +72,7 @@ class ChromeAndroid(DevtoolsBrowser):
         self.options = options
         DevtoolsBrowser.__init__(self, job, use_devtools_video=False)
         self.connected = False
+        self.video_processing = None
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
@@ -79,8 +93,10 @@ class ChromeAndroid(DevtoolsBrowser):
     def launch(self, job, task):
         """Launch the browser"""
         args = CHROME_COMMAND_LINE_OPTIONS
+        host_rules = HOST_RULES
         if 'host_rules' in task:
-            args.append('--host-rules=' + ','.join(task['host_rules']))
+            host_rules.extend(task['host_rules'])
+        args.append('--host-rules=' + ','.join(host_rules))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
         command_line = 'chrome ' + ' '.join(args)
@@ -89,13 +105,13 @@ class ChromeAndroid(DevtoolsBrowser):
         local_command_line = os.path.join(task['dir'], 'chrome-command-line')
         remote_command_line = '/data/local/tmp/chrome-command-line'
         root_command_line = '/data/local/chrome-command-line'
+        logging.debug(command_line)
         with open(local_command_line, 'wb') as f_out:
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             # try copying it to /data/local for rooted devices that need it there
             if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
-                self.adb.su('chmod 755 {0}'.format(root_command_line))
-                self.adb.shell(['rm', remote_command_line])
+                self.adb.su('chmod 666 {0}'.format(root_command_line))
             # launch the browser
             activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
             self.adb.shell(['am', 'start', '-n', activity, '-a',
@@ -120,19 +136,56 @@ class ChromeAndroid(DevtoolsBrowser):
             DevtoolsBrowser.disconnect(self)
         # kill the browser
         self.adb.shell(['am', 'force-stop', self.config['package']])
+        self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
+        self.adb.su(['rm', '/data/local/chrome-command-line'])
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.job['video']:
+            self.adb.start_screenrecord()
+            time.sleep(0.5)
         DevtoolsBrowser.on_start_recording(self, task)
 
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         DevtoolsBrowser.on_stop_recording(self, task)
+        if self.job['video']:
+            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
+            self.adb.stop_screenrecord(task['video_file'])
+            # kick off the video processing (async)
+            if os.path.isfile(task['video_file']):
+                video_path = os.path.join(task['dir'], task['video_subdirectory'])
+                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+                if task['current_step'] == 1:
+                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'],
+                                                                       task['cached'])
+                else:
+                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                             task['cached'],
+                                                                             task['current_step'])
+                histograms = os.path.join(task['dir'], filename)
+                visualmetrics = os.path.join(support_path, "visualmetrics.py")
+                self.video_processing = subprocess.Popen(['python', visualmetrics, '-vvvv',
+                                                          '-i', task['video_file'],
+                                                          '-d', video_path,
+                                                          '--force', '--quality',
+                                                          '{0:d}'.format(self.job['iq']),
+                                                          '--viewport', '--orange',
+                                                          '--maxframes', '50',
+                                                          '--histogram', histograms])
 
-    def wait_for_processing(self):
+    def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
+        if self.video_processing is not None:
+            self.video_processing.communicate()
+            self.video_processing = None
+            if 'keepvideo' not in self.job or not self.job['keepvideo']:
+                try:
+                    os.remove(task['video_file'])
+                except Exception:
+                    pass
 
-    def clear_profile(self, task):
+    def clear_profile(self, _):
         """Clear the browser profile"""
         # Fail gracefully if root access isn't available
         out = self.adb.su('ls -1 /data/data/' + self.config['package'])

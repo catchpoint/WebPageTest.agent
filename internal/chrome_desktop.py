@@ -24,11 +24,13 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
-    '--disable-background-timer-throttling'
+    '--disable-background-timer-throttling',
+    '--disable-sync'
 ]
 
 HOST_RULES = [
-    '"MAP cache.pack.google.com 127.0.0.1"'
+    '"MAP cache.pack.google.com 127.0.0.1"',
+    '"MAP clients1.google.com 127.0.0.1"'
 ]
 
 START_PAGE = 'about:blank'
@@ -93,6 +95,6 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         DevtoolsBrowser.on_stop_recording(self, task)
         DesktopBrowser.on_stop_recording(self, task)
 
-    def wait_for_processing(self):
+    def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
-        DesktopBrowser.wait_for_processing(self)
+        DesktopBrowser.wait_for_processing(self, task)

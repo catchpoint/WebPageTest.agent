@@ -251,6 +251,13 @@ class WebPageTest(object):
                     elif 'fvonly' in job and job['fvonly']:
                         job['current_state']['done'] = True
                         task['done'] = True
+                task['block'] = []
+                if 'block' in job:
+                    block_list = job['block'].split()
+                    for block in block_list:
+                        block = block.strip()
+                        if len(block):
+                            task['block'].append(block)
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
@@ -277,8 +284,6 @@ class WebPageTest(object):
         """Build the actual script that will be used for testing"""
         task['script'] = []
         # Add script commands for any static options that need them
-        if 'block' in job:
-            task['script'].append({'command': 'block', 'target': job['block'], 'record': False})
         if 'script' in job:
             lines = job['script'].splitlines()
             for line in lines:
@@ -295,7 +300,7 @@ class WebPageTest(object):
                         record = True
                     # go through the known commands
                     if command == 'navigate':
-                        if target[:4] != 'http':
+                        if target is not None and target[:4] != 'http':
                             target = 'http://' + target
                         record = True
                     # commands that get pre-processed
@@ -307,33 +312,44 @@ class WebPageTest(object):
                             if width > 0 and height > 0 and width < 10000 and height < 10000:
                                 job['width'] = width
                                 job['height'] = height
-                    elif command == 'setdevicescalefactor':
+                    elif command == 'setdevicescalefactor' and target is not None:
                         keep = False
                         job['dpr'] = target
                     elif command == 'settimeout':
                         keep = False
-                        time_limit = int(target)
-                        if time_limit > 0 and time_limit < 1200:
-                            job['timeout'] = time_limit
+                        if target is not None:
+                            time_limit = int(target)
+                            if time_limit > 0 and time_limit < 1200:
+                                job['timeout'] = time_limit
                     elif command == 'blockdomains':
                         keep = False
-                        if 'host_rules' not in task:
-                            task['host_rules'] = []
-                        domains = target.split()
-                        for domain in domains:
-                            domain = domain.strip()
-                            if len(domain) and domain.find('"') == -1:
-                                task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
+                        if target is not None:
+                            if 'host_rules' not in task:
+                                task['host_rules'] = []
+                            domains = target.split()
+                            for domain in domains:
+                                domain = domain.strip()
+                                if len(domain) and domain.find('"') == -1:
+                                    task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                     elif command == 'blockdomainsexcept':
                         keep = False
-                        if 'host_rules' not in task:
-                            task['host_rules'] = []
-                        domains = target.split()
-                        for domain in domains:
-                            domain = domain.strip()
-                            if len(domain) and domain.find('"') == -1:
-                                task['host_rules'].append(
-                                    '"MAP * 127.0.0.1, EXCLUDE {0}"'.format(domain))
+                        if target is not None:
+                            if 'host_rules' not in task:
+                                task['host_rules'] = []
+                            domains = target.split()
+                            for domain in domains:
+                                domain = domain.strip()
+                                if len(domain) and domain.find('"') == -1:
+                                    task['host_rules'].append(
+                                        '"MAP * 127.0.0.1, EXCLUDE {0}"'.format(domain))
+                    elif command == 'block':
+                        keep = False
+                        if target is not None:
+                            block_list = target.split()
+                            for block in block_list:
+                                block = block.strip()
+                                if len(block):
+                                    task['block'].append(block)
                     elif command == 'setdns':
                         keep = False
                         if target is not None and value is not None and len(target) and len(value):
