@@ -57,7 +57,7 @@ class ChromeAndroid(DevtoolsBrowser):
         self.adb = adb
         self.config = config
         self.options = options
-        DevtoolsBrowser.__init__(self, job)
+        DevtoolsBrowser.__init__(self, job, use_devtools_video=False)
         self.connected = False
 
     def prepare(self, _, task):
@@ -71,15 +71,7 @@ class ChromeAndroid(DevtoolsBrowser):
             if task['cached']:
                 self.adb.su('rm -r /data/data/' + self.config['package'] + '/app_tabs')
             else:
-                remove = ''
-                out = self.adb.su('ls -1 /data/data/' + self.config['package'])
-                for entry in out.splitlines():
-                    entry = entry.strip()
-                    if len(entry) and entry != '.' and entry != '..' and \
-                            entry != 'lib' and entry != 'shared_prefs':
-                        remove += ' /data/data/' + self.config['package'] + '/' + entry
-                if len(remove):
-                    self.adb.su('rm -r' + remove)
+                self.clear_profile(task)
             # prepare the device
         except Exception as err:
             logging.critical("Exception preparing Browser: %s", err.__str__())
@@ -113,7 +105,7 @@ class ChromeAndroid(DevtoolsBrowser):
                              'localabstract:chrome_devtools_remote']):
                 if DevtoolsBrowser.connect(self, task):
                     self.connected = True
-                    DevtoolsBrowser.prepare_browser(self)
+                    DevtoolsBrowser.prepare_browser(self, task)
                     DevtoolsBrowser.navigate(self, START_PAGE)
                     time.sleep(0.5)
 
@@ -139,3 +131,17 @@ class ChromeAndroid(DevtoolsBrowser):
 
     def wait_for_processing(self):
         """Wait for any background processing threads to finish"""
+
+    def clear_profile(self, task):
+        """Clear the browser profile"""
+        # Fail gracefully if root access isn't available
+        out = self.adb.su('ls -1 /data/data/' + self.config['package'])
+        if out is not None:
+            remove = ''
+            for entry in out.splitlines():
+                entry = entry.strip()
+                if len(entry) and entry != '.' and entry != '..' and \
+                        entry != 'lib' and entry != 'shared_prefs':
+                    remove += ' /data/data/' + self.config['package'] + '/' + entry
+            if len(remove):
+                self.adb.su('rm -r' + remove)

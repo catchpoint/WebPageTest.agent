@@ -2,6 +2,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for interfacing with WebPageTest server"""
+import gzip
 import logging
 import os
 import platform
@@ -179,6 +180,7 @@ class WebPageTest(object):
                         job = None
                     if 'type' in job and job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['interface'] = None
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
@@ -223,7 +225,8 @@ class WebPageTest(object):
                         'log_data': True,
                         'activity_time': 2,
                         'combine_steps': False,
-                        'video_directories': []}
+                        'video_directories': [],
+                        'page_data': {}}
                 # Set up the task configuration options
                 task['port'] = 9222
                 task['task_prefix'] = "{0:d}".format(run)
@@ -363,6 +366,13 @@ class WebPageTest(object):
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
+        # Write out the accumulated page_data
+        if task['page_data']:
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            with gzip.open(path, 'wb') as outfile:
+                outfile.write(json.dumps(task['page_data']))
         data = {'id': task['id'],
                 'location': self.location,
                 'run': str(task['run']),

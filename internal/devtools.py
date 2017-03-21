@@ -13,7 +13,7 @@ import ujson as json
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, job, task):
+    def __init__(self, job, task, use_devtools_video):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
         self.job = job
@@ -36,6 +36,8 @@ class DevTools(object):
         self.video_prefix = None
         self.recording = False
         self.mobile_viewport = None
+        self.tab_id = None
+        self.use_devtools_video = use_devtools_video
         self.prepare()
 
     def prepare(self):
@@ -76,6 +78,7 @@ class DevTools(object):
                                     'id' in tabs[index]:
                                 if websocket_url is None:
                                     websocket_url = tabs[index]['webSocketDebuggerUrl']
+                                    self.tab_id = tabs[index]['id']
                                 else:
                                     # Close extra tabs
                                     requests.get(self.url + '/close/' + tabs[index]['id'])
@@ -92,17 +95,21 @@ class DevTools(object):
                 time.sleep(1)
         return ret
 
-    def close(self):
+    def close(self, close_tab=True):
         """Close the dev tools connection"""
+        if close_tab and self.tab_id is not None:
+            import requests
+            requests.get(self.url + '/close/' + self.tab_id)
         if self.websocket:
             self.websocket.close()
             self.websocket = None
+        self.tab_id = None
 
     def start_recording(self):
         """Start capturing dev tools, timeline and trace data"""
         self.prepare()
         self.recording = True
-        if 'Capture Video' in self.job and self.job['Capture Video'] and self.task['log_data']:
+        if self.use_devtools_video and self.job['video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.png')
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
@@ -129,7 +136,7 @@ class DevTools(object):
                 trace += ",disabled-by-default-blink.feature_usage"
                 trace += ",toplevel,disabled-by-default-devtools.timeline.frame"
                 trace += "devtools.timeline.frame"
-            if 'Capture Video' in self.job and self.job['Capture Video']:
+            if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
             trace += ",blink.user_timing,netlog"
             self.trace_enabled = True

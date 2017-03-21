@@ -17,11 +17,12 @@ class DevtoolsBrowser(object):
     CONNECT_TIME_LIMIT = 30
     CURRENT_VERSION = 1
 
-    def __init__(self, job):
+    def __init__(self, job, use_devtools_video=True):
         self.job = job
         self.devtools = None
         self.task = None
         self.event_name = None
+        self.use_devtools_video = use_devtools_video
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -29,7 +30,7 @@ class DevtoolsBrowser(object):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.job, task)
+        self.devtools = DevTools(self.job, task, self.use_devtools_video)
         if self.devtools.connect(self.CONNECT_TIME_LIMIT):
             logging.debug("Devtools connected")
             ret = True
@@ -45,9 +46,16 @@ class DevtoolsBrowser(object):
             self.devtools.close()
             self.devtools = None
 
-    def prepare_browser(self):
+    def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
+            # Clear the caches
+            if not task['cached']:
+                self.devtools.send_command("Network.clearBrowserCache", {},
+                                           wait=True)
+                self.devtools.send_command("Network.clearBrowserCookies", {},
+                                           wait=True)
+
             # Mobile Emulation
             if 'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
@@ -141,6 +149,7 @@ class DevtoolsBrowser(object):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
+        task['page_data'] = {}
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -208,14 +217,8 @@ class DevtoolsBrowser(object):
             with gzip.open(path, 'wb') as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
-        if 'step_name' in task:
-            if page_data is None:
-                page_data = {}
-            page_data['eventName'] = task['step_name']
         if page_data is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
-            with gzip.open(path, 'wb') as outfile:
-                outfile.write(json.dumps(page_data))
+            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             for name in self.job['customMetrics']:

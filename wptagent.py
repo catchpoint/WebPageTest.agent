@@ -172,16 +172,22 @@ class WPTAgent(object):
             print "Missing websocket module. Please run 'pip install websocket-client'"
             ret = False
 
-        if subprocess.call(['python', '--version']):
+        try:
+            subprocess.check_output(['python', '--version'])
+        except Exception:
             print "Make sure python 2.7 is available in the path."
             ret = False
 
-        if subprocess.call('convert -version', shell=True):
+        try:
+            subprocess.check_output('convert -version', shell=True)
+        except Exception:
             print "Missing convert utility. Please install ImageMagick " \
                   "and make sure it is in the path."
             ret = False
 
-        if subprocess.call('mogrify -version', shell=True):
+        try:
+            subprocess.check_output('mogrify -version', shell=True)
+        except Exception:
             print "Missing mogrify utility. Please install ImageMagick " \
                   "and make sure it is in the path."
             ret = False
