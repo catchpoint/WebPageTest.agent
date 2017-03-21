@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """ADB command-line interface"""
 import logging
+import os
 import re
 import subprocess
 from threading import Timer
@@ -13,6 +14,7 @@ class Adb(object):
         self.device = options.device
         self.ping_address = None
         self.screenrecord = None
+        self.tcpdump = None
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
@@ -96,6 +98,36 @@ class Adb(object):
             self.screenrecord = None
             self.adb(['pull', '/data/local/tmp/wpt_video.mp4', local_file])
             self.shell(['rm', '/data/local/tmp/wpt_video.mp4'])
+
+    def start_tcpdump(self):
+        """Start a tcpdump capture"""
+        tcpdump_binary = '/data/local/tmp/tcpdump474'
+        capture_file = '/data/local/tmp/tcpdump.cap'
+        local_binary = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'support', 'android', 'tcpdump')
+        out = self.su('ls {0}'.format(tcpdump_binary))
+        if out.find('No such') > -1:
+            self.adb(['push', local_binary, tcpdump_binary])
+            self.su('chown root {0}'.format(tcpdump_binary))
+            self.su('chmod 755 {0}'.format(tcpdump_binary))
+        cmd = self.build_adb_command(['shell', 'su', '-c',
+                                      '{0} -i any -p -s 0 -w {1}'.format(tcpdump_binary,
+                                                                         capture_file)])
+        try:
+            self.tcpdump = subprocess.Popen(cmd)
+        except Exception:
+            pass
+
+    def stop_tcpdump(self, local_file):
+        """Stop a tcpdump capture and download to local_file"""
+        if self.tcpdump is not None:
+            capture_file = '/data/local/tmp/tcpdump.cap'
+            self.su('killall -SIGINT tcpdump474')
+            self.tcpdump.communicate()
+            self.tcpdump = None
+            self.su('chmod 666 {0}'.format(capture_file))
+            self.adb(['pull', capture_file, local_file])
+            self.su('rm {0}'.format(capture_file))
 
     def get_battery_stats(self):
         """Get the temperature andlevel of the battery"""

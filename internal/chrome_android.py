@@ -75,6 +75,7 @@ class ChromeAndroid(DevtoolsBrowser):
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
         self.connected = False
         self.video_processing = None
+        self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
 
     def prepare(self, _, task):
         """Prepare the profile/OS for the browser"""
@@ -158,6 +159,8 @@ class ChromeAndroid(DevtoolsBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.tcpdump_enabled:
+            self.adb.start_tcpdump()
         if self.job['video']:
             self.adb.start_screenrecord()
             time.sleep(0.5)
@@ -166,7 +169,20 @@ class ChromeAndroid(DevtoolsBrowser):
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         DevtoolsBrowser.on_stop_recording(self, task)
+        if self.tcpdump_enabled:
+            logging.debug("Stopping tcpdump")
+            tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
+            self.adb.stop_tcpdump(tcpdump)
+            if os.path.isfile(tcpdump):
+                pcap_out = tcpdump + '.gz'
+                with open(tcpdump, 'rb') as f_in:
+                    with gzip.open(pcap_out, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                if os.path.isfile(pcap_out):
+                    os.remove(tcpdump)
+
         if self.job['video']:
+            logging.debug("Stopping video capture")
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
             # kick off the video processing (async)
