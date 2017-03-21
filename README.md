@@ -71,6 +71,7 @@ Options for authenticating the agent with the server:
 * Netlog
 * Improved request timing (from netlog)
 * HTTP/2 Stream Details
+* HTTP/2 Push reporting
 * Script Commands:
     * navigate
     * exec (execAndWait)
@@ -95,7 +96,6 @@ Options for authenticating the agent with the server:
 
 ## Not yet supported (actively being worked on)
 * Android Support (replace NodeJS agent)
-* HTTP/2 Push reporting
 * Lighthouse integration
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
