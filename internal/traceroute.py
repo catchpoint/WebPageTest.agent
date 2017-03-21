@@ -163,7 +163,7 @@ class Traceroute(object):
                 pass
         return last_hop, ret
 
-    def stop(self):
+    def stop(self, job, task):
         """Stop the browser"""
         pass
 

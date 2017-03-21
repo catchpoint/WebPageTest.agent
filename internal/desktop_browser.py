@@ -103,7 +103,7 @@ class DesktopBrowser(object):
         logging.debug(command_line)
         self.proc = subprocess.Popen(command_line, shell=True)
 
-    def stop(self):
+    def stop(self, job, task):
         """Terminate the browser (gently at first but forced if needed)"""
         from .os_util import kill_all
         logging.debug("Stopping browser")

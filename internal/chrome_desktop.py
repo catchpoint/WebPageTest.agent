@@ -2,6 +2,9 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Logic for controlling a desktop Chrome browser"""
+import gzip
+import os
+import shutil
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -40,7 +43,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     def __init__(self, path, options, job):
         self.options = options
         DesktopBrowser.__init__(self, path, job, options)
-        DevtoolsBrowser.__init__(self, job)
+        DevtoolsBrowser.__init__(self, options, job)
         self.connected = False
 
     def launch(self, job, task):
@@ -55,6 +58,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
+        if 'netlog' in job and job['netlog']:
+            netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
+            args.append('--log-net-log="{0}"'.format(netlog_file))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
         if self.options.xvfb:
@@ -80,10 +86,18 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
-    def stop(self):
+    def stop(self, job, task):
         if self.connected:
             DevtoolsBrowser.disconnect(self)
-        DesktopBrowser.stop(self)
+        DesktopBrowser.stop(self, job, task)
+        netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
+        if os.path.isfile(netlog_file):
+            netlog_gzip = netlog_file + '.gz'
+            with open(netlog_file, 'rb') as f_in:
+                with gzip.open(netlog_gzip, 'wb', 7) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            if os.path.isfile(netlog_gzip):
+                os.remove(netlog_file)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""

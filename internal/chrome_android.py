@@ -2,8 +2,10 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Chrome browser on Android"""
+import gzip
 import logging
 import os
+import shutil
 import subprocess
 import time
 from .devtools_browser import DevtoolsBrowser
@@ -70,7 +72,7 @@ class ChromeAndroid(DevtoolsBrowser):
         self.adb = adb
         self.config = config
         self.options = options
-        DevtoolsBrowser.__init__(self, job, use_devtools_video=False)
+        DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
         self.connected = False
         self.video_processing = None
 
@@ -99,6 +101,9 @@ class ChromeAndroid(DevtoolsBrowser):
         args.append('--host-rules=' + ','.join(host_rules))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
+        if 'netlog' in job and job['netlog']:
+            self.adb.shell(['rm', '/sdcard/netlog.txt'])
+            args.append('--log-net-log="/sdcard/netlog.txt"')
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
@@ -130,7 +135,7 @@ class ChromeAndroid(DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
-    def stop(self):
+    def stop(self, job, task):
         """Stop testing"""
         if self.connected:
             DevtoolsBrowser.disconnect(self)
@@ -138,6 +143,18 @@ class ChromeAndroid(DevtoolsBrowser):
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
         self.adb.su(['rm', '/data/local/chrome-command-line'])
+        # grab the netlog if there was one
+        if 'netlog' in job and job['netlog']:
+            netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
+            self.adb.adb(['pull', '/sdcard/netlog.txt', netlog_file])
+            self.adb.shell(['rm', '/sdcard/netlog.txt'])
+            if os.path.isfile(netlog_file):
+                netlog_gzip = netlog_file + '.gz'
+                with open(netlog_file, 'rb') as f_in:
+                    with gzip.open(netlog_gzip, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                if os.path.isfile(netlog_gzip):
+                    os.remove(netlog_file)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""

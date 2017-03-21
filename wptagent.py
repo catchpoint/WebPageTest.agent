@@ -54,7 +54,7 @@ class WPTAgent(object):
                                 else:
                                     self.task['error'] = "Error configuring traffic-shaping"
                                 self.shaper.reset()
-                                browser.stop()
+                                browser.stop(self.job, self.task)
                             else:
                                 err = "Invalid browser - {0}".format(self.job['browser'])
                                 logging.critical(err)

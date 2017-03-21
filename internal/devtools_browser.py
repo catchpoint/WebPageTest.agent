@@ -17,7 +17,8 @@ class DevtoolsBrowser(object):
     CONNECT_TIME_LIMIT = 30
     CURRENT_VERSION = 1
 
-    def __init__(self, job, use_devtools_video=True):
+    def __init__(self, options, job, use_devtools_video=True):
+        self.options = options
         self.job = job
         self.devtools = None
         self.task = None
@@ -57,7 +58,8 @@ class DevtoolsBrowser(object):
                                            wait=True)
 
             # Mobile Emulation
-            if 'mobile' in self.job and self.job['mobile'] and \
+            if not self.options.android and \
+                    'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
                 self.devtools.send_command("Emulation.setDeviceMetricsOverride",

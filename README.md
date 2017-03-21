@@ -68,6 +68,7 @@ Options for authenticating the agent with the server:
 * Basic auth and client certificates for communicating with WebPageTest server
 * Traceroute tests
 * tcpdump
+* Netlog
 * Improved request timing (from netlog)
 * HTTP/2 Stream Details
 * Script Commands:
@@ -115,7 +116,6 @@ Options for authenticating the agent with the server:
     * if/else/endif
 
 ## Not Supported (no plans to implement)
-* Netlog (rely on netlog trace events instead)
 * Script Commands:
     * setDOMElement
     * waitForComplete
