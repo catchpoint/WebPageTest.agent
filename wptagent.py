@@ -211,7 +211,8 @@ class WPTAgent(object):
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
-        self.wait_for_idle(300)
+        if not self.options.android:
+            self.wait_for_idle(300)
         self.shaper.remove()
         if not self.shaper.install():
             print "Error configuring traffic shaping, make sure it is installed."

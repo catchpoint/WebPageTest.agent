@@ -5,6 +5,7 @@
 import gzip
 import logging
 import os
+import re
 import subprocess
 import time
 import threading
@@ -23,6 +24,7 @@ class DevtoolsBrowser(object):
         self.devtools = None
         self.task = None
         self.event_name = None
+        self.browser_version = None
         self.use_devtools_video = use_devtools_video
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -79,10 +81,13 @@ class DevtoolsBrowser(object):
                                             "height": int(self.job['height'])},
                                            wait=True)
             # UA String
+            ua_string = self.devtools.execute_js("navigator.userAgent")
+            if ua_string is not None:
+                match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
+                if match:
+                    self.browser_version = match.group(1)
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
-            else:
-                ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
                 ua_string += ' PTST/{0:d}'.format(self.CURRENT_VERSION)
             if ua_string is not None:
@@ -92,8 +97,10 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
 
-    def on_start_recording(self, _):
+    def on_start_recording(self, task):
         """Start recording"""
+        if self.browser_version is not None and 'browserVersion' not in task['page_data']:
+            task['page_data']['browserVersion'] = self.browser_version
         if self.devtools is not None:
             self.devtools.start_recording()
 

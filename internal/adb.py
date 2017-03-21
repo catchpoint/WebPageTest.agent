@@ -15,6 +15,8 @@ class Adb(object):
         self.ping_address = None
         self.screenrecord = None
         self.tcpdump = None
+        self.version = None
+        self.short_version = None
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
@@ -61,9 +63,13 @@ class Adb(object):
         cmd = self.build_adb_command(args)
         if not silent:
             logging.debug(' '.join(cmd))
-        result = subprocess.call(cmd)
-        if result == 0:
+        try:
+            stdout = subprocess.check_output(cmd)
+            if not silent and stdout is not None and len(stdout):
+                logging.debug(stdout[:100])
             ret = True
+        except Exception:
+            ret = False
         return ret
 
     def start(self):
@@ -162,6 +168,13 @@ class Adb(object):
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
+        if self.version is None:
+            out = self.shell(['getprop', 'ro.build.version.release'], silent=True)
+            if out is not None:
+                self.version = 'Android ' + out.strip()
+                match = re.search(r'^(\d+\.\d+)', out)
+                if match:
+                    self.short_version = float(match.group(1))
         battery = self.get_battery_stats()
         logging.debug(battery)
         if 'level' in battery and battery['level'] < 50:

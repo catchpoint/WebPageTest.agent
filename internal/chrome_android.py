@@ -6,9 +6,9 @@ import gzip
 import logging
 import os
 import shutil
-import subprocess
 import time
 from .devtools_browser import DevtoolsBrowser
+from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-fre',
@@ -66,24 +66,22 @@ START_PAGE = 'data:text/html,%3Chtml%3E%0D%0A%3Chead%3E%0D%0A%3Cstyle%3E%0D%0Abo
              '%28o%29%3B%0D%0A%7D%29%3B%0D%0A%3C%2Fscript%3E%0D%0A%3C%2Fhead%3E%0D%0A%3Cbody%3E%3C'\
              'div%20id%3D%27o%27%3E%3C%2Fdiv%3E%3C%2Fbody%3E%0D%0A%3C%2Fhtml%3E'
 
-class ChromeAndroid(DevtoolsBrowser):
+class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     """Chrome browser on Android"""
     def __init__(self, adb, config, options, job):
         self.adb = adb
         self.config = config
         self.options = options
+        AndroidBrowser.__init__(self, adb, options, job, config)
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
         self.connected = False
-        self.video_processing = None
-        self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
 
-    def prepare(self, _, task):
+    def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.task = task
+        AndroidBrowser.prepare(self, job, task)
         try:
             self.adb.adb(['forward', '--remove', 'tcp:{0}'.format(task['port'])])
-            # kill any running instances
-            self.adb.shell(['am', 'force-stop', self.config['package']])
             # clear the profile if necessary
             if task['cached']:
                 self.adb.su('rm -r /data/data/' + self.config['package'] + '/app_tabs')
@@ -159,64 +157,17 @@ class ChromeAndroid(DevtoolsBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        if self.tcpdump_enabled:
-            self.adb.start_tcpdump()
-        if self.job['video']:
-            self.adb.start_screenrecord()
-            time.sleep(0.5)
+        AndroidBrowser.on_start_recording(self, task)
         DevtoolsBrowser.on_start_recording(self, task)
 
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         DevtoolsBrowser.on_stop_recording(self, task)
-        if self.tcpdump_enabled:
-            logging.debug("Stopping tcpdump")
-            tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
-            self.adb.stop_tcpdump(tcpdump)
-            if os.path.isfile(tcpdump):
-                pcap_out = tcpdump + '.gz'
-                with open(tcpdump, 'rb') as f_in:
-                    with gzip.open(pcap_out, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-                if os.path.isfile(pcap_out):
-                    os.remove(tcpdump)
-
-        if self.job['video']:
-            logging.debug("Stopping video capture")
-            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-            self.adb.stop_screenrecord(task['video_file'])
-            # kick off the video processing (async)
-            if os.path.isfile(task['video_file']):
-                video_path = os.path.join(task['dir'], task['video_subdirectory'])
-                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-                if task['current_step'] == 1:
-                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'],
-                                                                       task['cached'])
-                else:
-                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
-                                                                             task['cached'],
-                                                                             task['current_step'])
-                histograms = os.path.join(task['dir'], filename)
-                visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                self.video_processing = subprocess.Popen(['python', visualmetrics, '-vvvv',
-                                                          '-i', task['video_file'],
-                                                          '-d', video_path,
-                                                          '--force', '--quality',
-                                                          '{0:d}'.format(self.job['iq']),
-                                                          '--viewport', '--orange',
-                                                          '--maxframes', '50',
-                                                          '--histogram', histograms])
+        AndroidBrowser.on_stop_recording(self, task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
-        if self.video_processing is not None:
-            self.video_processing.communicate()
-            self.video_processing = None
-            if 'keepvideo' not in self.job or not self.job['keepvideo']:
-                try:
-                    os.remove(task['video_file'])
-                except Exception:
-                    pass
+        AndroidBrowser.wait_for_processing(self, task)
 
     def clear_profile(self, _):
         """Clear the browser profile"""

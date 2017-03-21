@@ -47,6 +47,7 @@ class WebPageTest(object):
                 self.session.cert = options.cert
         # Set up the temporary directories
         self.workdir = os.path.join(workdir, self.pc_name)
+        self.persistent_dir = self.workdir + '.data'
         self.profile_dir = os.path.join(self.workdir, 'browser')
         if os.path.isdir(self.workdir):
             try:
@@ -144,6 +145,8 @@ class WebPageTest(object):
             url += "&ec2=" + urllib.quote_plus(self.instance_id)
         if self.zone is not None:
             url += "&ec2zone=" + urllib.quote_plus(self.zone)
+        if self.options.android:
+            url += '&apk=1'
         free_disk = get_free_disk_space()
         url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
@@ -182,6 +185,7 @@ class WebPageTest(object):
                         job['fvonly'] = 1
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['interface'] = None
+                    job['persistent_dir'] = self.persistent_dir
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
