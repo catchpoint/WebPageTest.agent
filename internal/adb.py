@@ -165,10 +165,31 @@ class Adb(object):
                 logging.debug('%s rtt %0.3f ms', address, ret)
         return ret
 
+    def cleanup_device(self):
+        """Do some device-level cleanup"""
+        # Clear notifications
+        self.su('service call notification 1')
+        # Close some known apps that pop-over
+        self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
+        self.shell(['am', 'force-stop', 'com.google.android.apps.docs'])
+        self.shell(['am', 'force-stop', 'com.samsung.android.MtpApplication'])
+        # Cleanup the downloads folders
+        self.shell(['rm', '-rf', '/sdcard/Download/*', '/sdcard/Backucup', '/sdcard/UCDownloads'])
+        self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup /data/media/0/UCDownloads')
+        # See if there are any system dialogs that need dismissing
+        out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
+        if re.search(r'Window #[^\n]*Application Error\:', out) is not None or \
+                re.search(r'Window #[^\n]*systemui\.usb\.UsbDebuggingActivity', out) is not None:
+            logging.warning('Dismissing system dialog')
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
         if self.version is None:
+            self.cleanup_device()
             out = self.shell(['getprop', 'ro.build.version.release'], silent=True)
             if out is not None:
                 self.version = 'Android ' + out.strip()

@@ -87,7 +87,6 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                 self.adb.su('rm -r /data/data/' + self.config['package'] + '/app_tabs')
             else:
                 self.clear_profile(task)
-            # prepare the device
         except Exception as err:
             logging.critical("Exception preparing Browser: %s", err.__str__())
 

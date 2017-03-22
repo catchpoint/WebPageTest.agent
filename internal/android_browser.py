@@ -22,6 +22,7 @@ class AndroidBrowser(object):
 
     def prepare(self, job, task):
         """Prepare the browser and OS"""
+        self.adb.cleanup_device()
         # Download and install the APK if necessary
         if 'apk_info' in job and 'packages' in job['apk_info'] and \
                 self.config['package'] in job['apk_info']['packages']:
