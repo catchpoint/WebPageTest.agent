@@ -243,6 +243,7 @@ class RemoteDummynet(Dummynet):
         self.server = server
         self.in_pipe = in_pipe
         self.out_pipe = out_pipe
+        self.use_shell = bool(platform.system() == "Windows")
 
     def ipfw(self, args):
         """Run a single command on the remote server"""
@@ -254,7 +255,7 @@ class RemoteDummynet(Dummynet):
         while not success and count < 30:
             count += 1
             try:
-                subprocess.check_call(cmd, shell=True)
+                subprocess.check_call(cmd, shell=self.use_shell)
                 success = True
             except Exception:
                 time.sleep(0.2)
