@@ -26,7 +26,7 @@ class WPTAgent(object):
         self.browsers = Browsers(options, browsers, self.adb)
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
-        self.shaper = TrafficShaper(options.shaper)
+        self.shaper = TrafficShaper(options)
         self.job = None
         self.task = None
         self.xvfb = None
@@ -274,7 +274,9 @@ def main():
     # Traffic-shaping options (defaults to host-based)
     parser.add_argument('--shaper', help='Override default traffic shaper. '\
                         'Current supported values are:\n'\
-                        '    none - Disable traffic-shaping (i.e. when root is not available).')
+                        '    none - Disable traffic-shaping (i.e. when root is not available)\n.'\
+                        '    netem,<interface> - Use NetEm for bridging rndis traffic '\
+                        '(specify outbound interface).  i.e. --shaper netem,eth0')
 
     # Android options
     parser.add_argument('--android', action='store_true', default=False,

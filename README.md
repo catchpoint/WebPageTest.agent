@@ -26,7 +26,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 ### Traffic-shaping options (defaults to host-based)
 * **--shaper** : Override default traffic shaper. Current supported values are:
     * none - Disable traffic-shaping (i.e. when root is not available).
-
+    * netem,\<interface\> - Use NetEm for bridging rndis traffic (specify outbound interface).  i.e. --shaper netem,eth0
 ### Android testing options
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).

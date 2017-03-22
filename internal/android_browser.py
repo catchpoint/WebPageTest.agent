@@ -74,6 +74,7 @@ class AndroidBrowser(object):
                 self.adb.start_tcpdump()
             if self.job['video']:
                 self.adb.start_screenrecord()
+            if self.tcpdump_enabled or self.job['video']:
                 time.sleep(0.5)
 
     def on_stop_recording(self, task):

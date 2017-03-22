@@ -52,6 +52,7 @@ class Trace():
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
+        self.netlog_requests = None
         self.v8stats = None
         self.v8stack = {}
         return
@@ -187,6 +188,8 @@ class Trace():
                 self.ProcessTraceEvent(trace_event)
             self.trace_events = []
 
+        # Post-process the netlog events (may shift the start time)
+        self.post_process_netlog_events()
         # Do the post-processing on timeline events
         self.ProcessTimelineEvents()
 
@@ -536,6 +539,8 @@ class Trace():
 
     def post_process_netlog_events(self):
         """Post-process the raw netlog events into request data"""
+        if self.netlog_requests is not None:
+            return self.netlog_requests
         requests = []
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
@@ -614,12 +619,11 @@ class Trace():
                          'connect_start', 'connect_end',
                          'ssl_start', 'ssl_end',
                          'start', 'first_byte', 'end']
-                if self.start_time is None:
-                    for request in requests:
-                        for time_name in times:
-                            if time_name in request:
-                                if self.start_time is None or request[time_name] < self.start_time:
-                                    self.start_time = request[time_name]
+                for request in requests:
+                    for time_name in times:
+                        if time_name in request:
+                            if self.start_time is None or request[time_name] < self.start_time:
+                                self.start_time = request[time_name]
                 # Go through and adjust all of the times to be relative in ms
                 if self.start_time is not None:
                     for request in requests:
@@ -631,6 +635,7 @@ class Trace():
                     requests = []
         if not len(requests):
             requests = None
+        self.netlog_requests = requests
         return requests
 
     def ProcessNetlogConnectJobEvent(self, trace_event):
