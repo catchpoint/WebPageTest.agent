@@ -19,6 +19,11 @@ class Adb(object):
         self.version = None
         self.kernel = None
         self.short_version = None
+        self.known_apps = {
+            'com.motorola.ccc.ota': {},
+            'com.google.android.apps.docs': {},
+            'com.samsung.android.MtpApplication': {}
+        }
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
@@ -172,9 +177,13 @@ class Adb(object):
         # Clear notifications
         self.su('service call notification 1')
         # Close some known apps that pop-over
-        self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
-        self.shell(['am', 'force-stop', 'com.google.android.apps.docs'])
-        self.shell(['am', 'force-stop', 'com.samsung.android.MtpApplication'])
+        for app in self.known_apps:
+            if 'installed' not in self.known_apps[app]:
+                out = self.shell(['dumpsys', 'package', app, '|', 'grep', 'versionName', '|',
+                                  'head', '-n1'])
+                self.known_apps[app]['installed'] = bool(out is not None and len(out.strip()))
+            if self.known_apps[app]['installed']:
+                self.shell(['am', 'force-stop', app])
         # Cleanup the downloads folders
         self.shell(['rm', '-rf', '/sdcard/Download/*', '/sdcard/Backucup', '/sdcard/UCDownloads'])
         self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup /data/media/0/UCDownloads')
