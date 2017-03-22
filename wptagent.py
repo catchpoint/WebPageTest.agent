@@ -286,7 +286,7 @@ def main():
                         "    dhcp: Configure interface for DHCP\n"\
                         "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"\
                         "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
-    
+
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
@@ -298,10 +298,14 @@ def main():
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
-    if sys.version_info[0] != 2 or \
-            sys.version_info[1] != 7 or \
-            sys.version_info[2] < 11:
-        print "Requires python 2.7 (2.7.11 or later)"
+    if platform.system() == "Windows":
+        if sys.version_info[0] != 2 or \
+                sys.version_info[1] != 7 or \
+                sys.version_info[2] < 11:
+            print "Requires python 2.7.11 (2.7.11 or later)"
+            exit(1)
+    elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
+        print "Requires python 2.7"
         exit(1)
 
     # Set up logging
@@ -317,10 +321,12 @@ def main():
     logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
                         datefmt="%H:%M:%S")
 
-    browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
-    if browsers is None:
-        print "No browsers configured. Check that browsers.ini is present and correct."
-        exit(1)
+    browsers = None
+    if not options.android:
+        browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
+        if browsers is None:
+            print "No browsers configured. Check that browsers.ini is present and correct."
+            exit(1)
 
     agent = WPTAgent(options, browsers)
     if agent.startup():

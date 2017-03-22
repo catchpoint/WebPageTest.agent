@@ -31,7 +31,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).
 * **--rndis** : Enable reverse-tethering over rndis.  Valid options are:
-    * dhcp: Configure interface for DHCP. i.e. --rndis dhcp
     * <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  i.e. --rndis 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4
 
 ### Options for authenticating the agent with the server:
