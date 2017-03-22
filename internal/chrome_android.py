@@ -171,7 +171,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def clear_profile(self, _):
         """Clear the browser profile"""
         # Fail gracefully if root access isn't available
-        if self.adb.short_version >= 6.0:
+        if self.adb.short_version >= 7.0:
             out = self.adb.su('ls -1 /data/data/' + self.config['package'])
         else:
             out = self.adb.su('ls /data/data/' + self.config['package'])

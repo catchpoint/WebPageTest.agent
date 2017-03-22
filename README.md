@@ -27,11 +27,14 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--shaper** : Override default traffic shaper. Current supported values are:
     * none - Disable traffic-shaping (i.e. when root is not available).
     * netem,\<interface\> - Use NetEm for bridging rndis traffic (specify outbound interface).  i.e. --shaper netem,eth0
+    * remote,\<server\>,\<down pipe\>,\<up pipe\> - Connect to the remote server over ssh and use pre-configured dummynet pipes (ssh keys for root user should be pre-authorized).
+
 ### Android testing options
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).
-* **--rndis** : Enable reverse-tethering over rndis.  Valid options are:
+* **--rndis** : Enable reverse-tethering over rndis (Android < 6.0).  Valid options are:
     * <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  i.e. --rndis 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4
+    * dhcp
 
 ### Options for authenticating the agent with the server:
 * **--username** : User name if using HTTP Basic auth with WebPageTest server.

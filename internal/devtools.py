@@ -89,7 +89,9 @@ class DevTools(object):
                                 self.websocket.settimeout(1)
                                 ret = True
                         else:
-                            time.sleep(1)
+                            time.sleep(0.5)
+                    else:
+                        time.sleep(0.5)
             except Exception as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(1)

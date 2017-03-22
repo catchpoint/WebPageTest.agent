@@ -276,7 +276,10 @@ def main():
                         'Current supported values are:\n'\
                         '    none - Disable traffic-shaping (i.e. when root is not available)\n.'\
                         '    netem,<interface> - Use NetEm for bridging rndis traffic '\
-                        '(specify outbound interface).  i.e. --shaper netem,eth0')
+                        '(specify outbound interface).  i.e. --shaper netem,eth0\n'\
+                        '    remote,<server>,<down pipe>,<up pipe> - Connect to the remote server '\
+                        'over ssh and use pre-configured dummynet pipes (ssh keys for root user '\
+                        'should be pre-authorized).')
 
     # Android options
     parser.add_argument('--android', action='store_true', default=False,

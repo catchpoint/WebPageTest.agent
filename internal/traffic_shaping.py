@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import subprocess
+import time
 
 class TrafficShaper(object):
     """Main traffic-shaper interface"""
@@ -22,6 +23,11 @@ class TrafficShaper(object):
                 if_out = parts[1].strip() if len(parts) > 1 else None
                 if_in = 'usb0' if options.rndis else None
                 self.shaper = NetEm(out_interface=if_out, in_interface=if_in)
+            elif shaper_name[:6] == 'remote':
+                parts = shaper_name.split(',')
+                if len(parts) == 4:
+                    self.shaper = RemoteDummynet(parts[1].strip(), parts[2].strip(),
+                                                 parts[3].strip())
         elif options.rndis:
             self.shaper = NoShaper()
         else:
@@ -145,6 +151,8 @@ class Dummynet(object):
     """Dummynet support (windows only currently)"""
     def __init__(self):
         self.interface = None
+        self.in_pipe = '1'
+        self.out_pipe = '2'
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "dummynet")
         if platform.machine().endswith('64'):
@@ -161,14 +169,16 @@ class Dummynet(object):
         """Set up the pipes"""
         return self.ipfw(['-q', 'flush']) and\
                self.ipfw(['-q', 'pipe', 'flush']) and\
-               self.ipfw(['pipe', '1', 'config', 'delay', '0ms', 'noerror']) and\
-               self.ipfw(['pipe', '2', 'config', 'delay', '0ms', 'noerror']) and\
-               self.ipfw(['queue', '1', 'config', 'pipe', '1', 'queue', '100', \
+               self.ipfw(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.ipfw(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.ipfw(['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff']) and\
-               self.ipfw(['queue', '2', 'config', 'pipe', '2', 'queue', '100', \
+               self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff']) and\
-               self.ipfw(['add', 'queue', '1', 'ip', 'from', 'any', 'to', 'any', 'in']) and\
-               self.ipfw(['add', 'queue', '2', 'ip', 'from', 'any', 'to', 'any', 'out']) and\
+               self.ipfw(['add', 'queue', self.in_pipe, 'ip', 'from', 'any', 'to', 'any',
+                          'in']) and\
+               self.ipfw(['add', 'queue', self.out_pipe, 'ip', 'from', 'any', 'to', 'any',
+                          'out']) and\
                self.ipfw(['add', '60000', 'allow', 'ip', 'from', 'any', 'to', 'any'])
 
     def remove(self):
@@ -178,11 +188,11 @@ class Dummynet(object):
 
     def reset(self):
         """Disable traffic-shaping"""
-        return self.ipfw(['pipe', '1', 'config', 'delay', '0ms', 'noerror']) and\
-               self.ipfw(['pipe', '2', 'config', 'delay', '0ms', 'noerror']) and\
-               self.ipfw(['queue', '1', 'config', 'pipe', '1', 'queue', '100', \
+        return self.ipfw(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.ipfw(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.ipfw(['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff']) and\
-               self.ipfw(['queue', '2', 'config', 'pipe', '2', 'queue', '100', \
+               self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff'])
 
     def configure(self, in_bps, out_bps, rtt, plr):
@@ -192,7 +202,7 @@ class Dummynet(object):
         in_latency = rtt / 2
         if rtt % 2:
             in_latency += 1
-        in_command = ['pipe', '1', 'config']
+        in_command = ['pipe', self.in_pipe, 'config']
         if in_kbps > 0:
             in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
         if in_latency >= 0:
@@ -201,7 +211,7 @@ class Dummynet(object):
         # outbound connection
         out_kbps = int(out_bps / 1000)
         out_latency = rtt / 2
-        out_command = ['pipe', '2', 'config']
+        out_command = ['pipe', self.out_pipe, 'config']
         if out_kbps > 0:
             out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
         if out_latency >= 0:
@@ -209,8 +219,9 @@ class Dummynet(object):
 
         # Packet loss get applied to the queues
         plr = plr / 100.0
-        in_queue_command = ['queue', '1', 'config', 'pipe', '1', 'queue', '100']
-        out_queue_command = ['queue', '2', 'config', 'pipe', '2', 'queue', '100']
+        in_queue_command = ['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100']
+        out_queue_command = ['queue', self.out_pipe, 'config', 'pipe', self.out_pipe,
+                             'queue', '100']
         if plr > 0.0 and plr <= 1.0:
             in_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
             out_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
@@ -221,6 +232,41 @@ class Dummynet(object):
                self.ipfw(out_command) and\
                self.ipfw(in_queue_command) and\
                self.ipfw(out_queue_command)
+
+#
+# RemoteDummynet - Remote PC running dummynet with pre-configured pipes
+#
+class RemoteDummynet(Dummynet):
+    """Allow resets but fail any explicit shaping"""
+    def __init__(self, server, in_pipe, out_pipe):
+        Dummynet.__init__(self)
+        self.server = server
+        self.in_pipe = in_pipe
+        self.out_pipe = out_pipe
+
+    def ipfw(self, args):
+        """Run a single command on the remote server"""
+        success = False
+        cmd = ['ssh', '-o', 'StrictHostKeyChecking=no',
+               'root@{0}'.format(self.server), 'ipfw ' + ' '.join(args)]
+        logging.debug(' '.join(cmd))
+        count = 0
+        while not success and count < 30:
+            count += 1
+            try:
+                subprocess.check_call(cmd, shell=True)
+                success = True
+            except Exception:
+                time.sleep(0.2)
+        return success
+
+    def install(self):
+        """Install and configure the traffic-shaper"""
+        return self.ipfw(['pipe', 'show', self.in_pipe])
+
+    def remove(self):
+        """Uninstall traffic-shaping"""
+        return True
 
 #
 # netem
