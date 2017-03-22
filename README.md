@@ -8,23 +8,33 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Install docs are [here](docs/install.md)
 
 ## Command-line options
+### Server/location configuration
 * **-v** : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
-* **--server** (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
-* **--location** (required): Location ID (as configured in locations.ini on the server).
-* **--key** : Location key (if configured in locations.ini).
 * **--name** : Agent name (defaults to the machine's hostname).
 * **--exit** : Exit after the specified number of minutes.
     * Useful for running in a shell script that does some maintenence or updates periodically (like hourly).
-* **--shaper** : Override default traffic shaper. Current supported values are:
-    * none - Disable traffic-shaping (i.e. when root is not available).
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
+
+### Server/location configuration
+* **--server** (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
+* **--location** (required): Location ID (as configured in locations.ini on the server).
+* **--key** : Location key (if configured in locations.ini).
+
+### Traffic-shaping options (defaults to host-based)
+* **--shaper** : Override default traffic shaper. Current supported values are:
+    * none - Disable traffic-shaping (i.e. when root is not available).
+
+### Android testing options
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).
+* **--rndis** : Enable reverse-tethering over rndis.  Valid options are:
+    * dhcp: Configure interface for DHCP. i.e. --rndis dhcp
+    * <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  i.e. --rndis 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4
 
-Options for authenticating the agent with the server:
+### Options for authenticating the agent with the server:
 * **--username** : User name if using HTTP Basic auth with WebPageTest server.
 * **--password** : Password if using HTTP Basic auth with WebPageTest server.
 * **--cert** : Client certificate if using certificates to authenticate the WebPageTest server connection.

@@ -246,22 +246,15 @@ def main():
     """Startup and initialization"""
     import argparse
     parser = argparse.ArgumentParser(description='WebPageTest Agent.', prog='wpt-agent')
+    # Basic agent config
     parser.add_argument('-v', '--verbose', action='count',
                         help="Increase verbosity (specify multiple times for more)."
                         " -vvvv for full debug output.")
-    parser.add_argument('--server',
-                        help="URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).")
-    parser.add_argument('--location',
-                        help="Location ID (as configured in locations.ini on the server).")
-    parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--name', help="Agent name (for the work directory).")
     parser.add_argument('--exit', type=int, default=0,
                         help='Exit after the specified number of minutes.\n'\
                         '    Useful for running in a shell script that does some maintenence\n'\
                         '    or updates periodically (like hourly).')
-    parser.add_argument('--shaper', help='Override default traffic shaper. '\
-                        'Current supported values are:\n'\
-                        '    none - Disable traffic-shaping (i.e. when root is not available).')
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
     parser.add_argument('--dockerized', action='store_true', default=False,
@@ -270,10 +263,31 @@ def main():
                         help="Load config settings from EC2 user data.")
     parser.add_argument('--gce', action='store_true', default=False,
                         help="Load config settings from GCE user data.")
+
+    # Server/location configuration
+    parser.add_argument('--server',
+                        help="URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).")
+    parser.add_argument('--location',
+                        help="Location ID (as configured in locations.ini on the server).")
+    parser.add_argument('--key', help="Location key (optional).")
+
+    # Traffic-shaping options (defaults to host-based)
+    parser.add_argument('--shaper', help='Override default traffic shaper. '\
+                        'Current supported values are:\n'\
+                        '    none - Disable traffic-shaping (i.e. when root is not available).')
+
+    # Android options
     parser.add_argument('--android', action='store_true', default=False,
                         help="Run tests on an attached android device.")
     parser.add_argument('--device',
                         help="Device ID (only needed if more than one android device attached).")
+    parser.add_argument('--rndis',
+                        help="Enable reverse-tethering over rndis.  Valid options are:\n"\
+                        "    dhcp: Configure interface for DHCP\n"\
+                        "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"\
+                        "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
+    
+    # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
     parser.add_argument('--password',
