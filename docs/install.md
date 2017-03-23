@@ -12,6 +12,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ujson
     * websocket-client
     * xvfbwrapper (Linux only)
+    * bind9utils (Linux only)
 * Imagemagick installed and available in the path
     * The legacy tools (convert, compare, etc) need to be installed which may be optional on Windows
 * ffmpeg installed and available in the path
