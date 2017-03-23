@@ -33,6 +33,7 @@ class OptimizationChecks(object):
         self.dns_lookup_queue = Queue.Queue()
         self.dns_result_queue = Queue.Queue()
         self.cdn_cnames = {
+            'Advanced Hosters CDN': ['.pix-cdn.org'],
             'afxcdn.net': ['.afxcdn.net'],
             'Akamai': ['.akamai.net',
                        '.akamaized.net',
