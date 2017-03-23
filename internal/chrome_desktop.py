@@ -52,7 +52,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         host_rules = HOST_RULES
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
-        args.append('--host-rules=' + ','.join(host_rules))
+        args.append('--host-resolver-rules=' + ','.join(host_rules))
         args.extend(['--window-position="0,0"',
                      '--window-size="{0:d},{1:d}"'.format(task['width'], task['height'])])
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
