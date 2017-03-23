@@ -9,16 +9,23 @@ import os
 import shutil
 import subprocess
 import time
+import ujson as json
 
 class AndroidBrowser(object):
     """Android Browser base"""
-    def __init__(self, adb, job, options, config):
+    def __init__(self, adb, options, job, config):
         self.adb = adb
         self.job = job
         self.options = options
         self.config = config
         self.video_processing = None
+        self.tcpdump_processing = None
+        self.video_enabled = bool(job['video'])
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
+        self.tcpdump_file = None
+        if self.config['type'] == 'blackbox':
+            self.tcpdump_enabled = True
+            self.video_enabled = True
 
     def prepare(self, job, task):
         """Prepare the browser and OS"""
@@ -85,13 +92,13 @@ class AndroidBrowser(object):
                     task['page_data']['browserVersion'] = out[separator + 1:].strip()
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
-            if self.job['video']:
+            if self.video_enabled:
                 self.adb.start_screenrecord()
-            if self.tcpdump_enabled or self.job['video']:
+            if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(0.5)
 
     def on_stop_recording(self, task):
-        """Notification that we are about to start an operation that needs to be recorded"""
+        """Notification that we are done with an operation that needs to be recorded"""
         if self.tcpdump_enabled:
             logging.debug("Stopping tcpdump")
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
@@ -103,8 +110,17 @@ class AndroidBrowser(object):
                         shutil.copyfileobj(f_in, f_out)
                 if os.path.isfile(pcap_out):
                     os.remove(tcpdump)
+                    self.tcpdump_file = pcap_out
+                    path_base = os.path.join(task['dir'], task['prefix'])
+                    slices_file = path_base + '_pcap_slices.json.gz'
+                    pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                               'support', "pcap-parser.py")
+                    cmd = ['python', pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
+                    logging.debug(' '.join(cmd))
+                    self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                                               stderr=subprocess.PIPE)
 
-        if self.job['video']:
+        if self.video_enabled:
             logging.debug("Stopping video capture")
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
@@ -121,14 +137,15 @@ class AndroidBrowser(object):
                                                                              task['current_step'])
                 histograms = os.path.join(task['dir'], filename)
                 visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                self.video_processing = subprocess.Popen(['python', visualmetrics, '-vvvv',
-                                                          '-i', task['video_file'],
-                                                          '-d', video_path,
-                                                          '--force', '--quality',
-                                                          '{0:d}'.format(self.job['iq']),
-                                                          '--viewport', '--orange',
-                                                          '--maxframes', '50',
-                                                          '--histogram', histograms])
+                args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                        '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                        '--viewport', '--maxframes', '50', '--histogram', histograms]
+                if 'videoFlags' in self.config:
+                    args.extend(self.config['videoFlags'])
+                else:
+                    args.append('--orange')
+                logging.debug(' '.join(args))
+                self.video_processing = subprocess.Popen(args)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -140,3 +157,20 @@ class AndroidBrowser(object):
                     os.remove(task['video_file'])
                 except Exception:
                     pass
+        if self.tcpdump_processing is not None:
+            try:
+                stdout, _ = self.tcpdump_processing.communicate()
+                if stdout is not None:
+                    result = json.loads(stdout)
+                    if result:
+                        if 'in' in result:
+                            task['page_data']['pcapBytesIn'] = result['in']
+                        if 'out' in result:
+                            task['page_data']['pcapBytesOut'] = result['out']
+                        if 'in_dup' in result:
+                            task['page_data']['pcapBytesInDup'] = result['in_dup']
+                if 'tcpdump' not in self.job or not self.job['tcpdump']:
+                    if self.tcpdump_file is not None:
+                        os.remove(self.tcpdump_file)
+            except Exception:
+                pass

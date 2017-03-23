@@ -19,6 +19,7 @@ class Adb(object):
         self.version = None
         self.kernel = None
         self.short_version = None
+        self.last_bytes_rx = 0
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -371,3 +372,34 @@ class Adb(object):
             logging.info("Device not ready, network not responding")
             is_ready = False
         return is_ready
+
+    def get_bytes_rx(self):
+        """Get the incremental bytes received across all non-loopback interfaces"""
+        bytes_rx = 0
+        out = self.shell(['cat', '/proc/net/dev'], silent=True)
+        if out is not None:
+            for line in out.splitlines():
+                match = re.search(r'^\s*(\w+):\s+(\d+)', line)
+                if match:
+                    interface = match.group(1)
+                    if interface != 'lo':
+                        bytes_rx += int(match.group(2))
+        delta = bytes_rx - self.last_bytes_rx
+        self.last_bytes_rx = bytes_rx
+        return delta
+
+    def get_video_size(self):
+        """Get the current size of the video file"""
+        size = 0
+        out = self.shell(['ls', '-l', '/data/local/tmp/wpt_video.mp4'], silent=True)
+        match = re.search(r'[^\d]+\s+(\d+) \d+', out)
+        if match:
+            size = int(match.group(1))
+        return size
+
+    def screenshot(self, dest_file):
+        """Capture a png screenshot of the device"""
+        device_path = '/data/local/tmp/wpt_screenshot.png'
+        self.shell(['rm', '/data/local/tmp/wpt_screenshot.png'], silent=True)
+        self.shell(['screencap', '-p', device_path])
+        self.adb(['pull', device_path, dest_file])

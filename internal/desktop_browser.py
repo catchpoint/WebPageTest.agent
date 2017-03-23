@@ -12,6 +12,7 @@ import subprocess
 import threading
 import time
 import monotonic
+import ujson as json
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
@@ -212,9 +213,9 @@ class DesktopBrowser(object):
                         with gzip.open(pcap_out, 'wb', 7) as f_out:
                             shutil.copyfileobj(f_in, f_out)
                     if os.path.isfile(pcap_out):
-                        #self.pcap_thread = threading.Thread(target=self.process_pcap)
-                        #self.pcap_thread.daemon = True
-                        #self.pcap_thread.start()
+                        self.pcap_thread = threading.Thread(target=self.process_pcap)
+                        self.pcap_thread.daemon = True
+                        self.pcap_thread.start()
                         try:
                             os.remove(self.pcap_file)
                         except Exception:
@@ -238,7 +239,19 @@ class DesktopBrowser(object):
                                        'support', "pcap-parser.py")
             cmd = ['python', pcap_parser, '--json', '-i', pcap_file, '-d', slices_file]
             logging.debug(cmd)
-            subprocess.call(cmd)
+            try:
+                stdout = subprocess.check_output(cmd)
+                if stdout is not None:
+                    result = json.loads(stdout)
+                    if result:
+                        if 'in' in result:
+                            self.task['page_data']['pcapBytesIn'] = result['in']
+                        if 'out' in result:
+                            self.task['page_data']['pcapBytesOut'] = result['out']
+                        if 'in_dup' in result:
+                            self.task['page_data']['pcapBytesInDup'] = result['in_dup']
+            except Exception:
+                pass
 
     def get_net_bytes(self):
         """Get the bytes received, ignoring the loopback interface"""

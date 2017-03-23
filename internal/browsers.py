@@ -45,6 +45,9 @@ class Browsers(object):
                 if config['type'] == 'chrome':
                     from .chrome_android import ChromeAndroid
                     browser = ChromeAndroid(self.adb, config, self.options, job)
+                if config['type'] == 'blackbox':
+                    from .blackbox_android import BlackBoxAndroid
+                    browser = BlackBoxAndroid(self.adb, config, self.options, job)
         elif 'type' in job and job['type'] == 'traceroute':
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
