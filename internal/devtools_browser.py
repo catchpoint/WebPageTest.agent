@@ -6,6 +6,7 @@ import gzip
 import logging
 import os
 import re
+import shutil
 import subprocess
 import time
 import threading
@@ -25,6 +26,7 @@ class DevtoolsBrowser(object):
         self.task = None
         self.event_name = None
         self.browser_version = None
+        self.lighthouse_test_url = None
         self.use_devtools_video = use_devtools_video
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -155,6 +157,9 @@ class DevtoolsBrowser(object):
                             task['current_step'] += 1
                             self.event_name = None
                         self.wait_for_processing(task)
+            if task['run'] == 1 and not task['cached'] and \
+                    'lighthouse' in self.job and self.job['lighthouse']:
+                self.run_lighthouse_test(task)
             self.task = None
 
     def prepare_task(self, task):
@@ -245,6 +250,8 @@ class DevtoolsBrowser(object):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
+            if self.lighthouse_test_url is None:
+                self.lighthouse_test_url = command['target']
             self.devtools.start_navigating()
             self.devtools.send_command('Page.navigate', {'url': command['target']})
         elif command['command'] == 'logdata':
@@ -301,3 +308,35 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             requests = self.devtools.get_requests()
         return requests
+
+    def run_lighthouse_test(self, task):
+        """Run a lighthouse test against the current browser session"""
+        if self.lighthouse_test_url is not None:
+            if self.devtools is not None:
+                self.devtools.send_command("Network.clearBrowserCache", {},
+                                           wait=True)
+                self.devtools.send_command("Network.clearBrowserCookies", {},
+                                           wait=True)
+                self.devtools.close(close_tab=False)
+            lighthouse_file = os.path.join(task['dir'], 'lighthouse.json')
+            command = ['lighthouse',
+                       '--disable-device-emulation',
+                       '--disable-cpu-throttling',
+                       '--disable-network-throttling',
+                       '--port', str(task['port']),
+                       '--output', 'json',
+                       '--output-path', '"{0}"'.format(lighthouse_file),
+                       '"{0}"'.format(self.lighthouse_test_url)]
+            cmd = ' '.join(command)
+            logging.debug(cmd)
+            subprocess.call(cmd, shell=True)
+            if os.path.isfile(lighthouse_file):
+                gzipped = lighthouse_file + '.gz'
+                with open(lighthouse_file, 'rb') as f_in:
+                    with gzip.open(gzipped, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                if os.path.isfile(gzipped):
+                    try:
+                        os.remove(lighthouse_file)
+                    except Exception:
+                        pass
