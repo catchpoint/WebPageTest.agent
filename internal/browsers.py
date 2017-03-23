@@ -35,6 +35,8 @@ class Browsers(object):
         """Return an instance of the browser logic"""
         browser = None
         if self.options.android:
+            if 'customBrowser_package' in job:
+                name = "Chrome"
             separator = name.find('-')
             if separator >= 0:
                 name = name[separator + 1:].strip()

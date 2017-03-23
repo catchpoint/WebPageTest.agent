@@ -37,6 +37,7 @@ class WPTAgent(object):
         """Main testing flow"""
         import monotonic
         start_time = monotonic.monotonic()
+        browser = None
         while not self.must_exit:
             try:
                 if self.browsers.is_ready():

@@ -70,9 +70,31 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     """Chrome browser on Android"""
     def __init__(self, adb, config, options, job):
         self.adb = adb
-        self.config = config
         self.options = options
-        AndroidBrowser.__init__(self, adb, options, job, config)
+        self.config = dict(config)
+        # default (overridable) configs
+        self.config['command_line_file'] = 'chrome-command-line'
+        self.config['adb_socket'] = 'localabstract:chrome_devtools_remote'
+        # pull in the APK info for the browser
+        if 'apk_info' in job and 'packages' in job['apk_info'] and \
+                self.config['package'] in job['apk_info']['packages']:
+            apk_info = job['apk_info']['packages'][self.config['package']]
+            self.config['apk_url'] = apk_info['apk_url']
+            self.config['md5'] = apk_info['md5'].lower()
+        # pull in the settings for a custom browser into the config
+        if 'customBrowser_package' in job:
+            self.config['package'] = job['customBrowser_package']
+        if 'customBrowser_activity' in job:
+            self.config['activity'] = job['customBrowser_activity']
+        if 'customBrowserUrl' in job:
+            self.config['apk_url'] = job['customBrowserUrl']
+        if 'customBrowserMD5' in job:
+            self.config['md5'] = job['customBrowserMD5'].lower()
+        if 'customBrowser_socket' in job:
+            self.config['adb_socket'] = job['customBrowser_socket']
+        if 'customBrowser_flagsFile' in job:
+            self.config['command_line_file'] = os.path.basename(job['customBrowser_flagsFile'])
+        AndroidBrowser.__init__(self, adb, options, job, self.config)
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
         self.connected = False
 
@@ -105,9 +127,9 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
-        local_command_line = os.path.join(task['dir'], 'chrome-command-line')
-        remote_command_line = '/data/local/tmp/chrome-command-line'
-        root_command_line = '/data/local/chrome-command-line'
+        local_command_line = os.path.join(task['dir'], self.config['command_line_file'])
+        remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
+        root_command_line = '/data/local/' + self.config['command_line_file']
         logging.debug(command_line)
         with open(local_command_line, 'wb') as f_out:
             f_out.write(command_line)
@@ -121,7 +143,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                             'android.intent.action.VIEW', '-d', START_PAGE])
             # port-forward the devtools interface
             if self.adb.adb(['forward', 'tcp:{0}'.format(task['port']),
-                             'localabstract:chrome_devtools_remote']):
+                             self.config['adb_socket']]):
                 if DevtoolsBrowser.connect(self, task):
                     self.connected = True
                     DevtoolsBrowser.prepare_browser(self, task)
@@ -139,8 +161,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             DevtoolsBrowser.disconnect(self)
         # kill the browser
         self.adb.shell(['am', 'force-stop', self.config['package']])
-        self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
-        self.adb.su(['rm', '/data/local/chrome-command-line'])
+        self.adb.shell(['rm', '/data/local/tmp/' + self.config['command_line_file']])
+        self.adb.su(['rm', '/data/local/' + self.config['command_line_file']])
         # grab the netlog if there was one
         if 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'

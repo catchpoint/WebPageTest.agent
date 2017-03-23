@@ -24,39 +24,52 @@ class AndroidBrowser(object):
         """Prepare the browser and OS"""
         self.adb.cleanup_device()
         # Download and install the APK if necessary
-        if 'apk_info' in job and 'packages' in job['apk_info'] and \
-                self.config['package'] in job['apk_info']['packages']:
-            apk_info = job['apk_info']['packages'][self.config['package']]
-            if 'apk_url' in apk_info and 'md5' in apk_info:
-                local_file = os.path.join(job['persistent_dir'],
-                                          self.config['package'] + '.' + apk_info['md5'] + '.apk')
-                if not os.path.isfile(local_file):
-                    valid = False
-                    md5_hash = hashlib.md5()
+        if 'apk_url' in self.config and 'md5' in self.config:
+            if not os.path.isdir(job['persistent_dir']):
+                os.makedirs(job['persistent_dir'])
+            last_install_file = os.path.join(job['persistent_dir'],
+                                             self.config['package'] + '.md5')
+            last_md5 = None
+            if os.path.isfile(last_install_file):
+                with open(last_install_file, 'rb') as f_in:
+                    last_md5 = f_in.read()
+            if last_md5 is None or last_md5 != self.config['md5']:
+                valid = False
+                tmp_file = os.path.join(job['persistent_dir'],
+                                        self.config['package'] + '.apk')
+                if os.path.isfile(tmp_file):
                     try:
-                        logging.debug('Downloading browser update: %s',
-                                      apk_info['apk_url'])
-                        import requests
-                        if not os.path.isdir(job['persistent_dir']):
-                            os.makedirs(job['persistent_dir'])
-                        request = requests.get(apk_info['apk_url'], stream=True)
-                        if request.status_code == 200:
-                            with open(local_file, 'wb') as f_out:
-                                for chunk in request.iter_content(chunk_size=4096):
-                                    f_out.write(chunk)
-                                    md5_hash.update(chunk)
-                            md5 = md5_hash.hexdigest().lower()
-                            if md5 == apk_info['md5'].lower():
-                                valid = True
+                        os.remove(tmp_file)
                     except Exception:
                         pass
-                    if os.path.isfile(local_file):
-                        if valid:
-                            logging.debug('Installing browser APK')
-                            self.adb.adb(['install', '-rg', local_file])
-                        else:
-                            logging.error('Error downloading browser APK')
-                            os.remove(local_file)
+                md5_hash = hashlib.md5()
+                try:
+                    logging.debug('Downloading browser update: %s',
+                                  self.config['apk_url'])
+                    import requests
+                    request = requests.get(self.config['apk_url'], stream=True)
+                    if request.status_code == 200:
+                        with open(tmp_file, 'wb') as f_out:
+                            for chunk in request.iter_content(chunk_size=4096):
+                                f_out.write(chunk)
+                                md5_hash.update(chunk)
+                        md5 = md5_hash.hexdigest().lower()
+                        if md5 == self.config['md5']:
+                            valid = True
+                except Exception:
+                    pass
+                if os.path.isfile(tmp_file):
+                    if valid:
+                        logging.debug('Installing browser APK')
+                        self.adb.adb(['install', '-rg', tmp_file])
+                        with open(last_install_file, 'wb') as f_out:
+                            f_out.write(md5)
+                    else:
+                        logging.error('Error downloading browser APK')
+                    try:
+                        os.remove(tmp_file)
+                    except Exception:
+                        pass
         # kill any running instances
         self.adb.shell(['am', 'force-stop', self.config['package']])
 
