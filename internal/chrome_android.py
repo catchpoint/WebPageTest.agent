@@ -118,7 +118,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         host_rules = HOST_RULES
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
-        args.append('--host-rules=' + ','.join(host_rules))
+        args.append('--host-resolver-rules=' + ','.join(host_rules))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
         if 'netlog' in job and job['netlog']:
