@@ -317,6 +317,8 @@ class DevtoolsBrowser(object):
                                            wait=True)
                 self.devtools.send_command("Network.clearBrowserCookies", {},
                                            wait=True)
+                self.devtools.send_command('Page.navigate', {'url': 'about:blank'},
+                                           wait=True)
                 self.devtools.close(close_tab=False)
             lighthouse_file = os.path.join(task['dir'], 'lighthouse.json')
             command = ['lighthouse',
