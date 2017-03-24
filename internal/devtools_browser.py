@@ -321,25 +321,36 @@ class DevtoolsBrowser(object):
                                            wait=True)
                 self.devtools.close(close_tab=False)
                 time.sleep(0.5)
-            lighthouse_file = os.path.join(task['dir'], 'lighthouse.json')
+            output_path = os.path.join(task['dir'], 'lighthouse.json')
+            json_file = os.path.join(task['dir'], 'lighthouse.report.json')
+            json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
+            html_file = os.path.join(task['dir'], 'lighthouse.report.html')
+            html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             command = ['lighthouse',
                        '--disable-device-emulation',
                        '--disable-cpu-throttling',
                        '--disable-network-throttling',
                        '--port', str(task['port']),
+                       '--output', 'html',
                        '--output', 'json',
-                       '--output-path', '"{0}"'.format(lighthouse_file),
+                       '--output-path', '"{0}"'.format(output_path),
                        '"{0}"'.format(self.lighthouse_test_url)]
             cmd = ' '.join(command)
             logging.debug(cmd)
             subprocess.call(cmd, shell=True)
-            if os.path.isfile(lighthouse_file):
-                gzipped = lighthouse_file + '.gz'
-                with open(lighthouse_file, 'rb') as f_in:
-                    with gzip.open(gzipped, 'wb', 7) as f_out:
+            if os.path.isfile(json_file):
+                with open(json_file, 'rb') as f_in:
+                    with gzip.open(json_gzip, 'wb', 7) as f_out:
                         shutil.copyfileobj(f_in, f_out)
-                if os.path.isfile(gzipped):
-                    try:
-                        os.remove(lighthouse_file)
-                    except Exception:
-                        pass
+                try:
+                    os.remove(json_file)
+                except Exception:
+                    pass
+            if os.path.isfile(html_file):
+                with open(html_file, 'rb') as f_in:
+                    with gzip.open(html_gzip, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                try:
+                    os.remove(html_file)
+                except Exception:
+                    pass
