@@ -43,48 +43,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--certkey** : Client-side private key (if not embedded in the cert).
 
 ## Currently supported features
-* Page Navigation
-* Mobile Emulation
-* Custom browser window size
-* Multiple runs
-* Test sharding
-* First/Repeat View
-* Ending tests at onload or by network activity (web10 test option)
-* Network Waterfalls with request/response headers
-* Disable Javascript
-* Response Bodies
-* CPU Utilization
-* Bandwidth Utilization
-* Traffic-shaping
-* Screen Shots (JPEG with quality and PNG)
-* Video Capture (60fps)
-* Visual metrics (Start render, Speed Index, Visually Complete)
-* User Timing Marks
-* Navigation Timing
-* Ignoring TLS Errors
-* Minimum test duration
-* Custom user agent strings
-* Custom headers
-* Custom command-line options
-* Custom Metrics
-* Dev Tools Timeline
-* Javascript timing (execution/parse)
-* Time to Interactive
-* Trace Capture
-* Multi-step tests
-* Request blocking
-* SPOF testing
-* Optimization checks
-* Exit after running for specified time (i.e. hourly)
-* EC2/GCE config through user data
-* Basic auth and client certificates for communicating with WebPageTest server
-* Traceroute tests
-* tcpdump
-* Netlog
-* Improved request timing (from netlog)
-* HTTP/2 Stream Details
-* HTTP/2 Push reporting
-* Script Commands:
+* Feature complete except as noted below (for Windows, Linux, Mac and Android devices)
+* Supported Script Commands:
     * navigate
     * exec (execAndWait)
     * block
@@ -107,8 +67,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setABM
 
 ## Not yet supported (actively being worked on)
-* Android Support (replace NodeJS agent)
-* Lighthouse integration
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
 * Script Commands that will be translated into exec:
