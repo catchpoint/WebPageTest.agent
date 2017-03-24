@@ -17,7 +17,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
 * ffmpeg installed and available in the path
 * Xvfb (Linux only)
 * Debian:
-    * ```sudo apt-get install python2.7 python-pip imagemagick ffmpeg xvfb && sudo pip install dnspython monotonic pillow psutil requests ujson websocket-client xvfbwrapper```
+    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb && sudo pip install dnspython monotonic pillow psutil requests ujson websocket-client xvfbwrapper```
 * Chrome Browser
     * Linux stable channel on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
