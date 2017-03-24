@@ -18,6 +18,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-background-networking',
     '--no-default-browser-check',
     '--no-first-run',
+    '--process-per-tab',
     '--disable-infobars',
     '--disable-translate',
     '--allow-running-insecure-content',
