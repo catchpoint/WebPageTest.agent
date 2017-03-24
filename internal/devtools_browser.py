@@ -320,6 +320,7 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'},
                                            wait=True)
                 self.devtools.close(close_tab=False)
+                time.sleep(0.5)
             lighthouse_file = os.path.join(task['dir'], 'lighthouse.json')
             command = ['lighthouse',
                        '--disable-device-emulation',
