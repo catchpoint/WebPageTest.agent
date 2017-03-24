@@ -107,7 +107,13 @@ class Adb(object):
     def stop_screenrecord(self, local_file):
         """Stop a screen record and download the video to local_file"""
         if self.screenrecord is not None:
-            self.shell(['killall', '-SIGINT', 'screenrecord'])
+            out = self.shell(['ps', '|', 'grep', 'screenrecord'])
+            if out is not None:
+                for line in out.splitlines():
+                    match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
+                    if match:
+                        pid = match.group(1)
+                        self.shell(['kill', '-SIGINT', pid])
             self.screenrecord.communicate()
             self.screenrecord = None
             self.adb(['pull', '/data/local/tmp/wpt_video.mp4', local_file])
