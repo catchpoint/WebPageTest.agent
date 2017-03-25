@@ -100,7 +100,6 @@ class AndroidBrowser(object):
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
         if self.tcpdump_enabled:
-            logging.debug("Stopping tcpdump")
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
             if os.path.isfile(tcpdump):
@@ -121,7 +120,6 @@ class AndroidBrowser(object):
                                                                stderr=subprocess.PIPE)
 
         if self.video_enabled:
-            logging.debug("Stopping video capture")
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
             # kick off the video processing (async)

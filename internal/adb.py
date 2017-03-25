@@ -28,23 +28,28 @@ class Adb(object):
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
+        if not silent:
+            logging.debug(' '.join(cmd))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return self.wait_for_process(proc, timeout_sec, silent)
+
+    def wait_for_process(self, proc, timeout_sec=10, silent=False):
+        """Wait for the given process to exit gracefully and return the result"""
         stdout = None
         timer = None
         try:
-            if not silent:
-                logging.debug(' '.join(cmd))
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             timer = Timer(timeout_sec, proc.kill)
             timer.start()
             stdout, _ = proc.communicate()
             if not silent and stdout is not None and len(stdout):
                 logging.debug(stdout[:100])
         except Exception:
-            logging.debug('Error running command')
+            logging.debug('Error waiting for process to exit')
         finally:
             if timer is not None:
                 timer.cancel()
         return stdout
+
 
     def build_adb_command(self, args):
         """Build an adb command with the (optional) device ID"""
@@ -93,6 +98,27 @@ class Adb(object):
                     proc.cpu_affinity([0])
         return ret
 
+    def kill_proc(self, procname, kill_signal='-SIGINT'):
+        """Kill all processes with the given name"""
+        out = self.shell(['ps', '|', 'grep', procname])
+        if out is not None:
+            for line in out.splitlines():
+                match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
+                if match:
+                    pid = match.group(1)
+                    self.shell(['kill', '-SIGINT', pid])
+
+    def kill_proc_su(self, procname, kill_signal='-SIGINT'):
+        """Kill all processes with the given name"""
+        out = self.su('ps')
+        if out is not None:
+            for line in out.splitlines():
+                if line.find(procname) >= 0:
+                    match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
+                    if match:
+                        pid = match.group(1)
+                        self.su('kill -SIGINT {0}'.format(pid))
+
     def start_screenrecord(self):
         """Start a screenrecord session on the device"""
         self.shell(['rm', '/data/local/tmp/wpt_video.mp4'])
@@ -107,14 +133,9 @@ class Adb(object):
     def stop_screenrecord(self, local_file):
         """Stop a screen record and download the video to local_file"""
         if self.screenrecord is not None:
-            out = self.shell(['ps', '|', 'grep', 'screenrecord'])
-            if out is not None:
-                for line in out.splitlines():
-                    match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
-                    if match:
-                        pid = match.group(1)
-                        self.shell(['kill', '-SIGINT', pid])
-            self.screenrecord.communicate()
+            logging.debug('Stopping screenrecord')
+            self.kill_proc('screenrecord')
+            self.wait_for_process(self.screenrecord)
             self.screenrecord = None
             self.adb(['pull', '/data/local/tmp/wpt_video.mp4', local_file])
             self.shell(['rm', '/data/local/tmp/wpt_video.mp4'])
@@ -134,6 +155,7 @@ class Adb(object):
                                       '{0} -i any -p -s 0 -w {1}'.format(tcpdump_binary,
                                                                          capture_file)])
         try:
+            logging.debug(' '.join(cmd))
             self.tcpdump = subprocess.Popen(cmd)
         except Exception:
             pass
@@ -141,9 +163,10 @@ class Adb(object):
     def stop_tcpdump(self, local_file):
         """Stop a tcpdump capture and download to local_file"""
         if self.tcpdump is not None:
+            logging.debug('Stopping tcpdump')
             capture_file = '/data/local/tmp/tcpdump.cap'
-            self.su('killall -SIGINT tcpdump474')
-            self.tcpdump.communicate()
+            self.kill_proc_su('tcpdump474')
+            self.wait_for_process(self.tcpdump)
             self.tcpdump = None
             self.su('chmod 666 {0}'.format(capture_file))
             self.adb(['pull', capture_file, local_file])
@@ -192,7 +215,8 @@ class Adb(object):
             if self.known_apps[app]['installed']:
                 self.shell(['am', 'force-stop', app])
         # Cleanup the downloads folders
-        self.shell(['rm', '-rf', '/sdcard/Download/*', '/sdcard/Backucup', '/sdcard/UCDownloads'])
+        self.shell(['rm', '-rf', '/sdcard/Download/*', '/sdcard/Backucup', '/sdcard/UCDownloads',
+                    '/data/local/tmp/tcpdump.cap', '/data/local/tmp/wpt_video.mp4'])
         self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup /data/media/0/UCDownloads')
         # See if there are any system dialogs that need dismissing
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
