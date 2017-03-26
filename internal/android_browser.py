@@ -20,6 +20,7 @@ class AndroidBrowser(object):
         self.config = config
         self.video_processing = None
         self.tcpdump_processing = None
+        self.task = None
         self.video_enabled = bool(job['video'])
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump_file = None
@@ -29,6 +30,7 @@ class AndroidBrowser(object):
 
     def prepare(self, job, task):
         """Prepare the browser and OS"""
+        self.task = task
         self.adb.cleanup_device()
         # Download and install the APK if necessary
         if 'apk_url' in self.config and 'md5' in self.config:
