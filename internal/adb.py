@@ -65,10 +65,12 @@ class Adb(object):
         cmd.extend(args)
         return self.run(cmd, timeout_sec, silent)
 
+    # pylint: disable=C0103
     def su(self, command, timeout_sec=60, silent=False):
-        """Ren a command as su"""
+        """Run a command as su"""
         cmd = ['su', '-c', command]
         return self.shell(cmd, timeout_sec, silent)
+    # pylint: enable=C0103
 
     def adb(self, args, silent=False):
         """Run an arbitrary adb command"""
