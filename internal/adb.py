@@ -106,7 +106,7 @@ class Adb(object):
                 match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
                 if match:
                     pid = match.group(1)
-                    self.shell(['kill', '-SIGINT', pid])
+                    self.shell(['kill', kill_signal, pid])
 
     def kill_proc_su(self, procname, kill_signal='-SIGINT'):
         """Kill all processes with the given name"""
@@ -117,7 +117,7 @@ class Adb(object):
                     match = re.search(r'^\s*[^\s]+\s+(\d+)', line)
                     if match:
                         pid = match.group(1)
-                        self.su('kill -SIGINT {0}'.format(pid))
+                        self.su('kill {0} {1}'.format(kill_signal, pid))
 
     def start_screenrecord(self):
         """Start a screenrecord session on the device"""

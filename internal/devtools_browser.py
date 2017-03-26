@@ -162,6 +162,10 @@ class DevtoolsBrowser(object):
                 self.run_lighthouse_test(task)
             self.task = None
 
+    def wait_for_processing(self, task):
+        """Stub for override"""
+        pass
+
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {}
