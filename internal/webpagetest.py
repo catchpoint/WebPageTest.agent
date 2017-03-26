@@ -62,7 +62,7 @@ class WebPageTest(object):
         self.version = None
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            out = subprocess.check_output('git log -1 --format=%cd --date=unix',
+            out = subprocess.check_output('git log -1 --format=%cd --date=raw',
                                           shell=True, cwd=directory)
             if out is not None:
                 matches = re.search(r'^(\d+)', out)
