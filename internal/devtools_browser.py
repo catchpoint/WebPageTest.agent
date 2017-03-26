@@ -157,6 +157,9 @@ class DevtoolsBrowser(object):
                             task['current_step'] += 1
                             self.event_name = None
                         self.wait_for_processing(task)
+            # Always navigate to about:blank after finishing in case the tab is
+            # remembered across sessions
+            self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             if task['run'] == 1 and not task['cached'] and \
                     'lighthouse' in self.job and self.job['lighthouse']:
                 self.run_lighthouse_test(task)
@@ -321,8 +324,6 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Network.clearBrowserCache", {},
                                            wait=True)
                 self.devtools.send_command("Network.clearBrowserCookies", {},
-                                           wait=True)
-                self.devtools.send_command('Page.navigate', {'url': 'about:blank'},
                                            wait=True)
                 self.devtools.close(close_tab=False)
                 time.sleep(0.5)

@@ -123,8 +123,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
         if 'netlog' in job and job['netlog']:
-            self.adb.shell(['rm', '/sdcard/netlog.txt'])
-            args.append('--log-net-log="/sdcard/netlog.txt"')
+            self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
+            args.append('--log-net-log=/data/local/tmp/netlog.txt')
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
@@ -167,8 +167,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         # grab the netlog if there was one
         if 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
-            self.adb.adb(['pull', '/sdcard/netlog.txt', netlog_file])
-            self.adb.shell(['rm', '/sdcard/netlog.txt'])
+            self.adb.adb(['pull', '/data/local/tmp/netlog.txt', netlog_file])
+            self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
             if os.path.isfile(netlog_file):
                 netlog_gzip = netlog_file + '.gz'
                 with open(netlog_file, 'rb') as f_in:

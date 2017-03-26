@@ -2,11 +2,14 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for interfacing with WebPageTest server"""
+from datetime import datetime
 import gzip
 import logging
 import os
 import platform
+import re
 import shutil
+import subprocess
 import time
 import urllib
 import zipfile
@@ -54,6 +57,21 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
+        # If we are running in a git clone, grab the date of the last
+        # commit as the version
+        self.version = None
+        try:
+            directory = os.path.abspath(os.path.dirname(__file__))
+            out = subprocess.check_output('git log -1 --format=%cd --date=unix',
+                                          shell=True, cwd=directory)
+            if out is not None:
+                matches = re.search(r'^(\d+)', out)
+                if matches:
+                    timestamp = int(matches.group(1))
+                    git_date = datetime.utcfromtimestamp(timestamp)
+                    self.version = git_date.strftime('%y%m%d.%H%m%S')
+        except Exception:
+            pass
 
     def load_from_ec2(self):
         """Load config settings from EC2 user data"""
@@ -147,6 +165,8 @@ class WebPageTest(object):
             url += "&ec2zone=" + urllib.quote_plus(self.zone)
         if self.options.android:
             url += '&apk=1'
+        if self.version is not None:
+            url += '&version={0}'.format(self.version)
         free_disk = get_free_disk_space()
         url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
@@ -273,10 +293,7 @@ class WebPageTest(object):
                         task['width'] = job['width']
                         task['height'] = job['height']
                 task['time_limit'] = job['timeout']
-                if 'web10' in job and job['web10']:
-                    task['stop_at_onload'] = True
-                else:
-                    task['stop_at_onload'] = False
+                task['stop_at_onload'] = bool('web10' in job and job['web10'])
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
