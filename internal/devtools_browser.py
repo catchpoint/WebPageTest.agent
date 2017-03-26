@@ -311,6 +311,7 @@ class DevtoolsBrowser(object):
 
     def run_lighthouse_test(self, task):
         """Run a lighthouse test against the current browser session"""
+        from threading import Timer
         if self.lighthouse_test_url is not None:
             if self.devtools is not None:
                 self.devtools.send_command("Network.clearBrowserCache", {},
@@ -337,7 +338,18 @@ class DevtoolsBrowser(object):
                        '"{0}"'.format(self.lighthouse_test_url)]
             cmd = ' '.join(command)
             logging.debug(cmd)
-            subprocess.call(cmd, shell=True)
+            # Give lighthouse up to 10 minutes to run (safety for hung test)
+            proc = subprocess.Popen(cmd, shell=True)
+            timer = None
+            try:
+                timer = Timer(600, proc.kill)
+                timer.start()
+                proc.communicate()
+            except Exception:
+                logging.debug('Timeout running lighthouse test')
+            finally:
+                if timer is not None:
+                    timer.cancel()
             if os.path.isfile(json_file):
                 with open(json_file, 'rb') as f_in:
                     with gzip.open(json_gzip, 'wb', 7) as f_out:
