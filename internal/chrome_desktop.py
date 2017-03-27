@@ -106,8 +106,13 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        DevtoolsBrowser.on_stop_recording(self, task)
         DesktopBrowser.on_stop_recording(self, task)
+        DevtoolsBrowser.on_stop_recording(self, task)
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        DesktopBrowser.on_start_processing(self, task)
+        DevtoolsBrowser.on_start_processing(self, task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""

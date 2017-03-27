@@ -174,3 +174,7 @@ class Traceroute(object):
     def on_stop_recording(self, _):
         """Notification that recording is done"""
         pass
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        pass

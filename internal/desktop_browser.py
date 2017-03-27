@@ -205,21 +205,24 @@ class DesktopBrowser(object):
             from .os_util import wait_for_all
             kill_all('tcpdump', False)
             wait_for_all('tcpdump')
-            if self.pcap_file is not None:
-                logging.debug('Compressing pcap')
-                if os.path.isfile(self.pcap_file):
-                    pcap_out = self.pcap_file + '.gz'
-                    with open(self.pcap_file, 'rb') as f_in:
-                        with gzip.open(pcap_out, 'wb', 7) as f_out:
-                            shutil.copyfileobj(f_in, f_out)
-                    if os.path.isfile(pcap_out):
-                        self.pcap_thread = threading.Thread(target=self.process_pcap)
-                        self.pcap_thread.daemon = True
-                        self.pcap_thread.start()
-                        try:
-                            os.remove(self.pcap_file)
-                        except Exception:
-                            pass
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        if self.pcap_file is not None:
+            logging.debug('Compressing pcap')
+            if os.path.isfile(self.pcap_file):
+                pcap_out = self.pcap_file + '.gz'
+                with open(self.pcap_file, 'rb') as f_in:
+                    with gzip.open(pcap_out, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                if os.path.isfile(pcap_out):
+                    self.pcap_thread = threading.Thread(target=self.process_pcap)
+                    self.pcap_thread.daemon = True
+                    self.pcap_thread.start()
+                    try:
+                        os.remove(self.pcap_file)
+                    except Exception:
+                        pass
 
     def wait_for_processing(self, _):
         """Wait for any background processing threads to finish"""

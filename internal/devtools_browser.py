@@ -131,32 +131,12 @@ class DevtoolsBrowser(object):
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_recording(task)
                         recording = False
+                        self.on_start_processing(task)
+                        self.wait_for_processing(task)
                         if task['log_data']:
-                            # Start the processing that can run in a background thread
-                            optimization = OptimizationChecks(self.job, task, self.get_requests())
-                            optimization.start()
-                            trace_thread = threading.Thread(target=self.process_trace)
-                            trace_thread.start()
-                            # Collect end of test data from the browser
-                            if self.job['pngss']:
-                                screen_shot = os.path.join(task['dir'],
-                                                           task['prefix'] + '_screen.png')
-                                self.devtools.grab_screenshot(screen_shot, png=True)
-                            else:
-                                screen_shot = os.path.join(task['dir'],
-                                                           task['prefix'] + '_screen.jpg')
-                                self.devtools.grab_screenshot(screen_shot, png=False)
-                            self.collect_browser_metrics(task)
-                            # Run the rest of the post-processing
-                            if self.use_devtools_video and  self.job['video']:
-                                self.process_video()
-                            logging.debug('Waiting for trace processing to complete')
-                            trace_thread.join()
-                            optimization.join()
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
-                        self.wait_for_processing(task)
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
             self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
@@ -164,6 +144,31 @@ class DevtoolsBrowser(object):
                     'lighthouse' in self.job and self.job['lighthouse']:
                 self.run_lighthouse_test(task)
             self.task = None
+    
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        if task['log_data']:
+            # Start the processing that can run in a background thread
+            optimization = OptimizationChecks(self.job, task, self.get_requests())
+            optimization.start()
+            trace_thread = threading.Thread(target=self.process_trace)
+            trace_thread.start()
+            # Collect end of test data from the browser
+            if self.job['pngss']:
+                screen_shot = os.path.join(task['dir'],
+                                            task['prefix'] + '_screen.png')
+                self.devtools.grab_screenshot(screen_shot, png=True)
+            else:
+                screen_shot = os.path.join(task['dir'],
+                                            task['prefix'] + '_screen.jpg')
+                self.devtools.grab_screenshot(screen_shot, png=False)
+            self.collect_browser_metrics(task)
+            # Run the rest of the post-processing
+            if self.use_devtools_video and  self.job['video']:
+                self.process_video()
+            logging.debug('Waiting for trace processing to complete')
+            trace_thread.join()
+            optimization.join()
 
     def wait_for_processing(self, task):
         """Stub for override"""
@@ -209,7 +214,10 @@ class DevtoolsBrowser(object):
                    '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
                    '-i', interactive, '-n', netlog, '-s', v8_stats]
             logging.debug(cmd)
+            start = monotonic.monotonic()
             subprocess.call(cmd)
+            elapsed = monotonic.monotonic() - start
+            logging.debug("Time to process trace: %0.3f sec", elapsed)
             # delete the trace file if it wasn't requested
             trace_enabled = bool('trace' in self.job and self.job['trace'])
             timeline_enabled = bool('timeline' in self.job and self.job['timeline'])

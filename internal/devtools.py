@@ -6,6 +6,7 @@ import base64
 import gzip
 import logging
 import os
+import re
 import subprocess
 import time
 import monotonic
@@ -174,6 +175,7 @@ class DevTools(object):
         if self.trace_enabled:
             self.trace_enabled = False
             self.send_command('Tracing.end', {})
+            start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
             # we get a gap of 30 seconds between messages
             if self.websocket:
@@ -194,6 +196,8 @@ class DevTools(object):
                                     self.process_trace_event(msg)
                     except Exception:
                         pass
+            elapsed = monotonic.monotonic() - start
+            logging.debug("Time to collect trace: %0.3f sec", elapsed)
             if self.trace_file is not None:
                 self.trace_file.write("\n]}")
                 self.trace_file.close()

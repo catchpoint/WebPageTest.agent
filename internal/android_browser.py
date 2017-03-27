@@ -104,6 +104,15 @@ class AndroidBrowser(object):
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
+
+        if self.video_enabled:
+            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
+            self.adb.stop_screenrecord(task['video_file'])
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        if self.tcpdump_enabled:
+            tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             if os.path.isfile(tcpdump):
                 pcap_out = tcpdump + '.gz'
                 with open(tcpdump, 'rb') as f_in:
@@ -120,10 +129,7 @@ class AndroidBrowser(object):
                     logging.debug(' '.join(cmd))
                     self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                                                stderr=subprocess.PIPE)
-
         if self.video_enabled:
-            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-            self.adb.stop_screenrecord(task['video_file'])
             # kick off the video processing (async)
             if os.path.isfile(task['video_file']):
                 video_path = os.path.join(task['dir'], task['video_subdirectory'])

@@ -63,6 +63,7 @@ class BlackBoxAndroid(AndroidBrowser):
                                 'android.intent.action.VIEW', '-d', command['target']])
             self.wait_for_page_load()
         self.on_stop_recording(task)
+        self.on_start_processing(task)
         self.wait_for_processing(task)
 
     def stop(self, job, task):
@@ -89,6 +90,10 @@ class BlackBoxAndroid(AndroidBrowser):
                         os.remove(png_file)
                     except Exception:
                         pass
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        AndroidBrowser.on_start_processing(self, task)
 
     def clear_profile(self, _):
         """Clear the browser profile"""
