@@ -38,7 +38,7 @@
   "Opera Mini": {
     "package": "com.opera.mini.native",
     "activity": "com.opera.mini.android.Browser",
-    "videoFlags": ["--findstart", "75", "--notification", "--renderignore", 40,
+    "videoFlags": ["--findstart", "75", "--notification", "--renderignore", "40",
                     "--forceblank"],
     "directories": ["cache", "databases", "files", "app_opera", "app_webview"],
     "startupDelay": 10,
