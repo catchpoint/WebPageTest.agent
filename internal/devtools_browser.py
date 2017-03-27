@@ -144,7 +144,7 @@ class DevtoolsBrowser(object):
                     'lighthouse' in self.job and self.job['lighthouse']:
                 self.run_lighthouse_test(task)
             self.task = None
-    
+
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         if task['log_data']:
@@ -156,11 +156,11 @@ class DevtoolsBrowser(object):
             # Collect end of test data from the browser
             if self.job['pngss']:
                 screen_shot = os.path.join(task['dir'],
-                                            task['prefix'] + '_screen.png')
+                                           task['prefix'] + '_screen.png')
                 self.devtools.grab_screenshot(screen_shot, png=True)
             else:
                 screen_shot = os.path.join(task['dir'],
-                                            task['prefix'] + '_screen.jpg')
+                                           task['prefix'] + '_screen.jpg')
                 self.devtools.grab_screenshot(screen_shot, png=False)
             self.collect_browser_metrics(task)
             # Run the rest of the post-processing

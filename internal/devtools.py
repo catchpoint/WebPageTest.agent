@@ -7,6 +7,7 @@ import gzip
 import logging
 import os
 import Queue
+import re
 import subprocess
 import time
 import monotonic
@@ -29,7 +30,6 @@ class DevTools(object):
         self.trace_file = None
         self.trace_enabled = False
         self.requests = {}
-        self.trace_ts_start = None
         self.nav_error = None
         self.main_request = None
         self.path_base = None
@@ -40,12 +40,12 @@ class DevTools(object):
         self.mobile_viewport = None
         self.tab_id = None
         self.use_devtools_video = use_devtools_video
+        self.recording_video = False
         self.prepare()
 
     def prepare(self):
         """Set up the various paths and states"""
         self.requests = {}
-        self.trace_ts_start = None
         self.nav_error = None
         self.main_request = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
@@ -89,7 +89,7 @@ class DevTools(object):
                                 self.websocket = DevToolsClient(websocket_url)
                                 self.websocket.connect()
                                 ret = True
-                            except Exception:
+                            except Exception as err:
                                 logging.critical("Connect to dev tools websocket Error: %s",
                                                  err.__str__())
                             if not ret:
@@ -99,7 +99,7 @@ class DevTools(object):
                                     self.websocket = DevToolsClient(websocket_url)
                                     self.websocket.connect()
                                     ret = True
-                                except Exception:
+                                except Exception as err:
                                     logging.critical("Connect to dev tools websocket Error: %s",
                                                      err.__str__())
                         else:
@@ -157,6 +157,7 @@ class DevTools(object):
                 trace += "devtools.timeline.frame"
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
+                self.recording_video = True
             trace += ",blink.user_timing,netlog"
             self.trace_enabled = True
             self.send_command('Tracing.start',
@@ -187,6 +188,8 @@ class DevTools(object):
         """Stop tracing and collect the results"""
         if self.trace_enabled:
             self.trace_enabled = False
+            video_prefix = self.video_prefix if self.recording_video else None
+            self.websocket.start_processing_trace(self.path_base + '_trace.json.gz', video_prefix)
             self.send_command('Tracing.end', {})
             start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
@@ -201,21 +204,16 @@ class DevTools(object):
                         if raw is not None and len(raw):
                             no_message_count = 0
                             msg = json.loads(raw)
-                            if 'method' in msg:
-                                if msg['method'] == 'Tracing.tracingComplete':
-                                    done = True
-                                elif msg['method'] == 'Tracing.dataCollected':
-                                    self.process_trace_event(msg)
+                            if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
+                                done = True
                         else:
                             no_message_count += 1
                     except Exception:
                         pass
+            self.websocket.stop_processing_trace()
             elapsed = monotonic.monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
-            if self.trace_file is not None:
-                self.trace_file.write("\n]}")
-                self.trace_file.close()
-                self.trace_file = None
+            self.recording_video = False
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
@@ -363,7 +361,7 @@ class DevTools(object):
                 while True:
                     raw = self.websocket.get_message(0)
                     if raw is not None and len(raw):
-                        logging.debug(raw[:1000])
+                        logging.debug(raw[:200])
                         msg = json.loads(raw)
                         self.process_message(msg)
                     if not raw:
@@ -387,7 +385,7 @@ class DevTools(object):
                         try:
                             raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
-                                logging.debug(raw[:1000])
+                                logging.debug(raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
                                 if 'id' in msg and int(msg['id']) == self.command_id:
@@ -408,7 +406,7 @@ class DevTools(object):
                 try:
                     raw = self.websocket.get_message(1)
                     if raw is not None and len(raw):
-                        logging.debug(raw[:1000])
+                        logging.debug(raw[:200])
                         msg = json.loads(raw)
                         self.process_message(msg)
                 except Exception:
@@ -534,8 +532,6 @@ class DevTools(object):
                     self.log_dev_tools_event(msg)
                 elif category == 'Inspector':
                     self.process_inspector_event(event)
-                elif category == 'Tracing':
-                    self.process_trace_event(msg)
                 else:
                     self.log_dev_tools_event(msg)
 
@@ -619,44 +615,6 @@ class DevTools(object):
         elif event == 'targetCrashed':
             self.task['error'] = 'Browser crashed.'
 
-    def process_trace_event(self, msg):
-        """Process Tracing.* dev tools events"""
-        if msg['method'] == 'Tracing.dataCollected' and \
-                'params' in msg and \
-                'value' in msg['params'] and \
-                len(msg['params']['value']):
-            if self.trace_file is None:
-                self.trace_file = gzip.open(self.path_base + '_trace.json.gz', 'wb')
-                self.trace_file.write('{"traceEvents":[{}')
-            # write out the trace events one-per-line but pull out any
-            # devtools screenshots as separate files.
-            if self.trace_file is not None:
-                for index in xrange(len(msg['params']['value'])):
-                    trace_event = msg['params']['value'][index]
-                    is_screenshot = False
-                    if 'cat' in trace_event and 'name' in trace_event and 'ts' in trace_event:
-                        if self.trace_ts_start is None and \
-                                trace_event['name'] == 'navigationStart' and \
-                                trace_event['cat'].find('blink.user_timing') > -1:
-                            self.trace_ts_start = trace_event['ts']
-                        if trace_event['name'] == 'Screenshot' and \
-                                trace_event['cat'].find('devtools.screenshot') > -1:
-                            is_screenshot = True
-                            if self.trace_ts_start is not None and \
-                                    'args' in trace_event and \
-                                    'snapshot' in trace_event['args']:
-                                ms_elapsed = int(round(float(trace_event['ts'] - \
-                                                             self.trace_ts_start) / 1000.0))
-                                if ms_elapsed >= 0:
-                                    path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
-                                    with open(path, 'wb') as image_file:
-                                        image_file.write(
-                                            base64.b64decode(trace_event['args']['snapshot']))
-                    if not is_screenshot:
-                        self.trace_file.write(",\n")
-                        self.trace_file.write(json.dumps(trace_event))
-                logging.debug("Processed %d trace events", len(msg['params']['value']))
-
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
         if self.task['log_data']:
@@ -691,6 +649,12 @@ class DevToolsClient(WebSocketClient):
                                  ssl_options, headers)
         self.connected = False
         self.messages = Queue.Queue()
+        self.trace_file_path = None
+        self.trace_file = None
+        self.video_prefix = None
+        self.trace_ts_start = None
+        self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
+        self.trace_done = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
 
     def opened(self):
         """Websocket interface - connection opened"""
@@ -704,9 +668,24 @@ class DevToolsClient(WebSocketClient):
 
     def received_message(self, raw):
         """Websocket interface - message received"""
-        if raw.is_text:
-            message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
-            self.messages.put(message)
+        try:
+            if raw.is_text:
+                message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
+                is_trace_data = False
+                if self.trace_file_path is not None and self.trace_data.search(message):
+                    is_trace_data = True
+                    msg = json.loads(message)
+                    self.messages.put('{"method":"got_message"}')
+                    if msg is not None:
+                        self.process_trace_event(msg)
+                elif self.trace_file is not None and self.trace_done.search(message):
+                    self.trace_file.write("\n]}")
+                    self.trace_file.close()
+                    self.trace_file = None
+                if not is_trace_data:
+                    self.messages.put(message)
+        except Exception:
+            pass
 
     def get_message(self, timeout):
         """Wait for and return a message from the queue"""
@@ -720,3 +699,54 @@ class DevToolsClient(WebSocketClient):
         except Exception:
             pass
         return message
+
+    def start_processing_trace(self, trace_file, video_prefix):
+        """Write any trace events to the given file"""
+        self.trace_ts_start = None
+        self.trace_file_path = trace_file
+        self.video_prefix = video_prefix
+
+    def stop_processing_trace(self):
+        """All done"""
+        self.trace_ts_start = None
+        self.trace_file_path = None
+        if self.trace_file is not None:
+            self.trace_file.close()
+            self.trace_file = None
+
+    def process_trace_event(self, msg):
+        """Process Tracing.* dev tools events"""
+        if 'params' in msg and 'value' in msg['params'] and len(msg['params']['value']):
+            if self.trace_file is None:
+                self.trace_file = gzip.open(self.trace_file_path, 'wb')
+                self.trace_file.write('{"traceEvents":[{}')
+            # write out the trace events one-per-line but pull out any
+            # devtools screenshots as separate files.
+            if self.trace_file is not None:
+                trace_events = msg['params']['value']
+                for _, trace_event in enumerate(trace_events):
+                    is_screenshot = False
+                    if self.video_prefix is not None and 'cat' in trace_event and \
+                            'name' in trace_event and 'ts' in trace_event:
+                        if self.trace_ts_start is None and \
+                                trace_event['name'] == 'navigationStart' and \
+                                trace_event['cat'].find('blink.user_timing') > -1:
+                            self.trace_ts_start = trace_event['ts']
+                        if trace_event['name'] == 'Screenshot' and \
+                                trace_event['cat'].find('devtools.screenshot') > -1:
+                            is_screenshot = True
+                            if self.trace_ts_start is not None and \
+                                    'args' in trace_event and \
+                                    'snapshot' in trace_event['args']:
+                                ms_elapsed = int(round(float(trace_event['ts'] - \
+                                                             self.trace_ts_start) / 1000.0))
+                                if ms_elapsed >= 0:
+                                    path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
+                                    with open(path, 'wb') as image_file:
+                                        image_file.write(
+                                            base64.b64decode(trace_event['args']['snapshot']))
+                    if not is_screenshot:
+                        self.trace_file.write(",\n")
+                        self.trace_file.write(json.dumps(trace_event))
+                logging.debug("Processed %d trace events", len(msg['params']['value']))
+

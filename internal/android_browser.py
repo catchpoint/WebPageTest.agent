@@ -104,32 +104,9 @@ class AndroidBrowser(object):
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
-
         if self.video_enabled:
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
-
-    def on_start_processing(self, task):
-        """Start any processing of the captured data"""
-        if self.tcpdump_enabled:
-            tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
-            if os.path.isfile(tcpdump):
-                pcap_out = tcpdump + '.gz'
-                with open(tcpdump, 'rb') as f_in:
-                    with gzip.open(pcap_out, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-                if os.path.isfile(pcap_out):
-                    os.remove(tcpdump)
-                    self.tcpdump_file = pcap_out
-                    path_base = os.path.join(task['dir'], task['prefix'])
-                    slices_file = path_base + '_pcap_slices.json.gz'
-                    pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                               'support', "pcap-parser.py")
-                    cmd = ['python', pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
-                    logging.debug(' '.join(cmd))
-                    self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                                               stderr=subprocess.PIPE)
-        if self.video_enabled:
             # kick off the video processing (async)
             if os.path.isfile(task['video_file']):
                 video_path = os.path.join(task['dir'], task['video_subdirectory'])
@@ -152,6 +129,27 @@ class AndroidBrowser(object):
                     args.append('--orange')
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args)
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
+        if self.tcpdump_enabled:
+            tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
+            if os.path.isfile(tcpdump):
+                pcap_out = tcpdump + '.gz'
+                with open(tcpdump, 'rb') as f_in:
+                    with gzip.open(pcap_out, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                if os.path.isfile(pcap_out):
+                    os.remove(tcpdump)
+                    self.tcpdump_file = pcap_out
+                    path_base = os.path.join(task['dir'], task['prefix'])
+                    slices_file = path_base + '_pcap_slices.json.gz'
+                    pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                               'support', "pcap-parser.py")
+                    cmd = ['python', pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
+                    logging.debug(' '.join(cmd))
+                    self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                                               stderr=subprocess.PIPE)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""

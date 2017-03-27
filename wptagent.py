@@ -45,6 +45,7 @@ class WPTAgent(object):
                     if self.job is not None:
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
+                            start = monotonic.monotonic()
                             # - Prepare the browser
                             browser = self.browsers.get_browser(self.job['browser'], self.job)
                             if browser is not None:
@@ -65,6 +66,8 @@ class WPTAgent(object):
                             if self.task['cached'] or self.job['fvonly']:
                                 browser.clear_profile(self.task)
                             browser = None
+                            elapsed = monotonic.monotonic() - start
+                            logging.debug('Test run time: %0.3f sec', elapsed)
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
                 if self.job is not None:
