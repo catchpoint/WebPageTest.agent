@@ -74,18 +74,12 @@ class Adb(object):
 
     def adb(self, args, silent=False):
         """Run an arbitrary adb command"""
-        ret = False
         cmd = self.build_adb_command(args)
         if not silent:
             logging.debug(' '.join(cmd))
-        try:
-            stdout = subprocess.check_output(cmd)
-            if not silent and stdout is not None and len(stdout):
-                logging.debug(stdout[:100])
-            ret = True
-        except Exception:
-            ret = False
-        return ret
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.wait_for_process(proc, 120, silent)
+        return bool(proc.returncode is not None and proc.returncode == 0)
 
     def start(self):
         """ Do some startup check to make sure adb is installed"""
