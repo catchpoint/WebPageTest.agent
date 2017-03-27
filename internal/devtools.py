@@ -16,7 +16,7 @@ from ws4py.client.threadedclient import WebSocketClient
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, job, task, use_devtools_video):
-        self.url = "http://127.0.0.1:{0:d}/json".format(task['port'])
+        self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
         self.job = job
         self.task = task
