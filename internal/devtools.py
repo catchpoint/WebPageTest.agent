@@ -92,6 +92,16 @@ class DevTools(object):
                             except Exception:
                                 logging.critical("Connect to dev tools websocket Error: %s",
                                                  err.__str__())
+                            if not ret:
+                                # try connecting to 127.0.0.1 instead of localhost
+                                try:
+                                    websocket_url = websocket_url.replace('localhost', '127.0.0.1')
+                                    self.websocket = DevToolsClient(websocket_url)
+                                    self.websocket.connect()
+                                    ret = True
+                                except Exception:
+                                    logging.critical("Connect to dev tools websocket Error: %s",
+                                                     err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
@@ -184,18 +194,20 @@ class DevTools(object):
             if self.websocket:
                 logging.info('Collecting trace events')
                 done = False
-                last_message = monotonic.monotonic()
-                while not done and monotonic.monotonic() - last_message < 30:
+                no_message_count = 0
+                while not done and no_message_count < 30:
                     try:
                         raw = self.websocket.get_message(1)
                         if raw is not None and len(raw):
+                            no_message_count = 0
                             msg = json.loads(raw)
                             if 'method' in msg:
                                 if msg['method'] == 'Tracing.tracingComplete':
                                     done = True
                                 elif msg['method'] == 'Tracing.dataCollected':
-                                    last_message = monotonic.monotonic()
                                     self.process_trace_event(msg)
+                        else:
+                            no_message_count += 1
                     except Exception:
                         pass
             elapsed = monotonic.monotonic() - start
@@ -704,6 +716,7 @@ class DevToolsClient(WebSocketClient):
                 message = self.messages.get_nowait()
             else:
                 message = self.messages.get(True, timeout)
+            self.messages.task_done()
         except Exception:
             pass
         return message
