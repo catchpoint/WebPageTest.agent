@@ -38,7 +38,6 @@ RUN pip install \
     psutil \
     requests \
     ujson \
-    websocket-client \
     xvfbwrapper
 
 COPY wptagent.py /wptagent/wptagent.py

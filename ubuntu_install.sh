@@ -1,6 +1,6 @@
 #!/bin/bash
 sudo apt-get install -y python-pip imagemagick ffmpeg xvfb
-sudo pip install dnspython monotonic pillow psutil requests ujson websocket-client xvfbwrapper
+sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
 sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' 
 sudo apt-get update

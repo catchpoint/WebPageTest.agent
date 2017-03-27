@@ -168,12 +168,6 @@ class WPTAgent(object):
             ret = False
 
         try:
-            import websocket as _
-        except ImportError:
-            print "Missing websocket module. Please run 'pip install websocket-client'"
-            ret = False
-
-        try:
             subprocess.check_output(['python', '--version'])
         except Exception:
             print "Make sure python 2.7 is available in the path."

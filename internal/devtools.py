@@ -6,16 +6,17 @@ import base64
 import gzip
 import logging
 import os
-import re
+import Queue
 import subprocess
 import time
 import monotonic
 import ujson as json
+from ws4py.client.threadedclient import WebSocketClient
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, job, task, use_devtools_video):
-        self.url = "http://localhost:{0:d}/json".format(task['port'])
+        self.url = "http://127.0.0.1:{0:d}/json".format(task['port'])
         self.websocket = None
         self.job = job
         self.task = task
@@ -84,11 +85,13 @@ class DevTools(object):
                                     # Close extra tabs
                                     requests.get(self.url + '/close/' + tabs[index]['id'])
                         if websocket_url is not None:
-                            from websocket import create_connection
-                            self.websocket = create_connection(websocket_url)
-                            if self.websocket:
-                                self.websocket.settimeout(1)
+                            try:
+                                self.websocket = DevToolsClient(websocket_url)
+                                self.websocket.connect()
                                 ret = True
+                            except Exception:
+                                logging.critical("Connect to dev tools websocket Error: %s",
+                                                 err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
@@ -182,10 +185,9 @@ class DevTools(object):
                 logging.info('Collecting trace events')
                 done = False
                 last_message = monotonic.monotonic()
-                self.websocket.settimeout(1)
                 while not done and monotonic.monotonic() - last_message < 30:
                     try:
-                        raw = self.websocket.recv()
+                        raw = self.websocket.get_message(1)
                         if raw is not None and len(raw):
                             msg = json.loads(raw)
                             if 'method' in msg:
@@ -346,9 +348,8 @@ class DevTools(object):
         """Clear out any pending websocket messages"""
         if self.websocket:
             try:
-                self.websocket.settimeout(0)
                 while True:
-                    raw = self.websocket.recv()
+                    raw = self.websocket.get_message(0)
                     if raw is not None and len(raw):
                         logging.debug(raw[:1000])
                         msg = json.loads(raw)
@@ -369,11 +370,10 @@ class DevTools(object):
                 logging.debug("Sending: %s", out)
                 self.websocket.send(out)
                 if wait:
-                    self.websocket.settimeout(1)
                     end_time = monotonic.monotonic() + timeout
                     while ret is None and monotonic.monotonic() < end_time:
                         try:
-                            raw = self.websocket.recv()
+                            raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
                                 logging.debug(raw[:1000])
                                 msg = json.loads(raw)
@@ -389,13 +389,12 @@ class DevTools(object):
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
         if self.websocket:
-            self.websocket.settimeout(1)
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             while not done:
                 try:
-                    raw = self.websocket.recv()
+                    raw = self.websocket.get_message(1)
                     if raw is not None and len(raw):
                         logging.debug(raw[:1000])
                         msg = json.loads(raw)
@@ -671,3 +670,40 @@ class DevTools(object):
                         value = headers[header_name]
                         break
         return value
+
+class DevToolsClient(WebSocketClient):
+    """DevTools Websocket client"""
+    def __init__(self, url, protocols=None, extensions=None, heartbeat_freq=None,
+                 ssl_options=None, headers=None):
+        WebSocketClient.__init__(self, url, protocols, extensions, heartbeat_freq,
+                                 ssl_options, headers)
+        self.connected = False
+        self.messages = Queue.Queue()
+
+    def opened(self):
+        """Websocket interface - connection opened"""
+        logging.debug("DevTools websocket connected")
+        self.connected = True
+
+    def closed(self, code, reason=None):
+        """Websocket interface - connection closed"""
+        logging.debug("DevTools websocket disconnected")
+        self.connected = False
+
+    def received_message(self, raw):
+        """Websocket interface - message received"""
+        if raw.is_text:
+            message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
+            self.messages.put(message)
+
+    def get_message(self, timeout):
+        """Wait for and return a message from the queue"""
+        message = None
+        try:
+            if timeout is None or timeout <= 0:
+                message = self.messages.get_nowait()
+            else:
+                message = self.messages.get(True, timeout)
+        except Exception:
+            pass
+        return message
