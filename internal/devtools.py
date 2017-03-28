@@ -189,7 +189,7 @@ class DevTools(object):
         if self.trace_enabled:
             self.trace_enabled = False
             video_prefix = self.video_prefix if self.recording_video else None
-            self.websocket.start_processing_trace(self.path_base + '_trace.json.gz', video_prefix)
+            self.websocket.start_processing_trace(self.path_base + '_trace.json', video_prefix)
             self.send_command('Tracing.end', {})
             start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
@@ -620,7 +620,7 @@ class DevTools(object):
         if self.task['log_data']:
             if self.dev_tools_file is None:
                 path = self.path_base + '_devtools.json.gz'
-                self.dev_tools_file = gzip.open(path, 'wb')
+                self.dev_tools_file = gzip.open(path, 'wb', 7)
                 self.dev_tools_file.write("[{}")
             if self.dev_tools_file is not None:
                 self.dev_tools_file.write(",\n")
@@ -654,7 +654,7 @@ class DevToolsClient(WebSocketClient):
         self.video_prefix = None
         self.trace_ts_start = None
         self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
-        self.trace_done = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
+        self.trace_done = re.compile(r'method"\s*:\s*"Tracing.tracingComplete')
 
     def opened(self):
         """Websocket interface - connection opened"""
@@ -671,14 +671,15 @@ class DevToolsClient(WebSocketClient):
         try:
             if raw.is_text:
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
+                compare = message[:50]
                 is_trace_data = False
-                if self.trace_file_path is not None and self.trace_data.search(message):
+                if self.trace_file_path is not None and self.trace_data.search(compare):
                     is_trace_data = True
                     msg = json.loads(message)
                     self.messages.put('{"method":"got_message"}')
                     if msg is not None:
                         self.process_trace_event(msg)
-                elif self.trace_file is not None and self.trace_done.search(message):
+                elif self.trace_file is not None and self.trace_done.search(compare):
                     self.trace_file.write("\n]}")
                     self.trace_file.close()
                     self.trace_file = None
@@ -718,7 +719,7 @@ class DevToolsClient(WebSocketClient):
         """Process Tracing.* dev tools events"""
         if 'params' in msg and 'value' in msg['params'] and len(msg['params']['value']):
             if self.trace_file is None:
-                self.trace_file = gzip.open(self.trace_file_path, 'wb')
+                self.trace_file = open(self.trace_file_path, 'wb')
                 self.trace_file.write('{"traceEvents":[{}')
             # write out the trace events one-per-line but pull out any
             # devtools screenshots as separate files.

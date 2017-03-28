@@ -229,6 +229,7 @@ class Adb(object):
         if_state = None
         address = None
         out = self.shell(['ip', 'address', 'show'], silent=True)
+        need_address = False
         if out is not None:
             for line in out.splitlines():
                 match = re.search(r'[\d]+\:\s+([^:]+):[^\n]*state (\w+)', line)

@@ -261,7 +261,7 @@ class OptimizationChecks(object):
         # Save the results
         if self.results:
             path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
-            gz_file = gzip.open(path, 'wb')
+            gz_file = gzip.open(path, 'wb', 7)
             if gz_file:
                 gz_file.write(json.dumps(self.results))
                 gz_file.close()

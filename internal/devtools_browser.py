@@ -166,8 +166,18 @@ class DevtoolsBrowser(object):
             # Run the rest of the post-processing
             if self.use_devtools_video and  self.job['video']:
                 self.process_video()
+            # gzip the trace file
+            logging.debug('Compressing the trace file')
+            trace_file = os.path.join(task['dir'],
+                                      task['prefix'] + '_trace.json')
+            trace_gzip = trace_file + '.gz'
+            with open(trace_file, 'rb') as f_in:
+                with gzip.open(trace_gzip, 'wb', 7) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
             logging.debug('Waiting for trace processing to complete')
             trace_thread.join()
+            if os.path.isfile(trace_gzip):
+                os.remove(trace_file)
             optimization.join()
 
     def wait_for_processing(self, task):
@@ -200,7 +210,7 @@ class DevtoolsBrowser(object):
     def process_trace(self):
         """Post-process the trace file"""
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
-        trace_file = path_base + '_trace.json.gz'
+        trace_file = path_base + '_trace.json'
         if os.path.isfile(trace_file):
             user_timing = path_base + '_user_timing.json.gz'
             cpu_slices = path_base + '_timeline_cpu.json.gz'
@@ -244,7 +254,7 @@ class DevtoolsBrowser(object):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb') as outfile:
+            with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
@@ -257,7 +267,7 @@ class DevtoolsBrowser(object):
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb') as outfile:
+            with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
 
     def process_command(self, command):

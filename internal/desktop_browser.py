@@ -185,7 +185,7 @@ class DesktopBrowser(object):
         # record the CPU/Bandwidth/memory info
         if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
             file_path = os.path.join(task['dir'], task['prefix']) + '_progress.csv.gz'
-            gzfile = gzip.open(file_path, 'wb')
+            gzfile = gzip.open(file_path, 'wb', 7)
             if gzfile:
                 gzfile.write("Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n")
                 while not self.usage_queue.empty():
