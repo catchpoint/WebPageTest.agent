@@ -174,9 +174,10 @@ class DevtoolsBrowser(object):
             trace_file = os.path.join(task['dir'],
                                       task['prefix'] + '_trace.json')
             trace_gzip = trace_file + '.gz'
-            with open(trace_file, 'rb') as f_in:
-                with gzip.open(trace_gzip, 'wb', 7) as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+            if os.path.isfile(trace_file):
+                with open(trace_file, 'rb') as f_in:
+                    with gzip.open(trace_gzip, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
             logging.debug('Waiting for trace processing to complete')
             trace_thread.join()
             if os.path.isfile(trace_gzip):
