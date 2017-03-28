@@ -52,7 +52,14 @@ class WPTAgent(object):
                                 browser.prepare(self.job, self.task)
                                 browser.launch(self.job, self.task)
                                 if self.shaper.configure(self.job):
-                                    browser.run_task(self.task)
+                                    try:
+                                        browser.run_task(self.task)
+                                    except Exception as err:
+                                        self.task['error'] = 'Unhandled exception running test: '\
+                                            '{0}'.format(err.__str__())
+                                        logging.critical("Unhandled exception running test: %s",
+                                                         err.__str__())
+                                        traceback.print_exc(file=sys.stdout)
                                 else:
                                     self.task['error'] = "Error configuring traffic-shaping"
                                 self.shaper.reset()
@@ -75,10 +82,13 @@ class WPTAgent(object):
                 else:
                     self.sleep(5)
             except Exception as err:
+                self.task['error'] = 'Unhandled exception preparing test: '\
+                    '{0}'.format(err.__str__())
                 logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
                     browser.on_stop_recording(None)
+                    browser = None
             if self.options.exit > 0:
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:

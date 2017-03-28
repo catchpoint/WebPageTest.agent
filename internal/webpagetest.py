@@ -201,8 +201,13 @@ class WebPageTest(object):
                         job['noscript'] = 0
                     if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
                         job = None
-                    if 'type' in job and job['type'] == 'traceroute':
+                    if 'type' not in job:
+                        job['type'] = ''
+                    if job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    if job['type'] == 'lighthouse':
+                        job['fvonly'] = 1
+                        job['lighthouse'] = 1
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
@@ -434,7 +439,8 @@ class WebPageTest(object):
                             if os.path.isfile(filepath):
                                 name = video_subdirectory + '/' + filename
                                 if os.path.getsize(filepath) > 100000:
-                                    logging.debug('Uploading %s', filename)
+                                    logging.debug('Uploading %s (%d bytes)', filename,
+                                                  os.path.getsize(filepath))
                                     if self.post_data(self.url + "resultimage.php", data,
                                                       filepath, task['prefix'] + '_' + filename):
                                         os.remove(filepath)
@@ -447,7 +453,8 @@ class WebPageTest(object):
                 filepath = os.path.join(task['dir'], filename)
                 if os.path.isfile(filepath):
                     if os.path.getsize(filepath) > 100000:
-                        logging.debug('Uploading %s', filename)
+                        logging.debug('Uploading %s (%d bytes)', filename,
+                                      os.path.getsize(filepath))
                         if self.post_data(self.url + "resultimage.php", data, filepath, filename):
                             try:
                                 os.remove(filepath)
@@ -462,7 +469,8 @@ class WebPageTest(object):
                 zip_path = os.path.join(task['dir'], "result.zip")
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
                     for zipitem in needs_zip:
-                        logging.debug('Storing %s', zipitem['name'])
+                        logging.debug('Storing %s (%d bytes)', zipitem['name'],
+                                      os.path.getsize(zipitem['path']))
                         zip_file.write(zipitem['path'], zipitem['name'])
                         try:
                             os.remove(zipitem['path'])

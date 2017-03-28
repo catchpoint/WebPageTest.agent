@@ -116,30 +116,33 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['time_limit']
-            task['current_step'] = 1
-            recording = False
-            while len(task['script']) and monotonic.monotonic() < end_time:
-                self.prepare_task(task)
-                command = task['script'].pop(0)
-                if not recording and command['record']:
-                    recording = True
-                    self.on_start_recording(task)
-                self.process_command(command)
-                if command['record']:
-                    self.devtools.wait_for_page_load()
-                    if not task['combine_steps'] or not len(task['script']):
-                        self.on_stop_recording(task)
-                        recording = False
-                        self.on_start_processing(task)
-                        self.wait_for_processing(task)
-                        if task['log_data']:
-                            # Move on to the next step
-                            task['current_step'] += 1
-                            self.event_name = None
-            # Always navigate to about:blank after finishing in case the tab is
-            # remembered across sessions
-            self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
+            if self.job['type'] == 'lighthouse':
+                self.lighthouse_test_url = self.job['url']
+            else:
+                end_time = monotonic.monotonic() + task['time_limit']
+                task['current_step'] = 1
+                recording = False
+                while len(task['script']) and monotonic.monotonic() < end_time:
+                    self.prepare_task(task)
+                    command = task['script'].pop(0)
+                    if not recording and command['record']:
+                        recording = True
+                        self.on_start_recording(task)
+                    self.process_command(command)
+                    if command['record']:
+                        self.devtools.wait_for_page_load()
+                        if not task['combine_steps'] or not len(task['script']):
+                            self.on_stop_recording(task)
+                            recording = False
+                            self.on_start_processing(task)
+                            self.wait_for_processing(task)
+                            if task['log_data']:
+                                # Move on to the next step
+                                task['current_step'] += 1
+                                self.event_name = None
+                # Always navigate to about:blank after finishing in case the tab is
+                # remembered across sessions
+                self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             if task['run'] == 1 and not task['cached'] and \
                     'lighthouse' in self.job and self.job['lighthouse']:
                 self.run_lighthouse_test(task)
@@ -374,17 +377,34 @@ class DevtoolsBrowser(object):
                 if timer is not None:
                     timer.cancel()
             if os.path.isfile(json_file):
+                # Remove the raw screenshots if they were stored with the file
+                lh_report = None
                 with open(json_file, 'rb') as f_in:
+                    lh_report = json.load(f_in)
+                if lh_report is not None and 'audits' in lh_report and \
+                        'screenshots' in lh_report['audits']:
+                    del lh_report['audits']['screenshots']
                     with gzip.open(json_gzip, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
+                        json.dump(lh_report, f_out)
+                else:
+                    with open(json_file, 'rb') as f_in:
+                        with gzip.open(json_gzip, 'wb', 7) as f_out:
+                            shutil.copyfileobj(f_in, f_out)
                 try:
                     os.remove(json_file)
                 except Exception:
                     pass
             if os.path.isfile(html_file):
+                # Remove the raw screenshots if they were stored with the file
                 with open(html_file, 'rb') as f_in:
+                    lh_report = f_in.read()
+                    start = lh_report.find('\n    &quot;screenshots')
+                    if start >= 0:
+                        end = lh_report.find('\n    },', start)
+                        if end >= 0:
+                            lh_report = lh_report[:start] + lh_report[end + 7:]
                     with gzip.open(html_gzip, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
+                        f_out.write(lh_report)
                 try:
                     os.remove(html_file)
                 except Exception:
