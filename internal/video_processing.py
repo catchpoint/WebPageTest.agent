@@ -57,6 +57,13 @@ class VideoProcessing(object):
                             pass
                     else:
                         baseline = files[index]
+            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
+            # Fix png issues
+            for file_name in files:
+                path = os.path.join(self.video_path, file_name)
+                cmd = 'mogrify -format png -define png:color-type=2 -depth 8 "{0}"'.format(path)
+                logging.debug(cmd)
+                subprocess.call(cmd, shell=True)
             # start a background thread to convert the images to jpeg
             logging.debug("Converting video frames to jpeg")
             jpeg_thread = threading.Thread(target=self.convert_to_jpeg)
@@ -72,8 +79,13 @@ class VideoProcessing(object):
                                                                          self.task['current_step'])
             histograms = os.path.join(self.task['dir'], filename)
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
-            subprocess.call(['python', visualmetrics, '-d', self.video_path,
-                             '--histogram', histograms, '-vvvv'])
+            args = ['python', visualmetrics, '-d', self.video_path,
+                    '--histogram', histograms, '-vvvv']
+            if 'renderVideo' in self.job and self.job['renderVideo']:
+                video_out = os.path.join(self.task['dir'], self.task['prefix']) + \
+                        '_rendered_video.mp4'
+                args.extend(['--render', video_out])
+            subprocess.call(args)
             # Wait for the jpeg task to complete and delete the png's
             logging.debug("Waiting for jpeg conversion to finish")
             jpeg_thread.join()

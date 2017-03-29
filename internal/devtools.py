@@ -461,6 +461,11 @@ class DevTools(object):
             if png:
                 with open(path, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
+                # Fix png issues
+                cmd = 'mogrify -format png -define png:color-type=2 '\
+                        '-depth 8 "{0}"'.format(path)
+                logging.debug(cmd)
+                subprocess.call(cmd, shell=True)
                 self.crop_screen_shot(path)
             else:
                 tmp_file = path + '.png'

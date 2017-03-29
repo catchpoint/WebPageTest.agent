@@ -123,6 +123,9 @@ class AndroidBrowser(object):
                 args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
                         '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
                         '--viewport', '--maxframes', '50', '--histogram', histograms]
+                if 'renderVideo' in self.job and self.job['renderVideo']:
+                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                    args.extend(['--render', video_out])
                 if 'videoFlags' in self.config:
                     args.extend(self.config['videoFlags'])
                 else:
