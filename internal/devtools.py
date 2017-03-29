@@ -60,7 +60,7 @@ class DevTools(object):
         """Indicate that we are about to start a known-navigation"""
         self.main_frame = None
         self.is_navigating = True
-    
+
     def wait_for_available(self, timeout):
         """Wait for the dev tools interface to become available (but don't connect)"""
         import requests
@@ -73,7 +73,12 @@ class DevTools(object):
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if len(tabs):
-                        ret = True
+                        for index in xrange(len(tabs)):
+                            if 'type' in tabs[index] and \
+                                    tabs[index]['type'] == 'page' and \
+                                    'webSocketDebuggerUrl' in tabs[index] and \
+                                    'id' in tabs[index]:
+                                ret = True
             except Exception as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
