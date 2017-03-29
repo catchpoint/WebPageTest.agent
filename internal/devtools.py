@@ -16,9 +16,10 @@ from ws4py.client.threadedclient import WebSocketClient
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, job, task, use_devtools_video):
+    def __init__(self, options, job, task, use_devtools_video):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
+        self.options = options
         self.job = job
         self.task = task
         self.command_id = 0
@@ -59,6 +60,24 @@ class DevTools(object):
         """Indicate that we are about to start a known-navigation"""
         self.main_frame = None
         self.is_navigating = True
+    
+    def wait_for_available(self, timeout):
+        """Wait for the dev tools interface to become available (but don't connect)"""
+        import requests
+        ret = False
+        end_time = monotonic.monotonic() + timeout
+        while not ret and monotonic.monotonic() < end_time:
+            try:
+                response = requests.get(self.url, timeout=timeout)
+                if len(response.text):
+                    tabs = response.json()
+                    logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
+                    if len(tabs):
+                        ret = True
+            except Exception as err:
+                logging.critical("Connect to dev tools Error: %s", err.__str__())
+                time.sleep(0.5)
+        return ret
 
     def connect(self, timeout):
         """Connect to the browser"""
@@ -108,17 +127,20 @@ class DevTools(object):
                         time.sleep(0.5)
             except Exception as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__())
-                time.sleep(1)
+                time.sleep(0.5)
         return ret
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
+        if self.websocket:
+            try:
+                self.websocket.close()
+            except Exception:
+                pass
+            self.websocket = None
         if close_tab and self.tab_id is not None:
             import requests
             requests.get(self.url + '/close/' + self.tab_id)
-        if self.websocket:
-            self.websocket.close()
-            self.websocket = None
         self.tab_id = None
 
     def start_recording(self):
@@ -465,7 +487,7 @@ class DevTools(object):
 
     def crop_screen_shot(self, path):
         """Crop to the viewport (for mobile tests)"""
-        if 'mobile' in self.job and self.job['mobile']:
+        if not self.options.android and 'mobile' in self.job and self.job['mobile']:
             try:
                 # detect the viewport if we haven't already
                 if self.mobile_viewport is None:

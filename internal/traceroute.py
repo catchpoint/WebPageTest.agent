@@ -163,6 +163,10 @@ class Traceroute(object):
                 pass
         return last_hop, ret
 
+    def run_lighthouse_test(self, task):
+        """Stub for lighthouse test"""
+        pass
+
     def stop(self, job, task):
         """Stop the browser"""
         pass

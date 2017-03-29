@@ -46,35 +46,23 @@ class WPTAgent(object):
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
                             start = monotonic.monotonic()
-                            # - Prepare the browser
-                            browser = self.browsers.get_browser(self.job['browser'], self.job)
-                            if browser is not None:
-                                browser.prepare(self.job, self.task)
-                                browser.launch(self.job, self.task)
-                                if self.shaper.configure(self.job):
-                                    try:
-                                        browser.run_task(self.task)
-                                    except Exception as err:
-                                        self.task['error'] = 'Unhandled exception running test: '\
-                                            '{0}'.format(err.__str__())
-                                        logging.critical("Unhandled exception running test: %s",
-                                                         err.__str__())
-                                        traceback.print_exc(file=sys.stdout)
-                                else:
-                                    self.task['error'] = "Error configuring traffic-shaping"
-                                self.shaper.reset()
-                                browser.stop(self.job, self.task)
-                            else:
-                                err = "Invalid browser - {0}".format(self.job['browser'])
-                                logging.critical(err)
-                                self.task['error'] = err
+                            try:
+                                self.task['running_lighthouse'] = False
+                                if self.job['type'] != 'lighthouse':
+                                    self.run_single_test()
+                                if self.task['run'] == 1 and not self.task['cached'] and \
+                                        'lighthouse' in self.job and self.job['lighthouse']:
+                                    self.task['running_lighthouse'] = True
+                                    self.run_single_test()
+                                elapsed = monotonic.monotonic() - start
+                                logging.debug('Test run time: %0.3f sec', elapsed)
+                            except Exception as err:
+                                self.task['error'] = 'Unhandled exception running test: '\
+                                    '{0}'.format(err.__str__())
+                                logging.critical("Unhandled exception running test: %s",
+                                                 err.__str__())
+                                traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
-                            # Delete the browser profile if needed
-                            if self.task['cached'] or self.job['fvonly']:
-                                browser.clear_profile(self.task)
-                            browser = None
-                            elapsed = monotonic.monotonic() - start
-                            logging.debug('Test run time: %0.3f sec', elapsed)
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
                 if self.job is not None:
@@ -93,6 +81,37 @@ class WPTAgent(object):
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
+
+    def run_single_test(self):
+        """Run a single test run"""
+        browser = self.browsers.get_browser(self.job['browser'], self.job)
+        if browser is not None:
+            browser.prepare(self.job, self.task)
+            browser.launch(self.job, self.task)
+            if self.shaper.configure(self.job):
+                try:
+                    if self.task['running_lighthouse']:
+                        browser.run_lighthouse_test(self.task)
+                    else:
+                        browser.run_task(self.task)
+                except Exception as err:
+                    self.task['error'] = 'Unhandled exception running test: '\
+                        '{0}'.format(err.__str__())
+                    logging.critical("Unhandled exception running test: %s",
+                                     err.__str__())
+                    traceback.print_exc(file=sys.stdout)
+            else:
+                self.task['error'] = "Error configuring traffic-shaping"
+            self.shaper.reset()
+            browser.stop(self.job, self.task)
+        else:
+            err = "Invalid browser - {0}".format(self.job['browser'])
+            logging.critical(err)
+            self.task['error'] = err
+        # Delete the browser profile if needed
+        if self.task['cached'] or self.job['fvonly']:
+            browser.clear_profile(self.task)
+        browser = None
 
     def signal_handler(self, *_):
         """Ctrl+C handler"""

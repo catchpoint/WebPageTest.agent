@@ -26,7 +26,6 @@ class DevtoolsBrowser(object):
         self.task = None
         self.event_name = None
         self.browser_version = None
-        self.lighthouse_test_url = None
         self.use_devtools_video = use_devtools_video
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -35,14 +34,17 @@ class DevtoolsBrowser(object):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.job, task, self.use_devtools_video)
-        if self.devtools.connect(self.CONNECT_TIME_LIMIT):
-            logging.debug("Devtools connected")
-            ret = True
+        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video)
+        if task['running_lighthouse']:
+            self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
         else:
-            task['error'] = "Error connecting to dev tools interface"
-            logging.critical(task['error'])
-            self.devtools = None
+            if self.devtools.connect(self.CONNECT_TIME_LIMIT):
+                logging.debug("Devtools connected")
+                ret = True
+            else:
+                task['error'] = "Error connecting to dev tools interface"
+                logging.critical(task['error'])
+                self.devtools = None
         return ret
 
     def disconnect(self):
@@ -116,36 +118,30 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.task = task
             logging.debug("Running test")
-            if self.job['type'] == 'lighthouse':
-                self.lighthouse_test_url = self.job['url']
-            else:
-                end_time = monotonic.monotonic() + task['time_limit']
-                task['current_step'] = 1
-                recording = False
-                while len(task['script']) and monotonic.monotonic() < end_time:
-                    self.prepare_task(task)
-                    command = task['script'].pop(0)
-                    if not recording and command['record']:
-                        recording = True
-                        self.on_start_recording(task)
-                    self.process_command(command)
-                    if command['record']:
-                        self.devtools.wait_for_page_load()
-                        if not task['combine_steps'] or not len(task['script']):
-                            self.on_stop_recording(task)
-                            recording = False
-                            self.on_start_processing(task)
-                            self.wait_for_processing(task)
-                            if task['log_data']:
-                                # Move on to the next step
-                                task['current_step'] += 1
-                                self.event_name = None
-                # Always navigate to about:blank after finishing in case the tab is
-                # remembered across sessions
-                self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
-            if task['run'] == 1 and not task['cached'] and \
-                    'lighthouse' in self.job and self.job['lighthouse']:
-                self.run_lighthouse_test(task)
+            end_time = monotonic.monotonic() + task['time_limit']
+            task['current_step'] = 1
+            recording = False
+            while len(task['script']) and monotonic.monotonic() < end_time:
+                self.prepare_task(task)
+                command = task['script'].pop(0)
+                if not recording and command['record']:
+                    recording = True
+                    self.on_start_recording(task)
+                self.process_command(command)
+                if command['record']:
+                    self.devtools.wait_for_page_load()
+                    if not task['combine_steps'] or not len(task['script']):
+                        self.on_stop_recording(task)
+                        recording = False
+                        self.on_start_processing(task)
+                        self.wait_for_processing(task)
+                        if task['log_data']:
+                            # Move on to the next step
+                            task['current_step'] += 1
+                            self.event_name = None
+            # Always navigate to about:blank after finishing in case the tab is
+            # remembered across sessions
+            self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.task = None
 
     def on_start_processing(self, task):
@@ -279,8 +275,6 @@ class DevtoolsBrowser(object):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
-            if self.lighthouse_test_url is None:
-                self.lighthouse_test_url = command['target']
             self.devtools.start_navigating()
             self.devtools.send_command('Page.navigate', {'url': command['target']})
         elif command['command'] == 'logdata':
@@ -341,28 +335,22 @@ class DevtoolsBrowser(object):
     def run_lighthouse_test(self, task):
         """Run a lighthouse test against the current browser session"""
         from threading import Timer
-        if self.lighthouse_test_url is not None:
-            if self.devtools is not None:
-                self.devtools.send_command("Network.clearBrowserCache", {},
-                                           wait=True)
-                self.devtools.send_command("Network.clearBrowserCookies", {},
-                                           wait=True)
-                self.devtools.close(close_tab=False)
-                time.sleep(0.5)
+        if 'url' in self.job and self.job['url'] is not None:
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             command = ['lighthouse',
-                       '--disable-device-emulation',
                        '--disable-cpu-throttling',
                        '--disable-network-throttling',
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
-                       '--output-path', '"{0}"'.format(output_path),
-                       '"{0}"'.format(self.lighthouse_test_url)]
+                       '--output-path', '"{0}"'.format(output_path)]
+            if self.options.android:
+                command.append('--disable-device-emulation')
+            command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
             # Give lighthouse up to 10 minutes to run (safety for hung test)
