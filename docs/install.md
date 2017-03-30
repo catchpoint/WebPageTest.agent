@@ -34,7 +34,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ```sudo npm install -g lighthouse```
 
 ## Configuration
-Once all of the dependencies are installed, the only configuration required is to rename browsers.ini.sample to browsers.ini and configure it to point to the path to the browser to be tested for each configuration.
+The default browser locations for Chrome and Chrome Canary (google-chrome-unstable on Linux) will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
 
 On Linux, make sure to point to the actual chrome binary and not the symlink.  Usually something like:
 ```
