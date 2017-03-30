@@ -104,10 +104,11 @@ class BlackBoxAndroid(AndroidBrowser):
         if 'clearProfile' in self.config and self.config['clearProfile']:
             self.adb.shell(['pm', 'clear', self.config['package']])
         elif 'directories' in self.config:
-            remove = ' /data/data/{0}/'.format(self.config['package']).join(
-                self.config['directories'])
+            remove = ' '
+            for directory in self.config['directories']:
+                remove += ' "/data/data/{0}/{1}"'.format(self.config['package'], directory)
             if len(remove):
-                self.adb.su('rm -r ' + remove)
+                self.adb.su('rm -r' + remove)
 
     def wait_for_network_idle(self):
         """Wait for 5 one-second intervals that receive less than 1KB"""
