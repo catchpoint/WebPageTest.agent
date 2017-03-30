@@ -176,8 +176,11 @@ class DevtoolsBrowser(object):
                         shutil.copyfileobj(f_in, f_out)
             logging.debug('Waiting for trace processing to complete')
             trace_thread.join()
-            if os.path.isfile(trace_gzip):
-                os.remove(trace_file)
+            if os.path.isfile(trace_gzip) and os.path.isfile(trace_file):
+                try:
+                    os.remove(trace_file)
+                except Exception:
+                    pass
             optimization.join()
 
     def wait_for_processing(self, task):

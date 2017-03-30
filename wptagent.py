@@ -57,8 +57,12 @@ class WPTAgent(object):
                                 elapsed = monotonic.monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
+                                _, _, tb_info = sys.exc_info()
+                                frame = tb_info.tb_frame
+                                lineno = tb_info.tb_lineno
+                                filename = frame.f_code.co_filename
                                 self.task['error'] = 'Unhandled exception running test: '\
-                                    '{0}'.format(err.__str__())
+                                    '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
                                 logging.critical("Unhandled exception running test: %s",
                                                  err.__str__())
                                 traceback.print_exc(file=sys.stdout)
@@ -70,8 +74,12 @@ class WPTAgent(object):
                 else:
                     self.sleep(5)
             except Exception as err:
+                _, _, tb_info = sys.exc_info()
+                frame = tb_info.tb_frame
+                lineno = tb_info.tb_lineno
+                filename = frame.f_code.co_filename
                 self.task['error'] = 'Unhandled exception preparing test: '\
-                    '{0}'.format(err.__str__())
+                    '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
                 logging.critical("Unhandled exception: %s", err.__str__())
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
@@ -95,9 +103,13 @@ class WPTAgent(object):
                     else:
                         browser.run_task(self.task)
                 except Exception as err:
-                    self.task['error'] = 'Unhandled exception running test: '\
-                        '{0}'.format(err.__str__())
-                    logging.critical("Unhandled exception running test: %s",
+                    _, _, tb_info = sys.exc_info()
+                    frame = tb_info.tb_frame
+                    lineno = tb_info.tb_lineno
+                    filename = frame.f_code.co_filename
+                    self.task['error'] = 'Unhandled exception in test run: '\
+                        '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
+                    logging.critical("Unhandled exception in test run: %s",
                                      err.__str__())
                     traceback.print_exc(file=sys.stdout)
             else:
