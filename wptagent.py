@@ -57,14 +57,12 @@ class WPTAgent(object):
                                 elapsed = monotonic.monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
-                                _, _, tb_info = sys.exc_info()
-                                frame = tb_info.tb_frame
-                                lineno = tb_info.tb_lineno
-                                filename = frame.f_code.co_filename
+                                msg = ''
+                                if err is not None and err.__str__() is not None:
+                                    msg = err.__str__()
                                 self.task['error'] = 'Unhandled exception running test: '\
-                                    '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
-                                logging.critical("Unhandled exception running test: %s",
-                                                 err.__str__())
+                                    '{0}'.format(msg)
+                                logging.critical("Unhandled exception running test: %s", msg)
                                 traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
@@ -74,13 +72,13 @@ class WPTAgent(object):
                 else:
                     self.sleep(5)
             except Exception as err:
-                _, _, tb_info = sys.exc_info()
-                frame = tb_info.tb_frame
-                lineno = tb_info.tb_lineno
-                filename = frame.f_code.co_filename
-                self.task['error'] = 'Unhandled exception preparing test: '\
-                    '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
-                logging.critical("Unhandled exception: %s", err.__str__())
+                msg = ''
+                if err is not None and err.__str__() is not None:
+                    msg = err.__str__()
+                if self.task is not None:
+                    self.task['error'] = 'Unhandled exception preparing test: '\
+                        '{0}'.format(msg)
+                logging.critical("Unhandled exception: %s", msg)
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
                     browser.on_stop_recording(None)
@@ -103,14 +101,12 @@ class WPTAgent(object):
                     else:
                         browser.run_task(self.task)
                 except Exception as err:
-                    _, _, tb_info = sys.exc_info()
-                    frame = tb_info.tb_frame
-                    lineno = tb_info.tb_lineno
-                    filename = frame.f_code.co_filename
+                    msg = ''
+                    if err is not None and err.__str__() is not None:
+                        msg = err.__str__()
                     self.task['error'] = 'Unhandled exception in test run: '\
-                        '{0} ({1}:{2})'.format(err.__str__(), filename, lineno)
-                    logging.critical("Unhandled exception in test run: %s",
-                                     err.__str__())
+                        '{0}'.format(msg)
+                    logging.critical("Unhandled exception in test run: %s", msg)
                     traceback.print_exc(file=sys.stdout)
             else:
                 self.task['error'] = "Error configuring traffic-shaping"
@@ -280,6 +276,47 @@ def parse_ini(ini):
             ret = None
     return ret
 
+def find_browsers():
+    """Find the various known-browsers in case they are not explicitly configured"""
+    browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
+    if browsers is None:
+        browsers = {}
+    plat = platform.system()
+    if plat == "Windows":
+        local_appdata = os.getenv('LOCALAPPDATA')
+        program_files = os.getenv('ProgramFiles')
+        program_files_x86 = os.getenv('ProgramFiles(x86)')
+        if program_files is not None and 'Chrome' not in browsers:
+            chrome_path = os.path.join(program_files, 'Google', 'Chrome',
+                                       'Application', 'chrome.exe')
+            if os.path.isfile(chrome_path):
+                browsers['Chrome'] = {'exe': chrome_path}
+        if program_files_x86 is not None and 'Chrome' not in browsers:
+            chrome_path = os.path.join(program_files_x86, 'Google', 'Chrome',
+                                       'Application', 'chrome.exe')
+            if os.path.isfile(chrome_path):
+                browsers['Chrome'] = {'exe': chrome_path}
+        if local_appdata is not None and 'Chrome' not in browsers:
+            chrome_path = os.path.join(local_appdata, 'Google', 'Chrome',
+                                       'Application', 'chrome.exe')
+            if os.path.isfile(chrome_path):
+                browsers['Chrome'] = {'exe': chrome_path}
+        if local_appdata is not None and 'Canary' not in browsers:
+            canary_path = os.path.join(local_appdata, 'Google', 'Chrome SxS',
+                                       'Application', 'chrome.exe')
+            if os.path.isfile(canary_path):
+                browsers['Canary'] = {'exe': canary_path}
+    elif plat == "Linux":
+        chrome_path = '/opt/google/chrome/chrome'
+        if 'Chrome' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome'] = {'exe': chrome_path}
+        # google-chrome-unstable is the closest thing to Canary for Linux
+        canary_path = '/opt/google/chrome-unstable/chrome'
+        if 'Canary' not in browsers and os.path.isfile(canary_path):
+            browsers['Canary'] = {'exe': canary_path}
+    elif plat == "Darwin":
+        pass
+    return browsers
 
 def main():
     """Startup and initialization"""
@@ -367,8 +404,8 @@ def main():
 
     browsers = None
     if not options.android:
-        browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
-        if browsers is None:
+        browsers = find_browsers()
+        if len(browsers) == 0:
             print "No browsers configured. Check that browsers.ini is present and correct."
             exit(1)
 
