@@ -59,6 +59,7 @@ class TrafficShaper(object):
         """Disable traffic-shaping"""
         ret = False
         if self.shaper is not None:
+            logging.debug('Resetting traffic shaping')
             ret = self.shaper.reset()
         return ret
 
@@ -78,6 +79,8 @@ class TrafficShaper(object):
         if 'plr' in job:
             plr = float(job['plr'])
         if self.shaper is not None:
+            logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr',
+                          in_bps, out_bps, rtt, plr)
             ret = self.shaper.configure(in_bps, out_bps, rtt, plr)
             job['interface'] = self.shaper.interface
         return ret
@@ -163,7 +166,9 @@ class Dummynet(object):
     def ipfw(self, args):
         """Run a single ipfw command"""
         from .os_util import run_elevated
-        return run_elevated(self.exe, ' '.join(args)) == 0
+        cmd = ' '.join(args)
+        logging.debug('ipfw ' + cmd)
+        return run_elevated(self.exe, cmd) == 0
 
     def install(self):
         """Set up the pipes"""
@@ -350,11 +355,13 @@ class NetEm(object):
                 '1:0', 'netem', 'delay', '{0:d}ms'.format(latency)]
         if plr > 0:
             args.extend(['loss', '{0:.2f}%'.format(plr)])
+        logging.debug(' '.join(args))
         ret = subprocess.call(args) == 0
         if ret and bps > 0:
             kbps = int(bps / 1000)
             args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'parent', '1:1',
                     'handle', '10:', 'tbf', 'rate', '{0:d}kbit'.format(kbps),
                     'buffer', '150000', 'limit', '150000']
+            logging.debug(' '.join(args))
             ret = subprocess.call(args) == 0
         return ret
