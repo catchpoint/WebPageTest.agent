@@ -35,3 +35,9 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
 
 ## Configuration
 Once all of the dependencies are installed, the only configuration required is to rename browsers.ini.sample to browsers.ini and configure it to point to the path to the browser to be tested for each configuration.
+
+On Linux, make sure to point to the actual chrome binary and not the symlink.  Usually something like:
+```
+[Chrome]
+exe=/opt/google/chrome/chrome
+```
