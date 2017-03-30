@@ -318,8 +318,8 @@ class WebPageTest(object):
                     keep = True
                     record = False
                     command = parts[0].lower().strip()
-                    target = parts[1] if len(parts) > 1 else None
-                    value = parts[2] if len(parts) > 2 else None
+                    target = parts[1].strip() if len(parts) > 1 else None
+                    value = parts[2].strip() if len(parts) > 2 else None
                     andwait = command.find('andwait')
                     if andwait > -1:
                         command = command[:andwait]
