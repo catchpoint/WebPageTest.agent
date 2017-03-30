@@ -9,7 +9,7 @@ import time
 import monotonic
 from .android_browser import AndroidBrowser
 
-START_PAGE = 'data:text/html,'
+START_PAGE = 'http://www.webpagetest.org/blank.html'
 
 class BlackBoxAndroid(AndroidBrowser):
     """Chrome browser on Android"""
