@@ -107,7 +107,7 @@ class BlackBoxAndroid(AndroidBrowser):
             remove = ' /data/data/{0}/'.format(self.config['package']).join(
                 self.config['directories'])
             if len(remove):
-                self.adb.su('rm -r' + remove)
+                self.adb.su('rm -r ' + remove)
 
     def wait_for_network_idle(self):
         """Wait for 5 one-second intervals that receive less than 1KB"""
