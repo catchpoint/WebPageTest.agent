@@ -115,8 +115,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        args = CHROME_COMMAND_LINE_OPTIONS
-        host_rules = HOST_RULES
+        args = list(CHROME_COMMAND_LINE_OPTIONS)
+        host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
         args.append('--host-resolver-rules=' + ','.join(host_rules))
@@ -197,8 +197,15 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         """Wait for any background processing threads to finish"""
         AndroidBrowser.wait_for_processing(self, task)
 
-    def clear_profile(self, _):
+    def clear_profile(self, task):
         """Clear the browser profile"""
+        local_command_line = os.path.join(task['dir'], self.config['command_line_file'])
+        remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
+        root_command_line = '/data/local/' + self.config['command_line_file']
+        if os.path.isfile(local_command_line):
+            os.remove(local_command_line)
+        self.adb.shell(['rm', remote_command_line])
+        self.adb.su('rm "{0}"'.format(root_command_line))
         # Fail gracefully if root access isn't available
         if self.adb.short_version >= 7.0:
             out = self.adb.su('ls -1 /data/data/' + self.config['package'])

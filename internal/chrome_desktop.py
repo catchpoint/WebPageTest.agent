@@ -48,8 +48,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        args = CHROME_COMMAND_LINE_OPTIONS
-        host_rules = HOST_RULES
+        args = list(CHROME_COMMAND_LINE_OPTIONS)
+        host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
         args.append('--host-resolver-rules=' + ','.join(host_rules))
