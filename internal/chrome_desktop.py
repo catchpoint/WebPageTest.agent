@@ -18,6 +18,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-translate',
     '--disable-notifications',
     '--disable-desktop-notifications',
+    '--disable-save-password-bubble',
     '--allow-running-insecure-content',
     '--disable-component-update',
     '--disable-background-downloads',
