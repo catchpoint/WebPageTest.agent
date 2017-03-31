@@ -65,28 +65,21 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * setHeader (aliased to addHeader until devtools supports overriding headers)
     * setCookie
     * setABM
-
-## Not yet supported (actively being worked on)
-* Browser installs/updates
-* Windows general cleanup/health (temp files, downloads, killing processes, etc)
-* Script Commands that will be translated into exec:
     * click (clickAndWait)
     * selectValue
     * sendClick
-    * sendKeyDown
     * setInnerHTML
     * setInnerText
     * setValue
     * submitForm
-* Other Script Commands:
-    * requiredRequest
-    * setDOMRequest
-    * waitForJSDone (change semantics to console log message)
-    * overrideHost (depends on support being added to dev tools)
-    * if/else/endif
+
+## Not yet supported (actively being worked on)
+* Browser installs/updates
+* Windows general cleanup/health (temp files, downloads, killing processes, etc)
 
 ## Not Supported (no plans to implement)
 * Script Commands:
+    * sendKeyDown
     * setDOMElement
     * waitForComplete
     * setDnsName
@@ -100,3 +93,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * expireCache
     * firefoxPref
     * resetHeaders
+    * requiredRequest
+    * setDOMRequest
+    * waitForJSDone (change semantics to console log message)
+    * overrideHost (depends on support being added to dev tools)
+    * if/else/endif

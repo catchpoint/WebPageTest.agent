@@ -394,6 +394,33 @@ class WebPageTest(object):
                                 name = target[:separator].strip()
                                 value = target[separator + 1:].strip()
                                 job['headers'][name] = value
+                    # Commands that get translated into exec commands
+                    elif command in ['click', 'selectvalue', 'sendclick', 'setinnerhtml',
+                                     'setinnertext', 'setvalue', 'submitform']:
+                        if target is not None:
+                            # convert the selector into a querySelector
+                            separator = target.find('=')
+                            if separator == -1:
+                                separator = target.find("'")
+                            if separator >= 0:
+                                attribute = target[:separator]
+                                attr_value = target[separator + 1:]
+                                script = "document.querySelector('[{0}=\"{1}\"]')".format(\
+                                        attribute, attr_value)
+                                if command in ['click', 'sendclick']:
+                                    script += '.click();'
+                                elif command == 'submitform' and value is not None:
+                                    script += '.submit();'
+                                    record = True
+                                elif command in ['setvalue', 'selectvalue'] and value is not None:
+                                    script += '.value="{0}";'.format(value.replace('"', '\\"'))
+                                elif command == 'setinnertext' and value is not None:
+                                    script += '.innerText="{0}";'.format(value.replace('"', '\\"'))
+                                elif command == 'setinnerhtml' and value is not None:
+                                    script += '.innerHTML="{0}";'.format(value.replace('"', '\\"'))
+                                command = 'exec'
+                                target = script
+                                value = None
                     if keep:
                         task['script'].append({'command': command,
                                                'target': target,
