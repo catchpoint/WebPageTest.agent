@@ -454,16 +454,17 @@ class DevTools(object):
                     elif self.task['error'] is not None:
                         done = True
 
-    def grab_screenshot(self, path, png=True):
+    def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=5)
         if response is not None and 'result' in response and 'data' in response['result']:
+            resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
             if png:
                 with open(path, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
                 # Fix png issues
                 cmd = 'mogrify -format png -define png:color-type=2 '\
-                        '-depth 8 "{0}"'.format(path)
+                        '-depth 8 {0}"{1}"'.format(resize_string, path)
                 logging.debug(cmd)
                 subprocess.call(cmd, shell=True)
                 self.crop_screen_shot(path)
@@ -472,8 +473,8 @@ class DevTools(object):
                 with open(tmp_file, 'wb') as image_file:
                     image_file.write(base64.b64decode(response['result']['data']))
                 self.crop_screen_shot(tmp_file)
-                command = 'convert -quality {0:d} "{1}" "{2}"'.format(
-                    self.job['iq'], tmp_file, path)
+                command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                    tmp_file, resize_string, self.job['iq'], path)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
                 if os.path.isfile(tmp_file):
