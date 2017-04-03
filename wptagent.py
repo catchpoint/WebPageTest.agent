@@ -310,10 +310,18 @@ def find_browsers():
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
             browsers['Chrome'] = {'exe': chrome_path}
+        beta_path = '/opt/google/chrome-beta/chrome'
+        if 'Chrome Beta' not in browsers and os.path.isfile(beta_path):
+            browsers['Chrome Beta'] = {'exe': beta_path}
         # google-chrome-unstable is the closest thing to Canary for Linux
         canary_path = '/opt/google/chrome-unstable/chrome'
-        if 'Canary' not in browsers and os.path.isfile(canary_path):
-            browsers['Canary'] = {'exe': canary_path}
+        if os.path.isfile(canary_path):
+            if 'Chrome Dev' not in browsers:
+                browsers['Chrome Dev'] = {'exe': canary_path}
+            if 'Chrome Canary' not in browsers:
+                browsers['Chrome Canary'] = {'exe': canary_path}
+            if 'Canary' not in browsers:
+                browsers['Canary'] = {'exe': canary_path}
     elif plat == "Darwin":
         pass
     return browsers
