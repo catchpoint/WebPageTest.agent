@@ -159,7 +159,7 @@ class AndroidBrowser(object):
         if self.video_processing is not None:
             self.video_processing.communicate()
             self.video_processing = None
-            if 'keepvideo' not in self.job or not self.job['keepvideo']:
+            if not self.job['keepvideo']:
                 try:
                     os.remove(task['video_file'])
                 except Exception:

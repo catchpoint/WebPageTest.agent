@@ -21,6 +21,7 @@ class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     def __init__(self, options, workdir):
         import requests
+        self.job = None
         self.session = requests.Session()
         self.options = options
         # Configurable options
@@ -209,6 +210,7 @@ class WebPageTest(object):
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
+                    job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
             except requests.exceptions.RequestException as err:
@@ -217,6 +219,7 @@ class WebPageTest(object):
                 time.sleep(0.1)
             except Exception:
                 pass
+        self.job = job
         return job
 
     def get_task(self, job):
@@ -479,7 +482,14 @@ class WebPageTest(object):
             for filename in os.listdir(task['dir']):
                 filepath = os.path.join(task['dir'], filename)
                 if os.path.isfile(filepath):
-                    if os.path.getsize(filepath) > 100000:
+                    # Delete any video files that may have squeaked by
+                    if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
+                            filename.find('rendered_video') == -1:
+                        try:
+                            os.remove(filepath)
+                        except Exception:
+                            pass
+                    elif os.path.getsize(filepath) > 100000:
                         logging.debug('Uploading %s (%d bytes)', filename,
                                       os.path.getsize(filepath))
                         if self.post_data(self.url + "resultimage.php", data, filepath, filename):
