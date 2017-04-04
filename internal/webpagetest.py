@@ -35,6 +35,17 @@ class WebPageTest(object):
         self.validate_server_certificate = False
         self.instance_id = None
         self.zone = None
+        # Get the screen resolution if we're in desktop mode
+        self.screen_width = None
+        self.screen_height = None
+        if not self.options.android:
+            if self.options.xvfb:
+                self.screen_width = 1920
+                self.screen_height = 1200
+            elif platform.system() == 'Windows':
+                from win32api import GetSystemMetrics
+                self.screen_width = GetSystemMetrics(0)
+                self.screen_height = GetSystemMetrics(1)
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()
@@ -168,6 +179,10 @@ class WebPageTest(object):
             url += '&apk=1'
         if self.version is not None:
             url += '&version={0}'.format(self.version)
+        if self.screen_width is not None:
+            url += '&screenwidth={0:d}'.format(self.screen_width)
+        if self.screen_height is not None:
+            url += '&screenheight={0:d}'.format(self.screen_height)
         free_disk = get_free_disk_space()
         url += '&freedisk={0:0.3f}'.format(free_disk)
         logging.info("Checking for work: %s", url)
@@ -438,8 +453,11 @@ class WebPageTest(object):
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
+        cpu_pct = None
         # Write out the accumulated page_data
         if task['page_data']:
+            if 'fullyLoadedCPUpct' in task['page_data']:
+                cpu_pct = task['page_data']['fullyLoadedCPUpct']
             if 'step_name' in task:
                 task['page_data']['eventName'] = task['step_name']
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
@@ -518,6 +536,8 @@ class WebPageTest(object):
             data['done'] = '1'
         if task['error'] is not None:
             data['error'] = task['error']
+        if cpu_pct is not None:
+            data['cpu'] = '{0:0.2f}'.format(cpu_pct)
         logging.debug('Uploading result zip')
         self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around

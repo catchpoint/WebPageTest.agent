@@ -32,6 +32,7 @@ class DesktopBrowser(object):
         self.pcap_file = None
         self.pcap_thread = None
         self.task = None
+        self.cpu_start = None
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, _, task):
@@ -151,7 +152,9 @@ class DesktopBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        import psutil
         if task['log_data']:
+            self.cpu_start = psutil.cpu_times()
             self.recording = True
             ver = platform.uname()
             task['page_data']['osVersion'] = '{0} {1}'.format(ver[0], ver[2])
@@ -178,6 +181,16 @@ class DesktopBrowser(object):
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
+        import psutil
+        if self.cpu_start is not None:
+            cpu_end = psutil.cpu_times()
+            cpu_busy = (cpu_end.user - self.cpu_start.user) + \
+                    (cpu_end.system - self.cpu_start.system)
+            cpu_total = cpu_busy + (cpu_end.idle - self.cpu_start.idle)
+            cpu_pct = cpu_busy * 100.0 / cpu_total
+            task['page_data']['fullyLoadedCPUms'] = int(cpu_busy * 1000.0)
+            task['page_data']['fullyLoadedCPUpct'] = cpu_pct
+            self.cpu_start = None
         self.recording = False
         if self.thread is not None:
             self.thread.join()

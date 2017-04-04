@@ -24,6 +24,7 @@ class AndroidBrowser(object):
         self.video_enabled = bool(job['video'])
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump_file = None
+        self.cpu_start = None
         if self.config['type'] == 'blackbox':
             self.tcpdump_enabled = True
             self.video_enabled = True
@@ -85,6 +86,7 @@ class AndroidBrowser(object):
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
+            self.cpu_start = self.adb.cpu_times()
             task['page_data']['osVersion'] = self.adb.version
             out = self.adb.shell(['dumpsys', 'package', self.config['package'], '|', 'grep',
                                   'versionName', '|', 'head', '-n1'])
@@ -101,6 +103,14 @@ class AndroidBrowser(object):
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
+        if self.cpu_start is not None:
+            cpu_end = self.adb.cpu_times()
+            # only the busy times look accurate from Android, idle has a habit of
+            # rolling backwards so percent can't be calculated
+            cpu_busy = (cpu_end.user - self.cpu_start.user) + \
+                    (cpu_end.system - self.cpu_start.system)
+            task['page_data']['fullyLoadedCPUms'] = int(cpu_busy * 1000.0)
+            self.cpu_start = None
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)

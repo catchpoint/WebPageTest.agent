@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import subprocess
+import time
 from threading import Timer
 
 class Adb(object):
@@ -20,6 +21,7 @@ class Adb(object):
         self.kernel = None
         self.short_version = None
         self.last_bytes_rx = 0
+        self.kernel_hz = None
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -398,7 +400,37 @@ class Adb(object):
         if not net_ok:
             logging.info("Device not ready, network not responding")
             is_ready = False
+        if is_ready and self.kernel_hz is None:
+            start_ns, start_jiffies = self.get_jiffies_time()
+            if start_ns is not None and start_jiffies is not None:
+                time.sleep(1)
+                end_ns, end_jiffies = self.get_jiffies_time()
+                if end_ns is not None and end_jiffies is not None:
+                    jiffies = float(end_jiffies - start_jiffies)
+                    nsecs = float(end_ns - start_ns) / 1000000000.0
+                    # round it to the nearest 100Hz
+                    self.kernel_hz = float(int(jiffies / nsecs) / 100 * 100)
+                    logging.debug('Kernel HZ: %0.0f', self.kernel_hz)
+            if self.kernel_hz is None:
+                self.kernel_hz = 100.0
         return is_ready
+
+    def get_jiffies_time(self):
+        """Get the uptime in nanoseconds and jiffies for hz calculation"""
+        out = self.shell(['cat', '/proc/timer_list'], silent=True)
+        nsecs = None
+        jiffies = None
+        if out is not None:
+            for line in out.splitlines():
+                if nsecs is None:
+                    match = re.search(r'^now at (\d+) nsecs', line)
+                    if match:
+                        nsecs = int(match.group(1))
+                if jiffies is None:
+                    match = re.search(r'^jiffies:\s+(\d+)', line)
+                    if match:
+                        jiffies = int(match.group(1))
+        return nsecs, jiffies
 
     def get_bytes_rx(self):
         """Get the incremental bytes received across all non-loopback interfaces"""
@@ -430,3 +462,30 @@ class Adb(object):
         self.shell(['rm', '/data/local/tmp/wpt_screenshot.png'], silent=True)
         self.shell(['screencap', '-p', device_path])
         self.adb(['pull', device_path, dest_file])
+
+    def cpu_times(self):
+        """Return the cpu times similar to psutil"""
+        from collections import namedtuple
+        times = None
+        out = self.shell(['cat', '/proc/stat'], silent=True)
+        if out is not None:
+            for line in out.splitlines():
+                # columns: user nice system idle iowait irq softirq steal guest guest_nice
+                match = re.search(r'^cpu\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)'\
+                                  r'\s+(\d+)\s+(\d+)\s+(\d+)', line)
+                if match:
+                    user = int(match.group(1))
+                    nice = int(match.group(2))
+                    system = int(match.group(3))
+                    idle = int(match.group(4))
+                    iowait = int(match.group(5))
+                    irq = int(match.group(6))
+                    softirq = int(match.group(7))
+                    steal = int(match.group(8))
+                    cpu_idle = float(idle + iowait) / self.kernel_hz
+                    cpu_user = float(user + nice) / self.kernel_hz
+                    cpu_system = float(system + irq + softirq + steal) / self.kernel_hz
+                    times = namedtuple('times', ['user', 'system', 'idle'])._make(
+                        [cpu_user, cpu_system, cpu_idle])
+                    break
+        return times
