@@ -20,6 +20,7 @@ DEFAULT_JPEG_QUALITY = 30
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     def __init__(self, options, workdir):
+        import psutil
         import requests
         self.job = None
         self.session = requests.Session()
@@ -29,7 +30,20 @@ class WebPageTest(object):
         self.location = options.location
         self.key = options.key
         self.time_limit = 120
-        self.pc_name = platform.uname()[1] if options.name is None else options.name
+        # get the hostname or build one automatically if we are on a vmware system
+        # (specific MAC address range)
+        hostname = platform.uname()[1]
+        interfaces = psutil.net_if_addrs()
+        if interfaces is not None:
+            for interface in interfaces:
+                iface = interfaces[interface]
+                for addr in iface:
+                    match = re.search(r'^00:50:56:00:([\da-fA-F]+):([\da-fA-F]+)$', addr.address)
+                    if match:
+                        server = match.group(1).strip('0')
+                        machine = match.group(2)
+                        hostname = 'VM{0}-{1}'.format(server, machine)
+        self.pc_name = hostname if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
         self.validate_server_certificate = False
