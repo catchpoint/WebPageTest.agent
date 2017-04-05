@@ -19,6 +19,7 @@ DEFAULT_JPEG_QUALITY = 30
 
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
+    # pylint: disable=E0611
     def __init__(self, options, workdir):
         import psutil
         import requests
@@ -98,6 +99,7 @@ class WebPageTest(object):
                     self.version = git_date.strftime('%y%m%d.%H%m%S')
         except Exception:
             pass
+    # pylint: enable=E0611
 
     def load_from_ec2(self):
         """Load config settings from EC2 user data"""

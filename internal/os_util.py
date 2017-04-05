@@ -54,6 +54,7 @@ def flush_dns():
         subprocess.call(['sudo', 'service', 'dnsmasq', 'restart'])
         subprocess.call(['sudo', 'rndc', 'restart'])
 
+# pylint: disable=E0611,E0401
 def run_elevated(command, args):
     """Run the given command as an elevated user and wait for it to return"""
     ret = 1
@@ -79,7 +80,9 @@ def run_elevated(command, args):
         logging.debug('sudo ' + command + ' ' + args)
         ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
     return ret
+# pylint: enable=E0611,E0401
 
+# pylint: disable=E1101
 def get_free_disk_space():
     """Return the number of bytes free on the given disk in Gigabytes (floating)"""
     path = os.path.dirname(os.path.realpath(__file__))
@@ -92,3 +95,4 @@ def get_free_disk_space():
     else:
         stat = os.statvfs(path)
         return float(stat.f_bavail * stat.f_frsize / 1024 / 1024) / 1024.0
+# pylint: enable=E1101

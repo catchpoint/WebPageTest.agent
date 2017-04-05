@@ -105,7 +105,7 @@ class DesktopBrowser(object):
         logging.debug(command_line)
         self.proc = subprocess.Popen(command_line, shell=True)
 
-    def stop(self, job, task):
+    def stop(self, _job, _task):
         """Terminate the browser (gently at first but forced if needed)"""
         from .os_util import kill_all
         logging.debug("Stopping browser")
@@ -219,7 +219,7 @@ class DesktopBrowser(object):
             kill_all('tcpdump', False)
             wait_for_all('tcpdump')
 
-    def on_start_processing(self, task):
+    def on_start_processing(self, _task):
         """Start any processing of the captured data"""
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
