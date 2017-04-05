@@ -346,14 +346,13 @@ class DevtoolsBrowser(object):
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             command = ['lighthouse',
-                       '--disable-cpu-throttling',
                        '--disable-network-throttling',
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
             if self.options.android:
-                command.append('--disable-device-emulation')
+                command.extend(['--disable-device-emulation', '--disable-cpu-throttling'])
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
