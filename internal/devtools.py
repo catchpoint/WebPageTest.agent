@@ -42,6 +42,7 @@ class DevTools(object):
         self.tab_id = None
         self.use_devtools_video = use_devtools_video
         self.recording_video = False
+        self.stylesheets = {}
         self.prepare()
 
     def prepare(self):
@@ -158,6 +159,11 @@ class DevTools(object):
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
+        # Enable css and js coverage tracking if timeline is enabled
+        if 'codeCoverage' in self.job and self.job['codeCoverage']:
+            self.send_command('DOM.enable', {})
+            self.send_command('CSS.enable', {})
+            self.send_command('CSS.startRuleUsageTracking', {})
         if 'user_agent_string' in self.job:
             self.send_command('Network.setUserAgentOverride',
                               {'userAgent': self.job['user_agent_string']}, wait=True)
@@ -201,6 +207,15 @@ class DevTools(object):
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         self.collect_trace()
+        if 'codeCoverage' in self.job and self.job['codeCoverage']:
+            css_coverage = self.send_command('CSS.takeCoverageDelta ', {}, wait=True)
+            if css_coverage is not None and 'result' in css_coverage:
+                self.process_coverage(css_coverage['result'])
+            css_coverage = self.send_command('CSS.stopRuleUsageTracking', {}, wait=True)
+            if css_coverage is not None and 'result' in css_coverage:
+                self.process_coverage(css_coverage['result'])
+            self.send_command('CSS.disable', {})
+            self.send_command('DOM.disable', {})
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Console.disable', {})
@@ -563,6 +578,8 @@ class DevTools(object):
                 elif category == 'Network':
                     self.process_network_event(event, msg)
                     self.log_dev_tools_event(msg)
+                elif category == 'CSS':
+                    self.process_css_message(event, msg)
                 elif category == 'Inspector':
                     self.process_inspector_event(event)
                 else:
@@ -641,6 +658,18 @@ class DevTools(object):
                     self.nav_error = msg['params']['errorText']
                     logging.debug('Navigation error: %s', self.nav_error)
 
+    def process_css_message(self, event, msg):
+        """Process CSS.* dev tools events"""
+        if event == 'styleSheetAdded':
+            logging.debug(msg)
+            if 'header' in msg['params'] and 'styleSheetId' in msg['params']['header'] and \
+                    'sourceURL' in msg['params']['header']:
+                stylesheet_id = msg['params']['header']['styleSheetId']
+                stylesheet_url = msg['params']['header']['sourceURL']
+                if not len(stylesheet_url):
+                    stylesheet_url = 'Dynamic #{0}'.format(stylesheet_id)
+                self.stylesheets[stylesheet_id] = {'url': stylesheet_url}
+
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
         if event == 'detached':
@@ -673,6 +702,74 @@ class DevTools(object):
                         value = headers[header_name]
                         break
         return value
+
+    def process_coverage(self, css_coverage):
+        """Process the coverage data"""
+        coverage = None
+        if 'ruleUsage' in css_coverage:
+            for rule in css_coverage['ruleUsage']:
+                if 'styleSheetId' in rule and 'used' in rule:
+                    stylesheet_url = 'Dynamic #{0}'.format(rule['styleSheetId'])
+                    if rule['styleSheetId'] not in self.stylesheets:
+                        self.stylesheets[rule['styleSheetId']] = {'url': stylesheet_url}
+                    stylesheet_url = self.stylesheets[rule['styleSheetId']]['url']
+                    if coverage is None:
+                        coverage = {}
+                    if 'CSS' not in coverage:
+                        coverage['CSS'] = {}
+                    if 'text' not in self.stylesheets[rule['styleSheetId']]:
+                        result = self.send_command('CSS.getStyleSheetText',
+                                                   {'styleSheetId': rule['styleSheetId']},
+                                                   wait=True)
+                        if result is not None and 'result' in result and \
+                                'text' in result['result']:
+                            self.stylesheets[rule['styleSheetId']]['text'] = \
+                                result['result']['text']
+                        else:
+                            self.stylesheets[rule['styleSheetId']]['text'] = ''
+                    text = self.stylesheets[rule['styleSheetId']]['text']
+                    if stylesheet_url not in coverage['CSS']:
+                        coverage['CSS'][stylesheet_url] = {'used_bytes': 0,
+                                                           'total_bytes': len(text)}
+                    if rule['used']:
+                        if 'startOffset' in rule and 'endOffset' in rule and \
+                                rule['endOffset'] > rule['startOffset']:
+                            # Chrome 59+ we get explicit byte ranges
+                            coverage['CSS'][stylesheet_url]['used_bytes'] += \
+                                rule['endOffset'] - rule['startOffset'] + 1
+                        elif 'range' in rule:
+                            # Pre-Chrome 59 we only get line/column offsets
+                            coverage['CSS'][stylesheet_url]['used_bytes'] += \
+                                self.bytes_from_range(text, rule['range'])
+        logging.debug(coverage)
+        path = os.path.join(self.task['dir'], self.task['prefix'] + '_code_coverage.json.gz')
+        with gzip.open(path, 'wb', 7) as outfile:
+            outfile.write(json.dumps(coverage))
+
+    def bytes_from_range(self, text, range_info):
+        """Convert a line/column start and end into a byte count"""
+        byte_count = 0
+        try:
+            lines = text.splitlines()
+            line_count = len(lines)
+            start_line = range_info['startLine']
+            end_line = range_info['endLine']
+            if start_line > line_count or end_line > line_count:
+                return 0
+            start_column = range_info['startColumn']
+            end_column = range_info['endColumn']
+            if start_line == end_line:
+                byte_count = end_column - start_column + 1
+            else:
+                # count the whole lines between the partial start and end lines
+                if end_line > start_line + 1:
+                    for row in xrange(start_line + 1, end_line):
+                        byte_count += len(lines[row])
+                byte_count += len(lines[start_line][start_column:])
+                byte_count += end_column
+        except Exception:
+            pass
+        return byte_count
 
 class DevToolsClient(WebSocketClient):
     """DevTools Websocket client"""
@@ -783,4 +880,3 @@ class DevToolsClient(WebSocketClient):
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
-
