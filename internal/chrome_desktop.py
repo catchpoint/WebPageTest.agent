@@ -43,7 +43,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
         self.options = options
-        DesktopBrowser.__init__(self, path, job, options)
+        DesktopBrowser.__init__(self, path, options, job)
         DevtoolsBrowser.__init__(self, options, job)
         self.connected = False
 

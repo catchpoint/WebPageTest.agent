@@ -18,7 +18,7 @@ class DesktopBrowser(object):
     """Desktop Browser base"""
     START_BROWSER_TIME_LIMIT = 30
 
-    def __init__(self, path, job, options):
+    def __init__(self, path, options, job):
         self.path = path
         self.proc = None
         self.job = job
@@ -35,7 +35,7 @@ class DesktopBrowser(object):
         self.cpu_start = None
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
-    def prepare(self, _, task):
+    def prepare(self, _job, task):
         """Prepare the profile/OS for the browser"""
         self.task = task
         self.find_default_interface()

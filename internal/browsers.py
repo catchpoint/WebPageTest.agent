@@ -52,6 +52,10 @@ class Browsers(object):
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
         elif name in self.browsers and 'exe' in self.browsers[name]:
-            from .chrome_desktop import ChromeDesktop
-            browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)
+            if 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Firefox':
+                from .firefox import Firefox
+                browser = Firefox(self.browsers[name]['exe'], self.options, job)
+            else:
+                from .chrome_desktop import ChromeDesktop
+                browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)
         return browser

@@ -236,7 +236,6 @@ class WPTAgent(object):
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
 
-
         # Windows-specific imports
         if platform.system() == "Windows":
             try:
@@ -306,6 +305,16 @@ def find_browsers():
                                        'Application', 'chrome.exe')
             if os.path.isfile(canary_path):
                 browsers['Canary'] = {'exe': canary_path}
+        # Firefox browsers
+        if program_files_x86 is not None and 'Firefox' not in browsers:
+            firefox_path = os.path.join(program_files_x86, 'Mozilla Firefox',
+                                        'firefox.exe')
+            if os.path.isfile(firefox_path):
+                browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+        if program_files_x86 is not None and 'Firefox Nightly' not in browsers:
+            firefox_path = os.path.join(program_files_x86, 'Nightly', 'firefox.exe')
+            if os.path.isfile(firefox_path):
+                browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):

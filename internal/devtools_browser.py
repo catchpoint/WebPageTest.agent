@@ -132,7 +132,8 @@ class DevtoolsBrowser(object):
             end_time = monotonic.monotonic() + task['time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and monotonic.monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and \
+                    monotonic.monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
