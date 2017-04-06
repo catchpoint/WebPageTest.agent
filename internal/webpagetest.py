@@ -26,6 +26,7 @@ class WebPageTest(object):
         self.job = None
         self.session = requests.Session()
         self.options = options
+        self.test_run_count = 0
         # Configurable options
         self.url = options.server
         self.location = options.location
@@ -291,7 +292,7 @@ class WebPageTest(object):
                         'video_directories': [],
                         'page_data': {}}
                 # Set up the task configuration options
-                task['port'] = 9222
+                task['port'] = 9222 + (self.test_run_count % 10)
                 task['task_prefix'] = "{0:d}".format(run)
                 if task['cached']:
                     task['task_prefix'] += "_Cached"
@@ -333,6 +334,7 @@ class WebPageTest(object):
                         task['height'] = job['height']
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
+                self.test_run_count += 1
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)

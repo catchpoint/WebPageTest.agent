@@ -161,6 +161,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         """Stop testing"""
         if self.connected:
             DevtoolsBrowser.disconnect(self)
+        self.adb.adb(['forward', '--remove', 'tcp:{0}'.format(task['port'])])
         # kill the browser
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/' + self.config['command_line_file']])

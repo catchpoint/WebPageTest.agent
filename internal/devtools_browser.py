@@ -16,7 +16,7 @@ from .optimization_checks import OptimizationChecks
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
-    CONNECT_TIME_LIMIT = 60
+    CONNECT_TIME_LIMIT = 30
     CURRENT_VERSION = 1
 
     def __init__(self, options, job, use_devtools_video=True):
