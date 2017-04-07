@@ -352,7 +352,7 @@ class DevtoolsBrowser(object):
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
-            if self.options.android:
+            if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.extend(['--disable-device-emulation', '--disable-cpu-throttling'])
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
