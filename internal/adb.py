@@ -21,6 +21,7 @@ class Adb(object):
         self.kernel = None
         self.short_version = None
         self.last_bytes_rx = 0
+        self.initialized = False
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -399,6 +400,10 @@ class Adb(object):
         if not net_ok:
             logging.info("Device not ready, network not responding")
             is_ready = False
+        if is_ready and not self.initialized:
+            self.initialized = True
+            # Disable emergency alert notifications
+            self.su('pm disable com.android.cellbroadcastreceiver')
         return is_ready
 
     def get_jiffies_time(self):
