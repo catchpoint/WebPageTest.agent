@@ -22,7 +22,7 @@ class TrafficShaper(object):
                 parts = shaper_name.split(',')
                 if_out = parts[1].strip() if len(parts) > 1 else None
                 if_in = 'usb0' if options.rndis else None
-                self.shaper = NetEm(out_interface=if_out, in_interface=if_in)
+                self.shaper = NetEm(out_interface=if_out, in_interface=if_in, options=options)
             elif shaper_name[:6] == 'remote':
                 parts = shaper_name.split(',')
                 if len(parts) == 4:
@@ -39,7 +39,7 @@ class TrafficShaper(object):
                 else:
                     self.shaper = Dummynet()
             elif plat == "Linux":
-                self.shaper = NetEm()
+                self.shaper = NetEm(options=options)
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -279,9 +279,10 @@ class RemoteDummynet(Dummynet):
 #
 class NetEm(object):
     """Linux traffic-shaper using netem/tc"""
-    def __init__(self, out_interface=None, in_interface=None):
+    def __init__(self, out_interface=None, in_interface=None, options={}):
         self.interface = out_interface
         self.in_interface = in_interface
+        self.options = options
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -307,7 +308,11 @@ class NetEm(object):
                 if self.in_interface is None:
                     self.in_interface = 'ifb0'
                 # Set up the ifb interface so inbound traffic can be shaped
-                subprocess.call(['sudo', 'modprobe', 'ifb'])
+
+                if self.options.dockerized:
+                    subprocess.call(['sudo', 'ip', 'link', 'add', 'ifb0', 'type', 'ifb'])
+                else:
+                    subprocess.call(['sudo', 'modprobe', 'ifb'])
                 subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'up'])
                 subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', self.interface,
                                  'ingress'])

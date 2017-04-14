@@ -98,3 +98,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * waitForJSDone (change semantics to console log message)
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
+
+## Run with docker
+Check out [the docker instructions](docs/install.md) for information on how to
+run the agent in a docker container.

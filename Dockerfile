@@ -18,7 +18,8 @@ RUN apt-get update && \
     kmod \
     ffmpeg \
     net-tools \
-    tcpdump
+    tcpdump \
+    bind9utils
 
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
@@ -44,8 +45,8 @@ RUN pip install \
 
 COPY wptagent.py /wptagent/wptagent.py
 COPY internal /wptagent/internal
+COPY ws4py /wptagent/ws4py
 COPY docker/linux-headless/entrypoint.sh /wptagent/entrypoint.sh
-COPY docker/linux-headless/browsers.ini /wptagent/browsers.ini
 
 WORKDIR /wptagent
 
