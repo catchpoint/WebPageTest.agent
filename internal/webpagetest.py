@@ -13,6 +13,7 @@ import subprocess
 import time
 import urllib
 import zipfile
+import monotonic
 import ujson as json
 
 DEFAULT_JPEG_QUALITY = 30
@@ -27,6 +28,9 @@ class WebPageTest(object):
         self.session = requests.Session()
         self.options = options
         self.test_run_count = 0
+        self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
+                                               datefmt="%H:%M:%S")
+        self.log_handler = None
         # Configurable options
         self.url = options.server
         self.location = options.location
@@ -100,6 +104,23 @@ class WebPageTest(object):
                     self.version = git_date.strftime('%y%m%d.%H%m%S')
         except Exception:
             pass
+        # If we are running desktop testing, benchmark the system so we
+        # have a relative measurement for scaling CPU for mobile emulation.
+        self.cpu_scale_multiplier = 1.0
+        if not self.options.android:
+            import hashlib
+            logging.debug('Starting CPU benchmark')
+            hash_val = hashlib.sha256()
+            with open(__file__, 'rb') as f_in:
+                hash_data = f_in.read(4096)
+            start = monotonic.monotonic()
+            # 106k iterations takes ~1 second on the reference machine
+            for _ in xrange(106000):
+                hash_val.update(hash_data)
+            elapsed = monotonic.monotonic() - start
+            self.cpu_scale_multiplier = 1.0 / elapsed
+            logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
+                          elapsed, self.cpu_scale_multiplier)
     # pylint: enable=E0611
 
     def load_from_ec2(self):
@@ -257,6 +278,13 @@ class WebPageTest(object):
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
         task = None
+        if self.log_handler is not None:
+            try:
+                self.log_handler.close()
+                logging.getLogger().removeHandler(self.log_handler)
+                self.log_handler = None
+            except Exception:
+                pass
         if 'current_state' not in job or not job['current_state']['done']:
             if 'run' in job:
                 # Sharded test, running one run only
@@ -315,6 +343,14 @@ class WebPageTest(object):
                     elif 'fvonly' in job and job['fvonly']:
                         job['current_state']['done'] = True
                         task['done'] = True
+                if 'debug' in job and job['debug']:
+                    task['debug_log'] = os.path.join(task['dir'], task['prefix'] + '_debug.log')
+                    try:
+                        self.log_handler = logging.FileHandler(task['debug_log'])
+                        self.log_handler.setFormatter(self.log_formatter)
+                        logging.getLogger().addHandler(self.log_handler)
+                    except Exception:
+                        pass
                 task['block'] = []
                 if 'block' in job:
                     block_list = job['block'].split()
@@ -472,6 +508,23 @@ class WebPageTest(object):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
         cpu_pct = None
+        # Stop logging to the file
+        if self.log_handler is not None:
+            try:
+                self.log_handler.close()
+                logging.getLogger().removeHandler(self.log_handler)
+                self.log_handler = None
+            except Exception:
+                pass
+        if 'debug_log' in task and os.path.isfile(task['debug_log']):
+            debug_out = task['debug_log'] + '.gz'
+            with open(task['debug_log'], 'rb') as f_in:
+                with gzip.open(debug_out, 'wb', 7) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            try:
+                os.remove(task['debug_log'])
+            except Exception:
+                pass
         # Write out the accumulated page_data
         if task['page_data']:
             if 'fullyLoadedCPUpct' in task['page_data']:

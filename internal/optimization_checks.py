@@ -20,6 +20,7 @@ class OptimizationChecks(object):
     def __init__(self, job, task, requests):
         self.job = job
         self.task = task
+        self.running_checks = False
         self.requests = requests
         self.cdn_thread = None
         self.gzip_thread = None
@@ -209,7 +210,9 @@ class OptimizationChecks(object):
 
     def start(self):
         """Start running the optimization checks"""
-        if self.requests is not None:
+        optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
+        if self.requests is not None and not optimization_checks_disabled:
+            self.running_checks = True
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
             self.cdn_thread.start()
@@ -225,46 +228,47 @@ class OptimizationChecks(object):
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
-        logging.debug('Waiting for progressive JPEG check to complete')
-        if self.progressive_thread is not None:
-            self.progressive_thread.join()
-            self.progressive_thread = None
-        logging.debug('Waiting for gzip check to complete')
-        if self.gzip_thread is not None:
-            self.gzip_thread.join()
-            self.gzip_thread = None
-        logging.debug('Waiting for image check to complete')
-        if self.image_thread is not None:
-            self.image_thread.join()
-            self.image_thread = None
-        logging.debug('Waiting for CDN check to complete')
-        if self.cdn_thread is not None:
-            self.cdn_thread.join()
-            self.cdn_thread = None
-        # Merge the results together
-        for request_id in self.cdn_results:
-            if request_id not in self.results:
-                self.results[request_id] = {}
-            self.results[request_id]['cdn'] = self.cdn_results[request_id]
-        for request_id in self.gzip_results:
-            if request_id not in self.results:
-                self.results[request_id] = {}
-            self.results[request_id]['gzip'] = self.gzip_results[request_id]
-        for request_id in self.image_results:
-            if request_id not in self.results:
-                self.results[request_id] = {}
-            self.results[request_id]['image'] = self.image_results[request_id]
-        for request_id in self.progressive_results:
-            if request_id not in self.results:
-                self.results[request_id] = {}
-            self.results[request_id]['progressive'] = self.progressive_results[request_id]
-        # Save the results
-        if self.results:
-            path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
-            gz_file = gzip.open(path, 'wb', 7)
-            if gz_file:
-                gz_file.write(json.dumps(self.results))
-                gz_file.close()
+        if self.running_checks:
+            logging.debug('Waiting for progressive JPEG check to complete')
+            if self.progressive_thread is not None:
+                self.progressive_thread.join()
+                self.progressive_thread = None
+            logging.debug('Waiting for gzip check to complete')
+            if self.gzip_thread is not None:
+                self.gzip_thread.join()
+                self.gzip_thread = None
+            logging.debug('Waiting for image check to complete')
+            if self.image_thread is not None:
+                self.image_thread.join()
+                self.image_thread = None
+            logging.debug('Waiting for CDN check to complete')
+            if self.cdn_thread is not None:
+                self.cdn_thread.join()
+                self.cdn_thread = None
+            # Merge the results together
+            for request_id in self.cdn_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['cdn'] = self.cdn_results[request_id]
+            for request_id in self.gzip_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['gzip'] = self.gzip_results[request_id]
+            for request_id in self.image_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['image'] = self.image_results[request_id]
+            for request_id in self.progressive_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['progressive'] = self.progressive_results[request_id]
+            # Save the results
+            if self.results:
+                path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
+                gz_file = gzip.open(path, 'wb', 7)
+                if gz_file:
+                    gz_file.write(json.dumps(self.results))
+                    gz_file.close()
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""

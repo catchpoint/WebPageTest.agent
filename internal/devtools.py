@@ -154,6 +154,15 @@ class DevTools(object):
         self.recording = True
         if self.use_devtools_video and self.job['video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.png')
+        elif self.mobile_viewport is None and not self.options.android and \
+                'mobile' in self.job and self.job['mobile']:
+            # grab an initial screen shot to get the crop rectangle
+            try:
+                tmp_file = os.path.join(self.task['dir'], 'tmp.png')
+                self.grab_screenshot(tmp_file)
+                os.remove(tmp_file)
+            except Exception:
+                pass
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
@@ -247,6 +256,7 @@ class DevTools(object):
         import zipfile
         requests = self.get_requests()
         if requests:
+            optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
             # see if we also need to zip them up
             zip_file = None
             if 'bodies' in self.job and self.job['bodies']:
@@ -297,11 +307,12 @@ class DevTools(object):
                                         content_encoding.find('deflate') >= 0 or \
                                         content_encoding.find('br') >= 0:
                                     is_compressed = True
-                            if is_image and content_length >= 1400:
-                                need_body = True
-                            if not is_compressed and not is_video and content_length >= 1400:
-                                need_body = True
-                            elif zip_file is not None and is_text:
+                            if not optimization_checks_disabled:
+                                if is_image and content_length >= 1400:
+                                    need_body = True
+                                if not is_compressed and not is_video and content_length >= 1400:
+                                    need_body = True
+                            if zip_file is not None and is_text:
                                 need_body = True
                             if need_body:
                                 response = self.send_command("Network.getResponseBody",
