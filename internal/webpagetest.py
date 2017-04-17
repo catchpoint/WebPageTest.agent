@@ -266,6 +266,7 @@ class WebPageTest(object):
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
+                    job['cpu_scale_multiplier'] = self.cpu_scale_multiplier
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
