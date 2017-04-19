@@ -9,6 +9,36 @@ import time
 import monotonic
 from .android_browser import AndroidBrowser
 
+CHROME_COMMAND_LINE_OPTIONS = [
+    '--disable-fre',
+    '--enable-benchmarking',
+    '--metrics-recording-only',
+    '--disable-geolocation',
+    '--disable-background-networking',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--process-per-tab',
+    '--disable-infobars',
+    '--disable-translate',
+    '--allow-running-insecure-content',
+    '--disable-save-password-bubble',
+    '--disable-background-downloads',
+    '--disable-add-to-shelf',
+    '--disable-client-side-phishing-detection',
+    '--disable-datasaver-prompt',
+    '--disable-default-apps',
+    '--disable-domain-reliability',
+    '--disable-background-timer-throttling',
+    '--safebrowsing-disable-auto-update',
+    '--disable-sync',
+    '--disable-external-intent-requests'
+]
+
+HOST_RULES = [
+    '"MAP cache.pack.google.com 127.0.0.1"',
+    '"MAP clients1.google.com 127.0.0.1"'
+]
+
 START_PAGE = 'http://www.webpagetest.org/blank.html'
 
 class BlackBoxAndroid(AndroidBrowser):
@@ -35,16 +65,38 @@ class BlackBoxAndroid(AndroidBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        # launch the browser
-        activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
-        start_page = START_PAGE
-        if 'startPage' in self.config:
-            start_page = self.config['startPage']
-        self.adb.shell(['am', 'start', '-n', activity, '-a',
-                        'android.intent.action.VIEW', '-d', start_page])
-        if 'startupDelay' in self.config:
-            time.sleep(self.config['startupDelay'])
-        self.wait_for_network_idle()
+        # copy the Chrome command-line just in case it is needed
+        args = list(CHROME_COMMAND_LINE_OPTIONS)
+        host_rules = list(HOST_RULES)
+        if 'host_rules' in task:
+            host_rules.extend(task['host_rules'])
+        args.append('--host-resolver-rules=' + ','.join(host_rules))
+        if 'ignoreSSL' in job and job['ignoreSSL']:
+            args.append('--ignore-certificate-errors')
+        command_line = 'chrome ' + ' '.join(args)
+        if 'addCmdLine' in job:
+            command_line += ' ' + job['addCmdLine']
+        local_command_line = os.path.join(task['dir'], 'chrome-command-line')
+        remote_command_line = '/data/local/tmp/chrome-command-line'
+        root_command_line = '/data/local/chrome-command-line'
+        logging.debug(command_line)
+        with open(local_command_line, 'wb') as f_out:
+            f_out.write(command_line)
+        if self.adb.adb(['push', local_command_line, remote_command_line]):
+            os.remove(local_command_line)
+            # try copying it to /data/local for rooted devices that need it there
+            if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
+                self.adb.su('chmod 666 {0}'.format(root_command_line))
+            # launch the browser
+            activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
+            start_page = START_PAGE
+            if 'startPage' in self.config:
+                start_page = self.config['startPage']
+            self.adb.shell(['am', 'start', '-n', activity, '-a',
+                            'android.intent.action.VIEW', '-d', start_page])
+            if 'startupDelay' in self.config:
+                time.sleep(self.config['startupDelay'])
+            self.wait_for_network_idle()
 
     def run_task(self, task):
         """Skip anything that isn't a navigate command"""
@@ -77,6 +129,8 @@ class BlackBoxAndroid(AndroidBrowser):
         """Stop testing"""
         # kill the browser
         self.adb.shell(['am', 'force-stop', self.config['package']])
+        self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
+        self.adb.su('rm /data/local/chrome-command-line')
 
     def on_stop_recording(self, task):
         """Collect post-test data"""
