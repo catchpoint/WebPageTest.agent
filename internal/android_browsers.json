@@ -19,6 +19,38 @@
     "activity": "com.google.android.apps.chrome.Main",
     "type": "chrome"
   },
+  "Chrome Black Box": {
+    "package": "com.android.chrome",
+    "activity": "com.google.android.apps.chrome.Main",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
+  "Chrome Beta Black Box": {
+    "package": "com.chrome.beta",
+    "activity": "com.google.android.apps.chrome.Main",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
+  "Chrome Dev Black Box": {
+    "package": "com.chrome.dev",
+    "activity": "com.google.android.apps.chrome.Main",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
+  "Chrome Canary Black Box": {
+    "package": "com.chrome.canary",
+    "activity": "com.google.android.apps.chrome.Main",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
   "UC Mini": {
     "package": "com.uc.browser.en", 
     "activity": "com.uc.browser.ActivityBrowser",

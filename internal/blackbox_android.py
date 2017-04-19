@@ -37,8 +37,11 @@ class BlackBoxAndroid(AndroidBrowser):
         """Launch the browser"""
         # launch the browser
         activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
+        start_page = START_PAGE
+        if 'startPage' in self.config:
+            start_page = self.config['startPage']
         self.adb.shell(['am', 'start', '-n', activity, '-a',
-                        'android.intent.action.VIEW', '-d', START_PAGE])
+                        'android.intent.action.VIEW', '-d', start_page])
         if 'startupDelay' in self.config:
             time.sleep(self.config['startupDelay'])
         self.wait_for_network_idle()
