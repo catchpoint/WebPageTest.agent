@@ -274,7 +274,7 @@ class DevTools(object):
                     content_length = self.get_header_value(request['response_headers'],
                                                            'Content-Length')
                     if content_length is not None:
-                        content_length = int(content_length)
+                        content_length = int(re.search(r'\d+', str(content_length)).group())
                     elif 'transfer_size' in request:
                         content_length = request['transfer_size']
                     if content_length > 0:
@@ -426,7 +426,9 @@ class DevTools(object):
                                 logging.debug(raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
-                                if 'id' in msg and int(msg['id']) == self.command_id:
+                                if 'id' in msg and \
+                                    int(re.search(r'\d+', str(msg['id'])).group()) == \
+                                    self.command_id:
                                     ret = msg
                         except Exception:
                             pass

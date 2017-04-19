@@ -309,7 +309,7 @@ class OptimizationChecks(object):
         if 'response_headers' in request:
             content_length = self.get_header_value(request['response_headers'], 'Content-Length')
             if content_length is not None:
-                content_length = int(content_length)
+                content_length = int(re.search(r'\d+', str(content_length)).group())
                 if content_length == 0:
                     return is_static, time_remaining
             if 'response_headers' in request:
@@ -337,7 +337,8 @@ class OptimizationChecks(object):
                                 time_remaining = int(matches.groupdict().get('maxage'))
                                 age = self.get_header_value(request['response_headers'], 'Age')
                                 if age is not None:
-                                    time_remaining -= int(age.strip())
+                                    time_remaining -= int(re.search(r'\d+',
+                                                                    str(age).strip()).group())
                         elif expires is not None:
                             date = self.get_header_value(request['response_headers'], 'Date')
                             exp = time.mktime(parsedate(expires))
@@ -490,7 +491,7 @@ class OptimizationChecks(object):
                 content_length = self.get_header_value(request['response_headers'],
                                                        'Content-Length')
                 if content_length is not None:
-                    content_length = int(content_length)
+                    content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
                 check = {'score': 0, 'size': content_length, 'target_size': content_length}
@@ -547,7 +548,7 @@ class OptimizationChecks(object):
                 content_length = self.get_header_value(request['response_headers'],
                                                        'Content-Length')
                 if content_length is not None:
-                    content_length = int(content_length)
+                    content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
                 check = {'score': -1, 'size': content_length, 'target_size': content_length}

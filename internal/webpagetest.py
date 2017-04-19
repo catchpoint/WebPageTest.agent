@@ -188,7 +188,7 @@ class WebPageTest(object):
                     elif key == 'wpt_key':
                         self.key = value
                     elif key == 'wpt_timeout':
-                        self.time_limit = int(value)
+                        self.time_limit = int(re.search(r'\d+', str(value)).group())
                     elif key == 'wpt_username':
                         self.auth_name = value
                     elif key == 'wpt_password':
@@ -290,7 +290,8 @@ class WebPageTest(object):
             if 'run' in job:
                 # Sharded test, running one run only
                 if 'current_state' not in job:
-                    job['current_state'] = {"run": int(job['run']), "repeat_view": False,
+                    job['current_state'] = {"run": int(re.search(r'\d+', str(job['run'])).group()),
+                                            "repeat_view": False,
                                             "done": False}
                 elif not job['current_state']['repeat_view'] and \
                         ('fvonly' not in job or not job['fvonly']):
@@ -406,8 +407,8 @@ class WebPageTest(object):
                     elif command == 'setbrowsersize' or command == 'setviewportsize':
                         keep = False
                         if target is not None and value is not None:
-                            width = int(target)
-                            height = int(value)
+                            width = int(re.search(r'\d+', str(target)).group())
+                            height = int(re.search(r'\d+', str(value)).group())
                             if width > 0 and height > 0 and width < 10000 and height < 10000:
                                 job['width'] = width
                                 job['height'] = height
@@ -417,7 +418,7 @@ class WebPageTest(object):
                     elif command == 'settimeout':
                         keep = False
                         if target is not None:
-                            time_limit = int(target)
+                            time_limit = int(re.search(r'\d+', str(target)).group())
                             if time_limit > 0 and time_limit < 1200:
                                 job['timeout'] = time_limit
                     elif command == 'blockdomains':

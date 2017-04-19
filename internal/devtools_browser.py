@@ -69,10 +69,18 @@ class DevtoolsBrowser(object):
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
                 self.devtools.send_command("Emulation.setDeviceMetricsOverride",
-                                           {"width": int(self.job['width']),
-                                            "height": int(self.job['height']),
-                                            "screenWidth": int(self.job['width']),
-                                            "screenHeight": int(self.job['height']),
+                                           {"width":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['width'])).group()),
+                                            "height":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['height'])).group()),
+                                            "screenWidth":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['width'])).group()),
+                                            "screenHeight":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['height'])).group()),
                                             "scale": 1,
                                             "positionX": 0,
                                             "positionY": 0,
@@ -81,8 +89,12 @@ class DevtoolsBrowser(object):
                                             "fitWindow": False},
                                            wait=True)
                 self.devtools.send_command("Emulation.setVisibleSize",
-                                           {"width": int(self.job['width']),
-                                            "height": int(self.job['height'])},
+                                           {"width":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['width'])).group()),
+                                            "height":
+                                            int(re.search(r'\d+',
+                                                          str(self.job['height'])).group())},
                                            wait=True)
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
@@ -284,7 +296,7 @@ class DevtoolsBrowser(object):
             self.devtools.send_command('Page.navigate', {'url': command['target']})
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
-            if int(command['target']):
+            if int(re.search(r'\d+', str(command['target'])).group()):
                 logging.debug("Data logging enabled")
                 self.task['log_data'] = True
             else:
@@ -300,14 +312,17 @@ class DevtoolsBrowser(object):
                 self.devtools.start_navigating()
             self.devtools.execute_js(command['target'])
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(command['target'])))
+            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
                 time.sleep(delay)
         elif command['command'] == 'setabm':
-            self.task['stop_at_onload'] = bool('target' in command and int(command['target']) == 0)
+            self.task['stop_at_onload'] = bool('target' in command and \
+                                               int(re.search(r'\d+',
+                                                             str(command['target'])).group()) == 0)
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
-                self.task['activity_time'] = max(0, min(30, int(command['target'])))
+                self.task['activity_time'] = \
+                    max(0, min(30, int(re.search(r'\d+', str(command['target'])).group())))
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':

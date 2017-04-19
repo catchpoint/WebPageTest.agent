@@ -22,7 +22,7 @@ class TrafficShaper(object):
                 parts = shaper_name.split(',')
                 if_out = parts[1].strip() if len(parts) > 1 else None
                 if_in = 'usb0' if options.rndis else None
-                self.shaper = NetEm(out_interface=if_out, in_interface=if_in, options=options)
+                self.shaper = NetEm(options=options, out_interface=if_out, in_interface=if_in)
             elif shaper_name[:6] == 'remote':
                 parts = shaper_name.split(',')
                 if len(parts) == 4:
@@ -68,13 +68,13 @@ class TrafficShaper(object):
         ret = False
         in_bps = 0
         if 'bwIn' in job:
-            in_bps = int(job['bwIn']) * 1000
+            in_bps = int(re.search(r'\d+', str(job['bwIn'])).group()) * 1000
         out_bps = 0
         if 'bwOut' in job:
-            out_bps = int(job['bwOut']) * 1000
+            out_bps = int(re.search(r'\d+', str(job['bwOut'])).group()) * 1000
         rtt = 0
         if 'latency' in job:
-            rtt = int(job['latency'])
+            rtt = int(re.search(r'\d+', str(job['latency'])).group())
         plr = .0
         if 'plr' in job:
             plr = float(job['plr'])
@@ -279,7 +279,7 @@ class RemoteDummynet(Dummynet):
 #
 class NetEm(object):
     """Linux traffic-shaper using netem/tc"""
-    def __init__(self, out_interface=None, in_interface=None, options={}):
+    def __init__(self, options, out_interface=None, in_interface=None):
         self.interface = out_interface
         self.in_interface = in_interface
         self.options = options
