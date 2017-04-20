@@ -2,9 +2,12 @@
 
 To run the agent, simply specify a few environment variables with docker:
 
-* `SERVER_URL` will be passed as `--server`
-* `LOCATION` will be passed as `--location`
-* `NAME` will be passed as `--name` (optional)
+* `SERVER_URL`: will be passed as `--server`
+* `LOCATION`: will be passed as `--location`
+* `NAME`: will be passed as `--name` (optional)
+* `UPDATE_POLICY`: If set to `always` (default) the container automatically installs updates.
+  Otherwise it simply runs the agent.
+* `GIT_BRANCH`: The branch to update the agent code if updates are enabled. Defaults to `master`
 
 ## Prerequisites to use traffic shaping in docker
 **Experimental**: Running the agent with traffic shaping is experimental. It might
