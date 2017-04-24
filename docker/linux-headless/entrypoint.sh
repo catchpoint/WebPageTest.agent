@@ -17,4 +17,33 @@ if [ -n "$NAME" ]; then
   EXTRA_ARGS="$EXTRA_ARGS --name $NAME"
 fi
 
-python /wptagent/wptagent.py --server $SERVER_URL --location $LOCATION $EXTRA_ARGS --xvfb --dockerized -vvvvv
+GIT_REMOTE=${GIT_REMOTE:-"https://github.com/WPO-Foundation/wptagent.git"}
+GIT_BRANCH="${GIT_BRANCH:-master}"
+UPDATE_POLICY="${UPDATE_POLICY:-auto}"
+
+function run_updates {
+  git pull origin ${GIT_BRANCH}
+  sudo apt-get update
+  sudo apt-get -y upgrade
+  sudo apt-get -y dist-upgrade
+  sudo apt-get -y autoremove
+  sudo npm update -g
+}
+
+function run_agent {
+  python /wptagent/wptagent.py --server "${SERVER_URL}" --location "${LOCATION}" ${EXTRA_ARGS} --xvfb --dockerized -vvvvv
+}
+
+if [ "${UPDATE_POLICY}" == "auto" ]; then
+  git remote remove origin || true
+  git remote add origin "${GIT_REMOTE}"
+  EXTRA_ARGS="${EXTRA_ARGS} --exit 60"
+  while true; do
+    run_updates
+    run_agent
+    echo "Exited, restarting"
+    sleep 1
+  done
+else
+  run_agent
+fi
