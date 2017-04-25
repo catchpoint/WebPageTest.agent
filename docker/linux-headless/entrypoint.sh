@@ -17,6 +17,10 @@ if [ -n "$NAME" ]; then
   EXTRA_ARGS="$EXTRA_ARGS --name $NAME"
 fi
 
+if [ -n "$KEY" ]; then
+  EXTRA_ARGS="$EXTRA_ARGS --key $KEY"
+fi
+
 GIT_REMOTE=${GIT_REMOTE:-"https://github.com/WPO-Foundation/wptagent.git"}
 GIT_BRANCH="${GIT_BRANCH:-master}"
 UPDATE_POLICY="${UPDATE_POLICY:-auto}"

@@ -4,6 +4,7 @@ To run the agent, simply specify a few environment variables with docker:
 
 * `SERVER_URL`: will be passed as `--server`
 * `LOCATION`: will be passed as `--location`
+* `KEY`: will be passed as `--key`
 * `NAME`: will be passed as `--name` (optional)
 * `UPDATE_POLICY`: If set to `always` (default) the container automatically installs updates.
   Otherwise it simply runs the agent.
