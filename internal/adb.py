@@ -6,12 +6,12 @@ import logging
 import os
 import re
 import subprocess
-import time
 from threading import Timer
+import ujson as json
 
 class Adb(object):
     """ADB command-line interface"""
-    def __init__(self, options):
+    def __init__(self, options, cache_dir):
         self.device = options.device
         self.rndis = options.rndis
         self.ping_address = None
@@ -22,6 +22,12 @@ class Adb(object):
         self.short_version = None
         self.last_bytes_rx = 0
         self.initialized = False
+        self.cache_dir = cache_dir
+        self.package_cache = os.path.join(cache_dir, 'adb.package.cache')
+        self.package_versions = {}
+        if os.path.isfile(self.package_cache):
+            with open(self.package_cache, 'rb') as f_in:
+                self.package_versions = json.load(f_in)
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -453,3 +459,23 @@ class Adb(object):
         self.shell(['rm', '/data/local/tmp/wpt_screenshot.png'], silent=True)
         self.shell(['screencap', '-p', device_path])
         self.adb(['pull', device_path, dest_file])
+
+    def get_package_version(self, package):
+        """Get the version number of the given package"""
+        version = None
+        out = self.shell(['dumpsys', 'package', package, '|', 'grep',
+                          'versionName', '|', 'head', '-n1'])
+        if out is not None:
+            separator = out.find('=')
+            if separator > -1:
+                ver = out[separator + 1:].strip()
+                if len(ver):
+                    version = ver
+                    if package not in self.package_versions or \
+                            self.package_versions[package] != ver:
+                        self.package_versions[package] = ver
+                        with open(self.package_cache, 'wb') as f_out:
+                            json.dump(self.package_versions, f_out)
+        if version is None and package in self.package_versions:
+            version = self.package_versions[package]
+        return version

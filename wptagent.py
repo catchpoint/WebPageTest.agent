@@ -22,14 +22,15 @@ class WPTAgent(object):
         from internal.adb import Adb
         self.must_exit = False
         self.options = options
-        self.adb = Adb(self.options) if self.options.android else None
-        self.browsers = Browsers(options, browsers, self.adb)
-        self.root_path = os.path.abspath(os.path.dirname(__file__))
-        self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
-        self.shaper = TrafficShaper(options)
         self.job = None
         self.task = None
         self.xvfb = None
+        self.root_path = os.path.abspath(os.path.dirname(__file__))
+        self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
+        self.persistent_work_dir = self.wpt.get_persistent_dir()
+        self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
+        self.browsers = Browsers(options, browsers, self.adb)
+        self.shaper = TrafficShaper(options)
         atexit.register(self.cleanup)
         signal.signal(signal.SIGINT, self.signal_handler)
 

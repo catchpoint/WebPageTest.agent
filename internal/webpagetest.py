@@ -123,6 +123,10 @@ class WebPageTest(object):
                           elapsed, self.cpu_scale_multiplier)
     # pylint: enable=E0611
 
+    def get_persistent_dir(self):
+        """Return the path to the persistent cache directory"""
+        return self.persistent_dir
+
     def load_from_ec2(self):
         """Load config settings from EC2 user data"""
         import requests

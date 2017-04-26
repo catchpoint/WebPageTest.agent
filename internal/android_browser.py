@@ -86,12 +86,9 @@ class AndroidBrowser(object):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
             task['page_data']['osVersion'] = self.adb.version
-            out = self.adb.shell(['dumpsys', 'package', self.config['package'], '|', 'grep',
-                                  'versionName', '|', 'head', '-n1'])
-            if out is not None:
-                separator = out.find('=')
-                if separator > -1:
-                    task['page_data']['browserVersion'] = out[separator + 1:].strip()
+            version = self.adb.get_package_version(self.config['package'])
+            if version is not None:
+                task['page_data']['browserVersion'] = version
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled:
