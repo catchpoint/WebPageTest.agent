@@ -71,7 +71,7 @@ class WPTAgent(object):
                 if self.job is not None:
                     self.job = None
                 else:
-                    self.sleep(5)
+                    self.sleep(self.options.polling)
             except Exception as err:
                 msg = ''
                 if err is not None and err.__str__() is not None:
@@ -364,6 +364,8 @@ def main():
     parser.add_argument('--location',
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
+    parser.add_argument('--polling', type=int, default=5,
+                        help='Polling interval for work (defaults to 5 seconds).')
 
     # Traffic-shaping options (defaults to host-based)
     parser.add_argument('--shaper', help='Override default traffic shaper. '\
