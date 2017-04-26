@@ -159,6 +159,7 @@ class DevtoolsBrowser(object):
                         recording = False
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
+                        self.process_devtools_requests(task)
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
@@ -253,6 +254,26 @@ class DevtoolsBrowser(object):
                     os.remove(trace_file)
                 except Exception:
                     pass
+
+    def process_devtools_requests(self, task):
+        """Process the devtools log and pull out the requests information"""
+        path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        devtools_file = path_base + '_devtools.json.gz'
+        if os.path.isfile(devtools_file):
+            devtools_parser = os.path.join(self.support_path, "devtools-parser.py")
+            cmd = ['python', devtools_parser, '-vvvv', '--devtools', devtools_file]
+            netlog = path_base + '_netlog_requests.json.gz'
+            if os.path.isfile(netlog):
+                cmd.extend(['--netlog', netlog])
+            optimization = path_base + '_optimization.json.gz'
+            if os.path.isfile(optimization):
+                cmd.extend(['--optimization', optimization])
+            if task['cached']:
+                cmd.append('--cached')
+            out_file = path_base + '_devtools_requests.json.gz'
+            cmd.extend(['--out', out_file])
+            logging.debug(cmd)
+            subprocess.call(cmd)
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
