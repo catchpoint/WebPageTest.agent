@@ -266,6 +266,8 @@ class WebPageTest(object):
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
+                    job['keep_lighthouse_trace'] = \
+                            bool('lighthouseTrace' in job and job['lighthouseTrace'])
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['interface'] = None

@@ -2,6 +2,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for browsers that speak the dev tools protocol"""
+import glob
 import gzip
 import logging
 import os
@@ -388,6 +389,8 @@ class DevtoolsBrowser(object):
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
+            if self.job['keep_lighthouse_trace']:
+                command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.extend(['--disable-device-emulation', '--disable-cpu-throttling'])
             command.append('"{0}"'.format(self.job['url']))
@@ -405,6 +408,32 @@ class DevtoolsBrowser(object):
             finally:
                 if timer is not None:
                     timer.cancel()
+            # Rename and compress the trace file, delete the other assets
+            if self.job['keep_lighthouse_trace']:
+                try:
+                    lh_trace_src = os.path.join(task['dir'], 'lighthouse-0.trace.json')
+                    if os.path.isfile(lh_trace_src):
+                        # read the JSON in and re-write it line by line to match the other traces
+                        with open(lh_trace_src, 'rb') as f_in:
+                            trace = json.load(f_in)
+                            if trace is not None and 'traceEvents' in trace:
+                                lighthouse_trace = os.path.join(task['dir'],
+                                                                'lighthouse_trace.json.gz')
+                            with gzip.open(lighthouse_trace, 'wb', 7) as f_out:
+                                f_out.write('{"traceEvents":[{}')
+                                for trace_event in trace['traceEvents']:
+                                    f_out.write(",\n")
+                                    f_out.write(json.dumps(trace_event))
+                                f_out.write("\n]}")
+                except Exception:
+                    pass
+            # Delete all the left-over lighthouse assets
+            files = glob.glob(os.path.join(task['dir'], 'lighthouse-*'))
+            for file_path in files:
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
             if os.path.isfile(json_file):
                 # Remove the raw screenshots if they were stored with the file
                 lh_report = None
