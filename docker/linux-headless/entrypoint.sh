@@ -31,7 +31,7 @@ function run_updates {
   sudo apt-get -y upgrade
   sudo apt-get -y dist-upgrade
   sudo apt-get -y autoremove
-  sudo npm update -g
+  sudo npm -g outdated --parseable=true | cut -d : -f 4 | xargs -n 1 sudo npm -g install
 }
 
 function run_agent {
