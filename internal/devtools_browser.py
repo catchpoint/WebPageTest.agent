@@ -239,7 +239,7 @@ class DevtoolsBrowser(object):
             netlog = path_base + '_netlog_requests.json.gz'
             v8_stats = path_base + '_v8stats.json.gz'
             trace_parser = os.path.join(self.support_path, "trace-parser.py")
-            cmd = ['python', trace_parser, '-t', trace_file, '-u', user_timing,
+            cmd = ['python', trace_parser, '-vvvv', '-t', trace_file, '-u', user_timing,
                    '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
                    '-i', interactive, '-n', netlog, '-s', v8_stats]
             logging.debug(cmd)
