@@ -184,14 +184,15 @@ class DevTools(object):
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
                 else:
-                    trace = "-*,blink,v8,cc,gpu,blink.net,disabled-by-default-v8.runtime_stats"
+                    trace = "-*,toplevel,blink,v8,cc,gpu,blink.net," \
+                            "disabled-by-default-v8.runtime_stats"
             else:
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
-                trace += ",blink.console,disabled-by-default-devtools.timeline,devtools.timeline"
-                trace += ",disabled-by-default-blink.feature_usage"
-                trace += ",toplevel,disabled-by-default-devtools.timeline.frame"
-                trace += "devtools.timeline.frame"
+                trace += ",blink.console,disabled-by-default-devtools.timeline,devtools.timeline" \
+                         ",disabled-by-default-blink.feature_usage" \
+                         ",disabled-by-default-devtools.timeline.frame" \
+                         "devtools.timeline.frame"
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
@@ -226,7 +227,7 @@ class DevTools(object):
         if self.trace_enabled:
             self.trace_enabled = False
             video_prefix = self.video_prefix if self.recording_video else None
-            self.websocket.start_processing_trace(self.path_base + '_trace.json', video_prefix,
+            self.websocket.start_processing_trace(self.path_base, video_prefix,
                                                   self.options, self.job, self.border_color)
             self.send_command('Tracing.end', {})
             start = monotonic.monotonic()
@@ -725,7 +726,6 @@ class DevToolsClient(WebSocketClient):
                                  ssl_options, headers)
         self.connected = False
         self.messages = Queue.Queue()
-        self.trace_file_path = None
         self.trace_file = None
         self.video_prefix = None
         self.trace_ts_start = None
@@ -734,6 +734,8 @@ class DevToolsClient(WebSocketClient):
         self.job = None
         self.last_image = None
         self.video_viewport = None
+        self.path_base = None
+        self.trace_parser = None
         self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
         self.trace_done = re.compile(r'method"\s*:\s*"Tracing.tracingComplete')
 
@@ -754,7 +756,7 @@ class DevToolsClient(WebSocketClient):
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
                 compare = message[:50]
                 is_trace_data = False
-                if self.trace_file_path is not None and self.trace_data.search(compare):
+                if self.path_base is not None and self.trace_data.search(compare):
                     is_trace_data = True
                     msg = json.loads(message)
                     self.messages.put('{"method":"got_message"}')
@@ -782,11 +784,11 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, trace_file, video_prefix, options, job, video_border_color):
+    def start_processing_trace(self, path_base, video_prefix, options, job, video_border_color):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
-        self.trace_file_path = trace_file
+        self.path_base = path_base
         self.video_prefix = video_prefix
         self.border_color = video_border_color
         self.options = options
@@ -796,8 +798,8 @@ class DevToolsClient(WebSocketClient):
     def stop_processing_trace(self):
         """All done"""
         self.trace_ts_start = None
-        self.trace_file_path = None
         if self.trace_file is not None:
+            self.trace_file.write("\n]}")
             self.trace_file.close()
             self.trace_file = None
         self.border_color = None
@@ -805,13 +807,31 @@ class DevToolsClient(WebSocketClient):
         self.job = None
         self.video_viewport = None
         self.last_image = None
+        if self.trace_parser is not None and self.path_base is not None:
+            logging.debug("Processing the trace events")
+            start = monotonic.monotonic()
+            self.trace_parser.ProcessTraceEvents()
+            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
+            self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
+            self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
+            self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
+            self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
+            self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
+            self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
+            elapsed = monotonic.monotonic() - start
+            logging.debug("Done processing the trace events: %0.3fs", elapsed)
+        self.trace_parser = None
+        self.path_base = None
 
     def process_trace_event(self, msg):
         """Process Tracing.* dev tools events"""
         if 'params' in msg and 'value' in msg['params'] and len(msg['params']['value']):
             if self.trace_file is None:
-                self.trace_file = open(self.trace_file_path, 'wb')
+                self.trace_file = gzip.open(self.path_base + '_trace.json.gz',
+                                            'wb', compresslevel=7)
                 self.trace_file.write('{"traceEvents":[{}')
+                from internal.support.trace_parser import Trace
+                self.trace_parser = Trace()
             # write out the trace events one-per-line but pull out any
             # devtools screenshots as separate files.
             if self.trace_file is not None:
@@ -843,8 +863,11 @@ class DevToolsClient(WebSocketClient):
                                             image_file.write(base64.b64decode(img))
                                         self.crop_video_frame(path)
                     if not is_screenshot:
+                        # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
+                        if self.trace_parser is not None:
+                            self.trace_parser.FilterTraceEvent(trace_event)
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
 
     def crop_video_frame(self, path):

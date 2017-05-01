@@ -176,27 +176,9 @@ class DevtoolsBrowser(object):
             # Start the processing that can run in a background thread
             optimization = OptimizationChecks(self.job, task, self.get_requests())
             optimization.start()
-            trace_thread = threading.Thread(target=self.process_trace)
-            trace_thread.start()
-            # Run the rest of the post-processing
+            # Run the video post-processing
             if self.use_devtools_video and  self.job['video']:
                 self.process_video()
-            # gzip the trace file
-            logging.debug('Compressing the trace file')
-            trace_file = os.path.join(task['dir'],
-                                      task['prefix'] + '_trace.json')
-            trace_gzip = trace_file + '.gz'
-            if os.path.isfile(trace_file):
-                with open(trace_file, 'rb') as f_in:
-                    with gzip.open(trace_gzip, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-            logging.debug('Waiting for trace processing to complete')
-            trace_thread.join()
-            if os.path.isfile(trace_gzip) and os.path.isfile(trace_file):
-                try:
-                    os.remove(trace_file)
-                except Exception:
-                    pass
             optimization.join()
 
     def wait_for_processing(self, task):
@@ -225,36 +207,6 @@ class DevtoolsBrowser(object):
         from internal.video_processing import VideoProcessing
         video = VideoProcessing(self.job, self.task)
         video.process()
-
-    def process_trace(self):
-        """Post-process the trace file"""
-        path_base = os.path.join(self.task['dir'], self.task['prefix'])
-        trace_file = path_base + '_trace.json'
-        if os.path.isfile(trace_file):
-            user_timing = path_base + '_user_timing.json.gz'
-            cpu_slices = path_base + '_timeline_cpu.json.gz'
-            script_timing = path_base + '_script_timing.json.gz'
-            feature_usage = path_base + '_feature_usage.json.gz'
-            interactive = path_base + '_interactive.json.gz'
-            netlog = path_base + '_netlog_requests.json.gz'
-            v8_stats = path_base + '_v8stats.json.gz'
-            trace_parser = os.path.join(self.support_path, "trace-parser.py")
-            cmd = ['python', trace_parser, '-vvvv', '-t', trace_file, '-u', user_timing,
-                   '-c', cpu_slices, '-j', script_timing, '-f', feature_usage,
-                   '-i', interactive, '-n', netlog, '-s', v8_stats]
-            logging.debug(cmd)
-            start = monotonic.monotonic()
-            subprocess.call(cmd)
-            elapsed = monotonic.monotonic() - start
-            logging.debug("Time to process trace: %0.3f sec", elapsed)
-            # delete the trace file if it wasn't requested
-            trace_enabled = bool('trace' in self.job and self.job['trace'])
-            timeline_enabled = bool('timeline' in self.job and self.job['timeline'])
-            if not trace_enabled and not timeline_enabled:
-                try:
-                    os.remove(trace_file)
-                except Exception:
-                    pass
 
     def process_devtools_requests(self, task):
         """Process the devtools log and pull out the requests information"""
