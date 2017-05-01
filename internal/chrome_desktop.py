@@ -5,6 +5,7 @@
 import gzip
 import os
 import shutil
+import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -75,8 +76,20 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
-        DesktopBrowser.launch_browser(self, command_line)
-        if DevtoolsBrowser.connect(self, task):
+        # re-try launching and connecting a few times if necessary
+        connected = False
+        count = 0
+        while not connected and count < 3:
+            count += 1
+            DesktopBrowser.launch_browser(self, command_line)
+            if DevtoolsBrowser.connect(self, task):
+                connected = True
+            elif count < 3:
+                DesktopBrowser.stop(self, job, task)
+                if 'error' in task and task['error'] is not None:
+                    task['error'] = None
+                time.sleep(10)
+        if connected:
             self.connected = True
             DevtoolsBrowser.prepare_browser(self, task)
             DevtoolsBrowser.navigate(self, START_PAGE)
