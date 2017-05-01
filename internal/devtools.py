@@ -732,6 +732,7 @@ class DevToolsClient(WebSocketClient):
         self.border_color = None
         self.options = None
         self.job = None
+        self.last_image = None
         self.video_viewport = None
         self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
         self.trace_done = re.compile(r'method"\s*:\s*"Tracing.tracingComplete')
@@ -783,12 +784,14 @@ class DevToolsClient(WebSocketClient):
 
     def start_processing_trace(self, trace_file, video_prefix, options, job, video_border_color):
         """Write any trace events to the given file"""
+        self.last_image = None
         self.trace_ts_start = None
         self.trace_file_path = trace_file
         self.video_prefix = video_prefix
         self.border_color = video_border_color
         self.options = options
         self.job = job
+        self.video_viewport = None
 
     def stop_processing_trace(self):
         """All done"""
@@ -797,6 +800,11 @@ class DevToolsClient(WebSocketClient):
         if self.trace_file is not None:
             self.trace_file.close()
             self.trace_file = None
+        self.border_color = None
+        self.options = None
+        self.job = None
+        self.video_viewport = None
+        self.last_image = None
 
     def process_trace_event(self, msg):
         """Process Tracing.* dev tools events"""
@@ -825,11 +833,15 @@ class DevToolsClient(WebSocketClient):
                                 ms_elapsed = int(round(float(trace_event['ts'] - \
                                                              self.trace_ts_start) / 1000.0))
                                 if ms_elapsed >= 0:
+                                    img = trace_event['args']['snapshot']
                                     path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
-                                    with open(path, 'wb') as image_file:
-                                        image_file.write(
-                                            base64.b64decode(trace_event['args']['snapshot']))
-                                    self.crop_video_frame(path)
+                                    if self.last_image is not None and self.last_image == img:
+                                        logging.debug('Dropping duplicate image: %s', path)
+                                    else:
+                                        with open(path, 'wb') as image_file:
+                                            self.last_image = str(img)
+                                            image_file.write(base64.b64decode(img))
+                                        self.crop_video_frame(path)
                     if not is_screenshot:
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
