@@ -328,7 +328,7 @@ class WebPageTest(object):
                         'video_directories': [],
                         'page_data': {}}
                 # Set up the task configuration options
-                task['port'] = 9222 + (self.test_run_count % 10)
+                task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
                 if task['cached']:
                     task['task_prefix'] += "_Cached"
