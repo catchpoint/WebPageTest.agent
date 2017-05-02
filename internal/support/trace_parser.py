@@ -379,9 +379,11 @@ class Trace():
                             int(self.cpu['slices'][thread][name]
                                 [slice] * self.cpu['slice_usecs'])
 
-    def ProcessTimelineEvent(self, timeline_event, parent):
+    def ProcessTimelineEvent(self, timeline_event, parent, stack = None):
         start = timeline_event['s'] - self.start_time
         end = timeline_event['e'] - self.start_time
+        if stack is None:
+            stack = {}
         if end > start:
             elapsed = end - start
             thread = timeline_event['t']
@@ -414,17 +416,23 @@ class Trace():
                     self.scripts[thread][script] = {}
                 if name not in self.scripts[thread][script]:
                     self.scripts[thread][script][name] = []
+                if thread not in stack:
+                    stack[thread] = {}
+                if script not in stack[thread]:
+                    stack[thread][script] = {}
+                if name not in self.scripts[thread][script]:
+                    stack[thread][script][name] = []
                 # make sure the script duration isn't already covered by a
                 # parent event
-                # TODO: Optimize this lookup, it is a very hot/slow spot
                 new_duration = True
-                if len(self.scripts[thread][script][name]):
-                    for period in self.scripts[thread][script][name]:
+                if len(stack[thread][script][name]):
+                    for period in stack[thread][script][name]:
                         if len(period) >= 2 and js_start >= period[0] and js_end <= period[1]:
                             new_duration = False
                             break
                 if new_duration:
                     self.scripts[thread][script][name].append([js_start, js_end])
+                    stack[thread][script][name].append([js_start, js_end])
 
             slice_usecs = self.cpu['slice_usecs']
             first_slice = int(float(start) / float(slice_usecs))
@@ -441,7 +449,7 @@ class Trace():
             # Recursively process any child events
             if 'c' in timeline_event:
                 for child in timeline_event['c']:
-                    self.ProcessTimelineEvent(child, name)
+                    self.ProcessTimelineEvent(child, name, dict(stack))
 
     # Add the time to the given slice and subtract the time from a parent event
     def AdjustTimelineSlice(self, thread, slice_number, name, parent, elapsed):
@@ -2541,7 +2549,118 @@ BLINK_FEATURES = {
     "1853": "HTMLMediaElementControlsListAttribute",
     "1854": "HTMLMediaElementControlsListNoDownload",
     "1855": "HTMLMediaElementControlsListNoFullscreen",
-    "1856": "HTMLMediaElementControlsListNoRemotePlayback"
+    "1856": "HTMLMediaElementControlsListNoRemotePlayback",
+    "1857": "PointerEventClickRetargetCausedByCapture",
+    "1861": "VRDisplayDisplayName",
+    "1862": "VREyeParametersOffset",
+    "1863": "VRPoseLinearVelocity",
+    "1864": "VRPoseLinearAcceleration",
+    "1865": "VRPoseAngularVelocity",
+    "1866": "VRPoseAngularAcceleration",
+    "1867": "CSSOverflowPaged",
+    "1868": "ChildSrcAllowedWorkerThatScriptSrcBlocked",
+    "1869": "HTMLTableElementPresentationAttributeBackground",
+    "1870": "V8Navigator_GetInstalledRelatedApps_Method",
+    "1871": "NamedAccessOnWindow_ChildBrowsingContext",
+    "1872": "NamedAccessOnWindow_ChildBrowsingContext_CrossOriginNameMismatch",
+    "1873": "V0CustomElementsRegisterHTMLCustomTag",
+    "1874": "V0CustomElementsRegisterHTMLTypeExtension",
+    "1875": "V0CustomElementsRegisterSVGElement",
+    "1876": "V0CustomElementsRegisterEmbedderElement",
+    "1877": "V0CustomElementsCreateCustomTagElement",
+    "1878": "V0CustomElementsCreateTypeExtensionElement",
+    "1879": "V0CustomElementsConstruct",
+    "1880": "V8IDBObserver_Observe_Method",
+    "1881": "V8IDBObserver_Unobserve_Method",
+    "1882": "WebBluetoothRemoteCharacteristicGetDescriptor",
+    "1883": "WebBluetoothRemoteCharacteristicGetDescriptors",
+    "1884": "WebBluetoothRemoteCharacteristicReadValue",
+    "1885": "WebBluetoothRemoteCharacteristicWriteValue",
+    "1886": "WebBluetoothRemoteCharacteristicStartNotifications",
+    "1887": "WebBluetoothRemoteCharacteristicStopNotifications",
+    "1888": "WebBluetoothRemoteDescriptorReadValue",
+    "1889": "WebBluetoothRemoteDescriptorWriteValue",
+    "1890": "WebBluetoothRemoteServerConnect",
+    "1891": "WebBluetoothRemoteServerDisconnect",
+    "1892": "WebBluetoothRemoteServerGetPrimaryService",
+    "1893": "WebBluetoothRemoteServerGetPrimaryServices",
+    "1894": "WebBluetoothRemoteServiceGetCharacteristic",
+    "1895": "WebBluetoothRemoteServiceGetCharacteristics",
+    "1896": "HTMLContentElement",
+    "1897": "HTMLShadowElement",
+    "1898": "HTMLSlotElement",
+    "1899": "AccelerometerConstructor",
+    "1900": "AbsoluteOrientationSensorConstructor",
+    "1901": "AmbientLightSensorConstructor",
+    "1902": "GenericSensorOnActivate",
+    "1903": "GenericSensorOnChange",
+    "1904": "GenericSensorOnError",
+    "1905": "GenericSensorActivated",
+    "1906": "GyroscopeConstructor",
+    "1907": "MagnetometerConstructor",
+    "1908": "OrientationSensorPopulateMatrix",
+    "1909": "WindowOpenWithInvalidURL",
+    "1910": "CrossOriginMainFrameNulledNameAccessed",
+    "1911": "MenuItemElementIconAttribute",
+    "1912": "WebkitCSSMatrixSetMatrixValue",
+    "1913": "WebkitCSSMatrixConstructFromString",
+    "1914": "CanRequestURLHTTPContainingNewline",
+    "1915": "CanRequestURLNonHTTPContainingNewline",
+    "1916": "GetGamepads",
+    "1917": "V8SVGPathElement_GetPathSegAtLength_Method",
+    "1918": "MediaStreamConstraintsAudio",
+    "1919": "MediaStreamConstraintsAudioUnconstrained",
+    "1920": "MediaStreamConstraintsVideo",
+    "1921": "MediaStreamConstraintsVideoUnconstrained",
+    "1922": "MediaStreamConstraintsWidth",
+    "1923": "MediaStreamConstraintsHeight",
+    "1924": "MediaStreamConstraintsAspectRatio",
+    "1925": "MediaStreamConstraintsFrameRate",
+    "1926": "MediaStreamConstraintsFacingMode",
+    "1927": "MediaStreamConstraintsVolume",
+    "1928": "MediaStreamConstraintsSampleRate",
+    "1929": "MediaStreamConstraintsSampleSize",
+    "1930": "MediaStreamConstraintsEchoCancellation",
+    "1931": "MediaStreamConstraintsLatency",
+    "1932": "MediaStreamConstraintsChannelCount",
+    "1933": "MediaStreamConstraintsDeviceIdAudio",
+    "1934": "MediaStreamConstraintsDeviceIdVideo",
+    "1935": "MediaStreamConstraintsDisableLocalEcho",
+    "1936": "MediaStreamConstraintsGroupIdAudio",
+    "1937": "MediaStreamConstraintsGroupIdVideo",
+    "1938": "MediaStreamConstraintsVideoKind",
+    "1939": "MediaStreamConstraintsDepthNear",
+    "1940": "MediaStreamConstraintsDepthFar",
+    "1941": "MediaStreamConstraintsFocalLengthX",
+    "1942": "MediaStreamConstraintsFocalLengthY",
+    "1943": "MediaStreamConstraintsMediaStreamSourceAudio",
+    "1944": "MediaStreamConstraintsMediaStreamSourceVideo",
+    "1945": "MediaStreamConstraintsRenderToAssociatedSink",
+    "1946": "MediaStreamConstraintsHotwordEnabled",
+    "1947": "MediaStreamConstraintsGoogEchoCancellation",
+    "1948": "MediaStreamConstraintsGoogExperimentalEchoCancellation",
+    "1949": "MediaStreamConstraintsGoogAutoGainControl",
+    "1950": "MediaStreamConstraintsGoogExperimentalAutoGainControl",
+    "1951": "MediaStreamConstraintsGoogNoiseSuppression",
+    "1952": "MediaStreamConstraintsGoogHighpassFilter",
+    "1953": "MediaStreamConstraintsGoogTypingNoiseDetection",
+    "1954": "MediaStreamConstraintsGoogExperimentalNoiseSuppression",
+    "1955": "MediaStreamConstraintsGoogBeamforming",
+    "1956": "MediaStreamConstraintsGoogArrayGeometry",
+    "1957": "MediaStreamConstraintsGoogAudioMirroring",
+    "1958": "MediaStreamConstraintsGoogDAEchoCancellation",
+    "1959": "MediaStreamConstraintsGoogNoiseReduction",
+    "1960": "MediaStreamConstraintsGoogPowerLineFrequency",
+    "1961": "ViewportFixedPositionUnderFilter",
+    "1962": "RequestMIDIAccessWithSysExOption",
+    "1963": "RequestMIDIAccessIframeWithSysExOption",
+    "1964": "GamepadAxes",
+    "1965": "GamepadButtons",
+    "1966": "VibrateWithoutUserGesture",
+    "1967": "DispatchMouseEventOnDisabledFormControl",
+    "1968": "ElementNameDOMInvalidHTMLParserValid",
+    "1969": "ElementNameDOMValidHTMLParserInvalid",
+    "1970": "GATTServerDisconnectedEvent"
 }
 
 ##########################################################################
@@ -3060,7 +3179,10 @@ CSS_FEATURES = {
     "554": "CSSPropertyMaxInlineSize",
     "555": "CSSPropertyMaxBlockSize",
     "556": "CSSPropertyAliasLineBreak",
-    "557": "CSSPropertyPlaceContent"
+    "557": "CSSPropertyPlaceContent",
+    "558": "CSSPropertyPlaceItems",
+    "559": "CSSPropertyTransformBox",
+    "560": "CSSPropertyPlaceSelf"
 }
 
 if '__main__' == __name__:
