@@ -269,9 +269,10 @@ class DevTools(object):
             if not os.path.isdir(path):
                 os.makedirs(path)
             index = 0
+            fail_count = 0
             for request_id in requests:
                 request = requests[request_id]
-                if 'status' in request and \
+                if fail_count < 2 and 'status' in request and \
                         request['status'] == 200 and \
                         'response_headers' in request:
                     content_length = self.get_header_value(request['response_headers'],
@@ -320,7 +321,11 @@ class DevTools(object):
                             if need_body:
                                 response = self.send_command("Network.getResponseBody",
                                                              {'requestId': request_id}, wait=True)
-                                if response is None or 'result' not in response or \
+                                if response is None:
+                                    fail_count += 1
+                                    logging.warning('No response to body request for request %s',
+                                                    request_id)
+                                elif response is None or 'result' not in response or \
                                         'body' not in response['result']:
                                     logging.warning('Missing response body for request %s',
                                                     request_id)
@@ -410,7 +415,7 @@ class DevTools(object):
             except Exception:
                 pass
 
-    def send_command(self, method, params, wait=False, timeout=30):
+    def send_command(self, method, params, wait=False, timeout=10):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
         if self.websocket:
@@ -472,7 +477,7 @@ class DevTools(object):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=5)
+        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
         if response is not None and 'result' in response and 'data' in response['result']:
             resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
             if png:
@@ -563,7 +568,7 @@ class DevTools(object):
         if self.task['error'] is None:
             response = self.send_command("Runtime.evaluate",
                                          {'expression': script, 'returnByValue': True},
-                                         wait=True)
+                                         wait=True, timeout=30)
             if response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
