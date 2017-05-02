@@ -325,11 +325,13 @@ class DevTools(object):
                                     fail_count += 1
                                     logging.warning('No response to body request for request %s',
                                                     request_id)
-                                elif response is None or 'result' not in response or \
+                                elif 'result' not in response or \
                                         'body' not in response['result']:
+                                    fail_count = 0
                                     logging.warning('Missing response body for request %s',
                                                     request_id)
                                 elif len(response['result']['body']):
+                                    fail_count = 0
                                     # Write the raw body to a file (all bodies)
                                     if 'base64Encoded' in response['result'] and \
                                             response['result']['base64Encoded']:
@@ -744,6 +746,7 @@ class DevToolsClient(WebSocketClient):
         self.options = None
         self.job = None
         self.last_image = None
+        self.pending_image = None
         self.video_viewport = None
         self.path_base = None
         self.trace_parser = None
@@ -808,6 +811,11 @@ class DevToolsClient(WebSocketClient):
 
     def stop_processing_trace(self):
         """All done"""
+        if self.pending_image is not None:
+            with open(self.pending_image["path"], 'wb') as image_file:
+                image_file.write(base64.b64decode(self.pending_image["image"]))
+            self.crop_video_frame(self.pending_image["path"])
+        self.pending_image = None
         self.trace_ts_start = None
         if self.trace_file is not None:
             self.trace_file.write("\n]}")
@@ -868,13 +876,54 @@ class DevToolsClient(WebSocketClient):
                                 if ms_elapsed >= 0:
                                     img = trace_event['args']['snapshot']
                                     path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
-                                    if self.last_image is not None and self.last_image == img:
-                                        logging.debug('Dropping duplicate image: %s', path)
-                                    else:
-                                        with open(path, 'wb') as image_file:
-                                            self.last_image = str(img)
-                                            image_file.write(base64.b64decode(img))
-                                        self.crop_video_frame(path)
+                                    # Sample frames at at 100ms intervals for the first 20 seconds,
+                                    # 500ms for 20-40seconds and 2 second intervals after that
+                                    min_interval = 100
+                                    if ms_elapsed > 40000:
+                                        min_interval = 2000
+                                    elif ms_elapsed > 20000:
+                                        min_interval = 500
+                                    keep_image = True
+                                    if self.last_image is not None:
+                                        elapsed_interval = ms_elapsed - self.last_image["time"]
+                                        if elapsed_interval < min_interval:
+                                            keep_image = False
+                                            if self.pending_image is not None:
+                                                logging.debug("Discarding pending image: %s",
+                                                              self.pending_image["path"])
+                                            self.pending_image = {"image": str(img),
+                                                                  "time": int(ms_elapsed),
+                                                                  "path": str(path)}
+                                    if keep_image:
+                                        is_duplicate = False
+                                        if self.pending_image is not None:
+                                            if self.pending_image["image"] == img:
+                                                is_duplicate = True
+                                        elif self.last_image is not None and \
+                                                self.last_image["image"] == img:
+                                            is_duplicate = True
+                                        if is_duplicate:
+                                            logging.debug('Dropping duplicate image: %s', path)
+                                        else:
+                                            # write both the pending image and the current one if
+                                            # the interval is double the normal sampling rate
+                                            if self.last_image is not None and \
+                                                    self.pending_image is not None:
+                                                elapsed_interval = ms_elapsed - \
+                                                        self.last_image["time"]
+                                                if elapsed_interval > 2 * min_interval:
+                                                    pending = self.pending_image["path"]
+                                                    with open(pending, 'wb') as image_file:
+                                                        image_file.write(base64.b64decode(
+                                                            self.pending_image["image"]))
+                                                    self.crop_video_frame(pending)
+                                            self.pending_image = None
+                                            with open(path, 'wb') as image_file:
+                                                self.last_image = {"image": str(img),
+                                                                   "time": int(ms_elapsed),
+                                                                   "path": str(path)}
+                                                image_file.write(base64.b64decode(img))
+                                            self.crop_video_frame(path)
                     if not is_screenshot:
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
