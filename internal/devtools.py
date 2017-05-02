@@ -258,7 +258,7 @@ class DevTools(object):
         """Retrieve all of the response bodies for the requests that we know about"""
         import zipfile
         requests = self.get_requests()
-        if requests:
+        if self.task['error'] is None and requests:
             optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
             # see if we also need to zip them up
             zip_file = None
@@ -560,13 +560,14 @@ class DevTools(object):
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""
         ret = None
-        response = self.send_command("Runtime.evaluate",
-                                     {'expression': script, 'returnByValue': True},
-                                     wait=True)
-        if response is not None and 'result' in response and\
-                'result' in response['result'] and\
-                'value' in response['result']['result']:
-            ret = response['result']['result']['value']
+        if self.task['error'] is None:
+            response = self.send_command("Runtime.evaluate",
+                                         {'expression': script, 'returnByValue': True},
+                                         wait=True)
+            if response is not None and 'result' in response and\
+                    'result' in response['result'] and\
+                    'value' in response['result']['result']:
+                ret = response['result']['result']['value']
         return ret
 
     def process_message(self, msg):
@@ -608,7 +609,12 @@ class DevTools(object):
                     logging.debug("Page load failed: %s", self.nav_error)
                 self.page_loaded = monotonic.monotonic()
         elif event == 'javascriptDialogOpening':
-            self.task['error'] = "Page opened a modal dailog"
+            result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
+            if result is not None and 'error' in result:
+                result = self.send_command("Page.handleJavaScriptDialog",
+                                           {"accept": True}, wait=True)
+                if result is not None and 'error' in result:
+                    self.task['error'] = "Page opened a modal dailog"
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""

@@ -10,7 +10,6 @@ import re
 import shutil
 import subprocess
 import time
-import threading
 import monotonic
 import ujson as json
 from .optimization_checks import OptimizationChecks
@@ -167,7 +166,8 @@ class DevtoolsBrowser(object):
                             self.event_name = None
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
+            if task['error'] is None:
+                self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.task = None
 
     def on_start_processing(self, task):
