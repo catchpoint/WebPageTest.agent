@@ -258,7 +258,7 @@ class DevTools(object):
         """Retrieve all of the response bodies for the requests that we know about"""
         import zipfile
         requests = self.get_requests()
-        if requests:
+        if self.task['error'] is None and requests:
             optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
             # see if we also need to zip them up
             zip_file = None
@@ -269,9 +269,10 @@ class DevTools(object):
             if not os.path.isdir(path):
                 os.makedirs(path)
             index = 0
+            fail_count = 0
             for request_id in requests:
                 request = requests[request_id]
-                if 'status' in request and \
+                if fail_count < 2 and 'status' in request and \
                         request['status'] == 200 and \
                         'response_headers' in request:
                     content_length = self.get_header_value(request['response_headers'],
@@ -320,11 +321,17 @@ class DevTools(object):
                             if need_body:
                                 response = self.send_command("Network.getResponseBody",
                                                              {'requestId': request_id}, wait=True)
-                                if response is None or 'result' not in response or \
+                                if response is None:
+                                    fail_count += 1
+                                    logging.warning('No response to body request for request %s',
+                                                    request_id)
+                                elif 'result' not in response or \
                                         'body' not in response['result']:
+                                    fail_count = 0
                                     logging.warning('Missing response body for request %s',
                                                     request_id)
                                 elif len(response['result']['body']):
+                                    fail_count = 0
                                     # Write the raw body to a file (all bodies)
                                     if 'base64Encoded' in response['result'] and \
                                             response['result']['base64Encoded']:
@@ -410,7 +417,7 @@ class DevTools(object):
             except Exception:
                 pass
 
-    def send_command(self, method, params, wait=False, timeout=30):
+    def send_command(self, method, params, wait=False, timeout=10):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
         if self.websocket:
@@ -472,7 +479,7 @@ class DevTools(object):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=5)
+        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
         if response is not None and 'result' in response and 'data' in response['result']:
             resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
             if png:
@@ -560,13 +567,14 @@ class DevTools(object):
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""
         ret = None
-        response = self.send_command("Runtime.evaluate",
-                                     {'expression': script, 'returnByValue': True},
-                                     wait=True)
-        if response is not None and 'result' in response and\
-                'result' in response['result'] and\
-                'value' in response['result']['result']:
-            ret = response['result']['result']['value']
+        if self.task['error'] is None:
+            response = self.send_command("Runtime.evaluate",
+                                         {'expression': script, 'returnByValue': True},
+                                         wait=True, timeout=30)
+            if response is not None and 'result' in response and\
+                    'result' in response['result'] and\
+                    'value' in response['result']['result']:
+                ret = response['result']['result']['value']
         return ret
 
     def process_message(self, msg):
@@ -608,7 +616,12 @@ class DevTools(object):
                     logging.debug("Page load failed: %s", self.nav_error)
                 self.page_loaded = monotonic.monotonic()
         elif event == 'javascriptDialogOpening':
-            self.task['error'] = "Page opened a modal dailog"
+            result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
+            if result is not None and 'error' in result:
+                result = self.send_command("Page.handleJavaScriptDialog",
+                                           {"accept": True}, wait=True)
+                if result is not None and 'error' in result:
+                    self.task['error'] = "Page opened a modal dailog"
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
@@ -733,6 +746,7 @@ class DevToolsClient(WebSocketClient):
         self.options = None
         self.job = None
         self.last_image = None
+        self.pending_image = None
         self.video_viewport = None
         self.path_base = None
         self.trace_parser = None
@@ -797,6 +811,11 @@ class DevToolsClient(WebSocketClient):
 
     def stop_processing_trace(self):
         """All done"""
+        if self.pending_image is not None:
+            with open(self.pending_image["path"], 'wb') as image_file:
+                image_file.write(base64.b64decode(self.pending_image["image"]))
+            self.crop_video_frame(self.pending_image["path"])
+        self.pending_image = None
         self.trace_ts_start = None
         if self.trace_file is not None:
             self.trace_file.write("\n]}")
@@ -808,9 +827,11 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.last_image = None
         if self.trace_parser is not None and self.path_base is not None:
-            logging.debug("Processing the trace events")
             start = monotonic.monotonic()
-            self.trace_parser.ProcessTraceEvents()
+            logging.debug("Post-Processing the trace netlog events")
+            self.trace_parser.post_process_netlog_events()
+            logging.debug("Processing the trace timeline events")
+            self.trace_parser.ProcessTimelineEvents()
             self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
             self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
             self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
@@ -855,19 +876,60 @@ class DevToolsClient(WebSocketClient):
                                 if ms_elapsed >= 0:
                                     img = trace_event['args']['snapshot']
                                     path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
-                                    if self.last_image is not None and self.last_image == img:
-                                        logging.debug('Dropping duplicate image: %s', path)
-                                    else:
-                                        with open(path, 'wb') as image_file:
-                                            self.last_image = str(img)
-                                            image_file.write(base64.b64decode(img))
-                                        self.crop_video_frame(path)
+                                    # Sample frames at at 100ms intervals for the first 20 seconds,
+                                    # 500ms for 20-40seconds and 2 second intervals after that
+                                    min_interval = 100
+                                    if ms_elapsed > 40000:
+                                        min_interval = 2000
+                                    elif ms_elapsed > 20000:
+                                        min_interval = 500
+                                    keep_image = True
+                                    if self.last_image is not None:
+                                        elapsed_interval = ms_elapsed - self.last_image["time"]
+                                        if elapsed_interval < min_interval:
+                                            keep_image = False
+                                            if self.pending_image is not None:
+                                                logging.debug("Discarding pending image: %s",
+                                                              self.pending_image["path"])
+                                            self.pending_image = {"image": str(img),
+                                                                  "time": int(ms_elapsed),
+                                                                  "path": str(path)}
+                                    if keep_image:
+                                        is_duplicate = False
+                                        if self.pending_image is not None:
+                                            if self.pending_image["image"] == img:
+                                                is_duplicate = True
+                                        elif self.last_image is not None and \
+                                                self.last_image["image"] == img:
+                                            is_duplicate = True
+                                        if is_duplicate:
+                                            logging.debug('Dropping duplicate image: %s', path)
+                                        else:
+                                            # write both the pending image and the current one if
+                                            # the interval is double the normal sampling rate
+                                            if self.last_image is not None and \
+                                                    self.pending_image is not None:
+                                                elapsed_interval = ms_elapsed - \
+                                                        self.last_image["time"]
+                                                if elapsed_interval > 2 * min_interval:
+                                                    pending = self.pending_image["path"]
+                                                    with open(pending, 'wb') as image_file:
+                                                        image_file.write(base64.b64decode(
+                                                            self.pending_image["image"]))
+                                                    self.crop_video_frame(pending)
+                                            self.pending_image = None
+                                            with open(path, 'wb') as image_file:
+                                                self.last_image = {"image": str(img),
+                                                                   "time": int(ms_elapsed),
+                                                                   "path": str(path)}
+                                                image_file.write(base64.b64decode(img))
+                                            self.crop_video_frame(path)
                     if not is_screenshot:
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
                         if self.trace_parser is not None:
-                            self.trace_parser.FilterTraceEvent(trace_event)
+                            self.trace_parser.ProcessTraceEvent(trace_event)
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
 
     def crop_video_frame(self, path):
