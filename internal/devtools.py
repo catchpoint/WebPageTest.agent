@@ -814,9 +814,11 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.last_image = None
         if self.trace_parser is not None and self.path_base is not None:
-            logging.debug("Processing the trace events")
             start = monotonic.monotonic()
-            self.trace_parser.ProcessTraceEvents()
+            logging.debug("Post-Processing the trace netlog events")
+            self.trace_parser.post_process_netlog_events()
+            logging.debug("Processing the trace timeline events")
+            self.trace_parser.ProcessTimelineEvents()
             self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
             self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
             self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
@@ -873,7 +875,7 @@ class DevToolsClient(WebSocketClient):
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
                         if self.trace_parser is not None:
-                            self.trace_parser.FilterTraceEvent(trace_event)
+                            self.trace_parser.ProcessTraceEvent(trace_event)
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
 
     def crop_video_frame(self, path):
