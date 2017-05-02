@@ -105,6 +105,7 @@ class Trace():
         f = None
         line_mode = False
         self.__init__()
+        logging.debug("Loading trace: %s", trace)
         try:
             file_name, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
@@ -183,15 +184,20 @@ class Trace():
     def ProcessTraceEvents(self):
         # sort the raw trace events by timestamp and then process them
         if len(self.trace_events):
+            logging.debug("Sorting %d trace events", len(self.trace_events))
             self.trace_events.sort(key=lambda trace_event: trace_event['ts'])
+            logging.debug("Processing trace events")
             for trace_event in self.trace_events:
                 self.ProcessTraceEvent(trace_event)
             self.trace_events = []
 
         # Post-process the netlog events (may shift the start time)
+        logging.debug("Processing netlog events")
         self.post_process_netlog_events()
         # Do the post-processing on timeline events
+        logging.debug("Processing timeline events")
         self.ProcessTimelineEvents()
+        logging.debug("Done processing trace events")
 
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
@@ -410,10 +416,11 @@ class Trace():
                     self.scripts[thread][script][name] = []
                 # make sure the script duration isn't already covered by a
                 # parent event
+                # TODO: Optimize this lookup, it is a very hot/slow spot
                 new_duration = True
                 if len(self.scripts[thread][script][name]):
                     for period in self.scripts[thread][script][name]:
-                        if js_start >= period[0] and js_end <= period[1]:
+                        if len(period) >= 2 and js_start >= period[0] and js_end <= period[1]:
                             new_duration = False
                             break
                 if new_duration:
@@ -3057,6 +3064,6 @@ CSS_FEATURES = {
 }
 
 if '__main__' == __name__:
-    #  import cProfile
-    #  cProfile.run('main()', None, 2)
+    #import cProfile
+    #cProfile.run('main()', None, 2)
     main()
