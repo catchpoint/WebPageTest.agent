@@ -420,7 +420,7 @@ class Trace():
                     stack[thread] = {}
                 if script not in stack[thread]:
                     stack[thread][script] = {}
-                if name not in self.scripts[thread][script]:
+                if name not in stack[thread][script]:
                     stack[thread][script][name] = []
                 # make sure the script duration isn't already covered by a
                 # parent event
