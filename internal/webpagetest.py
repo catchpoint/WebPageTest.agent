@@ -33,7 +33,8 @@ class WebPageTest(object):
         self.log_handler = None
         # Configurable options
         self.url = options.server
-        self.location = options.location
+        self.test_locations = options.location.split(',')
+        self.location = str(self.test_locations[0])
         self.key = options.key
         self.time_limit = 120
         # get the hostname or build one automatically if we are on a vmware system
@@ -188,7 +189,8 @@ class WebPageTest(object):
                     if key == 'wpt_url':
                         self.url = value
                     elif key == 'wpt_loc' or key == 'wpt_location':
-                        self.location = value
+                        self.test_locations = value.split(',')
+                        self.location = str(self.test_locations[0])
                     elif key == 'wpt_key':
                         self.key = value
                     elif key == 'wpt_timeout':
@@ -209,6 +211,10 @@ class WebPageTest(object):
         from .os_util import get_free_disk_space
         job = None
         url = self.url + "getwork.php?f=json&shards=1"
+        # round-robin through the configured locations
+        if len(self.test_locations) > 1:
+            self.location = str(self.test_locations.pop(0))
+            self.test_locations.append(str(self.location))
         url += "&location=" + urllib.quote_plus(self.location)
         url += "&pc=" + urllib.quote_plus(self.pc_name)
         if self.key is not None:
