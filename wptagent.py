@@ -32,6 +32,7 @@ class WPTAgent(object):
         self.browsers = Browsers(options, browsers, self.adb)
         self.shaper = TrafficShaper(options)
         atexit.register(self.cleanup)
+        signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
 
     def run_testing(self):
