@@ -8,7 +8,6 @@ import math
 import os
 import re
 import subprocess
-import threading
 
 VIDEO_SIZE = 400
 
@@ -26,7 +25,7 @@ class VideoProcessing(object):
             # Make the initial screen shot the same size as the video
             logging.debug("Resizing initial video frame")
             from PIL import Image
-            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
+            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg')))
             count = len(files)
             width = 0
             height = 0
@@ -44,7 +43,7 @@ class VideoProcessing(object):
                 crop = '{0:d}x{1:d}+0+0'.format(width - 25, height - 25)
             logging.debug("Removing duplicate video frames")
             self.cap_frame_count(self.video_path, 50)
-            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
+            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg')))
             count = len(files)
             if count > 1:
                 baseline = files[0]
@@ -57,17 +56,6 @@ class VideoProcessing(object):
                             pass
                     else:
                         baseline = files[index]
-            files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png')))
-            # Fix png issues
-            for file_name in files:
-                path = os.path.join(self.video_path, file_name)
-                cmd = 'mogrify -format png -define png:color-type=2 -depth 8 "{0}"'.format(path)
-                logging.debug(cmd)
-                subprocess.call(cmd, shell=True)
-            # start a background thread to convert the images to jpeg
-            logging.debug("Converting video frames to jpeg")
-            jpeg_thread = threading.Thread(target=self.convert_to_jpeg)
-            jpeg_thread.start()
             # Run visualmetrics against them
             logging.debug("Processing video frames")
             if self.task['current_step'] == 1:
@@ -86,23 +74,13 @@ class VideoProcessing(object):
                         '_rendered_video.mp4'
                 args.extend(['--render', video_out])
             subprocess.call(args)
-            # Wait for the jpeg task to complete and delete the png's
-            logging.debug("Waiting for jpeg conversion to finish")
-            jpeg_thread.join()
-            for filepath in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
-                try:
-                    os.remove(filepath)
-                except Exception:
-                    pass
-
-    def convert_to_jpeg(self):
-        """Convert all of the pngs in the given directory to jpeg"""
-        for src in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.png'))):
-            dst = os.path.splitext(src)[0] + '.jpg'
-            command = 'convert "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
-                src, VIDEO_SIZE, self.job['iq'], dst)
-            logging.debug(command)
-            subprocess.call(command, shell=True)
+            # Compress to the target quality and size
+            for src in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
+                dst = os.path.splitext(src)[0] + '.jpg'
+                command = 'mogrify "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
+                    src, VIDEO_SIZE, self.job['iq'], dst)
+                logging.debug(command)
+                subprocess.call(command, shell=True)
 
     def frames_match(self, image1, image2, crop_region, fuzz_percent, max_differences):
         """Compare video frames"""
@@ -124,33 +102,26 @@ class VideoProcessing(object):
 
     def cap_frame_count(self, directory, maxframes):
         """Limit the number of video frames using an decay for later times"""
-        frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
+        frames = sorted(glob.glob(os.path.join(directory, 'ms_*.jpg')))
         frame_count = len(frames)
         if frame_count > maxframes:
-            # First pass, sample all video frames at 10fps instead of 60fps,
-            # keeping the first 20% of the target
-            logging.debug('Sampling 10fps: Reducing %d frames to target of %d...',
+            # First pass, sample all video frames after the first 5 seconds
+            # at 2fps, keeping the first 40% of the target
+            logging.debug('Sampling 2fps: Reducing %d frames to target of %d...',
                           frame_count, maxframes)
-            skip_frames = int(maxframes * 0.2)
-            self.sample_frames(frames, 100, 0, skip_frames)
-            frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
+            skip_frames = int(maxframes * 0.4)
+            self.sample_frames(frames, 500, 5000, skip_frames)
+            frames = sorted(glob.glob(os.path.join(directory, 'ms_*.jpg')))
             frame_count = len(frames)
             if frame_count > maxframes:
-                # Second pass, sample all video frames after the first 5 seconds
-                # at 2fps, keeping the first 40% of the target
-                logging.debug('Sampling 2fps: Reducing %d frames to target of %d...',
+                # Second pass, sample all video frames after the first 10 seconds
+                # at 1fps, keeping the first 60% of the target
+                logging.debug('Sampling 1fps: Reducing %d frames to target of %d...',
                               frame_count, maxframes)
-                skip_frames = int(maxframes * 0.4)
-                self.sample_frames(frames, 500, 5000, skip_frames)
-                frames = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
-                frame_count = len(frames)
-                if frame_count > maxframes:
-                    # Third pass, sample all video frames after the first 10 seconds
-                    # at 1fps, keeping the first 60% of the target
-                    logging.debug('Sampling 1fps: Reducing %d frames to target of %d...',
-                                  frame_count, maxframes)
-                    skip_frames = int(maxframes * 0.6)
-                    self.sample_frames(frames, 1000, 10000, skip_frames)
+                skip_frames = int(maxframes * 0.6)
+                self.sample_frames(frames, 1000, 10000, skip_frames)
+        frames = sorted(glob.glob(os.path.join(directory, 'ms_*.jpg')))
+        frame_count = len(frames)
         logging.debug('%d frames final count with a target max of %d frames...',
                       frame_count, maxframes)
 

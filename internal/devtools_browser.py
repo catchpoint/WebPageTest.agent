@@ -68,33 +68,25 @@ class DevtoolsBrowser(object):
                     'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
+                width = int(re.search(r'\d+', str(self.job['width'])).group())
+                height = int(re.search(r'\d+', str(self.job['height'])).group())
                 self.devtools.send_command("Emulation.setDeviceMetricsOverride",
-                                           {"width":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['width'])).group()),
-                                            "height":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['height'])).group()),
-                                            "screenWidth":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['width'])).group()),
-                                            "screenHeight":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['height'])).group()),
+                                           {"width": width,
+                                            "height": height,
+                                            "screenWidth": width,
+                                            "screenHeight": height,
                                             "scale": 1,
                                             "positionX": 0,
                                             "positionY": 0,
                                             "deviceScaleFactor": float(self.job['dpr']),
                                             "mobile": True,
-                                            "fitWindow": False},
+                                            "fitWindow": False,
+                                            "screenOrientation":
+                                                {"angle":0, "type":"portraitPrimary"}},
                                            wait=True)
-                self.devtools.send_command("Emulation.setVisibleSize",
-                                           {"width":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['width'])).group()),
-                                            "height":
-                                            int(re.search(r'\d+',
-                                                          str(self.job['height'])).group())},
+                self.devtools.send_command("Emulation.setTouchEmulationEnabled",
+                                           {"enabled": True,
+                                            "configuration": "mobile"},
                                            wait=True)
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")

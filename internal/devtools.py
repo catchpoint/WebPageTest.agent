@@ -154,7 +154,7 @@ class DevTools(object):
         self.prepare()
         self.recording = True
         if self.use_devtools_video and self.job['video'] and self.task['log_data']:
-            self.grab_screenshot(self.video_prefix + '000000.png')
+            self.grab_screenshot(self.video_prefix + '000000.jpg', png=False)
         elif self.mobile_viewport is None and not self.options.android and \
                 'mobile' in self.job and self.job['mobile']:
             # grab an initial screen shot to get the crop rectangle
@@ -752,6 +752,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.path_base = None
         self.trace_parser = None
+        self.trace_event_counts = {}
         self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
         self.trace_done = re.compile(r'method"\s*:\s*"Tracing.tracingComplete')
 
@@ -813,7 +814,8 @@ class DevToolsClient(WebSocketClient):
 
     def stop_processing_trace(self):
         """All done"""
-        if self.pending_image is not None:
+        if self.pending_image is not None and self.last_image is not None and\
+                self.pending_image["image"] != self.last_image["image"]:
             with open(self.pending_image["path"], 'wb') as image_file:
                 image_file.write(base64.b64decode(self.pending_image["image"]))
             self.crop_video_frame(self.pending_image["path"])
@@ -845,6 +847,8 @@ class DevToolsClient(WebSocketClient):
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
         self.path_base = None
+        logging.debug(self.trace_event_counts)
+        self.trace_event_counts = {}
 
     def process_trace_event(self, msg):
         """Process Tracing.* dev tools events"""
@@ -863,6 +867,9 @@ class DevToolsClient(WebSocketClient):
                     is_screenshot = False
                     if self.video_prefix is not None and 'cat' in trace_event and \
                             'name' in trace_event and 'ts' in trace_event:
+                        if trace_event['cat'] not in self.trace_event_counts:
+                            self.trace_event_counts[trace_event['cat']] = 0
+                        self.trace_event_counts[trace_event['cat']] += 1
                         if self.trace_ts_start is None and \
                                 trace_event['name'] == 'navigationStart' and \
                                 trace_event['cat'].find('blink.user_timing') > -1:
@@ -870,62 +877,7 @@ class DevToolsClient(WebSocketClient):
                         if trace_event['name'] == 'Screenshot' and \
                                 trace_event['cat'].find('devtools.screenshot') > -1:
                             is_screenshot = True
-                            if self.trace_ts_start is not None and \
-                                    'args' in trace_event and \
-                                    'snapshot' in trace_event['args']:
-                                ms_elapsed = int(round(float(trace_event['ts'] - \
-                                                             self.trace_ts_start) / 1000.0))
-                                if ms_elapsed >= 0:
-                                    img = trace_event['args']['snapshot']
-                                    path = '{0}{1:06d}.png'.format(self.video_prefix, ms_elapsed)
-                                    # Sample frames at at 100ms intervals for the first 20 seconds,
-                                    # 500ms for 20-40seconds and 2 second intervals after that
-                                    min_interval = 100
-                                    if ms_elapsed > 40000:
-                                        min_interval = 2000
-                                    elif ms_elapsed > 20000:
-                                        min_interval = 500
-                                    keep_image = True
-                                    if self.last_image is not None:
-                                        elapsed_interval = ms_elapsed - self.last_image["time"]
-                                        if elapsed_interval < min_interval:
-                                            keep_image = False
-                                            if self.pending_image is not None:
-                                                logging.debug("Discarding pending image: %s",
-                                                              self.pending_image["path"])
-                                            self.pending_image = {"image": str(img),
-                                                                  "time": int(ms_elapsed),
-                                                                  "path": str(path)}
-                                    if keep_image:
-                                        is_duplicate = False
-                                        if self.pending_image is not None:
-                                            if self.pending_image["image"] == img:
-                                                is_duplicate = True
-                                        elif self.last_image is not None and \
-                                                self.last_image["image"] == img:
-                                            is_duplicate = True
-                                        if is_duplicate:
-                                            logging.debug('Dropping duplicate image: %s', path)
-                                        else:
-                                            # write both the pending image and the current one if
-                                            # the interval is double the normal sampling rate
-                                            if self.last_image is not None and \
-                                                    self.pending_image is not None:
-                                                elapsed_interval = ms_elapsed - \
-                                                        self.last_image["time"]
-                                                if elapsed_interval > 2 * min_interval:
-                                                    pending = self.pending_image["path"]
-                                                    with open(pending, 'wb') as image_file:
-                                                        image_file.write(base64.b64decode(
-                                                            self.pending_image["image"]))
-                                                    self.crop_video_frame(pending)
-                                            self.pending_image = None
-                                            with open(path, 'wb') as image_file:
-                                                self.last_image = {"image": str(img),
-                                                                   "time": int(ms_elapsed),
-                                                                   "path": str(path)}
-                                                image_file.write(base64.b64decode(img))
-                                            self.crop_video_frame(path)
+                            self.process_screenshot(trace_event)
                     if not is_screenshot:
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
@@ -934,6 +886,62 @@ class DevToolsClient(WebSocketClient):
                             self.trace_parser.ProcessTraceEvent(trace_event)
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
 
+    def process_screenshot(self, trace_event):
+        """Process an individual screenshot event"""
+        if self.trace_ts_start is not None and 'args' in trace_event and \
+                'snapshot' in trace_event['args']:
+            ms_elapsed = int(round(float(trace_event['ts'] - self.trace_ts_start) / 1000.0))
+            if ms_elapsed >= 0:
+                img = trace_event['args']['snapshot']
+                path = '{0}{1:06d}.jpg'.format(self.video_prefix, ms_elapsed)
+                logging.debug("Video frame: %s", path)
+                # Sample frames at at 100ms intervals for the first 20 seconds,
+                # 500ms for 20-40seconds and 2 second intervals after that
+                min_interval = 100
+                if ms_elapsed > 40000:
+                    min_interval = 2000
+                elif ms_elapsed > 20000:
+                    min_interval = 500
+                keep_image = True
+                if self.last_image is not None:
+                    elapsed_interval = ms_elapsed - self.last_image["time"]
+                    if elapsed_interval < min_interval:
+                        keep_image = False
+                        if self.pending_image is not None:
+                            logging.debug("Discarding pending image: %s",
+                                          self.pending_image["path"])
+                        self.pending_image = {"image": str(img),
+                                              "time": int(ms_elapsed),
+                                              "path": str(path)}
+                if keep_image:
+                    is_duplicate = False
+                    if self.pending_image is not None:
+                        if self.pending_image["image"] == img:
+                            is_duplicate = True
+                    elif self.last_image is not None and \
+                            self.last_image["image"] == img:
+                        is_duplicate = True
+                    if is_duplicate:
+                        logging.debug('Dropping duplicate image: %s', path)
+                    else:
+                        # write both the pending image and the current one if
+                        # the interval is double the normal sampling rate
+                        if self.last_image is not None and self.pending_image is not None and \
+                                self.pending_image["image"] != self.last_image["image"]:
+                            elapsed_interval = ms_elapsed - self.last_image["time"]
+                            if elapsed_interval > 2 * min_interval:
+                                pending = self.pending_image["path"]
+                                with open(pending, 'wb') as image_file:
+                                    image_file.write(base64.b64decode(self.pending_image["image"]))
+                                self.crop_video_frame(pending)
+                        self.pending_image = None
+                        with open(path, 'wb') as image_file:
+                            self.last_image = {"image": str(img),
+                                               "time": int(ms_elapsed),
+                                               "path": str(path)}
+                            image_file.write(base64.b64decode(img))
+                        self.crop_video_frame(path)
+
     def crop_video_frame(self, path):
         """Crop video frames to the viewport (for mobile emulation tests)"""
         if not self.options.android and 'mobile' in self.job and self.job['mobile'] and \
@@ -941,11 +949,6 @@ class DevToolsClient(WebSocketClient):
             try:
                 # detect the viewport if we haven't already
                 if self.video_viewport is None:
-                    # Fix png issues
-                    cmd = 'mogrify -format png -define png:color-type=2 '\
-                            '-depth 8 "{0}"'.format(path)
-                    logging.debug(cmd)
-                    subprocess.call(cmd, shell=True)
                     from PIL import Image
                     image = Image.open(path)
                     width, height = image.size
@@ -982,6 +985,7 @@ class DevToolsClient(WebSocketClient):
                     logging.debug(command)
                     subprocess.call(command, shell=True)
             except Exception:
+                logging.debug("Error loading image")
                 pass
 
     def colors_are_similar(self, color1, color2, threshold=15):
