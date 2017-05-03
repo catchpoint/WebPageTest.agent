@@ -188,10 +188,8 @@ class DevTools(object):
             else:
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
-                trace += ",blink.console,disabled-by-default-devtools.timeline,devtools.timeline" \
-                         ",disabled-by-default-blink.feature_usage" \
-                         ",disabled-by-default-devtools.timeline.frame" \
-                         "devtools.timeline.frame"
+                trace += ",blink.console,devtools.timeline" \
+                         ",disabled-by-default-blink.feature_usage"
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
