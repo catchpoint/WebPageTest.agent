@@ -212,6 +212,7 @@ class DevTools(object):
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         self.collect_trace()
+        self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Console.disable', {})
@@ -409,9 +410,10 @@ class DevTools(object):
                 while True:
                     raw = self.websocket.get_message(0)
                     if raw is not None and len(raw):
-                        logging.debug(raw[:200])
-                        msg = json.loads(raw)
-                        self.process_message(msg)
+                        if self.recording:
+                            logging.debug(raw[:200])
+                            msg = json.loads(raw)
+                            self.process_message(msg)
                     if not raw:
                         break
             except Exception:
