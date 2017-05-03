@@ -34,6 +34,7 @@ class WebPageTest(object):
         # Configurable options
         self.url = options.server
         self.location = None
+        self.test_locations = []
         if options.location is not None:
             self.test_locations = options.location.split(',')
             self.location = str(self.test_locations[0])
