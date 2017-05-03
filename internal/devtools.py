@@ -33,6 +33,7 @@ class DevTools(object):
         self.requests = {}
         self.nav_error = None
         self.main_request = None
+        self.start_timestamp = None
         self.path_base = None
         self.support_path = None
         self.video_path = None
@@ -49,6 +50,7 @@ class DevTools(object):
         self.requests = {}
         self.nav_error = None
         self.main_request = None
+        self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.video_path = os.path.join(self.task['dir'], self.task['video_subdirectory'])
@@ -196,7 +198,8 @@ class DevTools(object):
             trace += ",blink.user_timing,netlog"
             self.trace_enabled = True
             self.send_command('Tracing.start',
-                              {'categories': trace, 'options': 'record-as-much-as-possible'})
+                              {'categories': trace, 'options': 'record-as-much-as-possible'},
+                              wait=True)
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
@@ -226,7 +229,8 @@ class DevTools(object):
             self.trace_enabled = False
             video_prefix = self.video_prefix if self.recording_video else None
             self.websocket.start_processing_trace(self.path_base, video_prefix,
-                                                  self.options, self.job, self.task)
+                                                  self.options, self.job, self.task,
+                                                  self.start_timestamp)
             self.send_command('Tracing.end', {})
             start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
@@ -653,6 +657,8 @@ class DevTools(object):
                         msg['params']['frameId'] == self.main_frame:
                     logging.debug('Main request detected')
                     self.main_request = request_id
+                    if 'timestamp' in msg['params']:
+                        self.start_timestamp = float(msg['params']['timestamp'])
             elif event == 'resourceChangedPriority':
                 if 'priority' not in self.requests[request_id]:
                     self.requests[request_id]['priority'] = []
@@ -809,10 +815,12 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, path_base, video_prefix, options, job, task):
+    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
+        if start_timestamp is not None:
+            self.trace_ts_start = int(start_timestamp * 1000000)
         self.path_base = path_base
         self.video_prefix = video_prefix
         self.task = task
@@ -879,8 +887,10 @@ class DevToolsClient(WebSocketClient):
                             self.trace_event_counts[trace_event['cat']] = 0
                         self.trace_event_counts[trace_event['cat']] += 1
                         if self.trace_ts_start is None and \
-                                trace_event['name'] == 'navigationStart' and \
+                                (trace_event['name'] == 'navigationStart' or \
+                                 trace_event['name'] == 'fetchStart') and \
                                 trace_event['cat'].find('blink.user_timing') > -1:
+                            logging.debug("Trace start detected: %d", trace_event['ts'])
                             self.trace_ts_start = trace_event['ts']
                         if trace_event['name'] == 'Screenshot' and \
                                 trace_event['cat'].find('devtools.screenshot') > -1:
@@ -902,7 +912,7 @@ class DevToolsClient(WebSocketClient):
             if ms_elapsed >= 0:
                 img = trace_event['args']['snapshot']
                 path = '{0}{1:06d}.jpg'.format(self.video_prefix, ms_elapsed)
-                logging.debug("Video frame: %s", path)
+                logging.debug("Video frame (%f): %s", trace_event['ts'], path)
                 # Sample frames at at 100ms intervals for the first 20 seconds,
                 # 500ms for 20-40seconds and 2 second intervals after that
                 min_interval = 100
