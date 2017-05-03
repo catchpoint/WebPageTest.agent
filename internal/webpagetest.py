@@ -33,7 +33,7 @@ class WebPageTest(object):
         self.log_handler = None
         # Configurable options
         self.url = options.server
-        self.location = None
+        self.location = ''
         self.test_locations = []
         if options.location is not None:
             self.test_locations = options.location.split(',')
