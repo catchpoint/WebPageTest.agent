@@ -3,7 +3,6 @@ FROM ubuntu
 
 RUN apt-get update && \
   apt-get install -y \
-    git \
     wget \
     curl \
     python \
@@ -44,7 +43,6 @@ RUN pip install \
     ujson \
     xvfbwrapper
 
-COPY .git /wptagent/.git
 COPY wptagent.py /wptagent/wptagent.py
 COPY internal /wptagent/internal
 COPY ws4py /wptagent/ws4py
