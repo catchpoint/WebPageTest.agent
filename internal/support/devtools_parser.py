@@ -336,7 +336,7 @@ class DevTools(object):
                     end_time = raw_request['endTime'] - raw_page_data['startTime']
                     request['load_ms'] = int(round(end_time - start_time))
                     if 'fullyLoaded' not in page_data or end_time > page_data['fullyLoaded']:
-                        page_data['fullyLoaded'] = end_time
+                        page_data['fullyLoaded'] = int(round(end_time))
                 request['ttfb_ms'] = -1
                 if 'firstByteTime' in raw_request:
                     request['ttfb_ms'] = int(round(raw_request['firstByteTime'] -
@@ -345,21 +345,21 @@ class DevTools(object):
                 request['bytesIn'] = 0
                 request['objectSize'] = ''
                 if 'bytesIn' in raw_request:
-                    request['bytesIn'] = raw_request['bytesIn']
+                    request['bytesIn'] = int(round(raw_request['bytesIn']))
                 if 'bytesInEncoded' in raw_request and raw_request['bytesInEncoded'] > 0:
-                    request['objectSize'] = raw_request['bytesInEncoded']
+                    request['objectSize'] = int(round(raw_request['bytesInEncoded']))
                     if raw_request['bytesInEncoded'] > request['bytesIn']:
-                        request['bytesIn'] = raw_request['bytesInEncoded']
+                        request['bytesIn'] = int(round(raw_request['bytesInEncoded']))
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
                             request['bytesIn'] += len(raw_request['response']['headersText'])
                 if 'bytesInData' in raw_request:
                     if request['objectSize'] == '':
-                        request['objectSize'] = raw_request['bytesInData']
+                        request['objectSize'] = int(round(raw_request['bytesInData']))
                     if request['bytesIn'] == 0:
-                        request['bytesIn'] = raw_request['bytesInData']
+                        request['bytesIn'] = int(round(raw_request['bytesInData']))
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
                             request['bytesIn'] += len(raw_request['response']['headersText'])
-                    request['objectSizeUncompressed'] = raw_request['bytesInData']
+                    request['objectSizeUncompressed'] = int(round(raw_request['bytesInData']))
                 request['expires'] = self.get_response_header(raw_request, 'Expires')
                 request['cacheControl'] = self.get_response_header(raw_request, 'Cache-Control')
                 request['contentType'] = self.get_response_header(raw_request, 'Content-Type')
@@ -478,17 +478,17 @@ class DevTools(object):
                             page_data['fullyLoaded'] = start_offset
                     if 'endTime' in raw_request:
                         end_offset = int(round(raw_request['endTime'] - \
-                                                 raw_page_data['startTime']))
+                                               raw_page_data['startTime']))
                         if 'fullyLoaded' not in page_data or \
                                 end_offset > page_data['fullyLoaded']:
                             page_data['fullyLoaded'] = end_offset
                     if 'TTFB' not in page_data and request['ttfb_ms'] >= 0 and \
                             (request['responseCode'] == 200 or request['responseCode'] == 304):
-                        page_data['TTFB'] = request['load_start'] + request['ttfb_ms']
+                        page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
                         if request['ssl_end'] >= request['ssl_start'] and \
                                 request['ssl_start'] >= 0:
-                            page_data['basePageSSLTime'] = request['ssl_end'] - \
-                                                           request['ssl_start']
+                            page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                                     request['ssl_start']))
                     page_data['bytesOut'] += request['bytesOut']
                     page_data['bytesIn'] += request['bytesIn']
                     page_data['requests'] += 1
@@ -575,8 +575,9 @@ class DevTools(object):
                             entry['claimed'] = True
                             for key in mapping:
                                 if key in entry:
-                                    if re.match(r'\d+\.?(\d+)?', str(entry[key])):
-                                        request[mapping[key]] = int(round(float(entry[key])))
+                                    if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
+                                        request[mapping[key]] = \
+                                                int(round(float(str(entry[key]).strip())))
                                     else:
                                         request[mapping[key]] = str(entry[key])
                             if 'first_byte' in entry:
@@ -665,13 +666,13 @@ class DevTools(object):
                             if matches:
                                 request['expires'] = matches.group(1)
                     if 'bytes_in' in entry:
-                        request['bytesIn'] = entry['bytes_in']
-                        request['objectSize'] = entry['bytes_in']
+                        request['bytesIn'] = int(entry['bytes_in'])
+                        request['objectSize'] = int(entry['bytes_in'])
                     request['bytesOut'] = 0
-                    page_data['bytesIn'] += request['bytesIn']
+                    page_data['bytesIn'] += int(request['bytesIn'])
                     page_data['requests'] += 1
                     if request['load_start'] < page_data['docTime']:
-                        page_data['bytesInDoc'] += request['bytesIn']
+                        page_data['bytesInDoc'] += int(request['bytesIn'])
                         page_data['requestsDoc'] += 1
                     if request['responseCode'] == 200:
                         page_data['responses_200'] += 1

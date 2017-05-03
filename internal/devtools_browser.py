@@ -213,7 +213,7 @@ class DevtoolsBrowser(object):
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
         if os.path.isfile(devtools_file):
-            devtools_parser = os.path.join(self.support_path, "devtools-parser.py")
+            devtools_parser = os.path.join(self.support_path, "devtools_parser.py")
             cmd = ['python', devtools_parser, '-vvvv', '--devtools', devtools_file]
             netlog = path_base + '_netlog_requests.json.gz'
             if os.path.isfile(netlog):
