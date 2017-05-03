@@ -197,7 +197,7 @@ class DevtoolsBrowser(object):
     def process_video(self):
         """Post process the video"""
         from internal.video_processing import VideoProcessing
-        video = VideoProcessing(self.job, self.task)
+        video = VideoProcessing(self.options, self.job, self.task)
         video.process()
 
     def process_devtools_requests(self, task):

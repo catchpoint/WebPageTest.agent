@@ -39,7 +39,6 @@ class DevTools(object):
         self.video_prefix = None
         self.recording = False
         self.mobile_viewport = None
-        self.border_color = None
         self.tab_id = None
         self.use_devtools_video = use_devtools_video
         self.recording_video = False
@@ -229,7 +228,7 @@ class DevTools(object):
             self.trace_enabled = False
             video_prefix = self.video_prefix if self.recording_video else None
             self.websocket.start_processing_trace(self.path_base, video_prefix,
-                                                  self.options, self.job, self.border_color)
+                                                  self.options, self.job, self.task)
             self.send_command('Tracing.end', {})
             start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
@@ -530,35 +529,46 @@ class DevTools(object):
                     from PIL import Image
                     image = Image.open(path)
                     width, height = image.size
-                    pixels = image.load()
-                    background = pixels[10, 10]
-                    viewport_width = None
-                    viewport_height = None
-                    x_pos = 10
-                    y_pos = 10
-                    while viewport_width is None and x_pos < width:
-                        pixel_color = pixels[x_pos, y_pos]
-                        if not self.colors_are_similar(background, pixel_color):
-                            self.border_color = pixel_color
-                            viewport_width = x_pos
-                        else:
-                            x_pos += 1
-                    if viewport_width is None:
-                        viewport_width = width
-                    x_pos = 10
-                    while viewport_height is None and y_pos < height:
-                        pixel_color = pixels[x_pos, y_pos]
-                        if not self.colors_are_similar(background, pixel_color):
-                            if self.border_color is None:
-                                self.border_color = pixel_color
-                            viewport_height = y_pos
-                        else:
-                            y_pos += 1
-                    if viewport_height is None:
-                        viewport_height = height
+                    if 'width' in self.job and 'height' in self.job and \
+                            width >= self.job['width'] and height > self.job['height']:
+                        viewport_width = self.job['width']
+                        viewport_height = self.job['height']
+                    else:
+                        pixels = image.load()
+                        background = pixels[10, 10]
+                        viewport_width = None
+                        viewport_height = None
+                        x_pos = 10
+                        y_pos = 10
+                        while viewport_width is None and x_pos < width:
+                            pixel_color = pixels[x_pos, y_pos]
+                            if not self.colors_are_similar(background, pixel_color):
+                                viewport_width = x_pos
+                            else:
+                                x_pos += 1
+                        if viewport_width is None:
+                            viewport_width = width
+                        x_pos = 10
+                        while viewport_height is None and y_pos < height:
+                            pixel_color = pixels[x_pos, y_pos]
+                            if not self.colors_are_similar(background, pixel_color):
+                                viewport_height = y_pos
+                            else:
+                                y_pos += 1
+                        if viewport_height is None:
+                            viewport_height = height
                     self.mobile_viewport = '{0:d}x{1:d}+0+0'.format(viewport_width, viewport_height)
                     logging.debug('Mobile viewport found: %s in %dx%d screen shot',
                                   self.mobile_viewport, width, height)
+                    if width > 0 and height > 0:
+                        if width != viewport_width or height != viewport_height:
+                            self.task['crop_pct'] = {
+                                "width": int(float(viewport_width * 100) / float(width)),
+                                "height": int(float(viewport_height * 100) / float(height)),
+                            }
+                            logging.debug("Crop percentages: %f%% x %f%%",
+                                          self.task['crop_pct']['width'],
+                                          self.task['crop_pct']['height'])
                 if self.mobile_viewport is not None:
                     command = 'mogrify -crop {0} "{1}"'.format(self.mobile_viewport, path)
                     logging.debug(command)
@@ -744,9 +754,9 @@ class DevToolsClient(WebSocketClient):
         self.trace_file = None
         self.video_prefix = None
         self.trace_ts_start = None
-        self.border_color = None
         self.options = None
         self.job = None
+        self.task = None
         self.last_image = None
         self.pending_image = None
         self.video_viewport = None
@@ -801,13 +811,13 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, path_base, video_prefix, options, job, video_border_color):
+    def start_processing_trace(self, path_base, video_prefix, options, job, task):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
         self.path_base = path_base
         self.video_prefix = video_prefix
-        self.border_color = video_border_color
+        self.task = task
         self.options = options
         self.job = job
         self.video_viewport = None
@@ -825,9 +835,9 @@ class DevToolsClient(WebSocketClient):
             self.trace_file.write("\n]}")
             self.trace_file.close()
             self.trace_file = None
-        self.border_color = None
         self.options = None
         self.job = None
+        self.task = None
         self.video_viewport = None
         self.last_image = None
         if self.trace_parser is not None and self.path_base is not None:
@@ -945,59 +955,9 @@ class DevToolsClient(WebSocketClient):
     def crop_video_frame(self, path):
         """Crop video frames to the viewport (for mobile emulation tests)"""
         if not self.options.android and 'mobile' in self.job and self.job['mobile'] and \
-                self.border_color is not None:
-            try:
-                # detect the viewport if we haven't already
-                if self.video_viewport is None:
-                    from PIL import Image
-                    image = Image.open(path)
-                    width, height = image.size
-                    pixels = image.load()
-                    viewport_width = None
-                    viewport_height = None
-                    x_pos = width - 1
-                    y_pos = 10
-                    while viewport_width is None and x_pos > width / 2:
-                        pixel_color = pixels[x_pos, y_pos]
-                        if not self.colors_are_similar(self.border_color, pixel_color):
-                            viewport_width = x_pos
-                        else:
-                            x_pos -= 1
-                    if viewport_width is None:
-                        viewport_width = width
-                    x_pos = 10
-                    y_pos = height - 1
-                    while viewport_height is None and y_pos > height / 2:
-                        pixel_color = pixels[x_pos, y_pos]
-                        if not self.colors_are_similar(self.border_color, pixel_color):
-                            if self.border_color is None:
-                                self.border_color = pixel_color
-                            viewport_height = y_pos
-                        else:
-                            y_pos -= 1
-                    if viewport_height is None:
-                        viewport_height = height
-                    self.video_viewport = '{0:d}x{1:d}+0+0'.format(viewport_width, viewport_height)
-                    logging.debug('Video viewport found: %s in %dx%d video frame',
-                                  self.video_viewport, width, height)
-                if self.video_viewport is not None:
-                    command = 'mogrify -crop {0} "{1}"'.format(self.video_viewport, path)
-                    logging.debug(command)
-                    subprocess.call(command, shell=True)
-            except Exception:
-                logging.debug("Error loading image")
-                pass
-
-    def colors_are_similar(self, color1, color2, threshold=15):
-        """See if 2 given pixels are of similar color"""
-        similar = True
-        delta_sum = 0
-        for value in xrange(3):
-            delta = abs(color1[value] - color2[value])
-            delta_sum += delta
-            if delta > threshold:
-                similar = False
-        if delta_sum > threshold:
-            similar = False
-        return similar
-
+                'crop_pct' in self.task:
+            crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
+                                              self.task['crop_pct']['height'])
+            command = 'mogrify -crop {0} "{1}"'.format(crop, path)
+            logging.debug(command)
+            subprocess.call(command, shell=True)

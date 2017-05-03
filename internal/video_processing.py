@@ -13,15 +13,26 @@ VIDEO_SIZE = 400
 
 class VideoProcessing(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, job, task):
+    def __init__(self, options, job, task):
         self.video_path = os.path.join(task['dir'], task['video_subdirectory'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+        self.options = options
         self.job = job
         self.task = task
 
     def process(self):
         """Post Process the video"""
         if os.path.isdir(self.video_path):
+            self.cap_frame_count(self.video_path, 50)
+            # Crop the video frames
+            if not self.options.android and 'mobile' in self.job and self.job['mobile'] and \
+                    'crop_pct' in self.task:
+                crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
+                                                  self.task['crop_pct']['height'])
+                for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
+                    command = 'mogrify -crop {0} "{1}"'.format(crop, path)
+                    logging.debug(command)
+                    subprocess.call(command, shell=True)
             # Make the initial screen shot the same size as the video
             logging.debug("Resizing initial video frame")
             from PIL import Image
@@ -42,7 +53,6 @@ class VideoProcessing(object):
             if width > 25 and height > 25:
                 crop = '{0:d}x{1:d}+0+0'.format(width - 25, height - 25)
             logging.debug("Removing duplicate video frames")
-            self.cap_frame_count(self.video_path, 50)
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg')))
             count = len(files)
             if count > 1:
@@ -75,10 +85,9 @@ class VideoProcessing(object):
                 args.extend(['--render', video_out])
             subprocess.call(args)
             # Compress to the target quality and size
-            for src in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                dst = os.path.splitext(src)[0] + '.jpg'
-                command = 'mogrify "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
-                    src, VIDEO_SIZE, self.job['iq'], dst)
+            for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
+                command = 'mogrify -resize {0:d}x{0:d} -quality {1:d} "{2}"'.format(
+                    VIDEO_SIZE, self.job['iq'], path)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
 
