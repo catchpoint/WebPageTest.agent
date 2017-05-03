@@ -21,8 +21,7 @@ if [ -n "$KEY" ]; then
   EXTRA_ARGS="$EXTRA_ARGS --key $KEY"
 fi
 
-function run_agent {
-  python /wptagent/wptagent.py --server "${SERVER_URL}" --location "${LOCATION}" ${EXTRA_ARGS} --xvfb --dockerized -vvvvv
-}
 
-run_agent
+# exec replaces the shell process by the python process and is required to
+# propagate signals (i.e. SIGTERM)
+exec python /wptagent/wptagent.py --server "${SERVER_URL}" --location "${LOCATION}" ${EXTRA_ARGS} --xvfb --dockerized -vvvvv
