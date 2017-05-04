@@ -40,6 +40,7 @@ class WebPageTest(object):
             self.location = str(self.test_locations[0])
         self.key = options.key
         self.time_limit = 120
+        self.cpu_scale_multiplier = None
         # get the hostname or build one automatically if we are on a vmware system
         # (specific MAC address range)
         hostname = platform.uname()[1]
@@ -110,6 +111,10 @@ class WebPageTest(object):
             pass
         # If we are running desktop testing, benchmark the system so we
         # have a relative measurement for scaling CPU for mobile emulation.
+    # pylint: enable=E0611
+
+    def benchmark_cpu(self):
+        """Benchmark the CPU for mobile emulation"""
         self.cpu_scale_multiplier = 1.0
         if not self.options.android:
             import hashlib
@@ -125,7 +130,6 @@ class WebPageTest(object):
             self.cpu_scale_multiplier = 1.0 / elapsed
             logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
                           elapsed, self.cpu_scale_multiplier)
-    # pylint: enable=E0611
 
     def get_persistent_dir(self):
         """Return the path to the persistent cache directory"""
@@ -213,6 +217,8 @@ class WebPageTest(object):
         """Get a job from the server"""
         import requests
         from .os_util import get_free_disk_space
+        if self.cpu_scale_multiplier is None:
+            self.benchmark_cpu()
         job = None
         url = self.url + "getwork.php?f=json&shards=1"
         # round-robin through the configured locations
