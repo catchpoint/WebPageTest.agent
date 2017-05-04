@@ -31,6 +31,7 @@ class DevTools(object):
         self.trace_file = None
         self.trace_enabled = False
         self.requests = {}
+        self.response_bodies = {}
         self.nav_error = None
         self.main_request = None
         self.start_timestamp = None
@@ -48,6 +49,7 @@ class DevTools(object):
     def prepare(self):
         """Set up the various paths and states"""
         self.requests = {}
+        self.response_bodies = {}
         self.nav_error = None
         self.main_request = None
         self.start_timestamp = None
@@ -337,18 +339,17 @@ class DevTools(object):
                                     # Write the raw body to a file (all bodies)
                                     if 'base64Encoded' in response['result'] and \
                                             response['result']['base64Encoded']:
-                                        with open(body_file_path, 'wb') as body_file:
-                                            body_file.write(
-                                                base64.b64decode(response['result']['body']))
+                                        body = base64.b64decode(response['result']['body'])
                                     else:
                                         body = response['result']['body'].encode('utf-8')
-                                        with open(body_file_path, 'wb') as body_file:
-                                            body_file.write(body)
                                         # Add text bodies to the zip archive
                                         if zip_file is not None:
                                             index += 1
                                             name = '{0:03d}-{1}-body.txt'.format(index, request_id)
                                             zip_file.writestr(name, body)
+                                    self.response_bodies[request_id] = body
+                                    with open(body_file_path, 'wb') as body_file:
+                                        body_file.write(body)
             if zip_file is not None:
                 zip_file.close()
 
@@ -365,6 +366,8 @@ class DevTools(object):
                     body_file_path = os.path.join(body_path, request_id)
                     if os.path.isfile(body_file_path):
                         request['body'] = body_file_path
+                    if request_id in self.response_bodies:
+                        request['response_body'] = self.response_bodies[request_id]
                     # Get the headers from responseReceived
                     if 'response' in events:
                         response = events['response'][-1]

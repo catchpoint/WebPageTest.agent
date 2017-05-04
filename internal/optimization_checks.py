@@ -526,7 +526,7 @@ class OptimizationChecks(object):
                     check['score'] = -1
                 # Try compressing it if it isn't an image
                 if not check['score'] and 'body' in request:
-                    sniff_type = self.sniff_content(request['body'])
+                    sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type is not None:
                         check['score'] = -1
                     else:
@@ -571,14 +571,15 @@ class OptimizationChecks(object):
                     content_length = request['transfer_size']
                 check = {'score': -1, 'size': content_length, 'target_size': content_length}
                 if content_length and 'body' in request:
-                    sniff_type = self.sniff_content(request['body'])
+                    sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type == 'jpeg':
                         if content_length < 1400:
                             check['score'] = 100
                         else:
                             # Compress it as a quality 85 stripped progressive image and compare
                             jpeg_file = request['body'] + '.jpg'
-                            command = 'convert -strip -interlace Plane -quality 85 '\
+                            command = 'convert -define jpeg:dct-method=fast -strip '\
+                                '-interlace Plane -quality 85 '\
                                 '"{0}" "{1}"'.format(request['body'], jpeg_file)
                             subprocess.call(command, shell=True)
                             if os.path.isfile(jpeg_file):
@@ -594,38 +595,40 @@ class OptimizationChecks(object):
                                     check['score'] = int(target_size * 100 / content_length)
                                 else:
                                     check['score'] = 100
-                    elif sniff_type == 'png':
+                    elif sniff_type == 'png' and 'response_body' in request:
                         if content_length < 1400:
                             check['score'] = 100
                         else:
                             image_chunks = ["iCCP", "tIME", "gAMA", "PLTE", "acTL", "IHDR", "cHRM",
                                             "bKGD", "tRNS", "sBIT", "sRGB", "pHYs", "hIST", "vpAg",
                                             "oFFs", "fcTL", "fdAT", "IDAT"]
-                            file_size = os.path.getsize(request['body'])
-                            with open(request['body']) as image:
-                                valid = True
-                                target_size = 8
-                                bytes_remaining = file_size - 8
-                                image.seek(8, 0)
-                                while valid and bytes_remaining >= 4:
-                                    chunk_len = struct.unpack('>I', image.read(4))[0]
-                                    if chunk_len + 12 <= bytes_remaining:
-                                        chunk_type = image.read(4)
-                                        if chunk_type in image_chunks:
-                                            target_size += chunk_len + 12
-                                        image.seek(chunk_len + 4, 1) # Skip the data and CRC
-                                        bytes_remaining -= chunk_len + 12
-                                    else:
-                                        valid = False
-                                        bytes_remaining = 0
-                                if valid:
-                                    delta = content_length - target_size
-                                    # Only count it if there is at least 1 packet savings
-                                    if target_size > 0 and delta > 1400:
-                                        check['target_size'] = target_size
-                                        check['score'] = int(target_size * 100 / content_length)
-                                    else:
-                                        check['score'] = 100
+                            body = request['response_body']
+                            image_size = len(body)
+                            valid = True
+                            target_size = 8
+                            bytes_remaining = image_size - 8
+                            pos = 8
+                            while valid and bytes_remaining >= 4:
+                                chunk_len = struct.unpack('>I', body[pos:pos+4])[0]
+                                pos += 4
+                                if chunk_len + 12 <= bytes_remaining:
+                                    chunk_type = body[pos:pos+4]
+                                    pos += 4
+                                    if chunk_type in image_chunks:
+                                        target_size += chunk_len + 12
+                                    pos += chunk_len + 4 # Skip the data and CRC
+                                    bytes_remaining -= chunk_len + 12
+                                else:
+                                    valid = False
+                                    bytes_remaining = 0
+                            if valid:
+                                delta = content_length - target_size
+                                # Only count it if there is at least 1 packet savings
+                                if target_size > 0 and delta > 1400:
+                                    check['target_size'] = target_size
+                                    check['score'] = int(target_size * 100 / content_length)
+                                else:
+                                    check['score'] = 100
                     elif sniff_type == 'gif':
                         if content_length < 1400:
                             check['score'] = 100
@@ -673,39 +676,47 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                if 'body' in request:
-                    sniff_type = self.sniff_content(request['body'])
+                if 'response_body' in request:
+                    body = request['response_body']
+                    sniff_type = self.sniff_content(body)
                     if sniff_type == 'jpeg':
-                        content_length = os.path.getsize(request['body'])
+                        content_length = len(request['response_body'])
                         check = {'size': content_length, 'scan_count': 0}
-                        with open(request['body'], 'rb') as jpeg:
-                            try:
-                                while True:
-                                    block = struct.unpack('B', jpeg.read(1))[0]
-                                    if block != 0xff:
-                                        break
-                                    block = struct.unpack('B', jpeg.read(1))[0]
-                                    while block == 0xff:
-                                        block = struct.unpack('B', jpeg.read(1))[0]
-                                    if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
-                                        continue
-                                    elif block == 0xda: # Image data
-                                        check['scan_count'] += 1
-                                        # Seek to the next non-padded 0xff to find the next marker
-                                        found = False
-                                        while not found:
-                                            value = struct.unpack('B', jpeg.read(1))[0]
-                                            if value == 0xff:
-                                                value = struct.unpack('B', jpeg.read(1))[0]
-                                                if value != 0x00:
-                                                    found = True
-                                                    jpeg.seek(-2, 1)
-                                    else:
-                                        block_size = struct.unpack('2B', jpeg.read(2))
-                                        block_size = block_size[0] * 256 + block_size[1] - 2
-                                        jpeg.seek(block_size, 1)
-                            except Exception:
-                                pass
+                        pos = 0
+                        try:
+                            while pos < content_length:
+                                block = struct.unpack('B', body[pos])[0]
+                                pos += 1
+                                if block != 0xff:
+                                    break
+                                block = struct.unpack('B', body[pos])[0]
+                                pos += 1
+                                while block == 0xff:
+                                    block = struct.unpack('B', body[pos])[0]
+                                    pos += 1
+                                if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
+                                    continue
+                                elif block == 0xda: # Image data
+                                    check['scan_count'] += 1
+                                    # Seek to the next non-padded 0xff to find the next marker
+                                    found = False
+                                    while not found and pos < content_length:
+                                        value = struct.unpack('B', body[pos])[0]
+                                        pos += 1
+                                        if value == 0xff:
+                                            value = struct.unpack('B', body[pos])[0]
+                                            pos += 1
+                                            if value != 0x00:
+                                                found = True
+                                                pos -= 2
+                                else:
+                                    chunk = body[pos:pos+2]
+                                    block_size = struct.unpack('2B', chunk)
+                                    pos += 2
+                                    block_size = block_size[0] * 256 + block_size[1] - 2
+                                    pos += block_size
+                        except Exception:
+                            pass
                         self.progressive_results[request_id] = check
             except Exception:
                 pass
@@ -726,20 +737,25 @@ class OptimizationChecks(object):
                         break
         return value
 
-    def sniff_content(self, image_file):
+    def sniff_content(self, raw_bytes):
         """Check the beginning of the file to see if it is a known image type"""
+        content_type = None
+        hex_bytes = binascii.hexlify(raw_bytes[:14]).lower()
+        if hex_bytes[0:6] == 'ffd8ff':
+            content_type = 'jpeg'
+        elif hex_bytes[0:16] == '89504e470d0a1a0a':
+            content_type = 'png'
+        elif raw_bytes[:6] == 'GIF87a' or raw_bytes[:6] == 'GIF89a':
+            content_type = 'gif'
+        elif raw_bytes[:4] == 'RIFF' and raw_bytes[8:14] == 'WEBPVP':
+            content_type = 'webp'
+        elif raw_bytes[:4] == 'wOF2':
+            content_type = 'WOFF2'
+        return content_type
+
+    def sniff_file_content(self, image_file):
         content_type = None
         with open(image_file, 'rb') as f_in:
             raw = f_in.read(14)
-            hex_bytes = binascii.hexlify(raw).lower()
-            if hex_bytes[0:6] == 'ffd8ff':
-                content_type = 'jpeg'
-            elif hex_bytes[0:16] == '89504e470d0a1a0a':
-                content_type = 'png'
-            elif raw[:6] == 'GIF87a' or raw[:6] == 'GIF89a':
-                content_type = 'gif'
-            elif raw[:4] == 'RIFF' and raw[8:14] == 'WEBPVP':
-                content_type = 'webp'
-            elif raw[:4] == 'wOF2':
-                content_type = 'WOFF2'
+            content_type = self.sniff_content(raw)
         return content_type

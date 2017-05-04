@@ -30,7 +30,8 @@ class VideoProcessing(object):
                 crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
                                                   self.task['crop_pct']['height'])
                 for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                    command = 'mogrify -define jpeg:dct-method=fast -crop {0} "{1}"'.format(crop, path)
+                    command = 'mogrify -define jpeg:dct-method=fast -crop {0} "{1}"'.format(crop,
+                                                                                            path)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
             # Make the initial screen shot the same size as the video
