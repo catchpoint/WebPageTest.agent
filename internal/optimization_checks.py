@@ -510,6 +510,8 @@ class OptimizationChecks(object):
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
+                if content_length is None:
+                    content_length = 0
                 check = {'score': 0, 'size': content_length, 'target_size': content_length}
                 encoding = None
                 if 'response_headers' in request:
@@ -540,13 +542,16 @@ class OptimizationChecks(object):
                                 os.remove(out_file)
                             except Exception:
                                 pass
-                            delta = content_length - target_size
-                            # Only count it if there is at least 1 packet and 10% savings
-                            if target_size > 0 and \
-                                    delta > 1400 and \
-                                    target_size < (content_length * 0.9):
-                                check['target_size'] = target_size
-                                check['score'] = int(target_size * 100 / content_length)
+                            if target_size is not None:
+                                delta = content_length - target_size
+                                # Only count it if there is at least 1 packet and 10% savings
+                                if target_size > 0 and \
+                                        delta > 1400 and \
+                                        target_size < (content_length * 0.9):
+                                    check['target_size'] = target_size
+                                    check['score'] = int(target_size * 100 / content_length)
+                                else:
+                                    check['score'] = -1
                             else:
                                 check['score'] = -1
                         else:
