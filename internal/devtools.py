@@ -834,7 +834,6 @@ class DevToolsClient(WebSocketClient):
                 self.pending_image["image"] != self.last_image["image"]:
             with open(self.pending_image["path"], 'wb') as image_file:
                 image_file.write(base64.b64decode(self.pending_image["image"]))
-            self.crop_video_frame(self.pending_image["path"])
         self.pending_image = None
         self.trace_ts_start = None
         if self.trace_file is not None:
@@ -951,21 +950,9 @@ class DevToolsClient(WebSocketClient):
                                 pending = self.pending_image["path"]
                                 with open(pending, 'wb') as image_file:
                                     image_file.write(base64.b64decode(self.pending_image["image"]))
-                                self.crop_video_frame(pending)
                         self.pending_image = None
                         with open(path, 'wb') as image_file:
                             self.last_image = {"image": str(img),
                                                "time": int(ms_elapsed),
                                                "path": str(path)}
                             image_file.write(base64.b64decode(img))
-                        self.crop_video_frame(path)
-
-    def crop_video_frame(self, path):
-        """Crop video frames to the viewport (for mobile emulation tests)"""
-        if not self.options.android and 'mobile' in self.job and self.job['mobile'] and \
-                'crop_pct' in self.task:
-            crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
-                                              self.task['crop_pct']['height'])
-            command = 'mogrify -crop {0} "{1}"'.format(crop, path)
-            logging.debug(command)
-            subprocess.call(command, shell=True)

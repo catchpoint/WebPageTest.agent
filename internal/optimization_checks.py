@@ -13,6 +13,7 @@ import struct
 import subprocess
 import threading
 import time
+import monotonic
 import ujson as json
 
 class OptimizationChecks(object):
@@ -26,6 +27,10 @@ class OptimizationChecks(object):
         self.gzip_thread = None
         self.image_thread = None
         self.progressive_thread = None
+        self.cdn_time = None
+        self.gzip_time = None
+        self.image_time = None
+        self.progressive_time = None
         self.cdn_results = {}
         self.gzip_results = {}
         self.image_results = {}
@@ -233,18 +238,26 @@ class OptimizationChecks(object):
             if self.progressive_thread is not None:
                 self.progressive_thread.join()
                 self.progressive_thread = None
+            if self.progressive_time is not None:
+                logging.debug("Progressive JPEG check took %0.3f seconds", self.progressive_time)
             logging.debug('Waiting for gzip check to complete')
             if self.gzip_thread is not None:
                 self.gzip_thread.join()
                 self.gzip_thread = None
+            if self.gzip_time is not None:
+                logging.debug("gzip check took %0.3f seconds", self.gzip_time)
             logging.debug('Waiting for image check to complete')
             if self.image_thread is not None:
                 self.image_thread.join()
                 self.image_thread = None
+            if self.image_time is not None:
+                logging.debug("image check took %0.3f seconds", self.image_time)
             logging.debug('Waiting for CDN check to complete')
             if self.cdn_thread is not None:
                 self.cdn_thread.join()
                 self.cdn_thread = None
+            if self.cdn_time is not None:
+                logging.debug("CDN check took %0.3f seconds", self.cdn_time)
             # Merge the results together
             for request_id in self.cdn_results:
                 if request_id not in self.results:
@@ -377,6 +390,7 @@ class OptimizationChecks(object):
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
         from urlparse import urlparse
+        start = monotonic.monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}
         domains = {}
@@ -432,6 +446,7 @@ class OptimizationChecks(object):
                             check['score'] = 100
                             check['provider'] = domains[domain]
                     self.cdn_results[request_id] = check
+        self.cdn_time = monotonic.monotonic() - start
 
     def dns_worker(self):
         """Handle the DNS CNAME lookups and checking in multiple threads"""
@@ -485,6 +500,7 @@ class OptimizationChecks(object):
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
+        start = monotonic.monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -539,9 +555,11 @@ class OptimizationChecks(object):
                     self.gzip_results[request_id] = check
             except Exception:
                 pass
+        self.gzip_time = monotonic.monotonic() - start
 
     def check_images(self):
         """Check each request to see if images can be compressed better"""
+        start = monotonic.monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -647,9 +665,11 @@ class OptimizationChecks(object):
                         self.image_results[request_id] = check
             except Exception:
                 pass
+        self.image_time = monotonic.monotonic() - start
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
+        start = monotonic.monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -689,6 +709,7 @@ class OptimizationChecks(object):
                         self.progressive_results[request_id] = check
             except Exception:
                 pass
+        self.progressive_time = monotonic.monotonic() - start
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
