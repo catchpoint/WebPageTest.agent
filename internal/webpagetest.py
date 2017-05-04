@@ -33,8 +33,11 @@ class WebPageTest(object):
         self.log_handler = None
         # Configurable options
         self.url = options.server
-        self.test_locations = options.location.split(',')
-        self.location = str(self.test_locations[0])
+        self.location = ''
+        self.test_locations = []
+        if options.location is not None:
+            self.test_locations = options.location.split(',')
+            self.location = str(self.test_locations[0])
         self.key = options.key
         self.time_limit = 120
         # get the hostname or build one automatically if we are on a vmware system
@@ -189,8 +192,9 @@ class WebPageTest(object):
                     if key == 'wpt_url':
                         self.url = value
                     elif key == 'wpt_loc' or key == 'wpt_location':
-                        self.test_locations = value.split(',')
-                        self.location = str(self.test_locations[0])
+                        if value is not None:
+                            self.test_locations = value.split(',')
+                            self.location = str(self.test_locations[0])
                     elif key == 'wpt_key':
                         self.key = value
                     elif key == 'wpt_timeout':
