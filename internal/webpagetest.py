@@ -223,6 +223,8 @@ class WebPageTest(object):
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
+        if self.url is None:
+            return None
         job = None
         url = self.url + "getwork.php?f=json&shards=1"
         # round-robin through the configured locations
