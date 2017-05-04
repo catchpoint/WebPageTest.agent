@@ -56,6 +56,11 @@ class DevtoolsBrowser(object):
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
+            # Figure out the native viewport size
+            if not self.options.android:
+                size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")
+                if size is not None and len(size) == 2:
+                    task['actual_viewport'] = {"width": size[0], "height": size[1]}
             # Clear the caches
             if not task['cached']:
                 self.devtools.send_command("Network.clearBrowserCache", {},

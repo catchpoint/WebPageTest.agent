@@ -109,8 +109,12 @@ class WebPageTest(object):
                     self.version = git_date.strftime('%y%m%d.%H%m%S')
         except Exception:
             pass
-        # If we are running desktop testing, benchmark the system so we
-        # have a relative measurement for scaling CPU for mobile emulation.
+        # Load the discovered browser margins
+        self.margins = {}
+        margins_file = os.path.join(self.persistent_dir, 'margins.json')
+        if os.path.isfile(margins_file):
+            with open(margins_file, 'rb') as f_in:
+                self.margins = json.load(f_in)
     # pylint: enable=E0611
 
     def benchmark_cpu(self):
@@ -385,13 +389,13 @@ class WebPageTest(object):
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
-                if 'width' in job and 'height' in job:
-                    if 'mobile' in job and job['mobile']:
+                if 'mobile' in job and job['mobile']:
+                    if 'browser' in job and job['browser'] in self.margins:
+                        task['width'] = job['width'] + self.margins[job['browser']]['width']
+                        task['height'] = job['height'] + self.margins[job['browser']]['height']
+                    else:
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
-                    else:
-                        task['width'] = job['width']
-                        task['height'] = job['height']
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 self.test_run_count += 1
@@ -528,10 +532,25 @@ class WebPageTest(object):
             task['script'].append({'command': 'navigate', 'target': job['url'], 'record': True})
         logging.debug(task['script'])
 
+    def update_browser_viewport(self, task):
+        """Update the browser border size based on the measured viewport"""
+        if 'actual_viewport' in task and 'width' in task and 'height' in task and \
+                self.job is not None and 'browser' in self.job:
+            browser = self.job['browser']
+            width = task['width'] - task['actual_viewport']['width']
+            height = task['height'] - task['actual_viewport']['height']
+            if browser not in self.margins or self.margins[browser]['width'] != width or \
+                    self.margins[browser]['height'] != height:
+                self.margins[browser] = {"width": width, "height": height}
+                margins_file = os.path.join(self.persistent_dir, 'margins.json')
+                with open(margins_file, 'wb') as f_out:
+                    json.dump(self.margins, f_out)
+
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
         cpu_pct = None
+        self.update_browser_viewport(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:

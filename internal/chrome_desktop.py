@@ -91,6 +91,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 time.sleep(10)
         if connected:
             self.connected = True
+            DevtoolsBrowser.navigate(self, START_PAGE)
             DevtoolsBrowser.prepare_browser(self, task)
             DevtoolsBrowser.navigate(self, START_PAGE)
             DesktopBrowser.wait_for_idle(self)
