@@ -542,6 +542,8 @@ class WebPageTest(object):
             if browser not in self.margins or self.margins[browser]['width'] != width or \
                     self.margins[browser]['height'] != height:
                 self.margins[browser] = {"width": width, "height": height}
+                if not os.path.isdir(self.persistent_dir):
+                    os.makedirs(self.persistent_dir)
                 margins_file = os.path.join(self.persistent_dir, 'margins.json')
                 with open(margins_file, 'wb') as f_out:
                     json.dump(self.margins, f_out)
