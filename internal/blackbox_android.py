@@ -190,9 +190,11 @@ class BlackBoxAndroid(AndroidBrowser):
         end_time = monotonic.monotonic() + self.task['time_limit']
         last_size = self.adb.get_video_size()
         video_started = False
+        bytes_rx = self.adb.get_bytes_rx()
         while not video_started and monotonic.monotonic() < end_startup:
             time.sleep(5)
             video_size = self.adb.get_video_size()
+            bytes_rx = self.adb.get_bytes_rx()
             delta = video_size - last_size
             logging.debug('Video Size: %d bytes (+ %d)', video_size, delta)
             last_size = video_size
@@ -203,10 +205,12 @@ class BlackBoxAndroid(AndroidBrowser):
         while video_idle_count <= 3 and monotonic.monotonic() < end_time:
             time.sleep(5)
             video_size = self.adb.get_video_size()
+            bytes_rx = self.adb.get_bytes_rx()
             delta = video_size - last_size
-            logging.debug('Video Size: %d bytes (+ %d)', video_size, delta)
+            logging.debug('Video Size: %d bytes (+ %d) - %d bytes received',
+                          video_size, delta, bytes_rx)
             last_size = video_size
-            if delta > 10000:
+            if delta > 10000 or bytes_rx > 5000:
                 video_idle_count = 0
             else:
                 video_idle_count += 1

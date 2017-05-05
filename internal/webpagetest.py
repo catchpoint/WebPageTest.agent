@@ -579,8 +579,10 @@ class WebPageTest(object):
             if 'step_name' in task:
                 task['page_data']['eventName'] = task['step_name']
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
             with gzip.open(path, 'wb', 7) as outfile:
-                outfile.write(json.dumps(task['page_data']))
+                outfile.write(json_page_data)
         data = {'id': task['id'],
                 'location': self.location,
                 'run': str(task['run']),

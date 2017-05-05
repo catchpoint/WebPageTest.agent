@@ -471,6 +471,7 @@ class Adb(object):
                 ver = out[separator + 1:].strip()
                 if len(ver):
                     version = ver
+                    logging.debug('Package version for %s is %s', package, version)
                     if package not in self.package_versions or \
                             self.package_versions[package] != ver:
                         self.package_versions[package] = ver
