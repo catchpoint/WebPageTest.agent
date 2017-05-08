@@ -463,20 +463,21 @@ class Adb(object):
     def get_package_version(self, package):
         """Get the version number of the given package"""
         version = None
-        out = self.shell(['dumpsys', 'package', package, '|', 'grep',
-                          'versionName', '|', 'head', '-n1'])
+        out = self.shell(['dumpsys', 'package', package, '|', 'grep', 'versionName'])
         if out is not None:
-            separator = out.find('=')
-            if separator > -1:
-                ver = out[separator + 1:].strip()
-                if len(ver):
-                    version = ver
-                    logging.debug('Package version for %s is %s', package, version)
-                    if package not in self.package_versions or \
-                            self.package_versions[package] != ver:
-                        self.package_versions[package] = ver
-                        with open(self.package_cache, 'wb') as f_out:
-                            json.dump(self.package_versions, f_out)
+            for line in out.splitlines():
+                separator = line.find('=')
+                if separator > -1:
+                    ver = line[separator + 1:].strip()
+                    if len(ver):
+                        version = ver
+                        logging.debug('Package version for %s is %s', package, version)
+                        if package not in self.package_versions or \
+                                self.package_versions[package] != ver:
+                            self.package_versions[package] = ver
+                            with open(self.package_cache, 'wb') as f_out:
+                                json.dump(self.package_versions, f_out)
+                        break
         if version is None and package in self.package_versions:
             version = self.package_versions[package]
         return version
