@@ -21,5 +21,9 @@ try {
               "duration": measures[i].duration});
   }
 } catch(e) {};
+try {
+  performance.clearMarks();
+  performance.clearMeasures();
+} catch(e) {};
 return m;
 })()
