@@ -545,7 +545,7 @@ class DevTools(object):
                 import dns.resolver
                 dns_servers = dns.resolver.query(domain, "NS")
                 dns_server = str(dns_servers[0].target).strip('. ')
-                page_data['base_page_dns_soa'] = dns_server
+                page_data['base_page_dns_ns'] = dns_server
             except Exception:
                 pass
             pos = domain.find('.')
