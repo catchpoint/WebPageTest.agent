@@ -158,6 +158,7 @@ class DesktopBrowser(object):
             self.recording = True
             ver = platform.uname()
             task['page_data']['osVersion'] = '{0} {1}'.format(ver[0], ver[2])
+            task['page_data']['os_version'] = '{0} {1}'.format(ver[0], ver[2])
             # Spawn tcpdump
             if self.tcpdump_enabled:
                 self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'

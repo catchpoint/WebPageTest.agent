@@ -114,6 +114,7 @@ class DevtoolsBrowser(object):
         """Start recording"""
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
+            task['page_data']['browser_version'] = self.browser_version
         if self.devtools is not None:
             self.devtools.start_recording()
 
