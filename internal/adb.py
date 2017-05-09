@@ -7,7 +7,6 @@ import os
 import re
 import subprocess
 from threading import Timer
-import ujson as json
 
 class Adb(object):
     """ADB command-line interface"""
