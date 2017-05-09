@@ -525,7 +525,34 @@ class DevTools(object):
                     main_request['final_base_page'] = True
                     page_data['final_base_page_request'] = main_request_index
                     page_data['final_base_page_request_id'] = raw_page_data['mainResourceID']
+                    page_data['final_url'] = requests[main_request_index]['full_url']
+                    self.get_base_page_info(page_data)
             requests.sort(key=lambda x: x['load_start'])
+
+    def get_base_page_info(self, page_data):
+        """Find the reverse-ip info for the base page"""
+        domain = urlparse.urlsplit(page_data['final_url']).hostname
+        try:
+            import socket
+            addr = socket.gethostbyname(domain)
+            host = str(socket.gethostbyaddr(addr)[0])
+            page_data['base_page_ip_ptr'] = host
+        except Exception:
+            pass
+        # keep moving up the domain until we can get a NS record
+        while domain is not None and 'base_page_dns_soa' not in page_data:
+            try:
+                import dns.resolver
+                dns_servers = dns.resolver.query(domain, "NS")
+                dns_server = str(dns_servers[0].target).strip('. ')
+                page_data['base_page_dns_soa'] = dns_server
+            except Exception:
+                pass
+            pos = domain.find('.')
+            if pos > 0:
+                domain = domain[pos + 1:]
+            else:
+                domain = None
 
     def get_response_header(self, request, header):
         """Pull a specific header value from the response headers"""
