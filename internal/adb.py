@@ -23,11 +23,6 @@ class Adb(object):
         self.last_bytes_rx = 0
         self.initialized = False
         self.cache_dir = cache_dir
-        self.package_cache = os.path.join(cache_dir, 'adb.package.cache')
-        self.package_versions = {}
-        if os.path.isfile(self.package_cache):
-            with open(self.package_cache, 'rb') as f_in:
-                self.package_versions = json.load(f_in)
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -472,12 +467,5 @@ class Adb(object):
                     if len(ver):
                         version = ver
                         logging.debug('Package version for %s is %s', package, version)
-                        if package not in self.package_versions or \
-                                self.package_versions[package] != ver:
-                            self.package_versions[package] = ver
-                            with open(self.package_cache, 'wb') as f_out:
-                                json.dump(self.package_versions, f_out)
                         break
-        if version is None and package in self.package_versions:
-            version = self.package_versions[package]
         return version
