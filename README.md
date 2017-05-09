@@ -29,6 +29,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * netem,\<interface\> - Use NetEm for bridging rndis traffic (specify outbound interface).  i.e. --shaper netem,eth0
     * remote,\<server\>,\<down pipe\>,\<up pipe\> - Connect to the remote server over ssh and use pre-configured dummynet pipes (ssh keys for root user should be pre-authorized).
 
+### CPU Throttling
+* **--throttle**: Enable cgroup-based CPU throttling for mobile emulation (Linux only).
+
 ### Android testing options
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).

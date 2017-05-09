@@ -238,6 +238,13 @@ class WPTAgent(object):
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
 
+        if self.options.throttle:
+            try:
+                subprocess.check_output('sudo cgset -h', shell=True)
+            except Exception:
+                print "Missing cgroups, make sure cgroup-tools is installed."
+                ret = False
+
         # Windows-specific imports
         if platform.system() == "Windows":
             try:
@@ -377,6 +384,11 @@ def main():
                         '    remote,<server>,<down pipe>,<up pipe> - Connect to the remote server '\
                         'over ssh and use pre-configured dummynet pipes (ssh keys for root user '\
                         'should be pre-authorized).')
+
+    # CPU Throttling
+    parser.add_argument('--throttle', action='store_true', default=False,
+                        help='Enable cgroup-based CPU throttling for mobile emulation '\
+                        '(Linux only).')
 
     # Android options
     parser.add_argument('--android', action='store_true', default=False,
