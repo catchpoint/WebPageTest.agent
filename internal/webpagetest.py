@@ -349,6 +349,8 @@ class WebPageTest(object):
                         'combine_steps': False,
                         'video_directories': [],
                         'page_data': {}}
+                if 'browser' in job:
+                    task['page_data']['browser_name'] = job['browser']
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
