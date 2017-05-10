@@ -294,7 +294,10 @@ class WebPageTest(object):
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
-                    job['cpu_scale_multiplier'] = self.cpu_scale_multiplier
+                    if 'throttle_cpu' in job:
+                        throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
+                        throttle *= self.cpu_scale_multiplier
+                        job['throttle_cpu'] = throttle
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True

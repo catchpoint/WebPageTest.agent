@@ -33,6 +33,7 @@ class DesktopBrowser(object):
         self.pcap_thread = None
         self.task = None
         self.cpu_start = None
+        self.throttling_cpu = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, _job, task):
@@ -102,6 +103,7 @@ class DesktopBrowser(object):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
+        command_line = self.enable_cpu_throttling(command_line)
         logging.debug(command_line)
         self.proc = subprocess.Popen(command_line, shell=True)
 
@@ -114,6 +116,7 @@ class DesktopBrowser(object):
             self.proc.terminate()
             self.proc.kill()
             self.proc = None
+        self.disable_cpu_throttling()
 
     def wait_for_idle(self):
         """Wait for no more than 20% of a single core used for 500ms"""
@@ -152,6 +155,7 @@ class DesktopBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        self.start_cpu_throttling()
         import psutil
         if task['log_data']:
             self.cpu_start = psutil.cpu_times()
@@ -182,6 +186,7 @@ class DesktopBrowser(object):
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
+        self.stop_cpu_throttling()
         import psutil
         if self.cpu_start is not None:
             cpu_end = psutil.cpu_times()
@@ -302,3 +307,60 @@ class DesktopBrowser(object):
             last_time = now
             last_bytes = bytes_in
             self.usage_queue.put(snapshot)
+
+    def enable_cpu_throttling(self, command_line):
+        """Prepare the CPU throttling if necessary"""
+        if self.options.throttle and 'throttle_cpu' in self.job and \
+                self.job['throttle_cpu'] > 1:
+            try:
+                import getpass
+                uid = '{0}:{0}'.format(getpass.getuser())
+                cmd = ['sudo', 'cgcreate', '-a', uid, '-t', uid, '-g', 'cpu,cpuset:wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+                cmd = ['sudo', 'cgset', '-r', 'cpuset.cpus="0"', 'wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us=1000', 'wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_quota_us=1000', 'wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+                command_line = 'cgexec -g cpu:wptagent ' + command_line
+            except Exception as err:
+                logging.critical("Exception enabling throttling: %s", err.__str__())
+            self.throttling_cpu = True
+        return command_line
+
+    def disable_cpu_throttling(self):
+        """Remove the CPU throttling if necessary"""
+        if self.throttling_cpu:
+            try:
+                cmd = ['sudo', 'cgdelete', '-r', 'cpu,cpuset:wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+            except Exception:
+                pass
+
+    def start_cpu_throttling(self):
+        """Start the CPU throttling if necessary"""
+        if self.throttling_cpu:
+            try:
+                # Leave the quota at 1000 and vary the period to get to the correct multiplier
+                period = int(round(1000.0 * self.job['throttle_cpu']))
+                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us={0:d}'.format(period), 'wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+            except Exception:
+                pass
+
+    def stop_cpu_throttling(self):
+        """Start the CPU throttling if necessary"""
+        if self.throttling_cpu:
+            try:
+                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us=1000', 'wptagent']
+                logging.debug(' '.join(cmd))
+                subprocess.check_call(cmd)
+            except Exception:
+                pass
