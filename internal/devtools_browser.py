@@ -223,7 +223,7 @@ class DevtoolsBrowser(object):
                 cmd.append('--cached')
             out_file = path_base + '_devtools_requests.json.gz'
             cmd.extend(['--out', out_file])
-            logging.debug(cmd)
+            logging.debug(' '.join(cmd))
             subprocess.call(cmd)
 
     def run_js_file(self, file_name):
