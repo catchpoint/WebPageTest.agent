@@ -598,8 +598,9 @@ class DevTools(object):
                 if 'full_url' in request:
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
-                                entry['url'] == request['full_url']:
+                                'netlog' not in request and entry['url'] == request['full_url']:
                             entry['claimed'] = True
+                            request['netlog'] = True
                             for key in mapping:
                                 if key in entry:
                                     if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
