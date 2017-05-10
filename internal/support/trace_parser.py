@@ -561,7 +561,7 @@ class Trace():
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 if 'url' in request and request['url'][:16] != 'http://127.0.0.1' and \
-                        'start' in request:
+                        'start' in request and 'socket' in request:
                     # Copy any http/2 info over
                     if 'h2_session' in self.netlog and \
                             'h2_session' in request and \
