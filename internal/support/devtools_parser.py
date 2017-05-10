@@ -598,9 +598,8 @@ class DevTools(object):
                 if 'full_url' in request:
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
-                                'netlog' not in request and entry['url'] == request['full_url']:
+                                entry['url'] == request['full_url']:
                             entry['claimed'] = True
-                            request['netlog'] = True
                             for key in mapping:
                                 if key in entry:
                                     if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
@@ -616,11 +615,15 @@ class DevTools(object):
                                                                entry['start']))
                             if 'pushed' in entry and entry['pushed']:
                                 request['was_pushed'] = 1
+                            break
             # Add any requests we didn't know about
+            index = 0
             for entry in netlog:
                 if 'claimed' not in entry and 'url' in entry:
+                    index += 1
                     request = {'type': 3, 'full_url': entry['url']}
                     parts = urlparse.urlsplit(entry['url'])
+                    request['id'] = '99999.99999.{0:d}'.format(index)
                     request['is_secure'] = 1 if parts.scheme == 'https' else 0
                     request['host'] = parts.netloc
                     request['url'] = parts.path
@@ -710,6 +713,7 @@ class DevTools(object):
                             page_data['result'] = 99999
                     else:
                         page_data['responses_other'] += 1
+                    requests.append(request)
         if len(requests):
             requests.sort(key=lambda x: x['load_start'])
 
