@@ -561,7 +561,7 @@ class Trace():
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 if 'url' in request and request['url'][:16] != 'http://127.0.0.1' and \
-                        'start' in request and 'socket' in request:
+                        'start' in request:
                     # Copy any http/2 info over
                     if 'h2_session' in self.netlog and \
                             'h2_session' in request and \
@@ -588,7 +588,8 @@ class Trace():
                             if stream['bytes_in'] > request['bytes_in']:
                                 request['bytes_in'] = stream['bytes_in']
                                 request['chunks'] = stream['chunks']
-                    requests.append(request)
+                    if 'phantom' not in request:
+                        requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
                 requests.sort(key=lambda x: x['start'])
@@ -760,6 +761,15 @@ class Trace():
                 stream['end'] = trace_event['ts']
                 if 'headers' in params:
                     stream['response_headers'] = params['headers']
+            if name == 'HTTP2_STREAM_ADOPTED_PUSH_STREAM' and 'url' in params and \
+                    'url_request' in self.netlog:
+                # Find the phantom request with the matching url and mark it
+                for request_id in self.netlog['url_request']:
+                    request = self.netlog['url_request'][request_id]
+                    if 'url' in request and params['url'] == request['url'] and \
+                            'start' not in request:
+                        request['phantom'] = True
+                        break
         if name == 'HTTP2_SESSION_RECV_PUSH_PROMISE' and 'promised_stream_id' in params:
             # Create a fake request to match the push
             if 'url_request' not in self.netlog:
