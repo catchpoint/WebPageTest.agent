@@ -258,7 +258,7 @@ class DevTools(object):
                 page_data['mainResourceID'] = main_resource_id
         # sort the requests by start time
         if len(net_requests):
-            net_requests.sort(key=lambda x: x['startTime'])
+            net_requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
         return net_requests, page_data
 
 
