@@ -266,7 +266,7 @@ class DevTools(object):
         """Process the raw requests into high-level requests"""
         self.result = {'pageData': {}, 'requests': []}
         if 'startTime' not in raw_page_data:
-            return
+            raw_page_data['startTime'] = 0
         page_data = self.result['pageData']
         requests = self.result['requests']
         page_data['loadTime'] = 0
