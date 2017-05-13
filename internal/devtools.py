@@ -44,6 +44,7 @@ class DevTools(object):
         self.tab_id = None
         self.use_devtools_video = use_devtools_video
         self.recording_video = False
+        self.main_thread_blocked = False
         self.prepare()
 
     def prepare(self):
@@ -489,32 +490,34 @@ class DevTools(object):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
-        if response is not None and 'result' in response and 'data' in response['result']:
-            resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
-            if png:
-                with open(path, 'wb') as image_file:
-                    image_file.write(base64.b64decode(response['result']['data']))
-                # Fix png issues
-                cmd = 'mogrify -format png -define png:color-type=2 '\
-                        '-depth 8 {0}"{1}"'.format(resize_string, path)
-                logging.debug(cmd)
-                subprocess.call(cmd, shell=True)
-                self.crop_screen_shot(path)
-            else:
-                tmp_file = path + '.png'
-                with open(tmp_file, 'wb') as image_file:
-                    image_file.write(base64.b64decode(response['result']['data']))
-                self.crop_screen_shot(tmp_file)
-                command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
-                    tmp_file, resize_string, self.job['iq'], path)
-                logging.debug(command)
-                subprocess.call(command, shell=True)
-                if os.path.isfile(tmp_file):
-                    try:
-                        os.remove(tmp_file)
-                    except Exception:
-                        pass
+        if not self.main_thread_blocked:
+            response = self.send_command("Page.captureScreenshot", {'fromSurface': True},
+                                         wait=True, timeout=10)
+            if response is not None and 'result' in response and 'data' in response['result']:
+                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
+                if png:
+                    with open(path, 'wb') as image_file:
+                        image_file.write(base64.b64decode(response['result']['data']))
+                    # Fix png issues
+                    cmd = 'mogrify -format png -define png:color-type=2 '\
+                            '-depth 8 {0}"{1}"'.format(resize_string, path)
+                    logging.debug(cmd)
+                    subprocess.call(cmd, shell=True)
+                    self.crop_screen_shot(path)
+                else:
+                    tmp_file = path + '.png'
+                    with open(tmp_file, 'wb') as image_file:
+                        image_file.write(base64.b64decode(response['result']['data']))
+                    self.crop_screen_shot(tmp_file)
+                    command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                        tmp_file, resize_string, self.job['iq'], path)
+                    logging.debug(command)
+                    subprocess.call(command, shell=True)
+                    if os.path.isfile(tmp_file):
+                        try:
+                            os.remove(tmp_file)
+                        except Exception:
+                            pass
 
     def colors_are_similar(self, color1, color2, threshold=15):
         """See if 2 given pixels are of similar color"""
@@ -588,7 +591,7 @@ class DevTools(object):
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""
         ret = None
-        if self.task['error'] is None:
+        if self.task['error'] is None and not self.main_thread_blocked:
             response = self.send_command("Runtime.evaluate",
                                          {'expression': script, 'returnByValue': True},
                                          wait=True, timeout=30)
@@ -643,6 +646,10 @@ class DevTools(object):
                                            {"accept": True}, wait=True)
                 if result is not None and 'error' in result:
                     self.task['error'] = "Page opened a modal dailog"
+        elif event == 'interstitialShown':
+            self.main_thread_blocked = True
+            logging.debug("Page opened a modal interstitial")
+            self.nav_error = "Page opened a modal interstitial"
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
