@@ -491,7 +491,7 @@ class DevTools(object):
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if not self.main_thread_blocked:
-            response = self.send_command("Page.captureScreenshot", wait=True, timeout=10)
+            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
             if response is not None and 'result' in response and 'data' in response['result']:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
