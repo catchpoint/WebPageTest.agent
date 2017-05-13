@@ -226,35 +226,36 @@ class WebPageTest(object):
         if self.url is None:
             return None
         job = None
-        url = self.url + "getwork.php?f=json&shards=1"
-        # round-robin through the configured locations
+        locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
+        location = str(locations.pop(0))
+        # Shuffle the list order
         if len(self.test_locations) > 1:
-            self.location = str(self.test_locations.pop(0))
-            self.test_locations.append(str(self.location))
-        url += "&location=" + urllib.quote_plus(self.location)
-        url += "&pc=" + urllib.quote_plus(self.pc_name)
-        if self.key is not None:
-            url += "&key=" + urllib.quote_plus(self.key)
-        if self.instance_id is not None:
-            url += "&ec2=" + urllib.quote_plus(self.instance_id)
-        if self.zone is not None:
-            url += "&ec2zone=" + urllib.quote_plus(self.zone)
-        if self.options.android:
-            url += '&apk=1'
-        if self.version is not None:
-            url += '&version={0}'.format(self.version)
-        if self.screen_width is not None:
-            url += '&screenwidth={0:d}'.format(self.screen_width)
-        if self.screen_height is not None:
-            url += '&screenheight={0:d}'.format(self.screen_height)
-        free_disk = get_free_disk_space()
-        url += '&freedisk={0:0.3f}'.format(free_disk)
-        logging.info("Checking for work: %s", url)
+            self.test_locations.append(str(self.test_locations.pop(0)))
         count = 0
         retry = True
         while count < 3 and retry:
             retry = False
             count += 1
+            url = self.url + "getwork.php?f=json&shards=1"
+            url += "&location=" + urllib.quote_plus(location)
+            url += "&pc=" + urllib.quote_plus(self.pc_name)
+            if self.key is not None:
+                url += "&key=" + urllib.quote_plus(self.key)
+            if self.instance_id is not None:
+                url += "&ec2=" + urllib.quote_plus(self.instance_id)
+            if self.zone is not None:
+                url += "&ec2zone=" + urllib.quote_plus(self.zone)
+            if self.options.android:
+                url += '&apk=1'
+            if self.version is not None:
+                url += '&version={0}'.format(self.version)
+            if self.screen_width is not None:
+                url += '&screenwidth={0:d}'.format(self.screen_width)
+            if self.screen_height is not None:
+                url += '&screenheight={0:d}'.format(self.screen_height)
+            free_disk = get_free_disk_space()
+            url += '&freedisk={0:0.3f}'.format(free_disk)
+            logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30)
                 if len(response.text):
@@ -298,6 +299,9 @@ class WebPageTest(object):
                         throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
                         throttle *= self.cpu_scale_multiplier
                         job['throttle_cpu'] = throttle
+                if job is None and len(locations) > 0:
+                    location = str(locations.pop(0))
+                    retry = True
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
