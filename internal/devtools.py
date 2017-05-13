@@ -470,7 +470,11 @@ class DevTools(object):
                     pass
                 now = monotonic.monotonic()
                 elapsed_test = now - start_time
-                if now >= end_time:
+                if self.nav_error is not None:
+                    done = True
+                    if self.page_loaded is None:
+                        self.task['error'] = self.nav_error
+                elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
