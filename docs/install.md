@@ -26,6 +26,10 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
         * ```sudo apt-get update```
         * ```sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable```
 
+## OS Tweaks
+### Linux
+* By default Linux will take 1-2 minutes to time out on socket connections.  You can lower it to 20 seconds to fail faster (and match windows) by configuring the retries in /etc/sysctl.conf:
+    * ```net.ipv4.tcp_syn_retries = 4```
 
 ## For lighthouse testing (coming soon)
 * NodeJS 7.x
