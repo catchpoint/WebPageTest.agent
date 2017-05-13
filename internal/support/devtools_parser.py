@@ -265,6 +265,8 @@ class DevTools(object):
     def process_requests(self, raw_requests, raw_page_data):
         """Process the raw requests into high-level requests"""
         self.result = {'pageData': {}, 'requests': []}
+        if 'startTime' not in raw_page_data:
+            raw_page_data['startTime'] = 0
         page_data = self.result['pageData']
         requests = self.result['requests']
         page_data['loadTime'] = 0
@@ -700,10 +702,12 @@ class DevTools(object):
                         request['bytesIn'] = int(entry['bytes_in'])
                         request['objectSize'] = int(entry['bytes_in'])
                     request['bytesOut'] = 0
-                    page_data['bytesIn'] += int(request['bytesIn'])
+                    if 'bytesIn' in request:
+                        page_data['bytesIn'] += int(request['bytesIn'])
                     page_data['requests'] += 1
                     if request['load_start'] < page_data['docTime']:
-                        page_data['bytesInDoc'] += int(request['bytesIn'])
+                        if 'bytesIn' in request:
+                            page_data['bytesInDoc'] += int(request['bytesIn'])
                         page_data['requestsDoc'] += 1
                     if request['responseCode'] == 200:
                         page_data['responses_200'] += 1
