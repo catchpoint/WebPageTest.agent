@@ -401,20 +401,15 @@ class OptimizationChecks(object):
             is_static, _ = self.get_time_remaining(request)
             if is_static:
                 static_requests[request_id] = True
-                if 'url' in request:
-                    domain = urlparse(request['url']).hostname
-                    if domain is not None:
-                        if domain not in domains:
-                            # Check the domain itself against the CDN list
-                            domains[domain] = ''
-                            provider = self.check_cdn_name(domain)
-                            if provider is not None:
-                                domains[domain] = provider
-                        if not len(domains[domain]) and 'response_headers' in request:
-                            # Check the headers on the current response_headers
-                            provider = self.check_cdn_headers(request['response_headers'])
-                            if provider is not None:
-                                domains[domain] = provider
+            if 'url' in request:
+                domain = urlparse(request['url']).hostname
+                if domain is not None:
+                    if domain not in domains:
+                        # Check the domain itself against the CDN list
+                        domains[domain] = ''
+                        provider = self.check_cdn_name(domain)
+                        if provider is not None:
+                            domains[domain] = provider
         # Spawn several workers to do CNAME lookups for the unknown domains
         count = 0
         for domain in domains:
@@ -438,16 +433,21 @@ class OptimizationChecks(object):
                 pass
         # Final pass, populate the CDN infor for each request
         for request_id in self.requests:
+            check = {'score': -1, 'provider': ''}
+            request = self.requests[request_id]
             if request_id in static_requests:
-                request = self.requests[request_id]
-                if 'url' in request:
-                    check = {'score': 0, 'provider': ''}
-                    domain = urlparse(request['url']).hostname
-                    if domain is not None:
-                        if domain in domains and len(domains[domain]):
-                            check['score'] = 100
-                            check['provider'] = domains[domain]
-                    self.cdn_results[request_id] = check
+                check['score'] = 0
+            if 'url' in request:
+                domain = urlparse(request['url']).hostname
+                if domain is not None:
+                    if domain in domains and len(domains[domain]):
+                        check['score'] = 100
+                        check['provider'] = domains[domain]
+                if not len(check['provider']) and 'response_headers' in request:
+                    provider = self.check_cdn_headers(request['response_headers'])
+                    if provider is not None:
+                        check['provider'] = provider
+                self.cdn_results[request_id] = check
         self.cdn_time = monotonic.monotonic() - start
 
     def dns_worker(self):

@@ -519,12 +519,15 @@ class DevTools(object):
                 main_request = None
                 main_request_index = None
                 for request in requests:
-                    if request['id'] == raw_page_data['mainResourceID']:
+                    if 'full_url' in request and len(request['full_url']) and \
+                            request['id'] == raw_page_data['mainResourceID']:
                         main_request_index = index
                         main_request = request
                     index += 1
                 if main_request is not None:
                     main_request['final_base_page'] = True
+                    request = requests[main_request_index]
+                    requests[main_request_index]['is_base_page'] = True
                     page_data['final_base_page_request'] = main_request_index
                     page_data['final_base_page_request_id'] = raw_page_data['mainResourceID']
                     page_data['final_url'] = requests[main_request_index]['full_url']
@@ -750,6 +753,7 @@ class DevTools(object):
             page_data['image_total'] = 0
             page_data['image_savings'] = 0
             page_data['optimization_checked'] = 1
+            page_data['base_page_cdn'] = ''
             cache_count = 0
             cache_total = 0
             cdn_count = 0
@@ -776,6 +780,9 @@ class DevTools(object):
                             request['cdn_provider'] = opt['cdn']['provider']
                             cdn_count += 1
                             cdn_total += request['score_cdn']
+                            if 'is_base_page' in request and request['is_base_page'] and \
+                                    request['cdn_provider'] is not None:
+                                page_data['base_page_cdn'] = request['cdn_provider']
                         if 'keep_alive' in opt:
                             request['score_keep-alive'] = opt['keep_alive']['score']
                             keep_alive_count += 1
