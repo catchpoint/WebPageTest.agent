@@ -688,7 +688,7 @@ class DevTools(object):
                                 request['responseCode'] = int(matches.group(1))
                             matches = re.search(r'^content-type: (.+)', header, re.IGNORECASE)
                             if matches:
-                                request['contentType'] = matches.group(1)
+                                request['contentType'] = matches.group(1).split(';')[0]
                             matches = re.search(r'^cache-control: (.+)', header, re.IGNORECASE)
                             if matches:
                                 request['cacheControl'] = matches.group(1)
