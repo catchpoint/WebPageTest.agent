@@ -67,6 +67,12 @@ class VideoProcessing(object):
                             pass
                     else:
                         baseline = files[index]
+            # Compress to the target quality and size
+            for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
+                command = 'mogrify -define jpeg:dct-method=fast -resize {0:d}x{0:d} '\
+                    '-quality {1:d} "{2}"'.format(VIDEO_SIZE, self.job['iq'], path)
+                logging.debug(command)
+                subprocess.call(command, shell=True)
             # Run visualmetrics against them
             logging.debug("Processing video frames")
             if self.task['current_step'] == 1:
@@ -85,12 +91,6 @@ class VideoProcessing(object):
                         '_rendered_video.mp4'
                 args.extend(['--render', video_out])
             subprocess.call(args)
-            # Compress to the target quality and size
-            for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                command = 'mogrify -define jpeg:dct-method=fast -resize {0:d}x{0:d} -quality {1:d} "{2}"'.format(
-                    VIDEO_SIZE, self.job['iq'], path)
-                logging.debug(command)
-                subprocess.call(command, shell=True)
 
     def frames_match(self, image1, image2, crop_region, fuzz_percent, max_differences):
         """Compare video frames"""
