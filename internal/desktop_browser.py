@@ -310,6 +310,8 @@ class DesktopBrowser(object):
 
     def enable_cpu_throttling(self, command_line):
         """Prepare the CPU throttling if necessary"""
+        if self.options.throttle and 'throttle_cpu' in self.job:
+            logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
         if self.options.throttle and 'throttle_cpu' in self.job and \
                 self.job['throttle_cpu'] > 1:
             try:
