@@ -202,6 +202,8 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
+        # Turn down the volume (just one notch each time it is run)
+        self.shell(['input', 'keyevent', '25'])
         # Clear notifications
         self.su('service call notification 1')
         # Close some known apps that pop-over
