@@ -780,8 +780,6 @@ class DevToolsClient(WebSocketClient):
         self.path_base = None
         self.trace_parser = None
         self.trace_event_counts = {}
-        self.trace_data = re.compile(r'method"\s*:\s*"Tracing.dataCollected')
-        self.trace_done = re.compile(r'method"\s*:\s*"Tracing.tracingComplete')
 
     def opened(self):
         """Websocket interface - connection opened"""
@@ -800,13 +798,13 @@ class DevToolsClient(WebSocketClient):
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
                 compare = message[:50]
                 is_trace_data = False
-                if self.path_base is not None and self.trace_data.search(compare):
+                if self.path_base is not None and compare.find('"Tracing.dataCollected') > -1:
                     is_trace_data = True
                     msg = json.loads(message)
                     self.messages.put('{"method":"got_message"}')
                     if msg is not None:
                         self.process_trace_event(msg)
-                elif self.trace_file is not None and self.trace_done.search(compare):
+                elif self.trace_file is not None and compare.find('"Tracing.tracingComplete') > -1:
                     self.trace_file.write("\n]}")
                     self.trace_file.close()
                     self.trace_file = None
