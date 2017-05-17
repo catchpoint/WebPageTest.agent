@@ -128,6 +128,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
+        command_line += ' about:blank'
         local_command_line = os.path.join(task['dir'], self.config['command_line_file'])
         remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
         root_command_line = '/data/local/' + self.config['command_line_file']

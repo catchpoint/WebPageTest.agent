@@ -1,5 +1,6 @@
 /.vscode
 /browsers.ini
+/browsers.ini.dev
 *.pyc
 /run.cmd
 /run.sh

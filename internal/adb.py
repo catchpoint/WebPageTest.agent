@@ -202,8 +202,6 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
-        # Turn down the volume (just one notch each time it is run)
-        self.shell(['input', 'keyevent', '25'])
         # Clear notifications
         self.su('service call notification 1')
         # Close some known apps that pop-over
@@ -346,6 +344,8 @@ class Adb(object):
         """Check to see if the device is ready to run tests"""
         is_ready = True
         if self.version is None:
+            # Turn down the volume (just one notch each time it is run)
+            self.shell(['input', 'keyevent', '25'])
             self.cleanup_device()
             out = self.shell(['getprop', 'ro.build.version.release'], silent=True)
             if out is not None:
