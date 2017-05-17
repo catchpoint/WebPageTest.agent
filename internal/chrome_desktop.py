@@ -75,7 +75,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = self.path
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine'] + ' ' + START_PAGE
+            command_line += ' ' + job['addCmdLine']
+        command_line += ' ' + START_PAGE
         # re-try launching and connecting a few times if necessary
         connected = False
         count = 0
