@@ -75,7 +75,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = self.path
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + job['addCmdLine'] + ' ' + START_PAGE
         # re-try launching and connecting a few times if necessary
         connected = False
         count = 0
@@ -91,7 +91,6 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 time.sleep(10)
         if connected:
             self.connected = True
-            DevtoolsBrowser.navigate(self, START_PAGE)
             DevtoolsBrowser.prepare_browser(self, task)
             DevtoolsBrowser.navigate(self, START_PAGE)
             DesktopBrowser.wait_for_idle(self)
