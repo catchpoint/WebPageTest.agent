@@ -2,12 +2,17 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for webdriver browsers"""
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import logging
 import os
+import Queue
 import re
 import shutil
+import subprocess
+import threading
 import time
 import monotonic
+import ujson as json
 from .desktop_browser import DesktopBrowser
 
 """ Orange page that changes itself to white on navigation
@@ -48,6 +53,14 @@ class Firefox(DesktopBrowser):
         self.event_name = None
         self.moz_log = None
         self.marionette = None
+        self.addons = None
+        self.extension_id = None
+        self.extension = None
+        self.nav_error = None
+        self.page_loaded = None
+        self.recording = False
+        self.connected = False
+        self.last_activity = monotonic.monotonic()
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -57,7 +70,7 @@ class Firefox(DesktopBrowser):
                                 'nsHostResolver:5,pipnss:5'
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                        'profiles', 'Firefox')
+                                        'support', 'Firefox', 'profile')
         if not task['cached'] and os.path.isdir(profile_template):
             try:
                 if os.path.isdir(task['profile']):
@@ -68,11 +81,13 @@ class Firefox(DesktopBrowser):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        self.connected = False
+        self.extension = MessageServer()
+        self.extension.start()
         from marionette_driver.marionette import Marionette
+        from marionette_driver.addons import Addons
         args = ['-profile', '"{0}"'.format(task['profile']),
                 '-no-remote',
-                '-width', str(task['width']),
-                '-height', str(task['height']),
                 '-marionette',
                 'about:blank']
         if self.path.find(' ') > -1:
@@ -82,19 +97,39 @@ class Firefox(DesktopBrowser):
         command_line += ' ' + ' '.join(args)
         DesktopBrowser.launch_browser(self, command_line)
         self.marionette = Marionette('localhost', port=2828)
-        self.marionette.start_session(timeout=60)
+        self.marionette.start_session(timeout=self.task['time_limit'])
+        logging.debug('Installing extension')
+        self.addons = Addons(self.marionette)
+        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                      'support', 'Firefox', 'extension')
+        self.extension_id = self.addons.install(extension_path, temp=True)
+        logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
+        self.marionette.set_window_position(x=0, y=0)
+        self.marionette.set_window_size(height=task['height'], width=task['width'])
         self.marionette.navigate(START_PAGE)
+        time.sleep(0.5)
+        self.wait_for_extension()
+        if self.connected:
+            DesktopBrowser.wait_for_idle(self)
 
     def stop(self, job, task):
+        """Kill the browser"""
+        if self.extension_id is not None and self.addons is not None:
+            self.addons.uninstall(self.extension_id)
+            self.extension_id = None
+            self.addons = None
         if self.marionette is not None:
             self.marionette.close()
+            self.marionette = None
         DesktopBrowser.stop(self, job, task)
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
+        self.extension.stop()
+        self.extension = None
 
     def run_task(self, task):
         """Run an individual test"""
-        if self.marionette is not None:
+        if self.marionette is not None and self.connected:
             self.task = task
             logging.debug("Running test")
             end_time = monotonic.monotonic() + task['time_limit']
@@ -124,9 +159,72 @@ class Firefox(DesktopBrowser):
             self.marionette.navigate('about:blank')
             self.task = None
 
+    def wait_for_extension(self):
+        """Wait for the extension to send the started message"""
+        if self.extension is not None:
+            end_time = monotonic.monotonic()  + 30
+            while monotonic.monotonic() < end_time:
+                try:
+                    self.extension.get_message(1)
+                    logging.debug('Extension started')
+                    self.connected = True
+                    break
+                except Exception:
+                    pass
+
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
-        pass
+        if self.extension is not None and self.connected:
+            start_time = monotonic.monotonic()
+            end_time = start_time + self.task['time_limit']
+            done = False
+            while not done:
+                try:
+                    self.process_message(self.extension.get_message(1))
+                except Exception:
+                    pass
+                now = monotonic.monotonic()
+                elapsed_test = now - start_time
+                if self.nav_error is not None:
+                    done = True
+                    if self.page_loaded is None:
+                        self.task['error'] = self.nav_error
+                elif now >= end_time:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Page Load Timeout"
+                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                    elapsed_activity = now - self.last_activity
+                    elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
+                    if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
+                        done = True
+                    elif self.task['error'] is not None:
+                        done = True
+
+    def process_message(self, message):
+        """Process a message from the extension"""
+        logging.debug(message)
+        if self.recording:
+            self.last_activity = monotonic.monotonic()
+            try:
+                cat, msg = message['path'].split('.', 1)
+                if cat == 'webNavigation':
+                    self.process_web_navigation(msg, message['body'])
+            except Exception:
+                pass
+
+    def process_web_navigation(self, message, evt):
+        """Handle webNavigation.*"""
+        if evt is not None:
+            if message == 'onCompleted':
+                if 'frameId' in evt and evt['frameId'] == 0:
+                    self.page_loaded = monotonic.monotonic()
+                    logging.debug("Page loaded")
+            if message == 'onBeforeNavigate':
+                if 'frameId' in evt and evt['frameId'] == 0:
+                    self.page_loaded = None
+                    logging.debug("Starting navigation")
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
@@ -147,11 +245,25 @@ class Firefox(DesktopBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        self.recording = True
+        now = monotonic.monotonic()
+        if not self.task['stop_at_onload']:
+            self.last_activity = now
+        if self.page_loaded is not None:
+            self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
+        self.recording = False
         DesktopBrowser.on_stop_recording(self, task)
+        if self.connected:
+            if self.job['pngss']:
+                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
+                self.grab_screenshot(screen_shot, png=True)
+            else:
+                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
+                self.grab_screenshot(screen_shot, png=False, resize=600)
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
@@ -214,3 +326,110 @@ class Firefox(DesktopBrowser):
         """Navigate to the given URL"""
         if self.marionette is not None:
             self.marionette.navigate(url)
+
+    def grab_screenshot(self, path, png=True, resize=0):
+        """Save the screen shot (png or jpeg)"""
+        if self.marionette is not None:
+            data = self.marionette.screenshot(format='binary')
+            if data is not None:
+                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
+                if png:
+                    with open(path, 'wb') as image_file:
+                        image_file.write(data)
+                    if len(resize_string):
+                        cmd = 'mogrify -format png -define png:color-type=2 '\
+                              '-depth 8 {0}"{1}"'.format(resize_string, path)
+                        logging.debug(cmd)
+                        subprocess.call(cmd, shell=True)
+                else:
+                    tmp_file = path + '.png'
+                    with open(tmp_file, 'wb') as image_file:
+                        image_file.write(data)
+                    command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                        tmp_file, resize_string, self.job['iq'], path)
+                    logging.debug(command)
+                    subprocess.call(command, shell=True)
+                    if os.path.isfile(tmp_file):
+                        try:
+                            os.remove(tmp_file)
+                        except Exception:
+                            pass
+
+
+class HandleMessage(BaseHTTPRequestHandler):
+    """Handle a single message from the extension"""
+    def __init__(self, server, *args):
+        self.message_server = server
+        BaseHTTPRequestHandler.__init__(self, *args)
+
+    def _set_headers(self):
+        """Basic response headers"""
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+    # pylint: disable=C0103
+    def do_GET(self):
+        """HTTP GET"""
+        self._set_headers()
+        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
+
+    def do_HEAD(self):
+        """HTTP HEAD"""
+        self._set_headers()
+        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
+
+    def do_POST(self):
+        """HTTP POST"""
+        try:
+            content_len = int(self.headers.getheader('content-length', 0))
+            body = json.loads(self.rfile.read(content_len)) if content_len > 0 else None
+            self._set_headers()
+            self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': body})
+        except Exception:
+            pass
+    # pylint: enable=C0103
+
+def handler_template(server):
+    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
+    return lambda *args: HandleMessage(server, *args)
+
+class MessageServer(object):
+    """Local HTTP server for interacting with the extension"""
+    def __init__(self):
+        self.server = None
+        self.must_exit = False
+        self.thread = None
+        self.messages = Queue.Queue()
+
+    def get_message(self, timeout):
+        """Get a single message from the queue"""
+        return self.messages.get(block=True, timeout=timeout)
+
+    def handle_message(self, message):
+        """Add a received message to the queue"""
+        logging.debug(message)
+        self.messages.put(message)
+
+    def start(self):
+        """Start running the server in a background thread"""
+        self.thread = threading.Thread(target=self.run)
+        self.thread.start()
+
+    def stop(self):
+        """Stop running the server"""
+        self.must_exit = True
+        if self.thread is not None:
+            self.thread.join()
+
+    def run(self):
+        """Main server loop"""
+        handler = handler_template(self)
+        logging.debug('Starting extension server on port 8888')
+        self.server = HTTPServer(('127.0.0.1', 8888), handler)
+        self.server.timeout = 0.5
+        try:
+            while not self.must_exit:
+                self.server.handle_request()
+        except Exception:
+            pass
