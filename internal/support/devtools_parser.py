@@ -362,12 +362,16 @@ class DevTools(object):
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
                             request['bytesIn'] += len(raw_request['response']['headersText'])
                     request['objectSizeUncompressed'] = int(round(raw_request['bytesInData']))
-                request['expires'] = self.get_response_header(raw_request, 'Expires')
-                request['cacheControl'] = self.get_response_header(raw_request, 'Cache-Control')
-                request['contentType'] = self.get_response_header(raw_request, 'Content-Type')
-                request['contentEncoding'] = self.get_response_header(raw_request,
-                                                                      'Content-Encoding')
-                request['objectSize'] = self.get_response_header(raw_request, 'Content-Length')
+                request['expires'] = self.get_response_header(raw_request, \
+                        'Expires').replace("\n", ", ").replace("\r", "")
+                request['cacheControl'] = self.get_response_header(raw_request, \
+                        'Cache-Control').replace("\n", ", ").replace("\r", "")
+                request['contentType'] = self.get_response_header(raw_request, \
+                        'Content-Type').split(';')[0]
+                request['contentEncoding'] = self.get_response_header(raw_request, \
+                        'Content-Encoding').replace("\n", ", ").replace("\r", "")
+                request['objectSize'] = self.get_response_header(raw_request, \
+                        'Content-Length').split("\n")[0].replace("\r", "")
                 request['socket'] = -1
                 if 'response' in raw_request and 'connectionId' in raw_request['response']:
                     request['socket'] = raw_request['response']['connectionId']
