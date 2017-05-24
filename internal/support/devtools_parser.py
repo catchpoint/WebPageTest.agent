@@ -431,12 +431,12 @@ class DevTools(object):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
                     for key in raw_request['response']['requestHeaders']:
-                        value = raw_request['response']['requestHeaders'][key]
-                        request['headers']['request'].append('{0}: {1}'.format(key, value))
+                        for value in raw_request['response']['requestHeaders'][key].splitlines():
+                            request['headers']['request'].append('{0}: {1}'.format(key, value.strip()))
                 elif 'headers' in raw_request:
                     for key in raw_request['headers']:
-                        value = raw_request['headers'][key]
-                        request['headers']['request'].append('{0}: {1}'.format(key, value))
+                        for value in raw_request['headers'][key].splitlines():
+                            request['headers']['request'].append('{0}: {1}'.format(key, value.strip()))
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
                         line = line.strip()
@@ -444,8 +444,8 @@ class DevTools(object):
                             request['headers']['response'].append(line)
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
                     for key in raw_request['response']['headers']:
-                        value = raw_request['response']['headers'][key]
-                        request['headers']['response'].append('{0}: {1}'.format(key, value))
+                        for value in raw_request['response']['headers'][key].splitlines():
+                            request['headers']['response'].append('{0}: {1}'.format(key, value.strip()))
                 request['bytesOut'] = len("\r\n".join(request['headers']['request']))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
