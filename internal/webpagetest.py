@@ -57,7 +57,7 @@ class WebPageTest(object):
         self.pc_name = hostname if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
-        self.validate_server_certificate = False
+        self.validate_server_certificate = options.validcertificate
         self.instance_id = None
         self.zone = None
         # Get the screen resolution if we're in desktop mode
@@ -212,6 +212,8 @@ class WebPageTest(object):
                     elif key == 'wpt_password':
                         self.auth_password = value
                     elif key == 'wpt_validcertificate' and value == '1':
+                        self.validate_server_certificate = True
+                    elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
             except Exception:
                 pass

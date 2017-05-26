@@ -20,6 +20,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 
 ### Server/location configuration
 * **--server** (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
+* **--validcertificate**: Validate server certificates (HTTPS server, defaults to False).
 * **--location** (required): Location ID (as configured in locations.ini on the server).
 * **--key** : Location key (if configured in locations.ini).
 

@@ -369,6 +369,8 @@ def main():
     # Server/location configuration
     parser.add_argument('--server',
                         help="URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).")
+    parser.add_argument('--validcertificate', action='store_true', default=False,
+                        help="Validate server certificates (HTTPS server, defaults to False).")
     parser.add_argument('--location',
                         help="Location ID (as configured in locations.ini on the server).")
     parser.add_argument('--key', help="Location key (optional).")
