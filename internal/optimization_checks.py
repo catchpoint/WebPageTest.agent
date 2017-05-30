@@ -446,6 +446,7 @@ class OptimizationChecks(object):
                 if not len(check['provider']) and 'response_headers' in request:
                     provider = self.check_cdn_headers(request['response_headers'])
                     if provider is not None:
+                        check['score'] = 100
                         check['provider'] = provider
                 self.cdn_results[request_id] = check
         self.cdn_time = monotonic.monotonic() - start
