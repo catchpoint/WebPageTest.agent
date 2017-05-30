@@ -93,6 +93,12 @@ class DevtoolsBrowser(object):
                                            {"enabled": True,
                                             "configuration": "mobile"},
                                            wait=True)
+                if not self.options.throttle and 'throttle_cpu' in self.job:
+                    logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+                    if self.job['throttle_cpu'] > 1:
+                        self.devtools.send_command("Emulation.setCPUThrottlingRate",
+                                                   {"rate": self.job['throttle_cpu']},
+                                                   wait=True)
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None:
@@ -335,6 +341,7 @@ class DevtoolsBrowser(object):
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             command = ['lighthouse',
                        '--disable-network-throttling',
+                       '--disable-cpu-throttling',
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
@@ -342,7 +349,7 @@ class DevtoolsBrowser(object):
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
-                command.extend(['--disable-device-emulation', '--disable-cpu-throttling'])
+                command.append('--disable-device-emulation')
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
