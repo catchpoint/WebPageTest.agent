@@ -20,29 +20,66 @@ import gzip
 import logging
 import os
 import re
+import urlparse
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 class FirefoxLogParser(object):
     """Handle parsing of firefox logs"""
     def __init__(self):
         self.dns = {}
-        self.http = {'channels': {}, 'requests': {}}
-        self.result = {'pageData': {}, 'requests': []}
+        self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}}
         self.logline = re.compile(r'^(?P<timestamp>\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) \w+ - '
                                   r'\[(?P<thread>[^\]]+)\]: (?P<level>\w)/(?P<category>[^ ]+) '
                                   r'(?P<message>[^\r\n]+)')
 
-    def process_logs(self, log_file, out_file, optimization_file=None, is_cached=False):
+    def process_logs(self, log_file, start_time):
         """Process multiple child logs and generate a resulting requests and page data file"""
         self.__init__()
-        files = glob.glob(log_file + '*')
+        files = sorted(glob.glob(log_file + '*'))
         for path in files:
             try:
-                self.process_log_file(path)
+                self.process_log_file(path, start_time)
             except Exception:
                 pass
-        pass
+        requests = []
+        # Pull out the network requests and sort them
+        for request_id in self.http['requests']:
+            request = self.http['requests'][request_id]
+            if 'url' in request and request['url'][0:22] != 'http://127.0.0.1:8888/':
+                request['id'] = request_id
+                requests.append(request)
+        if len(requests):
+            requests.sort(key=lambda x: x['start'] if 'start' in x else 0)
+        # Attach the DNS lookups to the first request on each domain
+        for domain in self.dns:
+            if 'claimed' not in self.dns[domain]:
+                for request in requests:
+                    host = urlparse.urlsplit(request['url']).hostname
+                    if host == domain:
+                        self.dns[domain]['claimed'] = True
+                        if 'start' in self.dns[domain]:
+                            request['dns_start'] = self.dns[domain]['start']
+                        if 'end' in self.dns[domain]:
+                            request['dns_end'] = self.dns[domain]['end']
+                        break
+        # Attach the socket connect events to the first request on each connection
+        for request in requests:
+            if 'connection' in request and request['connection'] in self.http['connections']:
+                connection = self.http['connections'][request['connection']]
+                if 'socket' in connection and connection['socket'] in self.http['sockets']:
+                    socket = self.http['sockets'][connection['socket']]
+                    if 'claimed' not in socket:
+                        socket['claimed'] = True
+                        if 'start' in socket:
+                            request['connect_start'] = socket['start']
+                        if 'end' in socket:
+                            request['connect_end'] = socket['end']
+        return requests
 
-    def process_log_file(self, path):
+    def process_log_file(self, path, start_time):
         """Process a single log file"""
         logging.debug("Processing %s", path)
         _, ext = os.path.splitext(path)
@@ -50,46 +87,48 @@ class FirefoxLogParser(object):
             f_in = gzip.open(path, 'rb')
         else:
             f_in = open(path, 'r')
-        epoch = datetime.utcfromtimestamp(0)
         for line in f_in:
             parts = self.logline.search(line)
             if parts:
                 msg = {}
                 timestamp = parts.groupdict().get('timestamp')
                 parsed_timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
-                msg['timestamp'] = (parsed_timestamp - epoch).total_seconds()
-                msg['thread'] = parts.groupdict().get('thread')
-                msg['level'] = parts.groupdict().get('level')
-                msg['category'] = parts.groupdict().get('category')
-                msg['message'] = parts.groupdict().get('message')
-                if msg['category'] == 'nsHttp':
-                    if msg['thread'] == 'Main Thread':
-                        self.main_thread_http_entry(msg)
-                    elif msg['thread'] == 'Socket Thread':
-                        self.socket_thread_http_entry(msg)
-                elif msg['category'] == 'nsHostResolver':
-                    self.dns_entry(msg)
+                msg['timestamp'] = (parsed_timestamp - start_time).total_seconds()
+                if msg['timestamp'] >= 0:
+                    msg['thread'] = parts.groupdict().get('thread')
+                    msg['level'] = parts.groupdict().get('level')
+                    msg['category'] = parts.groupdict().get('category')
+                    msg['message'] = parts.groupdict().get('message')
+                    if msg['category'] == 'nsHttp':
+                        if msg['thread'] == 'Main Thread':
+                            self.main_thread_http_entry(msg)
+                        elif msg['thread'] == 'Socket Thread':
+                            self.socket_thread_http_entry(msg)
+                    elif msg['category'] == 'nsSocketTransport':
+                        self.socket_transport_entry(msg)
+                    elif msg['category'] == 'nsHostResolver':
+                        self.dns_entry(msg)
         f_in.close()
 
     def main_thread_http_entry(self, msg):
         """Process a single HTTP log line from the main thread"""
         # V/nsHttp HttpBaseChannel::Init [this=c30d000]
-        if msg['message'].find('HttpBaseChannel::Init') == 0:
+        if msg['message'].startswith('HttpBaseChannel::Init'):
             match = re.search(r'^HttpBaseChannel::Init \[this=(?P<channel>[\w\d]+)]',
                               msg['message'])
             if match:
                 self.http['current_channel'] = match.groupdict().get('channel')
         # D/nsHttp nsHttpChannel::Init [this=c30d000]
-        elif 'current_channel' in self.http and msg['message'].find('nsHttpChannel::Init') == 0:
+        elif 'current_channel' in self.http and msg['message'].startswith('nsHttpChannel::Init'):
             del self.http['current_channel']
         # V/nsHttp uri=http://www.webpagetest.org/?bare=1
-        elif 'current_channel' in self.http and  msg['message'].find('uri=') == 0:
+        elif 'current_channel' in self.http and  msg['message'].startswith('uri='):
             match = re.search(r'^uri=(?P<url>[^ ]+)', msg['message'])
             if match:
                 self.http['channels'][self.http['current_channel']] = \
                         match.groupdict().get('url')
         # D/nsHttp nsHttpChannel c30d000 created nsHttpTransaction c138c00
-        elif msg['message'].find('nsHttpChannel') == 0 and \
+        elif msg['message'].startswith('nsHttpChannel') and \
                 msg['message'].find(' created nsHttpTransaction ') > -1:
             match = re.search(r'^nsHttpChannel (?P<channel>[\w\d]+) created '\
                               r'nsHttpTransaction (?P<id>[\w\d]+)', msg['message'])
@@ -105,14 +144,14 @@ class FirefoxLogParser(object):
                                                        'status': None,
                                                        'bytes_in': 0}
         # D/nsHttp nsHttpTransaction::Init [this=c138c00 caps=21]
-        elif msg['message'].find('nsHttpTransaction::Init ') == 0:
+        elif msg['message'].startswith('nsHttpTransaction::Init '):
             match = re.search(r'^nsHttpTransaction::Init \[this=(?P<id>[\w\d]+)', msg['message'])
             if match:
                 trans_id = match.groupdict().get('id')
                 self.http['current_transaction'] = trans_id
         # D/nsHttp nsHttpTransaction c138c00 SetRequestContext c15ba00
         elif 'current_transaction' in self.http and \
-                msg['message'].find('nsHttpTransaction ') == 0 and \
+                msg['message'].startswith('nsHttpTransaction ') and \
                 msg['message'].find(' SetRequestContext  ') > -1:
             del self.http['current_transaction']
         # I/nsHttp http request [
@@ -128,7 +167,27 @@ class FirefoxLogParser(object):
 
     def socket_thread_http_entry(self, msg):
         """Process a single HTTP log line from the socket thread"""
-        if msg['message'].find('nsHttpTransaction::OnTransportStatus ') == 0 and \
+        # V/nsHttp nsHttpConnection::Activate [this=ed6c450 trans=143f3c00 caps=21]
+        if msg['message'].startswith('nsHttpConnection::Activate '):
+            match = re.search(r'^nsHttpConnection::Activate \['
+                              r'this=(?P<connection>[\w\d]+) '
+                              r'trans=(?P<id>[\w\d]+)', msg['message'])
+            if match:
+                connection = match.groupdict().get('connection')
+                trans_id = match.groupdict().get('id')
+                if trans_id in self.http['requests']:
+                    self.http['requests'][trans_id]['connection'] = connection
+        # V/nsHttp nsHttpConnection::Init this=ed6c450
+        elif msg['message'].startswith('nsHttpConnection::Init ') and \
+                'current_socket' in self.http:
+            match = re.search(r'^nsHttpConnection::Init '
+                              r'this=(?P<connection>[\w\d]+)', msg['message'])
+            if match:
+                connection = match.groupdict().get('connection')
+                socket = self.http['current_socket']
+                self.http['connections'][connection] = {'socket': socket}
+            del self.http['current_socket']
+        elif msg['message'].startswith('nsHttpTransaction::OnTransportStatus ') and \
                 msg['message'].find(' SENDING_TO ') > -1:
             match = re.search(r'^nsHttpTransaction::OnTransportStatus (?P<id>[\w\d]+) SENDING_TO ',
                               msg['message'])
@@ -136,13 +195,13 @@ class FirefoxLogParser(object):
                 trans_id = match.groupdict().get('id')
                 if trans_id in self.http['requests']:
                     self.http['requests'][trans_id]['start'] = msg['timestamp']
-        elif msg['message'].find('nsHttpTransaction::ProcessData ') == 0:
+        elif msg['message'].startswith('nsHttpTransaction::ProcessData '):
             match = re.search(r'^nsHttpTransaction::ProcessData \[this=(?P<id>[\w\d]+)',
                               msg['message'])
             if match:
                 trans_id = match.groupdict().get('id')
                 self.http['current_socket_transaction'] = trans_id
-        elif msg['message'].find('nsHttpTransaction::HandleContent ') == 0:
+        elif msg['message'].startswith('nsHttpTransaction::HandleContent '):
             if 'current_socket_transaction' in self.http:
                 del self.http['current_socket_transaction']
             match = re.search(r'^nsHttpTransaction::HandleContent \['
@@ -159,7 +218,7 @@ class FirefoxLogParser(object):
                         self.http['requests'][trans_id]['end'] = msg['timestamp']
                     self.http['requests'][trans_id]['bytes_in'] += bytes_in
         elif 'current_socket_transaction' in self.http and \
-                msg['message'].find('nsHttpTransaction::ParseLine ') == 0:
+                msg['message'].startswith('nsHttpTransaction::ParseLine '):
             trans_id = self.http['current_socket_transaction']
             if trans_id in self.http['requests']:
                 match = re.search(r'^nsHttpTransaction::ParseLine \[(?P<line>.*)\]\s*$',
@@ -168,7 +227,7 @@ class FirefoxLogParser(object):
                     line = match.groupdict().get('line')
                     self.http['requests'][trans_id]['response_headers'].append(line)
         elif 'current_socket_transaction' in self.http and \
-                msg['message'].find('Have status line ') == 0:
+                msg['message'].startswith('Have status line '):
             trans_id = self.http['current_socket_transaction']
             if trans_id in self.http['requests']:
                 match = re.search(r'^Have status line \[[^\]]*status=(?P<status>\d+)',
@@ -176,6 +235,41 @@ class FirefoxLogParser(object):
                 if match:
                     status = int(match.groupdict().get('status'))
                     self.http['requests'][trans_id]['status'] = status
+
+    def socket_transport_entry(self, msg):
+        """Process a single socket transport line"""
+        # nsSocketTransport::Init [this=143f4000 host=www.webpagetest.org:80 origin=www.webpagetest.org:80 proxy=:0]
+        if msg['message'].startswith('nsSocketTransport::Init '):
+            match = re.search(r'^nsSocketTransport::Init \['
+                              r'this=(?P<socket>[\w\d]+) '
+                              r'host=(?P<host>[^ :]+):(?P<port>\d+)', msg['message'])
+            if match:
+                socket = match.groupdict().get('socket')
+                host = match.groupdict().get('host')
+                port = match.groupdict().get('port')
+                self.http['sockets'][socket] = {'host': host, 'port': port}
+        # nsSocketTransport::SendStatus [this=143f4000 status=804b0007]
+        elif msg['message'].startswith('nsSocketTransport::SendStatus '):
+            match = re.search(r'^nsSocketTransport::SendStatus \['
+                              r'this=(?P<socket>[\w\d]+) '
+                              r'status=(?P<status>[\w\d]+)', msg['message'])
+            if match:
+                socket = match.groupdict().get('socket')
+                status = match.groupdict().get('status')
+                if status == '804b0007':
+                    if socket not in self.http['sockets']:
+                        self.http['sockets'][socket] = {}
+                    if 'start' not in self.http['sockets'][socket]:
+                        self.http['sockets'][socket]['start'] = msg['timestamp']
+        # nsSocketTransport::OnSocketReady [this=143f4000 outFlags=2]
+        elif msg['message'].startswith('nsSocketTransport::OnSocketReady '):
+            match = re.search(r'^nsSocketTransport::OnSocketReady \['
+                              r'this=(?P<socket>[\w\d]+) ', msg['message'])
+            if match:
+                socket = match.groupdict().get('socket')
+                self.http['current_socket'] = socket
+                if socket in self.http['sockets'] and 'end' not in self.http['sockets'][socket]:
+                    self.http['sockets'][socket]['end'] = msg['timestamp']
 
     def dns_entry(self, msg):
         """Process a single DNS log line"""
@@ -201,9 +295,8 @@ def main():
                         help="Increase verbosity (specify multiple times for more)" \
                              ". -vvvv for full debug output.")
     parser.add_argument('-l', '--logfile', help="File name for the mozilla log.")
-    parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
-    parser.add_argument('-c', '--cached', action='store_true', default=False,
-                        help="Test was of a cached page.")
+    parser.add_argument('-s', '--start',
+                        help="Start Time in UTC with microseconds YYYY-MM-DD HH:MM:SS.xxxxxx.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
     options, _ = parser.parse_known_args()
 
@@ -220,11 +313,15 @@ def main():
     logging.basicConfig(
         level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s", datefmt="%H:%M:%S")
 
-    if not options.logfile or not options.out:
-        parser.error("Input devtools or output file is not specified.")
+    if not options.logfile or not options.start:
+        parser.error("Input devtools file or start time is not specified.")
 
     parser = FirefoxLogParser()
-    parser.process_logs(options.logfile, options.out, options.optimization, options.cached)
+    start_time = datetime.strptime(options.start, '%Y-%m-%d %H:%M:%S.%f')
+    requests = parser.process_logs(options.logfile, start_time)
+    if options.out:
+        with open(options.out, 'w') as f_out:
+            json.dump(requests, f_out)
 
 if __name__ == '__main__':
     main()

@@ -3,6 +3,9 @@
 # found in the LICENSE file.
 """Base class support for webdriver browsers"""
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from datetime import datetime
+import glob
+import gzip
 import logging
 import os
 import Queue
@@ -60,13 +63,19 @@ class Firefox(DesktopBrowser):
         self.page_loaded = None
         self.recording = False
         self.connected = False
+        self.log_pos = {}
+        self.page = {}
+        self.requests = {}
         self.last_activity = monotonic.monotonic()
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
-        self.moz_log = os.path.join(task['dir'], task['prefix']) + '_moz.log'
+        self.moz_log = os.path.join(task['dir'], 'moz.log')
+        self.log_pos = {}
+        self.page = {}
+        self.requests = {}
         os.environ["MOZ_LOG_FILE"] = self.moz_log
-        os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:5,nsSocketTransport:5,nsStreamPump:5,'\
+        os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:5,nsSocketTransport:5'\
                                 'nsHostResolver:5,pipnss:5'
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -122,10 +131,18 @@ class Firefox(DesktopBrowser):
             self.marionette.close()
             self.marionette = None
         DesktopBrowser.stop(self, job, task)
-        os.environ["MOZ_LOG_FILE"] = ''
-        os.environ["MOZ_LOG"] = ''
         self.extension.stop()
         self.extension = None
+        os.environ["MOZ_LOG_FILE"] = ''
+        os.environ["MOZ_LOG"] = ''
+        # delete the raw log files
+        if self.moz_log is not None:
+            files = sorted(glob.glob(self.moz_log + '*'))
+            for path in files:
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
 
     def run_task(self, task):
         """Run an individual test"""
@@ -211,20 +228,99 @@ class Firefox(DesktopBrowser):
                 cat, msg = message['path'].split('.', 1)
                 if cat == 'webNavigation':
                     self.process_web_navigation(msg, message['body'])
+                elif cat == 'webRequest':
+                    self.process_web_request(msg, message['body'])
             except Exception:
                 pass
 
     def process_web_navigation(self, message, evt):
         """Handle webNavigation.*"""
         if evt is not None:
-            if message == 'onCompleted':
-                if 'frameId' in evt and evt['frameId'] == 0:
-                    self.page_loaded = monotonic.monotonic()
-                    logging.debug("Page loaded")
             if message == 'onBeforeNavigate':
                 if 'frameId' in evt and evt['frameId'] == 0:
                     self.page_loaded = None
                     logging.debug("Starting navigation")
+                    if 'timeStamp' in evt and 'start' not in self.page:
+                        self.page['start'] = evt['timeStamp']
+            elif message == 'onCommitted':
+                if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0 \
+                        and 'committed' not in self.page:
+                    self.page['committed'] = evt['timeStamp']
+            elif message == 'onDOMContentLoaded':
+                if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0:
+                    self.page['DOMContentLoaded'] = evt['timeStamp']
+            elif message == 'onCompleted':
+                if 'frameId' in evt and evt['frameId'] == 0:
+                    self.page_loaded = monotonic.monotonic()
+                    logging.debug("Page loaded")
+                    if 'timeStamp' in evt:
+                        self.page['loaded'] = evt['timeStamp']
+            elif message == 'onErrorOccurred':
+                if 'frameId' in evt and evt['frameId'] == 0:
+                    self.page_loaded = monotonic.monotonic()
+                    logging.debug("Page load failed")
+                    if 'error' in evt:
+                        self.nav_error = evt['error']
+                    else:
+                        self.nav_error = 'Navigation failed'
+
+    def process_web_request(self, message, evt):
+        """Handle webNavigation.*"""
+        if evt is not None and 'requestId' in evt and 'timeStamp' in evt:
+            if evt['requestId'] not in self.requests:
+                self.requests[evt['requestId']] = {'id': evt['requestId'],
+                                                   'from_net': True}
+            request = self.requests[evt['requestId']]
+            if 'url' in evt and 'url' not in request:
+                request['url'] = evt['url']
+            if 'method' in evt and 'method' not in request:
+                request['method'] = evt['method']
+            if 'type' in evt and 'type' not in request:
+                request['type'] = evt['type']
+            if 'ip' in evt and 'ip' not in request:
+                request['ip'] = evt['ip']
+            if 'fromCache' in evt and evt['fromCache']:
+                request['from_net'] = False
+            if 'statusLine' in evt:
+                request['status_line'] = evt['statusLine']
+            if 'statusCode' in evt:
+                request['status'] = evt['statusCode']
+            if 'requestHeaders' in evt and 'request_headers' not in request:
+                request['request_headers'] = list(evt['requestHeaders'])
+            if 'responseHeaders' in evt and 'response_headers' not in request:
+                request['response_headers'] = list(evt['responseHeaders'])
+
+            if message == 'onBeforeRequest':
+                request['created'] = evt['timeStamp']
+            elif message == 'onSendHeaders':
+                request['start'] = evt['timeStamp']
+            elif message == 'onBeforeRedirect':
+                if 'first_byte' not in request:
+                    request['first_byte'] = evt['timeStamp']
+                if 'end' not in request or evt['timeStamp'] > request['end']:
+                    request['end'] = evt['timeStamp']
+            elif message == 'onHeadersReceived':
+                if 'first_byte' not in request:
+                    request['first_byte'] = evt['timeStamp']
+                if 'end' not in request or evt['timeStamp'] > request['end']:
+                    request['end'] = evt['timeStamp']
+            elif message == 'onResponseStarted':
+                if 'first_byte' not in request:
+                    request['first_byte'] = evt['timeStamp']
+                if 'end' not in request or evt['timeStamp'] > request['end']:
+                    request['end'] = evt['timeStamp']
+            elif message == 'onCompleted':
+                if 'first_byte' not in request:
+                    request['first_byte'] = evt['timeStamp']
+                if 'end' not in request or evt['timeStamp'] > request['end']:
+                    request['end'] = evt['timeStamp']
+            elif message == 'onErrorOccurred':
+                if 'end' not in request or evt['timeStamp'] > request['end']:
+                    request['end'] = evt['timeStamp']
+                if 'error' in evt:
+                    request['error'] = evt['error']
+                if 'status' not in request:
+                    request['status'] = 12999
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
@@ -245,6 +341,12 @@ class Firefox(DesktopBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        # Mark the start point in the various log files
+        self.log_pos = {}
+        if self.moz_log is not None:
+            files = sorted(glob.glob(self.moz_log + '*'))
+            for path in files:
+                self.log_pos[path] = os.path.getsize(path)
         self.recording = True
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
@@ -252,6 +354,7 @@ class Firefox(DesktopBrowser):
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
+        task['start_time'] = datetime.utcnow()
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -264,10 +367,30 @@ class Firefox(DesktopBrowser):
             else:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 self.grab_screenshot(screen_shot, png=False, resize=600)
+        # Copy the log files
+        if self.moz_log is not None:
+            task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
+            files = sorted(glob.glob(self.moz_log + '*'))
+            for path in files:
+                dest = os.path.join(task['dir'],
+                                    task['prefix'] + '_' + os.path.basename(path) + '.gz')
+                start_pos = self.log_pos[path] if path in self.log_pos else 0
+                with open(path, 'rb') as f_in:
+                    f_in.seek(start_pos)
+                    with gzip.open(dest, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         DesktopBrowser.on_start_processing(self, task)
+        # Parse the moz log for the accurate request timings
+        request_timings = []
+        if 'moz_log' in task:
+            from internal.support.firefox_log_parser import FirefoxLogParser
+            parser = FirefoxLogParser()
+            request_timings = parser.process_logs(task['moz_log'], task['start_time'])
+        # Build the request and page data
+        self.process_requests(request_timings, task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -355,17 +478,30 @@ class Firefox(DesktopBrowser):
                         except Exception:
                             pass
 
+    def process_requests(self, request_timings, task):
+        """Convert all of the request and page events into the format needed for WPT"""
+        pass
+
 
 class HandleMessage(BaseHTTPRequestHandler):
     """Handle a single message from the extension"""
+    protocol_version = 'HTTP/1.1'
+
     def __init__(self, server, *args):
         self.message_server = server
-        BaseHTTPRequestHandler.__init__(self, *args)
+        try:
+            BaseHTTPRequestHandler.__init__(self, *args)
+        except Exception:
+            pass
+
+    def log_message(self, format, *args):
+        return
 
     def _set_headers(self):
         """Basic response headers"""
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
+        self.send_header("Content-length", 0)
         self.end_headers()
 
     # pylint: disable=C0103
@@ -404,11 +540,12 @@ class MessageServer(object):
 
     def get_message(self, timeout):
         """Get a single message from the queue"""
-        return self.messages.get(block=True, timeout=timeout)
+        message = self.messages.get(block=True, timeout=timeout)
+        self.messages.task_done()
+        return message
 
     def handle_message(self, message):
         """Add a received message to the queue"""
-        logging.debug(message)
         self.messages.put(message)
 
     def start(self):
@@ -418,9 +555,16 @@ class MessageServer(object):
 
     def stop(self):
         """Stop running the server"""
+        logging.debug("Shutting down extension server")
         self.must_exit = True
+        if self.server is not None:
+            try:
+                self.server.server_close()
+            except Exception:
+                pass
         if self.thread is not None:
             self.thread.join()
+        logging.debug("Extension server stopped")
 
     def run(self):
         """Main server loop"""
@@ -433,3 +577,4 @@ class MessageServer(object):
                 self.server.handle_request()
         except Exception:
             pass
+        self.server = None

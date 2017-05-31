@@ -10,6 +10,7 @@
  */
 
 user_pref("app.update.enabled", false);
+user_pref("browser.aboutHomeSnippets.updateUrl", "");
 user_pref("browser.bookmarks.restore_default_bookmarks", false);
 user_pref("browser.bookmarks.added_static_root", true);
 user_pref("browser.places.importBookmarksHTML", false);
@@ -24,12 +25,13 @@ user_pref("browser.newtabpage.introShown", true);
 user_pref("browser.newtab.preload", false);
 user_pref("browser.pagethumbnails.capturing_disabled", true);
 user_pref("browser.rights.3.shown", true);
+user_pref("browser.safebrowsing.downloads.remote.enabled", false);
 user_pref("browser.safebrowsing.enabled", false);
 user_pref("browser.safebrowsing.malware.enabled", false);
 user_pref("browser.safebrowsing.remotelookups", false);
 user_pref("browser.search.update", false);
 user_pref("browser.selfsupport.enabled", false);
-user_pref("browser.selfsupport.url", "about:blank");
+user_pref("browser.selfsupport.url", "");
 user_pref("browser.sessionstore.resume_from_crash", false);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.startup.homepage", "about:blank");
@@ -53,6 +55,7 @@ user_pref("extensions.update.notifyUser", false);
 user_pref("extensions.shownSelectionUI", true);
 user_pref("extensions.autoDisableScopes", 14);
 user_pref("intl.charsetmenu.browser.cache", "UTF-8");
+user_pref("network.captive-portal-service.enabled", false);
 user_pref("network.cookie.prefsMigrated", true);
 user_pref("network.proxy.type", 0);
 user_pref("pageThumbs.enabled", false);
