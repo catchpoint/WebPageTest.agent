@@ -353,11 +353,11 @@ class DevtoolsBrowser(object):
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
-            # Give lighthouse up to 10 minutes to run (safety for hung test)
+            # Give lighthouse up to the max test time to run
             proc = subprocess.Popen(cmd, shell=True)
             timer = None
             try:
-                timer = Timer(600, proc.kill)
+                timer = Timer(task['time_limit'], proc.kill)
                 timer.start()
                 proc.communicate()
             except Exception:
