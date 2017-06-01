@@ -342,7 +342,6 @@ class DevtoolsBrowser(object):
             command = ['lighthouse',
                        '--disable-network-throttling',
                        '--disable-cpu-throttling',
-                       '--max-wait-for-load', str(int(task['time_limit'] * 1000)),
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
