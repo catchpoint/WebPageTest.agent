@@ -53,6 +53,7 @@ class WPTAgent(object):
                                 if self.job['type'] != 'lighthouse':
                                     self.run_single_test()
                                 if self.task['run'] == 1 and not self.task['cached'] and \
+                                        self.task['error'] is None and \
                                         'lighthouse' in self.job and self.job['lighthouse']:
                                     self.task['running_lighthouse'] = True
                                     self.run_single_test()
