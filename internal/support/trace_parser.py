@@ -906,6 +906,7 @@ class Trace():
             entry['bytes_in'] += params['byte_count']
             entry['chunks'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
         if 'byte_count' in params and name == 'URL_REQUEST_JOB_FILTERED_BYTES_READ':
+            entry['end'] = trace_event['ts']
             if 'uncompressed_bytes_in' not in entry:
                 entry['uncompressed_bytes_in'] = 0
             entry['uncompressed_bytes_in'] += params['byte_count']
