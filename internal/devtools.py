@@ -657,9 +657,7 @@ class DevTools(object):
             if request_id not in self.requests:
                 self.requests[request_id] = {'id': request_id}
             request = self.requests[request_id]
-            is_video = request['is_video'] if 'is_video' in request else False
-            if not self.task['stop_at_onload'] and not is_video:
-                self.last_activity = monotonic.monotonic()
+            ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
                 if 'request' not in request:
                     request['request'] = []
@@ -707,6 +705,10 @@ class DevTools(object):
                         not msg['params']['canceled']:
                     self.nav_error = msg['params']['errorText']
                     logging.debug('Navigation error: %s', self.nav_error)
+            else:
+                ignore_activity = True
+            if not self.task['stop_at_onload'] and not ignore_activity:
+                self.last_activity = monotonic.monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
