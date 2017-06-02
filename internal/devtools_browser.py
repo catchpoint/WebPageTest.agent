@@ -36,7 +36,7 @@ class DevtoolsBrowser(object):
         from internal.devtools import DevTools
         self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video)
         if task['running_lighthouse']:
-            self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
+            ret = self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
         else:
             if self.devtools.connect(self.CONNECT_TIME_LIMIT):
                 logging.debug("Devtools connected")

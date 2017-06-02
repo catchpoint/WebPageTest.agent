@@ -84,6 +84,7 @@ class DevTools(object):
                                     'webSocketDebuggerUrl' in tabs[index] and \
                                     'id' in tabs[index]:
                                 ret = True
+                                logging.debug('Dev tools interface is available')
             except Exception as err:
                 logging.critical("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
