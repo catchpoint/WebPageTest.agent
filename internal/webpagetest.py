@@ -417,6 +417,11 @@ class WebPageTest(object):
                 pass
         return task
 
+    def running_another_test(self, task):
+        """Increment the port for Chrome and the run count"""
+        task['port'] = 9222 + (self.test_run_count % 500)
+        self.test_run_count += 1
+
     def build_script(self, job, task):
         """Build the actual script that will be used for testing"""
         task['script'] = []

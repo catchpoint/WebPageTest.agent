@@ -56,6 +56,7 @@ class WPTAgent(object):
                                         self.task['error'] is None and \
                                         'lighthouse' in self.job and self.job['lighthouse']:
                                     self.task['running_lighthouse'] = True
+                                    self.wpt.running_another_test(self.task)
                                     self.run_single_test()
                                 elapsed = monotonic.monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
