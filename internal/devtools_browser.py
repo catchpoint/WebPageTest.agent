@@ -356,9 +356,9 @@ class DevtoolsBrowser(object):
             logging.debug(cmd)
             # Give lighthouse up to the max test time to run
             proc = subprocess.Popen(cmd, shell=True)
-            timer = None
+            kill_proc = lambda p: p.kill()
+            timer = Timer(task['time_limit'], kill_proc, [proc])
             try:
-                timer = Timer(task['time_limit'] * 2, proc.kill)
                 timer.start()
                 proc.communicate()
             except Exception:
