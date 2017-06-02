@@ -358,7 +358,7 @@ class DevtoolsBrowser(object):
             proc = subprocess.Popen(cmd, shell=True)
             timer = None
             try:
-                timer = Timer(task['time_limit'], proc.kill)
+                timer = Timer(task['time_limit'] * 2, proc.kill)
                 timer.start()
                 proc.communicate()
             except Exception:

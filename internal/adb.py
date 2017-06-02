@@ -38,9 +38,9 @@ class Adb(object):
     def wait_for_process(self, proc, timeout_sec=10, silent=False):
         """Wait for the given process to exit gracefully and return the result"""
         stdout = None
-        timer = None
+        kill_proc = lambda p: p.kill()
+        timer = Timer(timeout_sec, kill_proc, [proc])
         try:
-            timer = Timer(timeout_sec, proc.kill)
             timer.start()
             stdout, _ = proc.communicate()
             if not silent and stdout is not None and len(stdout):
