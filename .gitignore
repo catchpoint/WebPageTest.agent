@@ -4,5 +4,6 @@
 *.pyc
 /run.cmd
 /run.sh
+/update.sh
 /work
 /*.cmd

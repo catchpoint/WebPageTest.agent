@@ -652,18 +652,21 @@ class DevTools(object):
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
-        if not self.task['stop_at_onload']:
-            self.last_activity = monotonic.monotonic()
         if 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
-                request = {'id': request_id}
-                self.requests[request_id] = request
+                self.requests[request_id] = {'id': request_id}
+            request = self.requests[request_id]
+            is_video = request['is_video'] if 'is_video' in request else False
+            if not self.task['stop_at_onload'] and not is_video:
+                self.last_activity = monotonic.monotonic()
             if event == 'requestWillBeSent':
-                if 'request' not in self.requests[request_id]:
-                    self.requests[request_id]['request'] = []
-                self.requests[request_id]['request'].append(msg['params'])
-                self.requests[request_id]['fromNet'] = True
+                if 'request' not in request:
+                    request['request'] = []
+                request['request'].append(msg['params'])
+                if 'url' in msg['params'] and msg['params']['url'].endswith('.mp4'):
+                    request['is_video'] = True
+                request['fromNet'] = True
                 if self.main_frame is not None and \
                         self.main_request is None and \
                         'frameId' in msg['params'] and \
@@ -673,27 +676,30 @@ class DevTools(object):
                     if 'timestamp' in msg['params']:
                         self.start_timestamp = float(msg['params']['timestamp'])
             elif event == 'resourceChangedPriority':
-                if 'priority' not in self.requests[request_id]:
-                    self.requests[request_id]['priority'] = []
-                self.requests[request_id]['priority'].append(msg['params'])
+                if 'priority' not in request:
+                    request['priority'] = []
+                request['priority'].append(msg['params'])
             elif event == 'requestServedFromCache':
-                self.requests[request_id]['fromNet'] = False
+                request['fromNet'] = False
             elif event == 'responseReceived':
-                if 'response' not in self.requests[request_id]:
-                    self.requests[request_id]['response'] = []
-                self.requests[request_id]['response'].append(msg['params'])
-                if 'response' in msg['params'] and \
-                        'fromDiskCache' in msg['params']['response'] and \
-                        msg['params']['response']['fromDiskCache']:
-                    self.requests[request_id]['fromNet'] = False
+                if 'response' not in request:
+                    request['response'] = []
+                request['response'].append(msg['params'])
+                if 'response' in msg['params']:
+                    if 'fromDiskCache' in msg['params']['response'] and \
+                            msg['params']['response']['fromDiskCache']:
+                        request['fromNet'] = False
+                    if 'mimeType' in msg['params']['response'] and \
+                            msg['params']['response']['mimeType'].startswith('video/'):
+                        request['is_video'] = True
             elif event == 'dataReceived':
-                if 'data' not in self.requests[request_id]:
-                    self.requests[request_id]['data'] = []
-                self.requests[request_id]['data'].append(msg['params'])
+                if 'data' not in request:
+                    request['data'] = []
+                request['data'].append(msg['params'])
             elif event == 'loadingFinished':
-                self.requests[request_id]['finished'] = msg['params']
+                request['finished'] = msg['params']
             elif event == 'loadingFailed':
-                self.requests[request_id]['failed'] = msg['params']
+                request['failed'] = msg['params']
                 if self.main_request is not None and \
                         request_id == self.main_request and \
                         'errorText' in msg['params'] and \
