@@ -366,6 +366,8 @@ class DevtoolsBrowser(object):
             finally:
                 if timer is not None:
                     timer.cancel()
+            from .os_util import kill_all
+            kill_all('node', True)
             # Rename and compress the trace file, delete the other assets
             if self.job['keep_lighthouse_trace']:
                 try:

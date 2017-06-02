@@ -494,7 +494,7 @@ class DevTools(object):
         if not self.main_thread_blocked:
             response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
             if response is not None and 'result' in response and 'data' in response['result']:
-                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
+                resize_string = '' if not resize else '-resize {0:d}x{0:d}\\> '.format(resize)
                 if png:
                     with open(path, 'wb') as image_file:
                         image_file.write(base64.b64decode(response['result']['data']))
