@@ -27,6 +27,10 @@ class Adb(object):
             'com.google.android.apps.docs': {},
             'com.samsung.android.MtpApplication': {}
         }
+        self.exe = 'adb'
+        if os.uname()[4].startswith('arm'):
+            self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    "support", "android", "adb-arm")
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
@@ -55,7 +59,7 @@ class Adb(object):
 
     def build_adb_command(self, args):
         """Build an adb command with the (optional) device ID"""
-        cmd = ['adb']
+        cmd = [self.exe]
         if self.device is not None:
             cmd.extend(['-s', self.device])
         cmd.extend(args)
@@ -92,7 +96,7 @@ class Adb(object):
             ret = True
             # Set the CPU affinity for adb which helps avoid hangs
             for proc in psutil.process_iter():
-                if proc.name() == "adb.exe" or proc.name() == "adb":
+                if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
                     proc.cpu_affinity([0])
         return ret
 
