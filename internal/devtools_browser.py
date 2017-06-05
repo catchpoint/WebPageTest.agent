@@ -107,7 +107,7 @@ class DevtoolsBrowser(object):
                     self.browser_version = match.group(1)
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
-            if ua_string is not None and 'keepua' not in self.job or not self.job['keepua']:
+            if ua_string is not None and ('keepua' not in self.job or not self.job['keepua']):
                 ua_string += ' PTST/{0:d}'.format(self.CURRENT_VERSION)
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string

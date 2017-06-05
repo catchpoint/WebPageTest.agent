@@ -455,7 +455,7 @@ class Firefox(DesktopBrowser):
         if self.marionette is not None:
             data = self.marionette.screenshot(format='binary')
             if data is not None:
-                resize_string = '' if not resize else '-resize {0:d}x{0:d}\\> '.format(resize)
+                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
                     with open(path, 'wb') as image_file:
                         image_file.write(data)
