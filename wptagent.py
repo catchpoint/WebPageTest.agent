@@ -116,13 +116,13 @@ class WPTAgent(object):
                 self.task['error'] = "Error configuring traffic-shaping"
             self.shaper.reset()
             browser.stop(self.job, self.task)
+            # Delete the browser profile if needed
+            if self.task['cached'] or self.job['fvonly']:
+                browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
             logging.critical(err)
             self.task['error'] = err
-        # Delete the browser profile if needed
-        if self.task['cached'] or self.job['fvonly']:
-            browser.clear_profile(self.task)
         browser = None
 
     def signal_handler(self, *_):

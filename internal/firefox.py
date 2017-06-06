@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 """Base class support for webdriver browsers"""
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from datetime import datetime
+from datetime import datetime, timedelta
 import glob
 import gzip
 import logging
@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import threading
 import time
+import urlparse
 import monotonic
 import ujson as json
 from .desktop_browser import DesktopBrowser
@@ -225,6 +226,15 @@ class Firefox(DesktopBrowser):
         if self.recording:
             self.last_activity = monotonic.monotonic()
             try:
+                # Make all of the timestamps relative to the test start to match the log events
+                if 'timeStamp' in message['body']:
+                    timestamp = message['body']['timeStamp']
+                    seconds = int(timestamp / 1000)
+                    milliseconds = timestamp - (seconds * 1000)
+                    event_time = datetime.utcfromtimestamp(seconds)
+                    event_time += timedelta(milliseconds=milliseconds)
+                    elapsed = event_time - self.task['start_time']
+                    message['body']['timeStamp'] = elapsed.total_seconds()
                 cat, msg = message['path'].split('.', 1)
                 if cat == 'webNavigation':
                     self.process_web_navigation(msg, message['body'])
@@ -480,8 +490,254 @@ class Firefox(DesktopBrowser):
 
     def process_requests(self, request_timings, task):
         """Convert all of the request and page events into the format needed for WPT"""
-        pass
+        result = {}
+        result['requests'] = self.merge_requests(request_timings)
+        result['pageData'] = self.calculate_page_stats(result['requests'])
+        devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+        with gzip.open(devtools_file, 'wb', 7) as f_out:
+            json.dump(result, f_out)
 
+    def get_empty_request(self, request_id, url):
+        """Return and empty, initialized request"""
+        parts = urlparse.urlsplit(url)
+        request = {'type': 3,
+                   'id': request_id,
+                   'request_id': request_id,
+                   'ip_addr': '',
+                   'full_url': url,
+                   'is_secure': 1 if parts.scheme == 'https' else 0,
+                   'method': '',
+                   'host': parts.netloc,
+                   'url': parts.path,
+                   'responseCode': -1,
+                   'load_start': -1,
+                   'load_ms': -1,
+                   'ttfb_ms': -1,
+                   'dns_start': -1,
+                   'dns_end': -1,
+                   'dns_ms': -1,
+                   'connect_start': -1,
+                   'connect_end': -1,
+                   'connect_ms': -1,
+                   'ssl_start': -1,
+                   'ssl_end': -1,
+                   'ssl_ms': -1,
+                   'bytesIn': 0,
+                   'bytesOut': 0,
+                   'objectSize': 0,
+                   'initiator': '',
+                   'initiator_line': '',
+                   'initiator_column': '',
+                   'server_rtt': None,
+                   'headers': {'request': [], 'response': []},
+                   'score_cache': -1,
+                   'score_cdn': -1,
+                   'score_gzip': -1,
+                   'score_cookies': -1,
+                   'score_keep-alive': -1,
+                   'score_minify': -1,
+                   'score_combine': -1,
+                   'score_compress': -1,
+                   'score_etags': -1,
+                   'gzip_total': None,
+                   'gzip_save': None,
+                   'minify_total': None,
+                   'minify_save': None,
+                   'image_total': None,
+                   'image_save': None,
+                   'cache_time': None,
+                   'cdn_provider': None,
+                   'server_count': None,
+                   'socket': -1
+                  }
+        if len(parts.query):
+            request['url'] += '?' + parts.query
+        return request
+
+    def get_header_value(self, headers, name):
+        """Return the value for the given header"""
+        value = ''
+        name = name.lower()
+        for header in headers:
+            pos = header.find(':')
+            if pos > 0:
+                key = header[0:pos].lower()
+                if key.startswith(name):
+                    val = header[pos + 1:].strip()
+                    if len(value):
+                        value += '; '
+                    value += val
+        return value
+
+    def merge_requests(self, request_timings):
+        """Merge the requests from the extension and log files"""
+        requests = []
+        # Start with the requests reported from the extension
+        for req_id in self.requests:
+            req = self.requests[req_id]
+            if req['from_net'] and 'start' in req and 'url' in req:
+                request = self.get_empty_request(req['id'], req['url'])
+                if 'ip' in req:
+                    request['ip_addr'] = req['ip']
+                if 'method' in req:
+                    request['method'] = req['method']
+                if 'status' in req:
+                    request['responseCode'] = req['status']
+                if 'type' in req:
+                    request['requestType'] = req['type']
+                if 'request_headers' in req:
+                    for header in req['request_headers']:
+                        if 'name' in header and 'value' in header:
+                            header_text = '{0}: {1}'.format(header['name'], header['value'])
+                            request['bytesOut'] += len(header_text) + 2
+                            request['headers']['request'].append(header_text)
+                if 'status_line' in req:
+                    request['bytesIn'] += len(req['status_line']) + 2
+                    request['headers']['response'].append(req['status_line'])
+                if 'response_headers' in req:
+                    for header in req['response_headers']:
+                        if 'name' in header and 'value' in header:
+                            header_text = '{0}: {1}'.format(header['name'], header['value'])
+                            request['bytesIn'] += len(header_text) + 2
+                            request['headers']['response'].append(header_text)
+                if 'created' in req:
+                    request['created'] = req['created']
+                request['load_start'] = int(round(req['start'] * 1000.0))
+                if 'first_byte' in req:
+                    ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
+                    request['ttfb_ms'] = max(0, ttfb)
+                if 'end' in req:
+                    load_time = int(round((req['end'] - req['start']) * 1000.0))
+                    request['load_ms'] = max(0, load_time)
+                size = self.get_header_value(request['headers']['response'], 'Content-Length')
+                if len(size):
+                    request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
+                requests.append(request)
+        # Overwrite them with the same requests from the logs
+        for request in requests:
+            for req in request_timings:
+                if 'claimed' not in req and 'url' in req and 'full_url' in request \
+                        and 'start' in req and request['full_url'] == req['url']:
+                    req['claimed'] = True
+                    self.populate_request(request, req)
+        # Add any events from the logs that weren't reported by the extension
+        for req in request_timings:
+            if 'claimed' not in req and 'url' in req and 'start' in req:
+                request = self.get_empty_request(req['id'], req['url'])
+                self.populate_request(request, req)
+                requests.append(request)
+        # parse values out of the headers
+        for request in requests:
+            request['expires'] = self.get_header_value(request['headers']['response'], 'Expires')
+            request['cacheControl'] = self.get_header_value(request['headers']['response'],
+                                                            'Cache-Control')
+            request['contentType'] = self.get_header_value(request['headers']['response'],
+                                                           'Content-Type')
+            request['contentEncoding'] = self.get_header_value(request['headers']['response'],
+                                                               'Content-Encoding')
+            request['objectSize'] = self.get_header_value(request['headers']['response'],
+                                                          'Content-Length')
+        requests.sort(key=lambda x: x['load_start'])
+        return requests
+
+    def populate_request(self, request, log_request):
+        """Populate a request object from the log request values"""
+        request['load_start'] = int(log_request['start'] * 1000)
+        if 'status' in log_request:
+            request['responseCode'] = log_request['status']
+        if 'dns_start' in log_request and log_request['dns_start'] >= 0:
+            request['dns_start'] = int(log_request['dns_start'] * 1000)
+        if 'dns_end' in log_request and log_request['dns_end'] >= 0:
+            request['dns_end'] = int(round(log_request['dns_end'] * 1000.0))
+        if 'connect_start' in log_request and log_request['connect_start'] >= 0:
+            request['connect_start'] = int(log_request['connect_start'] * 1000)
+        if 'connect_end' in log_request and log_request['connect_end'] >= 0:
+            request['connect_end'] = int(round(log_request['connect_end'] * 1000.0))
+        if 'connection' in log_request:
+            request['socket'] = log_request['connection']
+        request['load_start'] = int(round(log_request['start'] * 1000.0))
+        if 'first_byte' in log_request:
+            request['ttfb_ms'] = int(round((log_request['first_byte'] - \
+                                            log_request['start']) * 1000.0))
+        if 'end' in log_request:
+            request['load_ms'] = int(round((log_request['end'] - \
+                                            log_request['start']) * 1000.0))
+        if 'bytes_in' in log_request:
+            request['bytesIn'] = log_request['bytes_in']
+        if 'request_headers' in log_request:
+            request['headers']['request'] = list(log_request['request_headers'])
+        if 'response_headers' in log_request:
+            request['headers']['response'] = list(log_request['response_headers'])
+
+    def calculate_page_stats(self, requests):
+        """Calculate the page-level stats"""
+        page = {'loadTime': 0,
+                'docTime': 0,
+                'fullyLoaded': 0,
+                'bytesOut': 0,
+                'bytesOutDoc': 0,
+                'bytesIn': 0,
+                'bytesInDoc': 0,
+                'requests': len(requests),
+                'requestsDoc': 0,
+                'responses_200': 0,
+                'responses_404': 0,
+                'responses_other': 0,
+                'result': 0,
+                'testStartOffset': 0,
+                'cached': 1 if self.task['cached'] else 0,
+                'optimization_checked': 0,
+                'start_epoch': int((self.task['start_time'] - \
+                                    datetime.utcfromtimestamp(0)).total_seconds())
+               }
+        if 'loaded' in self.page:
+            page['loadTime'] = int(round(self.page['loaded'] * 1000.0))
+            page['docTime'] = page['loadTime']
+            page['loadEventStart'] = page['loadTime']
+            page['loadEventEnd'] = page['loadTime']
+        if 'DOMContentLoaded' in self.page:
+            page['domContentLoadedEventStart'] = int(round(self.page['DOMContentLoaded'] * 1000.0))
+            page['domContentLoadedEventEnd'] = page['domContentLoadedEventStart']
+
+        main_request = None
+        index = 0
+        for request in requests:
+            if request['load_ms'] >= 0:
+                end_time = request['load_start'] + request['load_ms']
+                if end_time > page['fullyLoaded']:
+                    page['fullyLoaded'] = end_time
+                if end_time <= page['loadTime']:
+                    page['requestsDoc'] += 1
+                    page['bytesInDoc'] += request['bytesIn']
+                    page['bytesOutDoc'] += request['bytesOut']
+            page['bytesIn'] += request['bytesIn']
+            page['bytesOut'] += request['bytesOut']
+            if request['responseCode'] == 200:
+                page['responses_200'] += 1
+            elif request['responseCode'] == 404:
+                page['responses_404'] += 1
+                page['result'] = 99999
+            elif request['responseCode'] > -1:
+                page['responses_other'] += 1
+            if main_request is None and \
+                    (request['responseCode'] == 200 or request['responseCode'] == 304):
+                main_request = request['id']
+                request['is_base_page'] = True
+                page['final_base_page_request'] = index
+                page['final_base_page_request_id'] = main_request
+                page['final_url'] = request['full_url']
+                if request['ttfb_ms'] >= 0:
+                    page['TTFB'] = request['load_start'] + request['ttfb_ms']
+                if request['ssl_end'] >= request['ssl_start'] and \
+                        request['ssl_start'] >= 0:
+                    page['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                        request['ssl_start']))
+        if page['responses_200'] == 0 and len(requests):
+            if 'responseCode' in requests[0]:
+                page['result'] = requests[0]['responseCode']
+            else:
+                page['result'] = 12999
+        return page
 
 class HandleMessage(BaseHTTPRequestHandler):
     """Handle a single message from the extension"""
