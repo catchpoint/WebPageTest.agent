@@ -29,8 +29,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
-    '--disable-background-timer-throttling',
-    '--disable-sync'
+    '--disable-background-timer-throttling'
 ]
 
 HOST_RULES = [

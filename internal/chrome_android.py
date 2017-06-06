@@ -31,7 +31,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
     '--safebrowsing-disable-auto-update',
-    '--disable-sync',
     '--disable-external-intent-requests',
     '--enable-remote-debugging'
 ]

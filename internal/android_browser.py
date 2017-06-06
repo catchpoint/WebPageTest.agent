@@ -53,8 +53,8 @@ class AndroidBrowser(object):
                         pass
                 md5_hash = hashlib.md5()
                 try:
-                    logging.debug('Downloading browser update: %s',
-                                  self.config['apk_url'])
+                    logging.debug('Downloading browser update: %s to %s',
+                                  self.config['apk_url'], tmp_file)
                     import requests
                     request = requests.get(self.config['apk_url'], stream=True)
                     if request.status_code == 200:
