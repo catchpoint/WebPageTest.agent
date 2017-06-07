@@ -4,6 +4,7 @@
 *.pyc
 /run.cmd
 /run.sh
+/android.sh
 /update.sh
 /work
 /*.cmd
