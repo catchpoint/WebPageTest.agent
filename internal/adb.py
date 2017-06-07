@@ -112,10 +112,6 @@ class Adb(object):
                     self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
             if self.simplert_path is not None:
                 self.shell(['am', 'force-stop', 'com.viper.simplert'])
-                command = 'sudo {0} linux stop'.format(os.path.join(self.simplert_path,
-                                                                    'iface_up.sh'))
-                logging.debug(command)
-                subprocess.call(command, shell=True)
                 from .os_util import kill_all
                 from .os_util import wait_for_all
                 kill_all('simple-rt', False)
@@ -133,10 +129,6 @@ class Adb(object):
         """Shut down anything necessary"""
         if self.simplert is not None:
             self.shell(['am', 'force-stop', 'com.viper.simplert'])
-            command = 'sudo {0} linux stop'.format(os.path.join(self.simplert_path,
-                                                                'iface_up.sh'))
-            logging.debug(command)
-            subprocess.call(command, shell=True)
             logging.debug('Stopping simple-rt bridge process')
             from .os_util import kill_all
             from .os_util import wait_for_all
