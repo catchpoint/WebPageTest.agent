@@ -400,6 +400,12 @@ class Adb(object):
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+        if out.find('com.android.systemui.usb.UsbConfirmActivity') >= 0:
+            logging.warning('Dismissing USB dialog')
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
 
     def reset_simplert(self):
         """Reset the tunnel on the phone in case it's state is messed up"""
