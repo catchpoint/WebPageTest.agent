@@ -111,7 +111,6 @@ class Adb(object):
                 elif platform.architecture()[0] == '64bit':
                     self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
             if self.simplert_path is not None:
-                self.shell(['am', 'force-stop', 'com.viper.simplert'])
                 from .os_util import kill_all
                 from .os_util import wait_for_all
                 kill_all('simple-rt', False)
@@ -129,8 +128,6 @@ class Adb(object):
     def stop(self):
         """Shut down anything necessary"""
         if self.simplert is not None:
-            self.shell(['am', 'force-stop', 'com.viper.simplert'])
-            logging.debug('Stopping simple-rt bridge process')
             from .os_util import kill_all
             from .os_util import wait_for_all
             kill_all('simple-rt', False)
