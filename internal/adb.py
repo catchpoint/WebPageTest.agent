@@ -111,6 +111,7 @@ class Adb(object):
                 elif platform.architecture()[0] == '64bit':
                     self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
             if self.simplert_path is not None:
+                self.shell(['am', 'force-stop', 'com.viper.simplert'])
                 from .os_util import kill_all
                 from .os_util import wait_for_all
                 kill_all('simple-rt', False)
@@ -128,6 +129,8 @@ class Adb(object):
     def stop(self):
         """Shut down anything necessary"""
         if self.simplert is not None:
+            self.shell(['am', 'force-stop', 'com.viper.simplert'])
+            logging.debug('Stopping simple-rt bridge process')
             from .os_util import kill_all
             from .os_util import wait_for_all
             kill_all('simple-rt', False)
@@ -398,6 +401,10 @@ class Adb(object):
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
 
+    def reset_simplert(self):
+        """Reset the tunnel on the phone in case it's state is messed up"""
+        self.shell(['am', 'force-stop', 'com.viper.simplert'])
+
     def check_simplert(self):
         """Bring up the simple-rt bridge if it isn't running"""
         is_ready = self.is_tun_interface_available()
@@ -445,40 +452,45 @@ class Adb(object):
             is_ready = self.check_rndis()
         if self.simplert is not None:
             is_ready = self.check_simplert()
+            if not is_ready:
+                self.reset_simplert()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
-        net_ok = False
-        if self.ping(self.ping_address) is not None:
-            net_ok = True
-        else:
-            addresses = []
-            props = self.shell(['getprop'])
-            gateway = None
-            if props is not None:
-                for line in props.splitlines():
-                    match = re.search(r'^\[net\.dns\d\]:\s+\[([^\]]*)\]', line)
-                    if match:
-                        dns = match.group(1)
-                        if dns not in addresses:
-                            addresses.append(dns)
-                    match = re.search(r'^\[dhcp\.[^\.]+\.dns\d\]:\s+\[([^\]]*)\]', line)
-                    if match:
-                        dns = match.group(1)
-                        if dns not in addresses:
-                            addresses.append(dns)
-                    match = re.search(r'^\[dhcp\.[^\.]+\.gateway\]:\s+\[([^\]]*)\]', line)
-                    if match:
-                        gateway = match.group(1)
-            if gateway is not None:
-                addresses.insert(0, gateway)
-            addresses.append('8.8.8.8')
-            for address in addresses:
-                if self.ping(address) is not None:
-                    self.ping_address = address
-                    net_ok = True
-                    break
-        if not net_ok:
-            logging.info("Device not ready, network not responding")
-            is_ready = False
+        if is_ready:
+            net_ok = False
+            if self.ping(self.ping_address) is not None:
+                net_ok = True
+            else:
+                addresses = []
+                props = self.shell(['getprop'])
+                gateway = None
+                if props is not None:
+                    for line in props.splitlines():
+                        match = re.search(r'^\[net\.dns\d\]:\s+\[([^\]]*)\]', line)
+                        if match:
+                            dns = match.group(1)
+                            if dns not in addresses:
+                                addresses.append(dns)
+                        match = re.search(r'^\[dhcp\.[^\.]+\.dns\d\]:\s+\[([^\]]*)\]', line)
+                        if match:
+                            dns = match.group(1)
+                            if dns not in addresses:
+                                addresses.append(dns)
+                        match = re.search(r'^\[dhcp\.[^\.]+\.gateway\]:\s+\[([^\]]*)\]', line)
+                        if match:
+                            gateway = match.group(1)
+                if gateway is not None:
+                    addresses.insert(0, gateway)
+                addresses.append('8.8.8.8')
+                for address in addresses:
+                    if self.ping(address) is not None:
+                        self.ping_address = address
+                        net_ok = True
+                        break
+            if not net_ok:
+                logging.info("Device not ready, network not responding")
+                if self.simplert is not None:
+                    self.reset_simplert()
+                is_ready = False
         if is_ready and not self.initialized:
             self.initialized = True
             # Disable emergency alert notifications
