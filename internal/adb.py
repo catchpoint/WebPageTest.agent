@@ -28,9 +28,6 @@ class Adb(object):
             'com.samsung.android.MtpApplication': {}
         }
         self.exe = 'adb'
-        #if os.uname()[4].startswith('arm'):
-        #    self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-        #                            "support", "android", "adb-arm")
 
     def run(self, cmd, timeout_sec=60, silent=False):
         """Run a shell command with a time limit and get the output"""
