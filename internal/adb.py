@@ -4,13 +4,17 @@
 """ADB command-line interface"""
 import logging
 import os
+import platform
 import re
 import subprocess
 from threading import Timer
+import time
+import monotonic
 
 class Adb(object):
     """ADB command-line interface"""
     def __init__(self, options, cache_dir):
+        self.options = options
         self.device = options.device
         self.rndis = options.rndis
         self.ping_address = None
@@ -21,7 +25,11 @@ class Adb(object):
         self.short_version = None
         self.last_bytes_rx = 0
         self.initialized = False
+        self.this_path = os.path.abspath(os.path.dirname(__file__))
+        self.root_path = os.path.abspath(os.path.join(self.this_path, os.pardir))
         self.cache_dir = cache_dir
+        self.simplert_path = None
+        self.simplert = None
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -95,7 +103,46 @@ class Adb(object):
             for proc in psutil.process_iter():
                 if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
                     proc.cpu_affinity([0])
+            # Start the simple-rt process if needed
+            self.simplert_path = None
+            if self.options.simplert is not None and platform.system() == 'Linux':
+                if os.uname()[4].startswith('arm'):
+                    self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'arm')
+                elif platform.architecture()[0] == '64bit':
+                    self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
+            if self.simplert_path is not None:
+                self.shell(['am', 'force-stop', 'com.viper.simplert'])
+                command = 'sudo {0} linux stop'.format(os.path.join(self.simplert_path,
+                                                                    'iface_up.sh'))
+                logging.debug(command)
+                subprocess.call(command, shell=True)
+                from .os_util import kill_all
+                from .os_util import wait_for_all
+                kill_all('simple-rt', False)
+                wait_for_all('simple-rt')
+                logging.debug('Starting simple-rt bridge process')
+                interface, dns = self.options.simplert.split(',', 1)
+                exe = os.path.join(self.simplert_path, 'simple-rt')
+                command = ['sudo', exe, '-i', interface]
+                if dns is not None and len(dns):
+                    command.extend(['-n', dns])
+                self.simplert = subprocess.Popen(command, cwd=self.simplert_path)
         return ret
+
+    def stop(self):
+        """Shut down anything necessary"""
+        if self.simplert is not None:
+            self.shell(['am', 'force-stop', 'com.viper.simplert'])
+            command = 'sudo {0} linux stop'.format(os.path.join(self.simplert_path,
+                                                                'iface_up.sh'))
+            logging.debug(command)
+            subprocess.call(command, shell=True)
+            logging.debug('Stopping simple-rt bridge process')
+            from .os_util import kill_all
+            from .os_util import wait_for_all
+            kill_all('simple-rt', False)
+            wait_for_all('simple-rt')
+            self.simplert = None
 
     def kill_proc(self, procname, kill_signal='-SIGINT'):
         """Kill all processes with the given name"""
@@ -341,6 +388,43 @@ class Adb(object):
 
         return rndis_ready
 
+    def is_tun_interface_available(self):
+        """Check to see if tun0 is up"""
+        is_ready = False
+        out = self.shell(['ip', 'address', 'show'], silent=True)
+        if out is not None:
+            for line in out.splitlines():
+                if re.search(r'^[\d]+\:\s+tun0:', line):
+                    is_ready = True
+        return is_ready
+
+    def dismiss_vpn_dialog(self):
+        """Check and see if the VPN permission dialog is up and dismiss it"""
+        out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
+        if out.find('com.android.vpndialogs') >= 0:
+            logging.warning('Dismissing VPN dialog')
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+
+    def check_simplert(self):
+        """Bring up the simple-rt bridge if it isn't running"""
+        is_ready = self.is_tun_interface_available()
+        if not is_ready:
+            # disconnect/reconnect the USB interface
+            self.su('setprop sys.usb.config adb')
+            self.adb(['wait-for-device'])
+            # wait up to 30 seconds for the interface to come up
+            end_time = monotonic.monotonic() + 30
+            while not is_ready and monotonic.monotonic() < end_time:
+                time.sleep(0.5)
+                self.dismiss_vpn_dialog()
+                is_ready = self.is_tun_interface_available()
+        if not is_ready:
+            logging.debug('simplert bridge not started')
+        return is_ready
+
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
@@ -366,9 +450,11 @@ class Adb(object):
         if 'temp' in battery and battery['temp'] > 36.0:
             logging.info("Device not ready, high temperature: %0.1f degrees", battery['temp'])
             is_ready = False
-        # Bring up the rndis interface if necessary
+        # Bring up the bridged interface if necessary
         if self.rndis is not None:
             is_ready = self.check_rndis()
+        if self.simplert is not None:
+            is_ready = self.check_simplert()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         net_ok = False
         if self.ping(self.ping_address) is not None:

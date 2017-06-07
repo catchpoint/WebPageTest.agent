@@ -141,6 +141,8 @@ class WPTAgent(object):
         self.shaper.remove()
         if self.xvfb is not None:
             self.xvfb.stop()
+        if self.adb is not None:
+            self.adb.stop()
 
     def sleep(self, seconds):
         """Sleep wrapped in an exception handler to properly deal with Ctrl+C"""
@@ -404,6 +406,13 @@ def main():
                         "    dhcp: Configure interface for DHCP\n"\
                         "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"\
                         "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
+    parser.add_argument('--simplert',
+                        help="Use SimpleRT for reverse-tethering.  The APK should be installed "\
+                        "manually (adb install simple-rt/simple-rt-1.1.apk) and tested once "\
+                        "manually (./simple-rt -i eth0 then disconnect and re-connect phone) "\
+                        "to dismiss any system dialogs.  The ethernet interface and DNS server "\
+                        "should be passed as options:\n"\
+                        "    <interface>,<dns1>: i.e. --simplert eth0,192.168.0.1")
 
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
