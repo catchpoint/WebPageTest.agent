@@ -122,7 +122,8 @@ class Adb(object):
                 command = ['sudo', exe, '-i', interface]
                 if dns is not None and len(dns):
                     command.extend(['-n', dns])
-                self.simplert = subprocess.Popen(command, cwd=self.simplert_path)
+                self.simplert = subprocess.Popen(' '.join(command), shell=True,
+                                                 cwd=self.simplert_path)
         return ret
 
     def stop(self):
