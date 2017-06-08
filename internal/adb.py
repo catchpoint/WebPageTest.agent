@@ -394,13 +394,7 @@ class Adb(object):
     def dismiss_vpn_dialog(self):
         """Check and see if the VPN permission dialog is up and dismiss it"""
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
-        if out.find('com.android.systemui.usb.UsbConfirmActivity') >= 0:
-            logging.warning('Dismissing USB dialog')
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
-        elif out.find('com.android.vpndialogs') >= 0:
+        if out.find('com.android.vpndialogs') >= 0:
             logging.warning('Dismissing VPN dialog')
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
