@@ -394,14 +394,14 @@ class Adb(object):
     def dismiss_vpn_dialog(self):
         """Check and see if the VPN permission dialog is up and dismiss it"""
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
-        if out.find('com.android.vpndialogs') >= 0:
-            logging.warning('Dismissing VPN dialog')
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
         if out.find('com.android.systemui.usb.UsbConfirmActivity') >= 0:
             logging.warning('Dismissing USB dialog')
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+        elif out.find('com.android.vpndialogs') >= 0:
+            logging.warning('Dismissing VPN dialog')
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
@@ -421,7 +421,7 @@ class Adb(object):
             # wait up to 30 seconds for the interface to come up
             end_time = monotonic.monotonic() + 30
             while not is_ready and monotonic.monotonic() < end_time:
-                time.sleep(0.5)
+                time.sleep(1)
                 self.dismiss_vpn_dialog()
                 is_ready = self.is_tun_interface_available()
         if not is_ready:
