@@ -106,10 +106,12 @@ class Adb(object):
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
-                if os.uname()[4].startswith('arm'):
-                    self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'arm')
-                elif platform.architecture()[0] == '64bit':
-                    self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
+                from .os_util import process_running
+                if not process_running('simple-rt'):
+                    if os.uname()[4].startswith('arm'):
+                        self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'arm')
+                    elif platform.architecture()[0] == '64bit':
+                        self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
             if self.simplert_path is not None:
                 self.shell(['am', 'force-stop', 'com.viper.simplert'])
                 from .os_util import kill_all
@@ -450,7 +452,7 @@ class Adb(object):
         # Bring up the bridged interface if necessary
         if self.rndis is not None:
             is_ready = self.check_rndis()
-        if self.simplert is not None:
+        if self.options.simplert is not None:
             is_ready = self.check_simplert()
             if not is_ready:
                 self.reset_simplert()
@@ -488,7 +490,7 @@ class Adb(object):
                         break
             if not net_ok:
                 logging.info("Device not ready, network not responding")
-                if self.simplert is not None:
+                if self.options.simplert is not None:
                     self.reset_simplert()
                 is_ready = False
         if is_ready and not self.initialized:
