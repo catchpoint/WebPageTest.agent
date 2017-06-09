@@ -107,17 +107,10 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                try:
-                    pidfile = open('/var/run/simple_rt.pid', "a+")
-                    try:
-                        import fcntl
-                        fcntl.flock(pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    except IOError:
-                        running = True
-                        raise SystemExit('simple-rt is already running')
-                    pidfile.close()
-                except Exception:
-                    pass
+                stdout = subprocess.check_output(['ps', 'ax'])
+                if stdout.find('simple-rt ') > -1:
+                    running = True
+                    logging.debug('simple-rt is already running')
                 if not running:
                     if os.uname()[4].startswith('arm'):
                         self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'arm')
