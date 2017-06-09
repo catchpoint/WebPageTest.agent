@@ -31,27 +31,15 @@ set -e
 comment="simple_rt"
 
 function linux_start {
-    iptables -P INPUT ACCEPT
-    iptables -P FORWARD ACCEPT
-    iptables -P OUTPUT ACCEPT
-    iptables -t nat -F
-    iptables -t mangle -F
-    iptables -F
-    iptables -X
     ifconfig $TUN_DEV $HOST_ADDR/$TUNNEL_CIDR up
     sysctl -w net.ipv4.ip_forward=1 > /dev/null
-    iptables -I FORWARD -j ACCEPT
-    iptables -t nat -I POSTROUTING -s $TUNNEL_NET/$TUNNEL_CIDR -o $LOCAL_INTERFACE -j MASQUERADE
+    iptables -t nat -F
+    iptables -t nat -A POSTROUTING -s $TUNNEL_NET/$TUNNEL_CIDR -o $LOCAL_INTERFACE -j MASQUERADE
+    iptables -P FORWARD ACCEPT
 }
 
 function linux_stop {
-    iptables -P INPUT ACCEPT
-    iptables -P FORWARD ACCEPT
-    iptables -P OUTPUT ACCEPT
     iptables -t nat -F
-    iptables -t mangle -F
-    iptables -F
-    iptables -X
 }
 
 function osx_start {
