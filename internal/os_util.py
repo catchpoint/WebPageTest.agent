@@ -23,22 +23,6 @@ def kill_all(exe, force, timeout=30):
             subprocess.call(['killall', exe])
     wait_for_all(exe, timeout)
 
-def process_running(exe):
-    """See if a process with the given name is running"""
-    running = False
-    import psutil
-    for proc in psutil.process_iter():
-        try:
-            pinfo = proc.as_dict(attrs=['pid', 'name', 'exe'])
-        except psutil.NoSuchProcess:
-            pass
-        else:
-            if 'exe' in pinfo and pinfo['exe'] is not None and\
-                    os.path.basename(pinfo['exe']) == exe:
-                running = True
-                break
-    return running
-
 def wait_for_all(exe, timeout=30):
     """Wait for the given process to exit"""
     import psutil

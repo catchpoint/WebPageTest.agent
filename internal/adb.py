@@ -106,18 +106,25 @@ class Adb(object):
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
-                from .os_util import process_running
-                if not process_running('simple-rt'):
+                running = False
+                try:
+                    pidfile = open('/var/run/simple_rt.pid', "a+")
+                    try:
+                        import fcntl
+                        fcntl.flock(pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except IOError:
+                        running = True
+                        raise SystemExit('simple-rt is already running')
+                    pidfile.close()
+                except Exception:
+                    pass
+                if not running:
                     if os.uname()[4].startswith('arm'):
                         self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'arm')
                     elif platform.architecture()[0] == '64bit':
                         self.simplert_path = os.path.join(self.root_path, 'simple-rt', 'linux64')
             if self.simplert_path is not None:
                 self.shell(['am', 'force-stop', 'com.viper.simplert'])
-                from .os_util import kill_all
-                from .os_util import wait_for_all
-                kill_all('simple-rt', False)
-                wait_for_all('simple-rt')
                 logging.debug('Starting simple-rt bridge process')
                 interface, dns = self.options.simplert.split(',', 1)
                 exe = os.path.join(self.simplert_path, 'simple-rt')
