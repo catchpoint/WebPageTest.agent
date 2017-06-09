@@ -140,7 +140,7 @@ class Adb(object):
         if self.simplert is not None:
             self.shell(['am', 'force-stop', 'com.viper.simplert'])
             logging.debug('Stopping simple-rt bridge process')
-            self.shell(['sudo', 'killall', 'simple-rt'])
+            subprocess.call(['sudo', 'killall', 'simple-rt'])
             self.simplert = None
 
     def kill_proc(self, procname, kill_signal='-SIGINT'):
