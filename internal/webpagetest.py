@@ -25,6 +25,7 @@ class WebPageTest(object):
         import psutil
         import requests
         self.job = None
+        self.first_failure = None
         self.session = requests.Session()
         self.options = options
         self.test_run_count = 0
@@ -260,6 +261,7 @@ class WebPageTest(object):
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30)
+                self.first_failure = None
                 if len(response.text):
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
@@ -307,6 +309,14 @@ class WebPageTest(object):
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
+                now = monotonic.monotonic()
+                if self.first_failure is None:
+                    self.first_failure = now
+                # Reboot if we haven't been able to reach the server for 30 minutes
+                if platform.system() == 'Linux':
+                    elapsed = now - self.first_failure
+                    if elapsed > 1800:
+                        subprocess.call(['sudo', 'reboot'])
                 time.sleep(0.1)
             except Exception:
                 pass
