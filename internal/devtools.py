@@ -278,80 +278,67 @@ class DevTools(object):
             fail_count = 0
             for request_id in requests:
                 request = requests[request_id]
-                if fail_count < 2 and 'status' in request and \
-                        request['status'] == 200 and \
-                        'response_headers' in request:
+                if fail_count < 2 and 'status' in request and request['status'] == 200 and \
+                        'response_headers' in request and request_id not in self.response_bodies:
                     content_length = self.get_header_value(request['response_headers'],
                                                            'Content-Length')
                     if content_length is not None:
                         content_length = int(re.search(r'\d+', str(content_length)).group())
                     elif 'transfer_size' in request:
                         content_length = request['transfer_size']
-                    if content_length > 0:
-                        body_file_path = os.path.join(path, request_id)
-                        if not os.path.exists(body_file_path):
-                            # Only grab bodies needed for optimization checks
-                            # or if we are saving full bodies
+                    else:
+                        content_length = 0
+                    logging.debug('%s (%d) - %s', request_id, content_length, request['url'])
+                    body_file_path = os.path.join(path, request_id)
+                    if not os.path.exists(body_file_path):
+                        # Only grab bodies needed for optimization checks
+                        # or if we are saving full bodies
+                        need_body = True
+                        content_type = self.get_header_value(request['response_headers'],
+                                                             'Content-Type')
+                        is_text = False
+                        if content_type is not None:
+                            content_type = content_type.lower()
+                            if content_type[:5] == 'text/' or \
+                                    content_type.find('javascript') >= 0 or \
+                                    content_type.find('json') >= 0:
+                                is_text = True
+                            # Ignore video files over 10MB
+                            if content_type[:6] == 'video/' and content_length > 10000000:
+                                need_body = False
+                        if optimization_checks_disabled and zip_file is None:
                             need_body = False
-                            content_type = self.get_header_value(request['response_headers'],
-                                                                 'Content-Type')
-                            content_encoding = self.get_header_value(request['response_headers'],
-                                                                     'Content-Encoding')
-                            is_image = False
-                            is_text = False
-                            is_video = False
-                            if content_type is not None:
-                                content_type = content_type.lower()
-                                if content_type[:6] or \
-                                        content_type.find('javascript') >= 0 or \
-                                        content_type.find('json') >= 0:
+                        if need_body:
+                            response = self.send_command("Network.getResponseBody",
+                                                         {'requestId': request_id}, wait=True)
+                            if response is None:
+                                fail_count += 1
+                                logging.warning('No response to body request for request %s',
+                                                request_id)
+                            elif 'result' not in response or \
+                                    'body' not in response['result']:
+                                fail_count = 0
+                                logging.warning('Missing response body for request %s',
+                                                request_id)
+                            elif len(response['result']['body']):
+                                fail_count = 0
+                                # Write the raw body to a file (all bodies)
+                                if 'base64Encoded' in response['result'] and \
+                                        response['result']['base64Encoded']:
+                                    body = base64.b64decode(response['result']['body'])
+                                else:
+                                    body = response['result']['body'].encode('utf-8')
                                     is_text = True
-                                if content_type[:6] == 'image/':
-                                    is_image = True
-                                if content_type[:6] == 'video/':
-                                    is_video = True
-                            is_compressed = False
-                            if content_encoding is not None:
-                                content_encoding = content_encoding.lower()
-                                if content_encoding.find('gzip') >= 0 or \
-                                        content_encoding.find('deflate') >= 0 or \
-                                        content_encoding.find('br') >= 0:
-                                    is_compressed = True
-                            if not optimization_checks_disabled:
-                                if is_image and content_length >= 1400:
-                                    need_body = True
-                                if not is_compressed and not is_video and content_length >= 1400:
-                                    need_body = True
-                            if zip_file is not None and is_text:
-                                need_body = True
-                            if need_body:
-                                response = self.send_command("Network.getResponseBody",
-                                                             {'requestId': request_id}, wait=True)
-                                if response is None:
-                                    fail_count += 1
-                                    logging.warning('No response to body request for request %s',
-                                                    request_id)
-                                elif 'result' not in response or \
-                                        'body' not in response['result']:
-                                    fail_count = 0
-                                    logging.warning('Missing response body for request %s',
-                                                    request_id)
-                                elif len(response['result']['body']):
-                                    fail_count = 0
-                                    # Write the raw body to a file (all bodies)
-                                    if 'base64Encoded' in response['result'] and \
-                                            response['result']['base64Encoded']:
-                                        body = base64.b64decode(response['result']['body'])
-                                    else:
-                                        body = response['result']['body'].encode('utf-8')
-                                        # Add text bodies to the zip archive
-                                        if zip_file is not None:
-                                            index += 1
-                                            name = '{0:03d}-{1}-body.txt'.format(index, request_id)
-                                            zip_file.writestr(name, body)
-                                    self.response_bodies[request_id] = body
-                                    with open(body_file_path, 'wb') as body_file:
-                                        body_file.write(body)
+                                # Add text bodies to the zip archive
+                                if zip_file is not None and is_text:
+                                    index += 1
+                                    name = '{0:03d}-{1}-body.txt'.format(index, request_id)
+                                    zip_file.writestr(name, body)
+                                    logging.debug('Stored body in zip')
+                                logging.debug('Body length: %d', len(body))
+                                self.response_bodies[request_id] = body
+                                with open(body_file_path, 'wb') as body_file:
+                                    body_file.write(body)
             if zip_file is not None:
                 zip_file.close()
 
