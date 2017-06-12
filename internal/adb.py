@@ -390,13 +390,14 @@ class Adb(object):
 
     def dismiss_vpn_dialog(self):
         """Check and see if the VPN permission dialog is up and dismiss it"""
-        out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
-        if out.find('com.android.vpndialogs') >= 0:
-            logging.warning('Dismissing VPN dialog')
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
-            self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+        if self.short_version < 5.0:
+            out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
+            if out.find('com.android.vpndialogs') >= 0:
+                logging.warning('Dismissing VPN dialog')
+                self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
 
     def reset_simplert(self):
         """Reset the tunnel on the phone in case it's state is messed up"""
