@@ -247,8 +247,7 @@ class Adb(object):
         # Close some known apps that pop-over
         for app in self.known_apps:
             if 'installed' not in self.known_apps[app]:
-                out = self.shell(['dumpsys', 'package', app, '|', 'grep', 'versionName', '|',
-                                  'head', '-n1'])
+                out = self.shell(['dumpsys', 'package', app, '|', 'grep', 'versionName'])
                 self.known_apps[app]['installed'] = bool(out is not None and len(out.strip()))
             if self.known_apps[app]['installed']:
                 self.shell(['am', 'force-stop', app])
