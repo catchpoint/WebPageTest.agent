@@ -42,6 +42,7 @@ class Browsers(object):
                 name = name[separator + 1:].strip()
             if name in self.android_browsers:
                 config = self.android_browsers[name]
+                config['all'] = self.android_browsers
                 if config['type'] == 'chrome':
                     from .chrome_android import ChromeAndroid
                     browser = ChromeAndroid(self.adb, config, self.options, job)

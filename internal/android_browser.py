@@ -32,6 +32,7 @@ class AndroidBrowser(object):
         """Prepare the browser and OS"""
         self.task = task
         self.adb.cleanup_device()
+        self.stop_all_browsers()
         # Download and install the APK if necessary
         if 'apk_url' in self.config and 'md5' in self.config:
             if not os.path.isdir(job['persistent_dir']):
@@ -81,6 +82,22 @@ class AndroidBrowser(object):
                         pass
         # kill any running instances
         self.adb.shell(['am', 'force-stop', self.config['package']])
+
+    def stop_all_browsers(self):
+        """Kill all instances of known browsers"""
+        out = self.adb.shell(['ps'], silent=True)
+        found_browsers = []
+        all_browsers = self.config['all']
+        for line in out.splitlines():
+            for name in all_browsers:
+                browser_info = all_browsers[name]
+                if name not in found_browsers and 'package' in browser_info and \
+                        line.find(browser_info['package']) >= 0:
+                    found_browsers.append(name)
+        if len(found_browsers):
+            for name in found_browsers:
+                package = all_browsers[name]['package']
+                self.adb.shell(['am', 'force-stop', package])
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
