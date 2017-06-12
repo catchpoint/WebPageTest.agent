@@ -337,7 +337,6 @@ class Adb(object):
             self.adb(['wait-for-device'])
             interface, if_state, address = self.get_rndis_interface()
             if interface is not None:
-                self.su('svc wifi disable')
                 # turn down all of the other interfaces
                 out = self.su('ip link show')
                 if out is not None:
