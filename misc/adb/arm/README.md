@@ -1,0 +1,1 @@
+This is an [updated version of adb](https://github.com/DeepSilence/adb-arm) (1.0.32) that supports "adb reverse" (requires android 5.1).
