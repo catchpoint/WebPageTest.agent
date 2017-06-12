@@ -433,6 +433,7 @@ class Adb(object):
                 match = re.search(r'^(\d+\.\d+)', out)
                 if match:
                     self.short_version = float(match.group(1))
+                    logging.debug('%s (%0.2f)', self.version, self.short_version)
         if self.kernel is None:
             out = self.shell(['getprop', 'ro.com.google.clientidbase'], silent=True)
             if out is not None:
