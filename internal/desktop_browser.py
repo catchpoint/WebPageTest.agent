@@ -117,6 +117,15 @@ class DesktopBrowser(object):
             self.proc.kill()
             self.proc = None
         self.disable_cpu_throttling()
+        # Clean up the downloads folder in case anything was downloaded
+        if platform.system() == 'Linux':
+            downloads = os.path.abspath(os.path.join('~', 'Downloads'))
+            if os.path.isdir(downloads):
+                try:
+                    shutil.rmtree(downloads)
+                    os.makedirs(downloads)
+                except Exception:
+                    pass
 
     def wait_for_idle(self):
         """Wait for no more than 20% of a single core used for 500ms"""
