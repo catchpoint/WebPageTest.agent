@@ -207,7 +207,8 @@ class DevTools(object):
                                     request['firstByteTime'] = timestamp
                             if method == 'Network.loadingFailed' and 'response' not in request and \
                                     ('fromCache' not in request or not request['fromCache']):
-                                if 'canceled' not in params or not params['canceled']:
+                                if 'blockedReason' not in params and \
+                                        ('canceled' not in params or not params['canceled']):
                                     request['fromNet'] = True
                                     request['errorCode'] = 12999
                                     if 'firstByteTime' not in request:
@@ -216,6 +217,8 @@ class DevTools(object):
                                         request['error'] = params['errorText']
                                     if 'error' in params:
                                         request['errorCode'] = params['error']
+                                else:
+                                    request['fromNet'] = False
                     if method == 'Page.domContentEventFired' and 'timestamp' in params and \
                             'domContentLoadedEventStart' not in page_data:
                         page_data['domContentLoadedEventStart'] = params['timestamp']
