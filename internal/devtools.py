@@ -182,6 +182,7 @@ class DevTools(object):
         if len(self.task['block']):
             for block in self.task['block']:
                 self.send_command('Network.addBlockedURL', {'url': block})
+            self.send_command('Network.setBlockedURLs', {'urls': self.task['block']})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})
