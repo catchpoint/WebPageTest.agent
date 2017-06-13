@@ -200,7 +200,7 @@ class DevTools(object):
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
-            trace += ",blink.user_timing,netlog"
+            trace += ",rail,blink.user_timing,netlog"
             self.trace_enabled = True
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'},
@@ -897,6 +897,12 @@ class DevToolsClient(WebSocketClient):
                                 (trace_event['name'] == 'navigationStart' or \
                                  trace_event['name'] == 'fetchStart') and \
                                 trace_event['cat'].find('blink.user_timing') > -1:
+                            logging.debug("Trace start detected: %d", trace_event['ts'])
+                            self.trace_ts_start = trace_event['ts']
+                        if self.trace_ts_start is None and \
+                                (trace_event['name'] == 'navigationStart' or \
+                                 trace_event['name'] == 'fetchStart') and \
+                                trace_event['cat'].find('rail') > -1:
                             logging.debug("Trace start detected: %d", trace_event['ts'])
                             self.trace_ts_start = trace_event['ts']
                         if trace_event['name'] == 'Screenshot' and \

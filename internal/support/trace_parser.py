@@ -177,6 +177,8 @@ class Trace():
                 cat.find('devtools.timeline') >= 0 or \
                 cat.find('blink.feature_usage') >= 0 or \
                 cat.find('blink.user_timing') >= 0 or \
+                cat.find('loading') >= 0 or \
+                cat.find('rail') >= 0 or \
                 cat.find('netlog') >= 0 or \
                 cat.find('v8') >= 0:
             self.trace_events.append(trace_event)
@@ -201,12 +203,14 @@ class Trace():
 
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
+        if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
+                cat.find('loading') >= 0:
+            if 'args' in trace_event and 'frame' in trace_event['args']:
+                self.user_timing.append(trace_event)
         if cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
-        elif cat.find('blink.user_timing') >= 0:
-            self.user_timing.append(trace_event)
         elif cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
         elif cat.find('netlog') >= 0:
@@ -1041,7 +1045,7 @@ def main():
 
 
 ##########################################################################
-#   Blink feature names from https://cs.chromium.org/chromium/src/third_party/WebKit/Source/core/frame/UseCounter.h
+#   Blink feature names from https://cs.chromium.org/chromium/src/third_party/WebKit/public/platform/WebFeature.h
 ##########################################################################
 BLINK_FEATURES = {
     "0": "PageDestruction",
@@ -2671,7 +2675,58 @@ BLINK_FEATURES = {
     "1967": "DispatchMouseEventOnDisabledFormControl",
     "1968": "ElementNameDOMInvalidHTMLParserValid",
     "1969": "ElementNameDOMValidHTMLParserInvalid",
-    "1970": "GATTServerDisconnectedEvent"
+    "1970": "GATTServerDisconnectedEvent",
+    "1971": "kAnchorClickDispatchForNonConnectedNode",
+    "1972": "kHTMLParseErrorNestedForm",
+    "1973": "kFontShapingNotDefGlyphObserved",
+    "1974": "kPostMessageOutgoingWouldBeBlockedByConnectSrc",
+    "1975": "kPostMessageIncomingWouldBeBlockedByConnectSrc",
+    "1976": "kPaymentRequestNetworkNameInSupportedMethods",
+    "1977": "kCrossOriginPropertyAccess",
+    "1978": "kCrossOriginPropertyAccessFromOpener",
+    "1979": "kCredentialManagerCreate",
+    "1980": "kWebDatabaseCreateDropFTS3Table",
+    "1981": "kFieldEditInSecureContext",
+    "1982": "kFieldEditInNonSecureContext",
+    "1983": "kCredentialManagerCredentialRequestOptionsUnmediated",
+    "1984": "kCredentialManagerGetMediationRequired",
+    "1985": "kCredentialManagerIdName",
+    "1986": "kCredentialManagerPasswordName",
+    "1987": "kCredentialManagerAdditionalData",
+    "1988": "kCredentialManagerCustomFetch",
+    "1989": "kNetInfoRtt",
+    "1990": "kNetInfoDownlink",
+    "1991": "kShapeDetection_BarcodeDetectorConstructor",
+    "1992": "kShapeDetection_FaceDetectorConstructor",
+    "1993": "kShapeDetection_TextDetectorConstructor",
+    "1994": "kCredentialManagerCredentialRequestOptionsOnlyUnmediated",
+    "1995": "kInertAttribute",
+    "1996": "kPluginInstanceAccessFromIsolatedWorld",
+    "1997": "kPluginInstanceAccessFromMainWorld",
+    "1998": "kRequestFullscreenForDialogElement",
+    "1999": "kRequestFullscreenForDialogElementInTopLayer",
+    "2000": "kShowModalForElementInFullscreenStack",
+    "2001": "kThreeValuedPositionBackground",
+    "2002": "kThreeValuedPositionBasicShape",
+    "2003": "kThreeValuedPositionGradient",
+    "2004": "kThreeValuedPositionObjectPosition",
+    "2005": "kThreeValuedPositionPerspectiveOrigin",
+    "2007": "kUnitlessZeroAngleFilter",
+    "2008": "kUnitlessZeroAngleGradient",
+    "2010": "kUnitlessZeroAngleTransform",
+    "2011": "kHTMLOListElementStartGetterReversedWithoutStartAttribute",
+    "2012": "kCredentialManagerPreventSilentAccess",
+    "2013": "kNetInfoEffectiveType",
+    "2014": "kV8SpeechRecognition_Start_Method",
+    "2015": "kTableRowDirectionDifferentFromTable",
+    "2016": "kTableSectionDirectionDifferentFromTable",
+    "2017": "kClientHintsDeviceRAM",
+    "2018": "kCSSRegisterProperty",
+    "2019": "kRelativeOrientationSensorConstructor",
+    "2020": "kSmoothScrollJSInterventionActivated",
+    "2021": "kBudgetAPIGetCost",
+    "2022": "kBudgetAPIGetBudget",
+    "2023": "kCrossOriginMainFrameNulledNonEmptyNameAccessed"    
 }
 
 ##########################################################################
