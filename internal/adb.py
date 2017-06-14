@@ -263,6 +263,8 @@ class Adb(object):
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+        if out.find('com.google.android.apps.gsa.staticplugins.opa.errorui.OpaErrorActivity') >= 0:
+            self.shell(['am', 'force-stop', 'com.google.android.googlequicksearchbox'])
 
     def get_rndis_interface(self):
         """Return the name of the rndis interface, it's state and assigned address"""
