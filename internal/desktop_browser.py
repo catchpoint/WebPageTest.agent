@@ -119,7 +119,7 @@ class DesktopBrowser(object):
         self.disable_cpu_throttling()
         # Clean up the downloads folder in case anything was downloaded
         if platform.system() == 'Linux':
-            downloads = os.path.abspath(os.path.join('~', 'Downloads'))
+            downloads = os.path.expanduser('~/Downloads')
             if os.path.isdir(downloads):
                 try:
                     shutil.rmtree(downloads)
