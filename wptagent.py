@@ -40,8 +40,16 @@ class WPTAgent(object):
         import monotonic
         start_time = monotonic.monotonic()
         browser = None
+        exit_file = os.path.join(self.root_path, 'exit')
         while not self.must_exit:
             try:
+                if os.path.isfile(exit_file):
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
+                    self.must_exit = True
+                    break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
