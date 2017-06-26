@@ -390,12 +390,17 @@ class Firefox(DesktopBrowser):
                     end_pos = os.path.getsize(path)
                     if end_pos > start_pos:
                         length = end_pos - start_pos
-                        logging.debug('Preparing moz log %s (%d MB)', base_name,
-                                      int(length / 1024 / 1024))
+                        logging.debug('Preparing moz log %s (%d bytes from %d)',
+                                      base_name, length, start_pos)
                         with open(path, 'rb') as f_in:
                             f_in.seek(start_pos)
                             with gzip.open(dest, 'wb', 7) as f_out:
-                                shutil.copyfileobj(f_in, f_out, length)
+                                while length > 0:
+                                    read_bytes = min(length, 1024 * 1024)
+                                    buff = f_in.read(read_bytes)
+                                    read_bytes = len(buff)
+                                    f_out.write(buff)
+                                    length -= read_bytes
                 except Exception:
                     pass
 
