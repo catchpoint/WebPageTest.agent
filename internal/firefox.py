@@ -382,13 +382,22 @@ class Firefox(DesktopBrowser):
             task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
             files = sorted(glob.glob(self.moz_log + '*'))
             for path in files:
-                dest = os.path.join(task['dir'],
-                                    task['prefix'] + '_' + os.path.basename(path) + '.gz')
-                start_pos = self.log_pos[path] if path in self.log_pos else 0
-                with open(path, 'rb') as f_in:
-                    f_in.seek(start_pos)
-                    with gzip.open(dest, 'wb', 7) as f_out:
-                        shutil.copyfileobj(f_in, f_out)
+                try:
+                    base_name = os.path.basename(path)
+                    dest = os.path.join(task['dir'],
+                                        task['prefix'] + '_' + base_name + '.gz')
+                    start_pos = self.log_pos[path] if path in self.log_pos else 0
+                    end_pos = os.path.getsize(path)
+                    if end_pos > start_pos:
+                        length = end_pos - start_pos
+                        logging.debug('Preparing moz log %s (%d MB)', base_name,
+                                      int(length / 1024 / 1024))
+                        with open(path, 'rb') as f_in:
+                            f_in.seek(start_pos)
+                            with gzip.open(dest, 'wb', 7) as f_out:
+                                shutil.copyfileobj(f_in, f_out, length)
+                except Exception:
+                    pass
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
