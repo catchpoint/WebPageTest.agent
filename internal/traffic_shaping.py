@@ -312,18 +312,18 @@ class NetEm(object):
                 if self.in_interface is None:
                     self.in_interface = 'ifb0'
                 # Set up the ifb interface so inbound traffic can be shaped
-
-                if self.options.dockerized:
-                    subprocess.call(['sudo', 'ip', 'link', 'add', 'ifb0', 'type', 'ifb'])
-                else:
-                    subprocess.call(['sudo', 'modprobe', 'ifb'])
-                subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'up'])
-                subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', self.interface,
-                                 'ingress'])
-                subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
-                                 'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
-                                 'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
-                                 'dev', 'ifb0'])
+                if self.in_interface.startswith('ifb'):
+                    if self.options.dockerized:
+                        subprocess.call(['sudo', 'ip', 'link', 'add', 'ifb0', 'type', 'ifb'])
+                    else:
+                        subprocess.call(['sudo', 'modprobe', 'ifb'])
+                    subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'up'])
+                    subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', self.interface,
+                                    'ingress'])
+                    subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
+                                    'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
+                                    'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
+                                    'dev', 'ifb0'])
                 self.reset()
                 ret = True
             else:
