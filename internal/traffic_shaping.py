@@ -21,7 +21,11 @@ class TrafficShaper(object):
             elif shaper_name[:5] == 'netem':
                 parts = shaper_name.split(',')
                 if_out = parts[1].strip() if len(parts) > 1 else None
-                if_in = 'usb0' if options.rndis else None
+                if_in = None
+                if options.rndis:
+                    if_in = 'usb0'
+                elif options.simplert:
+                    if_in = 'tun0'
                 self.shaper = NetEm(options=options, out_interface=if_out, in_interface=if_in)
             elif shaper_name[:6] == 'remote':
                 parts = shaper_name.split(',')
