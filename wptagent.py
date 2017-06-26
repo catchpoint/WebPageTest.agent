@@ -352,6 +352,13 @@ def find_browsers():
                 browsers['Chrome Canary'] = {'exe': canary_path}
             if 'Canary' not in browsers:
                 browsers['Canary'] = {'exe': canary_path}
+        # Firefox browsers
+        firefox_path = '/usr/lib/firefox/firefox'
+        if 'Firefox' not in browsers and os.path.isfile(firefox_path):
+            browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+        nightly_path = '/usr/lib/firefox-trunk/firefox-trunk'
+        if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
+            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
     elif plat == "Darwin":
         pass
     return browsers
