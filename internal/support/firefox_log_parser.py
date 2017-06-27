@@ -21,6 +21,7 @@ import logging
 import os
 import re
 import urlparse
+import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -29,21 +30,41 @@ except BaseException:
 class FirefoxLogParser(object):
     """Handle parsing of firefox logs"""
     def __init__(self):
+        self.start_time = None
+        self.start_day = None
+        self.int_map = {}
+        for val in xrange(0, 100):
+            self.int_map['{0:02d}'.format(val)] = float(val)
         self.dns = {}
         self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}}
         self.logline = re.compile(r'^(?P<timestamp>\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) \w+ - '
                                   r'\[(?P<thread>[^\]]+)\]: (?P<level>\w)/(?P<category>[^ ]+) '
                                   r'(?P<message>[^\r\n]+)')
 
+    def set_start_time(self, timestamp):
+        """Store the start time"""
+        self.start_day = int(timestamp[8:10])
+        hour = int(timestamp[11:13])
+        minute = int(timestamp[14:16])
+        second = int(timestamp[17:19])
+        usecond = float(int(timestamp[21:])) / 1000000
+        self.start_time = float(hour * 3600 + minute * 60 + second) + usecond
+
     def process_logs(self, log_file, start_time):
         """Process multiple child logs and generate a resulting requests and page data file"""
         self.__init__()
         files = sorted(glob.glob(log_file + '*'))
+        self.set_start_time(start_time)
         for path in files:
             try:
-                self.process_log_file(path, start_time)
+                self.process_log_file(path)
             except Exception:
                 pass
+        return self.finish_processing()
+
+    def finish_processing(self):
+        """Do the post-parse processing"""
+        logging.debug('Processing network requests from moz log')
         requests = []
         # Pull out the network requests and sort them
         for request_id in self.http['requests']:
@@ -79,36 +100,61 @@ class FirefoxLogParser(object):
                             request['connect_end'] = socket['end']
         return requests
 
-    def process_log_file(self, path, start_time):
+    def process_log_file(self, path):
         """Process a single log file"""
         logging.debug("Processing %s", path)
+        start = monotonic.monotonic()
         _, ext = os.path.splitext(path)
         if ext.lower() == '.gz':
             f_in = gzip.open(path, 'rb')
         else:
             f_in = open(path, 'r')
         for line in f_in:
-            parts = self.logline.search(line)
-            if parts:
-                msg = {}
-                timestamp = parts.groupdict().get('timestamp')
-                parsed_timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
-                msg['timestamp'] = (parsed_timestamp - start_time).total_seconds()
-                if msg['timestamp'] >= 0:
-                    msg['thread'] = parts.groupdict().get('thread')
-                    msg['level'] = parts.groupdict().get('level')
-                    msg['category'] = parts.groupdict().get('category')
-                    msg['message'] = parts.groupdict().get('message')
-                    if msg['category'] == 'nsHttp':
-                        if msg['thread'] == 'Main Thread':
-                            self.main_thread_http_entry(msg)
-                        elif msg['thread'] == 'Socket Thread':
-                            self.socket_thread_http_entry(msg)
-                    elif msg['category'] == 'nsSocketTransport':
-                        self.socket_transport_entry(msg)
-                    elif msg['category'] == 'nsHostResolver':
-                        self.dns_entry(msg)
+            self.process_log_line(line)
         f_in.close()
+        elapsed = monotonic.monotonic() - start
+        logging.debug("%0.3f s to process %s", elapsed, path)
+
+    def process_log_line(self, line):
+        """Process a single log line"""
+        int_map = self.int_map
+        timestamp = line[0:26]
+        if len(timestamp) >= 26:
+            msg = {}
+            try:
+                # %Y-%m-%d %H:%M:%S.%f - 2017-06-27 13:46:10.048844
+                day = int_map[timestamp[8:10]]
+                hour = int_map[timestamp[11:13]]
+                minute = int_map[timestamp[14:16]]
+                second = int_map[timestamp[17:19]]
+                usecond = int_map[timestamp[20:22]] * 10000 + \
+                            int_map[timestamp[22:24]] * 100 + int_map[timestamp[24:26]]
+                event_time = (hour * 3600.0 + minute * 60.0 + second) + (usecond / 1000000)
+                if day == self.start_day:
+                    elapsed = event_time - self.start_time
+                else:
+                    elapsed = event_time + (float(3600 * 24) - self.start_time)
+                msg['timestamp'] = elapsed
+                if msg['timestamp'] >= 0:
+                    offset = line.find(']: ', 32)
+                    if offset >= 0:
+                        msg['thread'] = line[34:offset]
+                        msg['level'] = line[offset + 3:offset + 4]
+                        msg_start = line.find(' ', offset + 5)
+                        if msg_start >= 0:
+                            msg['category'] = line[offset + 5:msg_start]
+                            msg['message'] = line[msg_start + 1:]
+                            if msg['category'] == 'nsHttp':
+                                if msg['thread'] == 'Main Thread':
+                                    self.main_thread_http_entry(msg)
+                                elif msg['thread'] == 'Socket Thread':
+                                    self.socket_thread_http_entry(msg)
+                            elif msg['category'] == 'nsSocketTransport':
+                                self.socket_transport_entry(msg)
+                            elif msg['category'] == 'nsHostResolver':
+                                self.dns_entry(msg)
+            except Exception:
+                pass
 
     def main_thread_http_entry(self, msg):
         """Process a single HTTP log line from the main thread"""
@@ -317,11 +363,20 @@ def main():
         parser.error("Input devtools file or start time is not specified.")
 
     parser = FirefoxLogParser()
-    start_time = datetime.strptime(options.start, '%Y-%m-%d %H:%M:%S.%f')
-    requests = parser.process_logs(options.logfile, start_time)
+    year = int(options.start[0:4])
+    month = int(options.start[5:7])
+    day = int(options.start[8:10])
+    hour = int(options.start[11:13])
+    minute = int(options.start[14:16])
+    second = int(options.start[17:19])
+    usecond = int(options.start[21:])
+    start_time = datetime(year, month, day, hour, minute, second, usecond)
+    requests = parser.process_logs(options.logfile, options.start)
     if options.out:
         with open(options.out, 'w') as f_out:
             json.dump(requests, f_out)
 
 if __name__ == '__main__':
+    #import cProfile
+    #cProfile.run('main()', None, 2)
     main()
