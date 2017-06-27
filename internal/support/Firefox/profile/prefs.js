@@ -49,6 +49,7 @@ user_pref("datareporting.policy.dataSubmissionPolicyAccepted", false);
 user_pref("dom.ipc.plugins.flash.disable-protected-mode", true);
 user_pref("dom.max_chrome_script_run_time", 0);
 user_pref("dom.max_script_run_time", 0);
+user_pref("dom.webnotifications.enabled", false);
 user_pref("extensions.checkCompatibility", false);
 user_pref("extensions.update.enabled", false);
 user_pref("extensions.update.notifyUser", false);
