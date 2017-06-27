@@ -261,6 +261,9 @@ class WebPageTest(object):
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30)
+                if self.options.alive:
+                    with open(self.options.alive, 'a'):
+                        os.utime(self.options.alive, None)
                 self.first_failure = None
                 if len(response.text):
                     job = response.json()

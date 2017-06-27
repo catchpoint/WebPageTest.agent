@@ -102,6 +102,7 @@ class WPTAgent(object):
 
     def run_single_test(self):
         """Run a single test run"""
+        self.alive()
         browser = self.browsers.get_browser(self.job['browser'], self.job)
         if browser is not None:
             browser.prepare(self.job, self.task)
@@ -171,6 +172,7 @@ class WPTAgent(object):
             end_time = monotonic.monotonic() + timeout
             idle = False
             while not idle and monotonic.monotonic() < end_time:
+                self.alive()
                 check_start = monotonic.monotonic()
                 pct = psutil.cpu_percent(interval=1)
                 if pct <= target_pct:
@@ -181,9 +183,16 @@ class WPTAgent(object):
                 else:
                     idle_start = None
 
+    def alive(self):
+        """Touch a watchdog file indicating we are still alive"""
+        if self.options.alive:
+            with open(self.options.alive, 'a'):
+                os.utime(self.options.alive, None)
+
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
+        self.alive()
 
         try:
             import dns.resolver as _
@@ -377,6 +386,8 @@ def main():
                         help="Load config settings from EC2 user data.")
     parser.add_argument('--gce', action='store_true', default=False,
                         help="Load config settings from GCE user data.")
+    parser.add_argument('--alive',
+                        help="Watchdog file to update when successfully connected.")
 
     # Server/location configuration
     parser.add_argument('--server',
