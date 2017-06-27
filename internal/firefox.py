@@ -790,20 +790,24 @@ class HandleMessage(BaseHTTPRequestHandler):
     def do_GET(self):
         """HTTP GET"""
         self._set_headers()
-        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
 
     def do_HEAD(self):
         """HTTP HEAD"""
         self._set_headers()
-        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
 
     def do_POST(self):
         """HTTP POST"""
         try:
             content_len = int(self.headers.getheader('content-length', 0))
-            body = json.loads(self.rfile.read(content_len)) if content_len > 0 else None
+            messages = self.rfile.read(content_len) if content_len > 0 else None
             self._set_headers()
-            self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': body})
+            for line in messages.splitlines():
+                line = line.strip()
+                if len(line):
+                    message = json.loads(line)
+                    if 'body' not in message:
+                        message['body'] = None
+                    self.message_server.handle_message(message)
         except Exception:
             pass
     # pylint: enable=C0103
