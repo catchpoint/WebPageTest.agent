@@ -56,6 +56,7 @@ user_pref("extensions.update.notifyUser", false);
 user_pref("extensions.shownSelectionUI", true);
 user_pref("extensions.autoDisableScopes", 14);
 user_pref("intl.charsetmenu.browser.cache", "UTF-8");
+user_pref("media.gmp-gmpopenh264.autoupdate", false);
 user_pref("network.captive-portal-service.enabled", false);
 user_pref("network.cookie.prefsMigrated", true);
 user_pref("network.proxy.type", 0);
