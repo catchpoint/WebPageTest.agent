@@ -114,8 +114,18 @@ class BlackBoxAndroid(AndroidBrowser):
             command = task['script'].pop(0)
             if command['command'] == 'navigate':
                 activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
-                self.adb.shell(['am', 'start', '-n', activity, '-a',
-                                'android.intent.action.VIEW', '-d', command['target']])
+                cmd = 'am start -n {0} -a android.intent.action.VIEW -d "{1}"'.format(activity, \
+                        command['target'].replace('"', '%22'))
+                local_intent = os.path.join(task['dir'], 'wpt_intent.sh')
+                remote_intent = '/data/local/tmp/wpt_intent.sh'
+                self.adb.shell(['rm', remote_intent])
+                with open(local_intent, 'wb') as f_out:
+                    f_out.write(cmd)
+                if self.adb.adb(['push', local_intent, remote_intent]):
+                    os.remove(local_intent)
+                    self.adb.shell(['chmod', '777', remote_intent])
+                    self.adb.shell([remote_intent])
+                    self.adb.shell(['rm', remote_intent])
             self.wait_for_page_load()
         self.on_stop_recording(task)
         self.on_start_processing(task)
