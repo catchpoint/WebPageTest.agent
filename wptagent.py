@@ -258,6 +258,8 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
+        if 'DISPLAY' in os.environ:
+            logging.debug('Display: %s', os.environ['DISPLAY'])
 
         if self.options.throttle:
             try:

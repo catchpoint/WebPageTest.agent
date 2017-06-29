@@ -160,7 +160,10 @@ class Firefox(DesktopBrowser):
                 if not recording and command['record']:
                     recording = True
                     self.on_start_recording(task)
-                self.process_command(command)
+                try:
+                    self.process_command(command)
+                except Exception:
+                    pass
                 if command['record']:
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
@@ -412,7 +415,14 @@ class Firefox(DesktopBrowser):
         if 'moz_log' in task:
             from internal.support.firefox_log_parser import FirefoxLogParser
             parser = FirefoxLogParser()
-            request_timings = parser.process_logs(task['moz_log'], task['start_time'])
+            request_timings = parser.process_logs(task['moz_log'], \
+                task['start_time'].strftime('%Y-%m-%d %H:%M:%S.%f'))
+            files = sorted(glob.glob(task['moz_log'] + '*'))
+            for path in files:
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
         # Build the request and page data
         self.process_requests(request_timings, task)
 
@@ -425,7 +435,9 @@ class Firefox(DesktopBrowser):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
-            self.marionette.navigate(command['target'])
+            url = str(command['target']).replace('"', '\"')
+            script = 'window.location="{0}";'.format(url)
+            self.marionette.execute_js_script(script)
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
             if int(re.search(r'\d+', str(command['target'])).group()):
@@ -778,20 +790,24 @@ class HandleMessage(BaseHTTPRequestHandler):
     def do_GET(self):
         """HTTP GET"""
         self._set_headers()
-        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
 
     def do_HEAD(self):
         """HTTP HEAD"""
         self._set_headers()
-        self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': None})
 
     def do_POST(self):
         """HTTP POST"""
         try:
             content_len = int(self.headers.getheader('content-length', 0))
-            body = json.loads(self.rfile.read(content_len)) if content_len > 0 else None
+            messages = self.rfile.read(content_len) if content_len > 0 else None
             self._set_headers()
-            self.message_server.handle_message({'path': self.path.lstrip('/'), 'body': body})
+            for line in messages.splitlines():
+                line = line.strip()
+                if len(line):
+                    message = json.loads(line)
+                    if 'body' not in message:
+                        message['body'] = None
+                    self.message_server.handle_message(message)
         except Exception:
             pass
     # pylint: enable=C0103
