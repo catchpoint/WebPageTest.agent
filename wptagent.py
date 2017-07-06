@@ -22,6 +22,7 @@ class WPTAgent(object):
         from internal.adb import Adb
         self.must_exit = False
         self.options = options
+        self.capture_display = None
         self.job = None
         self.task = None
         self.xvfb = None
@@ -53,6 +54,7 @@ class WPTAgent(object):
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
+                        self.job['capture_display'] = self.capture_display
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
                             start = monotonic.monotonic()
@@ -258,8 +260,9 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
-        if 'DISPLAY' in os.environ:
+        if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
+            self.capture_display = os.environ['DISPLAY']
 
         if self.options.throttle:
             try:

@@ -29,6 +29,8 @@ class DesktopBrowser(object):
         self.interfaces = None
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump = None
+        self.ffmpeg = None
+        self.video_processing = None
         self.pcap_file = None
         self.pcap_thread = None
         self.task = None
@@ -187,6 +189,21 @@ class DesktopBrowser(object):
                 # give it time to actually start capturing
                 time.sleep(1)
 
+            # Start video capture
+            if self.job['capture_display'] is not None:
+                task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
+                args = ['ffmpeg', '-f', 'x11grab', '-video_size',
+                        '{0:d}x{1:d}'.format(task['width'], task['height']),
+                        '-framerate', '30',
+                        '-draw_mouse', '0', '-i', self.job['capture_display'],
+                        '-codec:v', 'libx264', '-crf', '0', '-preset', 'ultrafast',
+                        task['video_file']]
+                logging.debug(' '.join(args))
+                try:
+                    self.ffmpeg = subprocess.Popen(args)
+                except Exception:
+                    pass
+
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
             self.thread = threading.Thread(target=self.background_thread)
@@ -233,6 +250,31 @@ class DesktopBrowser(object):
             from .os_util import wait_for_all
             kill_all('tcpdump', False)
             wait_for_all('tcpdump')
+        if self.ffmpeg is not None:
+            logging.debug('Stopping video capture')
+            self.ffmpeg.terminate()
+            self.ffmpeg.communicate()
+            self.ffmpeg = None
+        # kick off the video processing (async)
+        if os.path.isfile(task['video_file']):
+            video_path = os.path.join(task['dir'], task['video_subdirectory'])
+            support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+            if task['current_step'] == 1:
+                filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
+            else:
+                filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                         task['cached'],
+                                                                         task['current_step'])
+            histograms = os.path.join(task['dir'], filename)
+            visualmetrics = os.path.join(support_path, "visualmetrics.py")
+            args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                    '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+            if 'renderVideo' in self.job and self.job['renderVideo']:
+                video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                args.extend(['--render', video_out])
+            logging.debug(' '.join(args))
+            self.video_processing = subprocess.Popen(args)
 
     def on_start_processing(self, _task):
         """Start any processing of the captured data"""
@@ -252,8 +294,17 @@ class DesktopBrowser(object):
                     except Exception:
                         pass
 
-    def wait_for_processing(self, _):
+    def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
+        if self.video_processing is not None:
+            logging.debug('Waiting for video processing to finish')
+            self.video_processing.communicate()
+            self.video_processing = None
+            if not self.job['keepvideo']:
+                try:
+                    os.remove(task['video_file'])
+                except Exception:
+                    pass
         if self.pcap_thread is not None:
             logging.debug('Waiting for pcap processing to finish')
             self.pcap_thread.join()
