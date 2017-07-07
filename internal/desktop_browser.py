@@ -196,7 +196,7 @@ class DesktopBrowser(object):
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
                         '-framerate', '30',
                         '-draw_mouse', '0', '-i', self.job['capture_display'],
-                        '-codec:v', 'libx264', '-crf', '0', '-preset', 'ultrafast',
+                        '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                         task['video_file']]
                 logging.debug(' '.join(args))
                 try:
