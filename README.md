@@ -13,10 +13,13 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--name** : Agent name (defaults to the machine's hostname).
 * **--exit** : Exit after the specified number of minutes.
     * Useful for running in a shell script that does some maintenence or updates periodically (like hourly).
-* **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
+
+### Video capture/display settings
+* **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
+* **--fps** : Video capture frame rate (defaults to 10). Valid range is 1-60. (Linux only).
 
 ### Server/location configuration
 * **--server** (required): URL for WebPageTest work (i.e. http://www.webpagetest.org/work/).
