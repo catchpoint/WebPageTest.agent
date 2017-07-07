@@ -187,14 +187,14 @@ class DesktopBrowser(object):
                 logging.debug(' '.join(args))
                 self.tcpdump = subprocess.Popen(args)
                 # give it time to actually start capturing
-                time.sleep(1)
+                time.sleep(0.5)
 
             # Start video capture
             if self.job['capture_display'] is not None:
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 args = ['ffmpeg', '-f', 'x11grab', '-video_size',
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
-                        '-framerate', '30',
+                        '-framerate', str(self.options.fps),
                         '-draw_mouse', '0', '-i', self.job['capture_display'],
                         '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                         task['video_file']]
@@ -203,6 +203,8 @@ class DesktopBrowser(object):
                     self.ffmpeg = subprocess.Popen(args)
                 except Exception:
                     pass
+                if task['current_step'] == 1:
+                    time.sleep(0.2)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
