@@ -253,7 +253,8 @@ class WPTAgent(object):
             ret = False
 
         # if we are on Linux and there is no display, enable xvfb by default
-        if platform.system() == "Linux" and 'DISPLAY' not in os.environ:
+        if platform.system() == "Linux" and not self.options.android and \
+                'DISPLAY' not in os.environ:
             self.options.xvfb = True
         
         if self.options.xvfb:
