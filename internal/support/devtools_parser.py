@@ -280,6 +280,7 @@ class DevTools(object):
         page_data['bytesIn'] = 0
         page_data['bytesInDoc'] = 0
         page_data['requests'] = 0
+        page_data['requestsFull'] = 0
         page_data['requestsDoc'] = 0
         page_data['responses_200'] = 0
         page_data['responses_404'] = 0
@@ -504,6 +505,7 @@ class DevTools(object):
                     page_data['bytesOut'] += request['bytesOut']
                     page_data['bytesIn'] += request['bytesIn']
                     page_data['requests'] += 1
+                    page_data['requestsFull'] += 1
                     if request['load_start'] < page_data['docTime']:
                         page_data['bytesOutDoc'] += request['bytesOut']
                         page_data['bytesInDoc'] += request['bytesIn']
@@ -718,6 +720,7 @@ class DevTools(object):
                     if 'bytesIn' in request:
                         page_data['bytesIn'] += int(request['bytesIn'])
                     page_data['requests'] += 1
+                    page_data['requestsFull'] += 1
                     if request['load_start'] < page_data['docTime']:
                         if 'bytesIn' in request:
                             page_data['bytesInDoc'] += int(request['bytesIn'])
