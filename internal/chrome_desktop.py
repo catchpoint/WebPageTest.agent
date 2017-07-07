@@ -37,14 +37,23 @@ HOST_RULES = [
     '"MAP clients1.google.com 127.0.0.1"'
 ]
 
-START_PAGE = 'about:blank'
+START_PAGE = 'data:text/html,%3Chtml%3E%0D%0A%3Chead%3E%0D%0A%3Cstyle%3E%0D%0Abody%20%7B'\
+             'background-color%3A%20white%3B%20margin%3A%200%3B%7D%0D%0A%23o%20%7Bwidth'\
+             '%3A100%25%3B%20height%3A%20100%25%3B%20background-color%3A%20%23DE640D%3B'\
+             '%7D%0D%0A%3C%2Fstyle%3E%0D%0A%3Cscript%3E%0D%0Awindow.addEventListener%28%27'\
+             'beforeunload%27%2C%20function%28%29%20%7B%0D%0A%20%20var%20o%20%3D%20'\
+             'document.getElementById%28%27o%27%29%0D%0A%20%20o.parentNode.removeChild'\
+             '%28o%29%3B%0D%0A%7D%29%3B%0D%0A%3C%2Fscript%3E%0D%0A%3C%2Fhead%3E%0D%0A%3Cbody%3E%3C'\
+             'div%20id%3D%27o%27%3E%3C%2Fdiv%3E%3C%2Fbody%3E%0D%0A%3C%2Fhtml%3E'
 
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
         self.options = options
         DesktopBrowser.__init__(self, path, options, job)
-        DevtoolsBrowser.__init__(self, options, job)
+        use_devtools_video = True if self.job['capture_display'] is None else False
+        DevtoolsBrowser.__init__(self, options, job, use_devtools_video=use_devtools_video)
+        self.start_page = 'about:blank' if use_devtools_video else START_PAGE
         self.connected = False
 
     def launch(self, job, task):
@@ -77,7 +86,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
-        command_line += ' ' + START_PAGE
+        command_line += ' ' + 'about:blank'
         # re-try launching and connecting a few times if necessary
         connected = False
         count = 0
@@ -94,7 +103,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if connected:
             self.connected = True
             DevtoolsBrowser.prepare_browser(self, task)
-            DevtoolsBrowser.navigate(self, START_PAGE)
+            DevtoolsBrowser.navigate(self, self.start_page)
             DesktopBrowser.wait_for_idle(self)
 
     def run_task(self, task):
