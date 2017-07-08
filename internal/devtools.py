@@ -33,6 +33,7 @@ class DevTools(object):
         self.requests = {}
         self.response_bodies = {}
         self.nav_error = None
+        self.nav_error_code = None
         self.main_request = None
         self.start_timestamp = None
         self.path_base = None
@@ -52,6 +53,7 @@ class DevTools(object):
         self.requests = {}
         self.response_bodies = {}
         self.nav_error = None
+        self.nav_error_code = None
         self.main_request = None
         self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
@@ -463,11 +465,14 @@ class DevTools(object):
                     done = True
                     if self.page_loaded is None:
                         self.task['error'] = self.nav_error
+                        if self.nav_error_code is not None:
+                            self.task['page_data']['result'] = self.nav_error_code
                 elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['page_data']['result'] = 99997
                 elif 'time' not in self.job or elapsed_test > self.job['time']:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -625,6 +630,8 @@ class DevTools(object):
                 if self.nav_error is not None:
                     self.task['error'] = self.nav_error
                     logging.debug("Page load failed: %s", self.nav_error)
+                    if self.nav_error_code is not None:
+                        self.task['page_data']['result'] = self.nav_error_code
                 self.page_loaded = monotonic.monotonic()
         elif event == 'javascriptDialogOpening':
             result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
@@ -637,6 +644,7 @@ class DevTools(object):
             self.main_thread_blocked = True
             logging.debug("Page opened a modal interstitial")
             self.nav_error = "Page opened a modal interstitial"
+            self.nav_error_code = 405
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
@@ -692,6 +700,7 @@ class DevTools(object):
                         'canceled' in msg['params'] and \
                         not msg['params']['canceled']:
                     self.nav_error = msg['params']['errorText']
+                    self.nav_error_code = 404
                     logging.debug('Navigation error: %s', self.nav_error)
             else:
                 ignore_activity = True
