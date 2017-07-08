@@ -27,14 +27,14 @@ try:
 except BaseException:
     import json
 
-class DevTools(object):
+class DevToolsParser(object):
     """Main class"""
     def __init__(self, options):
-        self.devtools_file = options.devtools
-        self.netlog_requests_file = options.netlog
-        self.optimization = options.optimization
-        self.cached = options.cached
-        self.out_file = options.out
+        self.devtools_file = options['devtools']
+        self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
+        self.optimization = options['optimization'] if 'optimization' in options else None
+        self.cached = options['cached'] if 'cached' in options else False
+        self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
 
     def process(self):
@@ -46,6 +46,8 @@ class DevTools(object):
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
             self.process_netlog_requests()
+            logging.debug("Calculating page-level stats")
+            self.process_page_data()
             logging.debug("Adding optimization results")
             self.process_optimization_results()
             logging.debug("Writing result")
@@ -76,10 +78,12 @@ class DevTools(object):
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
+        # sort all of the events by timestamp
+        if len(raw_events):
+            raw_events.sort(key=lambda x: x['params']['timestamp'] if \
+                ('params' in x and 'timestamp' in x['params']) else 0)
         f_in.close()
         if raw_events is not None and len(raw_events):
-            main_frame = None
-            main_resource_id = None
             end_timestamp = None
             first_timestamp = None
             raw_requests = {}
@@ -108,15 +112,9 @@ class DevTools(object):
                     if 'timestamp' in params and \
                             (end_timestamp is None or params['timestamp'] >= end_timestamp):
                         end_timestamp = params['timestamp']
-                    if method == 'Page.frameStartedLoading' and 'frameId' in params:
-                        if main_frame is None:
-                            main_frame = params['frameId']
-                        if params['frameId'] == main_frame:
-                            main_resource_id = None
-                    if main_resource_id is None and method == 'Network.requestWillBeSent' and \
-                            'requestId' in params and 'frameId' in params and \
-                            main_frame is not None and main_frame == params['frameId']:
-                        main_resource_id = params['requestId']
+                    if method == 'Page.frameNavigated' and 'frame' in params and \
+                            'id' in params['frame'] and 'parentId' not in params['frame']:
+                        page_data['main_frame'] = params['frame']['id']
                     if method == 'Page.loadEventFired' and 'timestamp' in params and \
                             ('onload' not in page_data or
                              params['timestamp'] > page_data['onload']):
@@ -132,6 +130,10 @@ class DevTools(object):
                                 params['request']['url'][:4] == 'http':
                             request = params['request']
                             request['startTime'] = timestamp
+                            if 'frameId' in params:
+                                request['frame_id'] = params['frameId']
+                            elif 'main_frame' in page_data:
+                                request['frame_id'] = page_data['main_frame']
                             if 'initiator' in params:
                                 request['initiator'] = params['initiator']
                             # Redirects re-use the same ID so we need to fake a new request
@@ -158,10 +160,6 @@ class DevTools(object):
                                     count = id_map[original_id]
                                 id_map[original_id] = count + 1
                                 new_id = original_id + '-' + str(id_map[original_id])
-                                if main_resource_id is not None and \
-                                        (main_resource_id == original_id or \
-                                         main_resource_id == request_id):
-                                    main_resource_id = new_id
                                 request_id = new_id
                             request['id'] = request_id
                             raw_requests[request_id] = dict(request)
@@ -257,8 +255,6 @@ class DevTools(object):
                     page_data['endTime'] = request['endTime']
                 if 'fromNet' in request and request['fromNet']:
                     net_requests.append(dict(request))
-            if main_resource_id is not None:
-                page_data['mainResourceID'] = main_resource_id
         # sort the requests by start time
         if len(net_requests):
             net_requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
@@ -290,6 +286,8 @@ class DevTools(object):
         page_data['cached'] = 1 if self.cached else 0
         page_data['optimization_checked'] = 0
         page_data['start_epoch'] = raw_page_data['startTime']
+        if 'main_frame' in raw_page_data:
+            page_data['main_frame'] = raw_page_data['main_frame']
         if 'onload' in raw_page_data:
             page_data['loadTime'] = \
                 int(round(raw_page_data['onload'] - raw_page_data['startTime']))
@@ -327,6 +325,8 @@ class DevTools(object):
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
                 request['url'] = parts.path
+                if 'frame_id' in raw_request:
+                    request['frame_id'] = raw_request['frame_id']
                 if len(parts.query):
                     request['url'] += '?' + parts.query
                 request['responseCode'] = -1
@@ -480,7 +480,6 @@ class DevTools(object):
                         request['load_ms'] < request['ttfb_ms']:
                     valid = False
                 if valid:
-                    # Fill-in the page-level stats
                     if 'URL' not in page_data and len(request['full_url']):
                         page_data['URL'] = request['full_url']
                     if 'startTime' in raw_request:
@@ -495,55 +494,10 @@ class DevTools(object):
                         if 'fullyLoaded' not in page_data or \
                                 end_offset > page_data['fullyLoaded']:
                             page_data['fullyLoaded'] = end_offset
-                    if 'TTFB' not in page_data and request['ttfb_ms'] >= 0 and \
-                            (request['responseCode'] == 200 or request['responseCode'] == 304):
-                        page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
-                        if request['ssl_end'] >= request['ssl_start'] and \
-                                request['ssl_start'] >= 0:
-                            page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
-                                                                     request['ssl_start']))
-                    page_data['bytesOut'] += request['bytesOut']
-                    page_data['bytesIn'] += request['bytesIn']
-                    page_data['requests'] += 1
-                    page_data['requestsFull'] += 1
-                    if request['load_start'] < page_data['docTime']:
-                        page_data['bytesOutDoc'] += request['bytesOut']
-                        page_data['bytesInDoc'] += request['bytesIn']
-                        page_data['requestsDoc'] += 1
-                    if request['responseCode'] == 200:
-                        page_data['responses_200'] += 1
-                    elif request['responseCode'] == 404:
-                        page_data['responses_404'] += 1
-                        page_data['result'] = 99999
-                    else:
-                        page_data['responses_other'] += 1
                     if request['load_start'] > 0:
                         requests.append(dict(request))
         page_data['connections'] = len(connections)
         if len(requests):
-            if page_data['responses_200'] == 0:
-                if 'responseCode' in requests[0]:
-                    page_data['result'] = requests[0]['responseCode']
-                else:
-                    page_data['result'] = 12999
-            if 'mainResourceID' in raw_page_data:
-                index = 0
-                main_request = None
-                main_request_index = None
-                for request in requests:
-                    if 'full_url' in request and len(request['full_url']) and \
-                            request['id'] == raw_page_data['mainResourceID']:
-                        main_request_index = index
-                        main_request = request
-                    index += 1
-                if main_request is not None:
-                    main_request['final_base_page'] = True
-                    request = requests[main_request_index]
-                    requests[main_request_index]['is_base_page'] = True
-                    page_data['final_base_page_request'] = main_request_index
-                    page_data['final_base_page_request_id'] = raw_page_data['mainResourceID']
-                    page_data['final_url'] = requests[main_request_index]['full_url']
-                    self.get_base_page_info(page_data)
             requests.sort(key=lambda x: x['load_start'])
 
     def get_base_page_info(self, page_data):
@@ -675,6 +629,8 @@ class DevTools(object):
                     request['connect_end'] = -1
                     request['ssl_start'] = -1
                     request['ssl_end'] = -1
+                    if 'main_frame' in page_data:
+                        request['frame_id'] = page_data['main_frame']
                     for key in mapping:
                         if key in entry:
                             if re.match(r'\d+\.?(\d+)?', str(entry[key])):
@@ -717,25 +673,75 @@ class DevTools(object):
                         request['bytesIn'] = int(entry['bytes_in'])
                         request['objectSize'] = int(entry['bytes_in'])
                     request['bytesOut'] = 0
-                    if 'bytesIn' in request:
-                        page_data['bytesIn'] += int(request['bytesIn'])
-                    page_data['requests'] += 1
-                    page_data['requestsFull'] += 1
-                    if request['load_start'] < page_data['docTime']:
-                        if 'bytesIn' in request:
-                            page_data['bytesInDoc'] += int(request['bytesIn'])
-                        page_data['requestsDoc'] += 1
-                    if request['responseCode'] == 200:
-                        page_data['responses_200'] += 1
-                    elif request['responseCode'] == 404:
-                        page_data['responses_404'] += 1
-                        if page_data['result'] == 0:
-                            page_data['result'] = 99999
-                    else:
-                        page_data['responses_other'] += 1
                     requests.append(request)
         if len(requests):
             requests.sort(key=lambda x: x['load_start'])
+        if 'main_frame' in page_data:
+            index = 0
+            main_request = None
+            for request in requests:
+                if main_request is None and 'full_url' in request and \
+                        len(request['full_url']) and 'frame_id' in request and \
+                        request['frame_id'] == page_data['main_frame'] and \
+                        'responseCode' in request and \
+                        (request['responseCode'] == 200 or request['responseCode'] == 304):
+                    main_request = request
+                    request['final_base_page'] = True
+                    request['is_base_page'] = True
+                    page_data['final_base_page_request'] = index
+                    page_data['final_base_page_request_id'] = request['id']
+                    page_data['final_url'] = request['full_url']
+                    self.get_base_page_info(page_data)
+                    break
+                index += 1
+
+    def process_page_data(self):
+        """Walk through the sorted requests and generate the page-level stats"""
+        page_data = self.result['pageData']
+        requests = self.result['requests']
+        page_data['bytesOut'] = 0
+        page_data['bytesOutDoc'] = 0
+        page_data['bytesIn'] = 0
+        page_data['bytesInDoc'] = 0
+        page_data['requests'] = 0
+        page_data['requestsFull'] = 0
+        page_data['requestsDoc'] = 0
+        page_data['responses_200'] = 0
+        page_data['responses_404'] = 0
+        page_data['responses_other'] = 0
+        for request in requests:
+            if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
+                    request['ttfb_ms'] >= 0 and 'responseCode' in request and \
+                    (request['responseCode'] == 200 or request['responseCode'] == 304):
+                page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
+                if request['ssl_end'] >= request['ssl_start'] and \
+                        request['ssl_start'] >= 0:
+                    page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                             request['ssl_start']))
+            if 'bytesOut' in request:
+                page_data['bytesOut'] += request['bytesOut']
+            if 'bytesIn' in request:
+                page_data['bytesIn'] += request['bytesIn']
+            page_data['requests'] += 1
+            page_data['requestsFull'] += 1
+            if request['load_start'] < page_data['docTime']:
+                if 'bytesOut' in request:
+                    page_data['bytesOutDoc'] += request['bytesOut']
+                if 'bytesIn' in request:
+                    page_data['bytesInDoc'] += request['bytesIn']
+                page_data['requestsDoc'] += 1
+            if 'responseCode' in request and request['responseCode'] == 200:
+                page_data['responses_200'] += 1
+            elif 'responseCode' in request and request['responseCode'] == 404:
+                page_data['responses_404'] += 1
+                page_data['result'] = 99999
+            else:
+                page_data['responses_other'] += 1
+        if page_data['responses_200'] == 0:
+            if 'responseCode' in requests[0]:
+                page_data['result'] = requests[0]['responseCode']
+            else:
+                page_data['result'] = 12999
 
     def process_optimization_results(self):
         """Merge the data from the optimization checks file"""
@@ -874,7 +880,12 @@ def main():
         parser.error("Input devtools or output file is not specified.")
 
     start = time.time()
-    devtools = DevTools(options)
+    opt = {'devtools': options.devtools,
+           'netlog': options.netlog,
+           'optimization': options.optimization,
+           'cached': options.cached,
+           'out': options.out}
+    devtools = DevTools(opt)
     devtools.process()
     end = time.time()
     elapsed = end - start

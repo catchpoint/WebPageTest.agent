@@ -217,20 +217,15 @@ class DevtoolsBrowser(object):
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
         if os.path.isfile(devtools_file):
-            devtools_parser = os.path.join(self.support_path, "devtools_parser.py")
-            cmd = ['python', devtools_parser, '-vvvv', '--devtools', devtools_file]
-            netlog = path_base + '_netlog_requests.json.gz'
-            if os.path.isfile(netlog):
-                cmd.extend(['--netlog', netlog])
-            optimization = path_base + '_optimization.json.gz'
-            if os.path.isfile(optimization):
-                cmd.extend(['--optimization', optimization])
-            if task['cached']:
-                cmd.append('--cached')
+            from internal.support.devtools_parser import DevToolsParser
             out_file = path_base + '_devtools_requests.json.gz'
-            cmd.extend(['--out', out_file])
-            logging.debug(' '.join(cmd))
-            subprocess.call(cmd)
+            options = {'devtools': devtools_file, 'cached': task['cached'], 'out': out_file}
+            netlog = path_base + '_netlog_requests.json.gz'
+            options['netlog'] = netlog if os.path.isfile(netlog) else None
+            optimization = path_base + '_optimization.json.gz'
+            options['optimization'] = optimization if os.path.isfile(optimization) else None
+            parser = DevToolsParser(options)
+            parser.process()
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
