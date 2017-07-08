@@ -271,7 +271,9 @@ class DesktopBrowser(object):
             visualmetrics = os.path.join(support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
                     '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+                    '--maxframes', '50', '--histogram', histograms]
+            if task['current_step'] == 1:
+                args.extend(['--viewport', '--orange', '--forceblank'])
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])
