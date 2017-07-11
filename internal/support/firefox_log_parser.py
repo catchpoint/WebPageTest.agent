@@ -110,6 +110,7 @@ class FirefoxLogParser(object):
         else:
             f_in = open(path, 'r')
         for line in f_in:
+            line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
         elapsed = monotonic.monotonic() - start
@@ -169,7 +170,7 @@ class FirefoxLogParser(object):
             del self.http['current_channel']
         # V/nsHttp uri=http://www.webpagetest.org/?bare=1
         elif 'current_channel' in self.http and  msg['message'].startswith('uri='):
-            match = re.search(r'^uri=(?P<url>[^ ]+)', msg['message'])
+            match = re.search(r'^uri=(?P<url>[^ \r\n]+)', msg['message'])
             if match:
                 self.http['channels'][self.http['current_channel']] = \
                         match.groupdict().get('url')
