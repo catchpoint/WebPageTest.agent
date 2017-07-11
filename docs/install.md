@@ -12,13 +12,14 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ujson
     * xvfbwrapper (Linux only)
     * bind9utils (Linux only, for rndc)
+    * marionette_driver (Firefox)
 * Imagemagick installed and available in the path
     * The legacy tools (convert, compare, etc) need to be installed which may be optional on Windows
 * ffmpeg installed and available in the path
 * Xvfb (Linux only)
 * cgroup-tools (Linux only if mobile CPU emulation is desired)
 * Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper```
+    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
 * Chrome Browser
     * Linux stable and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```

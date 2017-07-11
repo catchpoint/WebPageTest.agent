@@ -47,7 +47,8 @@ RUN pip install \
     psutil \
     requests \
     ujson \
-    xvfbwrapper
+    xvfbwrapper \
+    marionette_driver
 
 COPY wptagent.py /wptagent/wptagent.py
 COPY internal /wptagent/internal

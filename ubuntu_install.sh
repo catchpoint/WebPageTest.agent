@@ -1,6 +1,6 @@
 #!/bin/bash
 sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools software-properties-common python-software-properties
-sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper
+sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver
 curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -
 sudo apt-get install -y nodejs
 sudo npm install -g lighthouse
