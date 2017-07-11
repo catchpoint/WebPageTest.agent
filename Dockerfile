@@ -19,17 +19,23 @@ RUN apt-get update && \
     ffmpeg \
     net-tools \
     tcpdump \
-    bind9utils
+    bind9utils \
+    software-properties-common \
+    python-software-properties
 
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+
+RUN add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
 
 RUN apt-get update && \
   apt-get install -y \
     google-chrome-stable \
     google-chrome-beta \
     google-chrome-unstable \
+    firefox \
+    firefox-trunk \
     nodejs
 
 RUN npm install -g lighthouse

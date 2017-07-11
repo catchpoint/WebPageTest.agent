@@ -25,6 +25,12 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
         * ```sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'```
         * ```sudo apt-get update```
         * ```sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable```
+* Firefox Browser
+    * Linux stable and nightly builds on Ubuntu/Debian:
+        * ```sudo apt-get install -y software-properties-common python-software-properties```
+        * ```sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa```
+        * ```sudo apt-get update```
+        * ```sudo apt-get install -y firefox firefox-trunk```
 
 ## OS Tweaks
 ### Linux
@@ -40,7 +46,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ```sudo npm install -g lighthouse```
 
 ## Configuration
-The default browser locations for Chrome and Chrome Canary (google-chrome-unstable on Linux) will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
+The default browser locations for Chrome and Firefox (Stable, Beta and Canary/Nightly) will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
 
 On Linux, make sure to point to the actual chrome binary and not the symlink.  Usually something like:
 ```
