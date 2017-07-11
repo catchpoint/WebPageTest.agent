@@ -367,6 +367,7 @@ class Firefox(DesktopBrowser):
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
+        logging.debug('Starting measurement')
         task['start_time'] = datetime.utcnow()
 
     def on_stop_recording(self, task):
@@ -415,8 +416,9 @@ class Firefox(DesktopBrowser):
         if 'moz_log' in task:
             from internal.support.firefox_log_parser import FirefoxLogParser
             parser = FirefoxLogParser()
-            request_timings = parser.process_logs(task['moz_log'], \
-                task['start_time'].strftime('%Y-%m-%d %H:%M:%S.%f'))
+            start_time = task['start_time'].strftime('%Y-%m-%d %H:%M:%S.%f')
+            logging.debug('Parsing moz logs relative to %s start time', start_time)
+            request_timings = parser.process_logs(task['moz_log'], start_time)
             files = sorted(glob.glob(task['moz_log'] + '*'))
             for path in files:
                 try:

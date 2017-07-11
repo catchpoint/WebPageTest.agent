@@ -14,7 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import glob
 import gzip
 import logging
@@ -32,6 +31,7 @@ class FirefoxLogParser(object):
     def __init__(self):
         self.start_time = None
         self.start_day = None
+        self.unique_id = 0
         self.int_map = {}
         for val in xrange(0, 100):
             self.int_map['{0:02d}'.format(val)] = float(val)
@@ -71,7 +71,7 @@ class FirefoxLogParser(object):
             request = self.http['requests'][request_id]
             if 'url' in request and request['url'][0:22] != 'http://127.0.0.1:8888/':
                 request['id'] = request_id
-                requests.append(request)
+                requests.append(dict(request))
         if len(requests):
             requests.sort(key=lambda x: x['start'] if 'start' in x else 0)
         # Attach the DNS lookups to the first request on each domain
@@ -185,6 +185,14 @@ class FirefoxLogParser(object):
                     url = self.http['channels'][channel]
                     del self.http['channels'][channel]
                     trans_id = match.groupdict().get('id')
+                    # If there is already an existing transaction with the same ID,
+                    # move it to a unique ID.
+                    if trans_id in self.http['requests']:
+                        tmp_request = self.http['requests'][trans_id]
+                        del self.http['requests'][trans_id]
+                        self.unique_id += 1
+                        new_id = '{0}.{1:d}'.format(trans_id, self.unique_id)
+                        self.http['requests'][new_id] = tmp_request
                     self.http['requests'][trans_id] = {'url': url,
                                                        'request_headers': [],
                                                        'response_headers': [],
@@ -268,6 +276,12 @@ class FirefoxLogParser(object):
                 msg['message'].startswith('nsHttpTransaction::ParseLine '):
             trans_id = self.http['current_socket_transaction']
             if trans_id in self.http['requests']:
+                if trans_id in self.http['requests']:
+                    if 'first_byte' not in self.http['requests'][trans_id]:
+                        self.http['requests'][trans_id]['first_byte'] = msg['timestamp']
+                    if 'end' not in self.http['requests'][trans_id] or \
+                            msg['timestamp'] > self.http['requests'][trans_id]['end']:
+                        self.http['requests'][trans_id]['end'] = msg['timestamp']
                 match = re.search(r'^nsHttpTransaction::ParseLine \[(?P<line>.*)\]\s*$',
                                   msg['message'])
                 if match:
@@ -277,6 +291,12 @@ class FirefoxLogParser(object):
                 msg['message'].startswith('Have status line '):
             trans_id = self.http['current_socket_transaction']
             if trans_id in self.http['requests']:
+                if trans_id in self.http['requests']:
+                    if 'first_byte' not in self.http['requests'][trans_id]:
+                        self.http['requests'][trans_id]['first_byte'] = msg['timestamp']
+                    if 'end' not in self.http['requests'][trans_id] or \
+                            msg['timestamp'] > self.http['requests'][trans_id]['end']:
+                        self.http['requests'][trans_id]['end'] = msg['timestamp']
                 match = re.search(r'^Have status line \[[^\]]*status=(?P<status>\d+)',
                                   msg['message'])
                 if match:
@@ -364,18 +384,10 @@ def main():
         parser.error("Input devtools file or start time is not specified.")
 
     parser = FirefoxLogParser()
-    year = int(options.start[0:4])
-    month = int(options.start[5:7])
-    day = int(options.start[8:10])
-    hour = int(options.start[11:13])
-    minute = int(options.start[14:16])
-    second = int(options.start[17:19])
-    usecond = int(options.start[21:])
-    start_time = datetime(year, month, day, hour, minute, second, usecond)
     requests = parser.process_logs(options.logfile, options.start)
     if options.out:
         with open(options.out, 'w') as f_out:
-            json.dump(requests, f_out)
+            json.dump(requests, f_out, indent=4)
 
 if __name__ == '__main__':
     #import cProfile
