@@ -511,7 +511,7 @@ class Firefox(DesktopBrowser):
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if self.marionette is not None:
-            data = self.marionette.screenshot(format='binary')
+            data = self.marionette.screenshot(format='binary', full=False)
             if data is not None:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
