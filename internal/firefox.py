@@ -64,6 +64,7 @@ class Firefox(DesktopBrowser):
         self.page_loaded = None
         self.recording = False
         self.connected = False
+        self.start_offset = None
         self.log_pos = {}
         self.page = {}
         self.requests = {}
@@ -419,6 +420,8 @@ class Firefox(DesktopBrowser):
             start_time = task['start_time'].strftime('%Y-%m-%d %H:%M:%S.%f')
             logging.debug('Parsing moz logs relative to %s start time', start_time)
             request_timings = parser.process_logs(task['moz_log'], start_time)
+            if len(request_timings) and task['current_step'] == 1:
+                self.adjust_timings(request_timings)
             files = sorted(glob.glob(task['moz_log'] + '*'))
             for path in files:
                 try:
@@ -427,6 +430,23 @@ class Firefox(DesktopBrowser):
                     pass
         # Build the request and page data
         self.process_requests(request_timings, task)
+
+    def adjust_timings(self, requests):
+        """Adjust the request timings to start at zero for the earliest timestamp"""
+        timestamps = ['dns_start', 'dns_end', 'connect_start', 'connect_end',
+                      'ssl_start', 'ssl_end', 'start', 'first_byte', 'end']
+        earliest = None
+        for request in requests:
+            for entry in timestamps:
+                if entry in request:
+                    if earliest is None or request[entry] < earliest:
+                        earliest = request[entry]
+        if earliest is not None and earliest > 0:
+            self.start_offset = earliest
+            for request in requests:
+                for entry in timestamps:
+                    if entry in request:
+                        request[entry] -= earliest
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
