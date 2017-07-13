@@ -10,6 +10,7 @@ import Queue
 import re
 import subprocess
 import time
+import zipfile
 import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
@@ -23,6 +24,8 @@ class DevTools(object):
         self.job = job
         self.task = task
         self.command_id = 0
+        self.command_responses = {}
+        self.pending_commands = []
         self.page_loaded = None
         self.main_frame = None
         self.is_navigating = False
@@ -32,6 +35,9 @@ class DevTools(object):
         self.trace_enabled = False
         self.requests = {}
         self.response_bodies = {}
+        self.body_fail_count = 0
+        self.body_index = 0
+        self.bodies_zip_file = None
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
@@ -62,6 +68,14 @@ class DevTools(object):
         self.video_prefix = os.path.join(self.video_path, 'ms_')
         if not os.path.isdir(self.video_path):
             os.makedirs(self.video_path)
+        self.body_fail_count = 0
+        self.body_index = 0
+        if self.bodies_zip_file is not None:
+            self.bodies_zip_file.close()
+            self.bodies_zip_file = None
+        if 'bodies' in self.job and self.job['bodies']:
+            self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
+                                                   zipfile.ZIP_DEFLATED)
 
     def start_navigating(self):
         """Indicate that we are about to start a known-navigation"""
@@ -223,6 +237,9 @@ class DevTools(object):
             self.send_command('Security.disable', {})
             self.send_command('Console.disable', {})
             self.get_response_bodies()
+        if self.bodies_zip_file is not None:
+            self.bodies_zip_file.close()
+            self.bodies_zip_file = None
         self.send_command('Network.disable', {})
         if self.dev_tools_file is not None:
             self.dev_tools_file.write("\n]")
@@ -262,137 +279,143 @@ class DevTools(object):
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
 
+    def get_response_body(self, request_id):
+        """Retrieve and store the given response body (if necessary)"""
+        if request_id not in self.response_bodies and self.body_fail_count < 3:
+            request = self.get_request(request_id)
+            if request is not None and 'status' in request and request['status'] == 200 and \
+                    'response_headers' in request:
+                content_length = self.get_header_value(request['response_headers'],
+                                                       'Content-Length')
+                if content_length is not None:
+                    content_length = int(re.search(r'\d+', str(content_length)).group())
+                elif 'transfer_size' in request:
+                    content_length = request['transfer_size']
+                else:
+                    content_length = 0
+                logging.debug('Getting body for %s (%d) - %s', request_id,
+                               content_length, request['url'])
+                path = os.path.join(self.task['dir'], 'bodies')
+                if not os.path.isdir(path):
+                    os.makedirs(path)
+                body_file_path = os.path.join(path, request_id)
+                if not os.path.exists(body_file_path):
+                    # Only grab bodies needed for optimization checks
+                    # or if we are saving full bodies
+                    need_body = True
+                    content_type = self.get_header_value(request['response_headers'],
+                                                         'Content-Type')
+                    is_text = False
+                    if content_type is not None:
+                        content_type = content_type.lower()
+                        if content_type.startswith('text/') or \
+                                content_type.find('javascript') >= 0 or \
+                                content_type.find('json') >= 0:
+                            is_text = True
+                        # Ignore video files over 10MB
+                        if content_type[:6] == 'video/' and content_length > 10000000:
+                            need_body = False
+                    optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
+                    if optimization_checks_disabled and self.bodies_zip_file is None:
+                        need_body = False
+                    if need_body:
+                        response = self.send_command("Network.getResponseBody",
+                                                     {'requestId': request_id}, wait=True)
+                        if response is None:
+                            self.body_fail_count += 1
+                            logging.warning('No response to body request for request %s',
+                                            request_id)
+                        elif 'result' not in response or \
+                                'body' not in response['result']:
+                            self.body_fail_count = 0
+                            logging.warning('Missing response body for request %s',
+                                            request_id)
+                        elif len(response['result']['body']):
+                            self.body_fail_count = 0
+                            # Write the raw body to a file (all bodies)
+                            if 'base64Encoded' in response['result'] and \
+                                    response['result']['base64Encoded']:
+                                body = base64.b64decode(response['result']['body'])
+                            else:
+                                body = response['result']['body'].encode('utf-8')
+                                is_text = True
+                            # Add text bodies to the zip archive
+                            if self.bodies_zip_file is not None and is_text:
+                                self.body_index += 1
+                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                self.bodies_zip_file.writestr(name, body)
+                                logging.debug('%s: Stored body in zip', request_id)
+                            logging.debug('%s: Body length: %d', request_id, len(body))
+                            self.response_bodies[request_id] = body
+                            with open(body_file_path, 'wb') as body_file:
+                                body_file.write(body)
+                        else:
+                            self.body_fail_count = 0
+                            self.response_bodies[request_id] = response['result']['body']
+
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
-        import zipfile
         requests = self.get_requests()
         if self.task['error'] is None and requests:
-            optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
-            # see if we also need to zip them up
-            zip_file = None
-            if 'bodies' in self.job and self.job['bodies']:
-                zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
-                                           zipfile.ZIP_DEFLATED)
-            path = os.path.join(self.task['dir'], 'bodies')
-            if not os.path.isdir(path):
-                os.makedirs(path)
-            index = 0
-            fail_count = 0
             for request_id in requests:
-                request = requests[request_id]
-                if fail_count < 2 and 'status' in request and request['status'] == 200 and \
-                        'response_headers' in request and request_id not in self.response_bodies:
-                    content_length = self.get_header_value(request['response_headers'],
-                                                           'Content-Length')
-                    if content_length is not None:
-                        content_length = int(re.search(r'\d+', str(content_length)).group())
-                    elif 'transfer_size' in request:
-                        content_length = request['transfer_size']
-                    else:
-                        content_length = 0
-                    logging.debug('%s (%d) - %s', request_id, content_length, request['url'])
-                    body_file_path = os.path.join(path, request_id)
-                    if not os.path.exists(body_file_path):
-                        # Only grab bodies needed for optimization checks
-                        # or if we are saving full bodies
-                        need_body = True
-                        content_type = self.get_header_value(request['response_headers'],
-                                                             'Content-Type')
-                        is_text = False
-                        if content_type is not None:
-                            content_type = content_type.lower()
-                            if content_type[:5] == 'text/' or \
-                                    content_type.find('javascript') >= 0 or \
-                                    content_type.find('json') >= 0:
-                                is_text = True
-                            # Ignore video files over 10MB
-                            if content_type[:6] == 'video/' and content_length > 10000000:
-                                need_body = False
-                        if optimization_checks_disabled and zip_file is None:
-                            need_body = False
-                        if need_body:
-                            response = self.send_command("Network.getResponseBody",
-                                                         {'requestId': request_id}, wait=True)
-                            if response is None:
-                                fail_count += 1
-                                logging.warning('No response to body request for request %s',
-                                                request_id)
-                            elif 'result' not in response or \
-                                    'body' not in response['result']:
-                                fail_count = 0
-                                logging.warning('Missing response body for request %s',
-                                                request_id)
-                            elif len(response['result']['body']):
-                                fail_count = 0
-                                # Write the raw body to a file (all bodies)
-                                if 'base64Encoded' in response['result'] and \
-                                        response['result']['base64Encoded']:
-                                    body = base64.b64decode(response['result']['body'])
-                                else:
-                                    body = response['result']['body'].encode('utf-8')
-                                    is_text = True
-                                # Add text bodies to the zip archive
-                                if zip_file is not None and is_text:
-                                    index += 1
-                                    name = '{0:03d}-{1}-body.txt'.format(index, request_id)
-                                    zip_file.writestr(name, body)
-                                    logging.debug('Stored body in zip')
-                                logging.debug('Body length: %d', len(body))
-                                self.response_bodies[request_id] = body
-                                with open(body_file_path, 'wb') as body_file:
-                                    body_file.write(body)
-            if zip_file is not None:
-                zip_file.close()
+                self.get_response_body(request_id)
+
+    def get_request(self, request_id):
+        """Get the given request details if it is a real request"""
+        request = None
+        if request_id in self.requests and 'fromNet' in self.requests[request_id] \
+                and self.requests[request_id]['fromNet']:
+            events = self.requests[request_id]
+            request = {'id': request_id}
+            # See if we have a body
+            body_path = os.path.join(self.task['dir'], 'bodies')
+            body_file_path = os.path.join(body_path, request_id)
+            if os.path.isfile(body_file_path):
+                request['body'] = body_file_path
+            if request_id in self.response_bodies:
+                request['response_body'] = self.response_bodies[request_id]
+            # Get the headers from responseReceived
+            if 'response' in events:
+                response = events['response'][-1]
+                if 'response' in response:
+                    if 'url' in response['response']:
+                        request['url'] = response['response']['url']
+                    if 'status' in response['response']:
+                        request['status'] = response['response']['status']
+                    if 'headers' in response['response']:
+                        request['response_headers'] = response['response']['headers']
+                    if 'requestHeaders' in response['response']:
+                        request['request_headers'] = response['response']['requestHeaders']
+                    if 'connectionId' in response['response']:
+                        request['connection'] = response['response']['connectionId']
+            # Fill in any missing details from the requestWillBeSent event
+            if 'request' in events:
+                req = events['request'][-1]
+                if 'request' in req:
+                    if 'url' not in request and 'url' in req['request']:
+                        request['url'] = req['request']['url']
+                    if 'request_headers' not in request and 'headers' in req['request']:
+                        request['request_headers'] = req['request']['headers']
+            # Get the response length from the data events
+            if 'finished' in events and 'encodedDataLength' in events['finished']:
+                request['transfer_size'] = events['finished']['encodedDataLength']
+            elif 'data' in events:
+                transfer_size = 0
+                for data in events['data']:
+                    if 'encodedDataLength' in data:
+                        transfer_size += data['encodedDataLength']
+                    elif 'dataLength' in data:
+                        transfer_size += data['dataLength']
+                request['transfer_size'] = transfer_size
+        return request
 
     def get_requests(self):
         """Get a dictionary of all of the requests and the details (headers, body file)"""
         requests = None
         if self.requests:
-            body_path = os.path.join(self.task['dir'], 'bodies')
             for request_id in self.requests:
-                if 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
-                    events = self.requests[request_id]
-                    request = {'id': request_id}
-                    # See if we have a body
-                    body_file_path = os.path.join(body_path, request_id)
-                    if os.path.isfile(body_file_path):
-                        request['body'] = body_file_path
-                    if request_id in self.response_bodies:
-                        request['response_body'] = self.response_bodies[request_id]
-                    # Get the headers from responseReceived
-                    if 'response' in events:
-                        response = events['response'][-1]
-                        if 'response' in response:
-                            if 'url' in response['response']:
-                                request['url'] = response['response']['url']
-                            if 'status' in response['response']:
-                                request['status'] = response['response']['status']
-                            if 'headers' in response['response']:
-                                request['response_headers'] = response['response']['headers']
-                            if 'requestHeaders' in response['response']:
-                                request['request_headers'] = response['response']['requestHeaders']
-                            if 'connectionId' in response['response']:
-                                request['connection'] = response['response']['connectionId']
-                    # Fill in any missing details from the requestWillBeSent event
-                    if 'request' in events:
-                        req = events['request'][-1]
-                        if 'request' in req:
-                            if 'url' not in request and 'url' in req['request']:
-                                request['url'] = req['request']['url']
-                            if 'request_headers' not in request and 'headers' in req['request']:
-                                request['request_headers'] = req['request']['headers']
-                    # Get the response length from the data events
-                    if 'finished' in events and 'encodedDataLength' in events['finished']:
-                        request['transfer_size'] = events['finished']['encodedDataLength']
-                    elif 'data' in events:
-                        transfer_size = 0
-                        for data in events['data']:
-                            if 'encodedDataLength' in data:
-                                transfer_size += data['encodedDataLength']
-                            elif 'dataLength' in data:
-                                transfer_size += data['dataLength']
-                        request['transfer_size'] = transfer_size
-
+                request = self.get_request(request_id)
+                if request is not None:
                     if requests is None:
                         requests = {}
                     requests[request_id] = request
@@ -419,7 +442,10 @@ class DevTools(object):
         ret = None
         if self.websocket:
             self.command_id += 1
-            msg = {'id': self.command_id, 'method': method, 'params': params}
+            command_id = int(self.command_id)
+            if wait:
+                self.pending_commands.append(command_id)
+            msg = {'id': command_id, 'method': method, 'params': params}
             try:
                 out = json.dumps(msg)
                 logging.debug("Sending: %s", out)
@@ -433,10 +459,14 @@ class DevTools(object):
                                 logging.debug(raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
-                                if 'id' in msg and \
-                                    int(re.search(r'\d+', str(msg['id'])).group()) == \
-                                    self.command_id:
-                                    ret = msg
+                                if 'id' in msg:
+                                    response_id = int(re.search(r'\d+', str(msg['id'])).group())
+                                    if response_id in self.pending_commands:
+                                        self.pending_commands.remove(response_id)
+                                        self.command_responses[response_id] = msg
+                                if command_id in self.command_responses:
+                                    ret = self.command_responses[command_id]
+                                    del self.command_responses[command_id]
                         except Exception:
                             pass
             except Exception as err:
@@ -692,6 +722,7 @@ class DevTools(object):
                 request['data'].append(msg['params'])
             elif event == 'loadingFinished':
                 request['finished'] = msg['params']
+                self.get_response_body(request_id)
             elif event == 'loadingFailed':
                 request['failed'] = msg['params']
                 if self.main_request is not None and \
