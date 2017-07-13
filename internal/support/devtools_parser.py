@@ -685,14 +685,17 @@ class DevToolsParser(object):
                         request['frame_id'] == page_data['main_frame'] and \
                         'responseCode' in request and \
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
-                    main_request = request
-                    request['final_base_page'] = True
-                    request['is_base_page'] = True
-                    page_data['final_base_page_request'] = index
-                    page_data['final_base_page_request_id'] = request['id']
-                    page_data['final_url'] = request['full_url']
-                    self.get_base_page_info(page_data)
-                    break
+                    if 'contentType' not in request or \
+                            (request['contentType'].find('ocsp-response') < 0 and \
+                             request['contentType'].find('ca-cert') < 0):
+                        main_request = request
+                        request['final_base_page'] = True
+                        request['is_base_page'] = True
+                        page_data['final_base_page_request'] = index
+                        page_data['final_base_page_request_id'] = request['id']
+                        page_data['final_url'] = request['full_url']
+                        self.get_base_page_info(page_data)
+                        break
                 index += 1
 
     def process_page_data(self):
@@ -713,11 +716,14 @@ class DevToolsParser(object):
             if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
                     request['ttfb_ms'] >= 0 and 'responseCode' in request and \
                     (request['responseCode'] == 200 or request['responseCode'] == 304):
-                page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
-                if request['ssl_end'] >= request['ssl_start'] and \
-                        request['ssl_start'] >= 0:
-                    page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
-                                                             request['ssl_start']))
+                if 'contentType' not in request or \
+                        (request['contentType'].find('ocsp-response') < 0 and \
+                            request['contentType'].find('ca-cert') < 0):
+                    page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
+                    if request['ssl_end'] >= request['ssl_start'] and \
+                            request['ssl_start'] >= 0:
+                        page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                                 request['ssl_start']))
             if 'bytesOut' in request:
                 page_data['bytesOut'] += request['bytesOut']
             if 'bytesIn' in request:
