@@ -627,7 +627,7 @@ class WebPageTest(object):
         zip_path = None
         if os.path.isdir(task['dir']):
             # upload any video images
-            if len(task['video_directories']):
+            if bool(self.job['video']) and len(task['video_directories']):
                 for video_subdirectory in task['video_directories']:
                     video_dir = os.path.join(task['dir'], video_subdirectory)
                     if os.path.isdir(video_dir):
