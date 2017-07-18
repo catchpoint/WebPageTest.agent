@@ -26,6 +26,7 @@ class DevTools(object):
         self.command_id = 0
         self.command_responses = {}
         self.pending_commands = []
+        self.workers = []
         self.page_loaded = None
         self.main_frame = None
         self.is_navigating = False
@@ -157,6 +158,18 @@ class DevTools(object):
                 time.sleep(0.5)
         return ret
 
+    def prepare_browser(self):
+        """Run any one-time startup preparation before testing starts"""
+        self.send_command('Target.setAutoAttach',
+                          {'autoAttach': True, 'waitForDebuggerOnStart': True})
+        response = self.send_command('Target.getTargets', {}, wait=True)
+        if response is not None and 'result' in response and 'targetInfos' in response['result']:
+            for target in response['result']['targetInfos']:
+                logging.debug(target)
+                if 'type' in target and target['type'] == 'service_worker':
+                    self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                      wait=True)
+
     def close(self, close_tab=True):
         """Close the dev tools connection"""
         if self.websocket:
@@ -187,7 +200,11 @@ class DevTools(object):
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
+        self.send_command('ServiceWorker.enable', {})
         self.send_command('Network.enable', {})
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.enable', {}, target_id=target['targetId'])
         if 'user_agent_string' in self.job:
             self.send_command('Network.setUserAgentOverride',
                               {'userAgent': self.job['user_agent_string']}, wait=True)
@@ -241,6 +258,10 @@ class DevTools(object):
             self.bodies_zip_file.close()
             self.bodies_zip_file = None
         self.send_command('Network.disable', {})
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.disable', {}, target_id=target['targetId'])
+        self.send_command('ServiceWorker.disable', {})
         if self.dev_tools_file is not None:
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
@@ -319,8 +340,12 @@ class DevTools(object):
                     if optimization_checks_disabled and self.bodies_zip_file is None:
                         need_body = False
                     if need_body:
+                        target_id = None
+                        if request_id in self.requests and 'targetId' in self.requests[request_id]:
+                            target_id = self.requests[request_id]['targetId']
                         response = self.send_command("Network.getResponseBody",
-                                                     {'requestId': request_id}, wait=True)
+                                                     {'requestId': request_id}, wait=True,
+                                                     target_id=target_id)
                         if response is None:
                             self.body_fail_count += 1
                             logging.warning('No response to body request for request %s',
@@ -437,10 +462,37 @@ class DevTools(object):
             except Exception:
                 pass
 
-    def send_command(self, method, params, wait=False, timeout=10):
+    def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
-        if self.websocket:
+        if target_id is not None:
+            self.command_id += 1
+            command_id = int(self.command_id)
+            msg = {'id': command_id, 'method': method, 'params': params}
+            if wait:
+                self.pending_commands.append(command_id)
+            end_time = monotonic.monotonic() + timeout
+            self.send_command('Target.sendMessageToTarget',
+                              {'targetId': target_id, 'message': json.dumps(msg)},
+                              wait=True, timeout=timeout)
+            if wait:
+                if command_id in self.command_responses:
+                    ret = self.command_responses[command_id]
+                    del self.command_responses[command_id]
+                else:
+                    while ret is None and monotonic.monotonic() < end_time:
+                        try:
+                            raw = self.websocket.get_message(1)
+                            if raw is not None and len(raw):
+                                logging.debug(raw[:200])
+                                msg = json.loads(raw)
+                                self.process_message(msg)
+                                if command_id in self.command_responses:
+                                    ret = self.command_responses[command_id]
+                                    del self.command_responses[command_id]
+                        except Exception:
+                            pass
+        elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
             if wait:
@@ -459,11 +511,6 @@ class DevTools(object):
                                 logging.debug(raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
-                                if 'id' in msg:
-                                    response_id = int(re.search(r'\d+', str(msg['id'])).group())
-                                    if response_id in self.pending_commands:
-                                        self.pending_commands.remove(response_id)
-                                        self.command_responses[response_id] = msg
                                 if command_id in self.command_responses:
                                     ret = self.command_responses[command_id]
                                     del self.command_responses[command_id]
@@ -623,7 +670,7 @@ class DevTools(object):
                 ret = response['result']['result']['value']
         return ret
 
-    def process_message(self, msg):
+    def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
         if 'method' in msg and self.recording:
             parts = msg['method'].split('.')
@@ -631,15 +678,22 @@ class DevTools(object):
                 category = parts[0]
                 event = parts[1]
                 if category == 'Page':
+                    self.log_dev_tools_event(msg)
                     self.process_page_event(event, msg)
-                    self.log_dev_tools_event(msg)
                 elif category == 'Network':
-                    self.process_network_event(event, msg)
                     self.log_dev_tools_event(msg)
+                    self.process_network_event(event, msg, target_id)
                 elif category == 'Inspector':
                     self.process_inspector_event(event)
+                elif category == 'Target':
+                    self.process_target_event(event, msg)
                 else:
                     self.log_dev_tools_event(msg)
+        if 'id' in msg:
+            response_id = int(re.search(r'\d+', str(msg['id'])).group())
+            if response_id in self.pending_commands:
+                self.pending_commands.remove(response_id)
+                self.command_responses[response_id] = msg
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
@@ -676,13 +730,15 @@ class DevTools(object):
             self.nav_error = "Page opened a modal interstitial"
             self.nav_error_code = 405
 
-    def process_network_event(self, event, msg):
+    def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""
         if 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
                 self.requests[request_id] = {'id': request_id}
             request = self.requests[request_id]
+            if target_id is not None:
+                request['targetId'] = target_id
             ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
                 if 'request' not in request:
@@ -712,6 +768,9 @@ class DevTools(object):
                 if 'response' in msg['params']:
                     if 'fromDiskCache' in msg['params']['response'] and \
                             msg['params']['response']['fromDiskCache']:
+                        request['fromNet'] = False
+                    if 'fromServiceWorker' in msg['params']['response'] and \
+                            msg['params']['response']['fromServiceWorker']:
                         request['fromNet'] = False
                     if 'mimeType' in msg['params']['response'] and \
                             msg['params']['response']['mimeType'].startswith('video/'):
@@ -744,6 +803,24 @@ class DevTools(object):
             self.task['error'] = 'Inspector detached, possibly crashed.'
         elif event == 'targetCrashed':
             self.task['error'] = 'Browser crashed.'
+
+    def process_target_event(self, event, msg):
+        """Process Target.* dev tools events"""
+        if event == 'attachedToTarget':
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                if 'type' in target and target['type'] == 'service_worker':
+                    self.workers.append(target)
+                    if self.recording:
+                        self.send_command('Network.enable', {}, target_id=target['targetId'])
+                self.send_command('Runtime.runIfWaitingForDebugger', {},
+                                  target_id=target['targetId'])
+        if event == 'receivedMessageFromTarget':
+            if 'message' in msg['params'] and 'targetId' in msg['params']:
+                logging.debug(msg['params']['message'][:200])
+                target_id = msg['params']['targetId']
+                target_message = json.loads(msg['params']['message'])
+                self.process_message(target_message, target_id=target_id)
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
