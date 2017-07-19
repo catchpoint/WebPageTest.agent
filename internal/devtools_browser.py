@@ -115,6 +115,7 @@ class DevtoolsBrowser(object):
             if self.job['noscript']:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
+            self.devtools.prepare_browser()
 
     def on_start_recording(self, task):
         """Start recording"""
