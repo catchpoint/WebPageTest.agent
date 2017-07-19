@@ -506,3 +506,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # Force a hard exit in cases where Firefox or something else is lingering
+    os._exit(0)
