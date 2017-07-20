@@ -17,7 +17,6 @@ from .optimization_checks import OptimizationChecks
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 30
-    CURRENT_VERSION = 1
 
     def __init__(self, options, job, use_devtools_video=True):
         self.options = options
@@ -108,7 +107,10 @@ class DevtoolsBrowser(object):
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
             if ua_string is not None and ('keepua' not in self.job or not self.job['keepua']):
-                ua_string += ' PTST/{0:d}'.format(self.CURRENT_VERSION)
+                if 'appendua' in task:
+                    ua_string += ' ' + task['appendua']
+                else:
+                    ua_string += ' PTST/{0:d}'.format(self.job['agent_version'])
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
             # Disable js

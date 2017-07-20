@@ -269,6 +269,7 @@ class WebPageTest(object):
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
+                    job['agent_version'] = self.version if self.version is not None else 1
                     if 'iq' not in job:
                         job['iq'] = DEFAULT_JPEG_QUALITY
                     if 'pngss' not in job:
@@ -403,6 +404,11 @@ class WebPageTest(object):
                         logging.getLogger().addHandler(self.log_handler)
                     except Exception:
                         pass
+                if 'appendua' in job:
+                    task['appendua'] = job['appendua'].replace('%TESTID%', test_id)\
+                                                      .replace('%RUN%', run)\
+                                                      .replace('%CACHED%', task['cached'])\
+                                                      .replace('%VERSION%', self.version)
                 task['block'] = []
                 if 'block' in job:
                     block_list = job['block'].split()
