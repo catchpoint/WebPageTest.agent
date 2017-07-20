@@ -110,7 +110,7 @@ class DevtoolsBrowser(object):
                 if 'appendua' in task:
                     ua_string += ' ' + task['appendua']
                 else:
-                    ua_string += ' PTST/{0:d}'.format(self.job['agent_version'])
+                    ua_string += ' PTST/{0}'.format(self.job['agent_version'])
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
             # Disable js
