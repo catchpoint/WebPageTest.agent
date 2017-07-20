@@ -404,10 +404,10 @@ class WebPageTest(object):
                         logging.getLogger().addHandler(self.log_handler)
                     except Exception:
                         pass
-                if 'appendua' in job:
-                    task['appendua'] = job['appendua'].replace('%TESTID%', test_id)\
-                                                      .replace('%RUN%', run)\
-                                                      .replace('%CACHED%', task['cached'])\
+                if 'AppendUA' in job:
+                    task['AppendUA'] = job['AppendUA'].replace('%TESTID%', test_id)\
+                                                      .replace('%RUN%', str(run))\
+                                                      .replace('%CACHED%', str(task['cached']))\
                                                       .replace('%VERSION%', self.version)
                 task['block'] = []
                 if 'block' in job:

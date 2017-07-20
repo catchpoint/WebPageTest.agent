@@ -107,8 +107,8 @@ class DevtoolsBrowser(object):
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
             if ua_string is not None and ('keepua' not in self.job or not self.job['keepua']):
-                if 'appendua' in task:
-                    ua_string += ' ' + task['appendua']
+                if 'AppendUA' in task:
+                    ua_string += ' ' + task['AppendUA']
                 else:
                     ua_string += ' PTST/{0}'.format(self.job['agent_version'])
             if ua_string is not None:
