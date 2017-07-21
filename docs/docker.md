@@ -2,7 +2,7 @@
 
 To run the agent, simply specify a few environment variables with docker:
 
-* `SERVER_URL`: will be passed as `--server`
+* `SERVER_URL`: will be passed as `--server` (note: it must end with '/work/')
 * `LOCATION`: will be passed as `--location`
 * `KEY`: will be passed as `--key`
 * `NAME`: will be passed as `--name` (optional)
