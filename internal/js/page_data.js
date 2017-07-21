@@ -19,6 +19,11 @@ addTime("domContentLoadedEventEnd");
 addTime("loadEventStart");
 addTime("loadEventEnd");
 pageData["firstPaint"] = 0;
+try {
+  if (window.performance.timing["timeToNonBlankPaint"]) {
+    pageData["firstPaint"] = window.performance.timing["timeToNonBlankPaint"];
+  }
+} catch(e) {}
 if (window["chrome"] !== undefined &&
     window.chrome["loadTimes"] !== undefined) {
  var chromeTimes = window.chrome.loadTimes();

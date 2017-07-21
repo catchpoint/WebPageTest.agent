@@ -235,6 +235,8 @@ class Firefox(DesktopBrowser):
                 script = script_file.read()
         if script is not None:
             ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            if ret is not None:
+                logging.debug(ret)
         return ret
 
     def collect_browser_metrics(self, task):
@@ -257,6 +259,8 @@ class Firefox(DesktopBrowser):
                          self.job['customMetrics'][name] +\
                          '};try{return wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+                if custom_metrics[name] is not None:
+                    logging.debug(custom_metrics[name])
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
@@ -498,7 +502,7 @@ class Firefox(DesktopBrowser):
         if command['command'] == 'navigate':
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
-            self.marionette.execute_js_script(script)
+            self.marionette.execute_script(script)
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
             if int(re.search(r'\d+', str(command['target'])).group()):
@@ -513,7 +517,7 @@ class Firefox(DesktopBrowser):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
-            self.marionette.execute_js_script(command['target'])
+            self.marionette.execute_script(command['target'])
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
