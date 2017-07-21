@@ -69,6 +69,7 @@ class Firefox(DesktopBrowser):
         self.page = {}
         self.requests = {}
         self.last_activity = monotonic.monotonic()
+        self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -223,6 +224,42 @@ class Firefox(DesktopBrowser):
                         done = True
                     elif self.task['error'] is not None:
                         done = True
+
+    def run_js_file(self, file_name):
+        """Execute one of our js scripts"""
+        ret = None
+        script = None
+        script_file_path = os.path.join(self.script_dir, file_name)
+        if os.path.isfile(script_file_path):
+            with open(script_file_path, 'rb') as script_file:
+                script = script_file.read()
+        if script is not None:
+            ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+        return ret
+
+    def collect_browser_metrics(self, task):
+        """Collect all of the in-page browser metrics that we need"""
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
+        if 'customMetrics' in self.job:
+            custom_metrics = {}
+            for name in self.job['customMetrics']:
+                logging.debug("Collecting custom metric %s", name)
+                script = 'var wptCustomMetric = function() {' +\
+                         self.job['customMetrics'][name] +\
+                         '};try{return wptCustomMetric();}catch(e){};'
+                custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json.dumps(custom_metrics))
 
     def process_message(self, message):
         """Process a message from the extension"""
@@ -382,6 +419,8 @@ class Firefox(DesktopBrowser):
             else:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 self.grab_screenshot(screen_shot, png=False, resize=600)
+        # Collect end of test data from the browser
+        self.collect_browser_metrics(task)
         # Copy the log files
         if self.moz_log is not None:
             task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
