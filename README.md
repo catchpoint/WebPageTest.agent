@@ -110,5 +110,5 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * if/else/endif
 
 ## Run with docker
-Check out [the docker instructions](docs/install.md) for information on how to
+Check out [the docker instructions](docs/docker.md) for information on how to
 run the agent in a docker container.
