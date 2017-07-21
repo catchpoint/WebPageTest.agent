@@ -53,6 +53,7 @@ class DevTools(object):
         self.use_devtools_video = use_devtools_video
         self.recording_video = False
         self.main_thread_blocked = False
+        self.headers = {}
         self.prepare()
 
     def prepare(self):
@@ -208,9 +209,6 @@ class DevTools(object):
         if 'user_agent_string' in self.job:
             self.send_command('Network.setUserAgentOverride',
                               {'userAgent': self.job['user_agent_string']}, wait=True)
-        if 'headers' in self.job:
-            self.send_command('Network.setExtraHTTPHeaders',
-                              {'headers': self.job['headers']}, wait=True)
         if len(self.task['block']):
             for block in self.task['block']:
                 self.send_command('Network.addBlockedURL', {'url': block})
@@ -669,6 +667,23 @@ class DevTools(object):
                     'value' in response['result']['result']:
                 ret = response['result']['result']['value']
         return ret
+
+    def set_header(self, header):
+        """Add/modify a header on the outbound requests"""
+        if header is not None and len(header):
+            separator = header.find(':')
+            if separator > 0:
+                name = header[:separator].strip()
+                value = header[separator + 1:].strip()
+                self.headers[name] = value
+                self.send_command('Network.setExtraHTTPHeaders',
+                                  {'headers': self.headers}, wait=True)
+
+    def reset_headers(self):
+        """Add/modify a header on the outbound requests"""
+        self.headers = {}
+        self.send_command('Network.setExtraHTTPHeaders',
+                          {'headers': self.headers}, wait=True)
 
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""

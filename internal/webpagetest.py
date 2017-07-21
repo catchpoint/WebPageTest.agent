@@ -518,17 +518,6 @@ class WebPageTest(object):
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
-
-                    elif command == 'addheader' or command == 'setheader':
-                        keep = False
-                        if target is not None:
-                            if 'headers' not in job:
-                                job['headers'] = {}
-                            separator = target.find(':')
-                            if separator > 0:
-                                name = target[:separator].strip()
-                                value = target[separator + 1:].strip()
-                                job['headers'][name] = value
                     # Commands that get translated into exec commands
                     elif command in ['click', 'selectvalue', 'sendclick', 'setinnerhtml',
                                      'setinnertext', 'setvalue', 'submitform']:

@@ -315,6 +315,12 @@ class DevtoolsBrowser(object):
                     if len(name) and len(value) and len(url):
                         self.devtools.send_command('Network.setCookie',
                                                    {'url': url, 'name': name, 'value': value})
+        elif command['command'] == 'addheader':
+            self.devtools.set_header(command['target'])
+        elif command['command'] == 'setheader':
+            self.devtools.set_header(command['target'])
+        elif command['command'] == 'resetheaders':
+            self.devtools.reset_headers()
 
     def navigate(self, url):
         """Navigate to the given URL"""

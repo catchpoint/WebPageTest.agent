@@ -70,8 +70,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * blockDomains
     * blockDomainsExcept
     * setDns
-    * addHeader
-    * setHeader (aliased to addHeader until devtools supports overriding headers)
+    * setHeader
+    * addHeader (can not add multiple values for the same header, effectively the same as setHeader)
+    * resetHeaders
     * setCookie
     * setABM
     * click (clickAndWait)
@@ -85,6 +86,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 ## Not yet supported (actively being worked on)
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
+* Script Commands:
+    * firefoxPref
 
 ## Not Supported (no plans to implement)
 * Script Commands:
@@ -100,8 +103,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * minInterval
     * endInterval
     * expireCache
-    * firefoxPref
-    * resetHeaders
     * requiredRequest
     * setDOMRequest
     * waitForJSDone (change semantics to console log message)
