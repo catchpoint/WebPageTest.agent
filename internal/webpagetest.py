@@ -463,6 +463,7 @@ class WebPageTest(object):
                     if command == 'navigate':
                         if target is not None and target[:4] != 'http':
                             target = 'http://' + target
+                        job['url'] = target
                         record = True
                     # commands that get pre-processed
                     elif command == 'setbrowsersize' or command == 'setviewportsize':
