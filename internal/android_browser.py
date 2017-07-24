@@ -11,6 +11,25 @@ import subprocess
 import time
 import ujson as json
 
+SET_ORANGE = "(function() {" \
+             "var wptDiv = document.createElement('div');" \
+             "wptDiv.id = 'wptorange';" \
+             "wptDiv.style.position = 'absolute';" \
+             "wptDiv.style.top = '0';" \
+             "wptDiv.style.left = '0';" \
+             "wptDiv.style.right = '0';" \
+             "wptDiv.style.bottom = '0';" \
+             "wptDiv.style.zIndex = '2147483647';" \
+             "wptDiv.style.backgroundColor = '#DE640D';" \
+             "document.body.appendChild(wptDiv);" \
+             "})();"
+
+REMOVE_ORANGE = "(function() {" \
+                "var wptDiv = document.getElementById('wptorange');" \
+                "wptDiv.parentNode.removeChild(wptDiv);" \
+                "})();"
+
+
 class AndroidBrowser(object):
     """Android Browser base"""
     def __init__(self, adb, options, job, config):
@@ -99,6 +118,10 @@ class AndroidBrowser(object):
                 package = all_browsers[name]['package']
                 self.adb.shell(['am', 'force-stop', package])
 
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        return None
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
@@ -111,9 +134,14 @@ class AndroidBrowser(object):
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled:
+                if task['navigated']:
+                    self.execute_js(SET_ORANGE)
+                    time.sleep(0.5)
                 self.adb.start_screenrecord()
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(0.5)
+            if self.video_enabled and task['navigated']:
+                self.execute_js(REMOVE_ORANGE)
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
