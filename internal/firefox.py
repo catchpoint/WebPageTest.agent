@@ -177,6 +177,7 @@ class Firefox(DesktopBrowser):
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
+                    task['navigated'] = True
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
             self.marionette.navigate('about:blank')

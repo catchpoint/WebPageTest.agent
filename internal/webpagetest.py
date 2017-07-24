@@ -371,7 +371,8 @@ class WebPageTest(object):
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],
-                        'page_data': {}}
+                        'page_data': {},
+                        'navigated': False}
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
