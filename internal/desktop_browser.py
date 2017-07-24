@@ -14,6 +14,24 @@ import time
 import monotonic
 import ujson as json
 
+SET_ORANGE = "(function() {" \
+             "var wptDiv = document.createElement('div');" \
+             "wptDiv.id = 'wptorange';" \
+             "wptDiv.style.position = 'absolute';" \
+             "wptDiv.style.top = '0';" \
+             "wptDiv.style.left = '0';" \
+             "wptDiv.style.right = '0';" \
+             "wptDiv.style.bottom = '0';" \
+             "wptDiv.style.zIndex = '2147483647';" \
+             "wptDiv.style.backgroundColor = '#DE640D';" \
+             "document.body.appendChild(wptDiv);" \
+             "})();"
+
+REMOVE_ORANGE = "(function() {" \
+                "var wptDiv = document.getElementById('wptorange');" \
+                "wptDiv.parentNode.removeChild(wptDiv);" \
+                "})();"
+
 class DesktopBrowser(object):
     """Desktop Browser base"""
     START_BROWSER_TIME_LIMIT = 30
@@ -164,6 +182,10 @@ class DesktopBrowser(object):
                 else:
                     break
 
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        return None
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         self.start_cpu_throttling()
@@ -191,6 +213,9 @@ class DesktopBrowser(object):
 
             # Start video capture
             if self.job['capture_display'] is not None:
+                if task['current_step'] > 1:
+                    self.execute_js(SET_ORANGE)
+                    time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 args = ['ffmpeg', '-f', 'x11grab', '-video_size',
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
@@ -203,8 +228,9 @@ class DesktopBrowser(object):
                     self.ffmpeg = subprocess.Popen(args)
                 except Exception:
                     pass
-                if task['current_step'] == 1:
-                    time.sleep(0.2)
+                time.sleep(0.2)
+                if task['current_step'] > 1:
+                    self.execute_js(REMOVE_ORANGE)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
@@ -271,9 +297,9 @@ class DesktopBrowser(object):
             visualmetrics = os.path.join(support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
                     '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                    '--maxframes', '50', '--histogram', histograms]
+                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
             if task['current_step'] == 1:
-                args.extend(['--viewport', '--orange', '--forceblank'])
+                args.append('--forceblank')
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])

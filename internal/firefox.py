@@ -225,6 +225,13 @@ class Firefox(DesktopBrowser):
                     elif self.task['error'] is not None:
                         done = True
 
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        ret = None
+        if self.marionette is not None:
+            ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+        return ret
+
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
         ret = None

@@ -192,6 +192,13 @@ class DevtoolsBrowser(object):
         """Stub for override"""
         pass
 
+    def execute_js(self, script):
+        """Run javascipt"""
+        ret = None
+        if self.devtools is not None:
+            ret = self.devtools.execute_js(script)
+        return ret
+
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {}

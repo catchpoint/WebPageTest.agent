@@ -111,6 +111,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
+    def execute_js(self, script):
+        """Run javascipt"""
+        return DevtoolsBrowser.execute_js(self, script)
+
     def stop(self, job, task):
         if self.connected:
             DevtoolsBrowser.disconnect(self)
