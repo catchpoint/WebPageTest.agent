@@ -8,6 +8,7 @@ import glob
 import gzip
 import logging
 import os
+import platform
 import Queue
 import re
 import shutil
@@ -136,6 +137,10 @@ class Firefox(DesktopBrowser):
         DesktopBrowser.stop(self, job, task)
         self.extension.stop()
         self.extension = None
+        # Make SURE the firefox processes are gone
+        if platform.system() == "Linux":
+            subprocess.call(['killall', '-9', 'firefox'])
+            subprocess.call(['killall', '-9', 'firefox-trunk'])
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
         # delete the raw log files
