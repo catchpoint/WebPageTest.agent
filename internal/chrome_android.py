@@ -179,6 +179,10 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                 if os.path.isfile(netlog_gzip):
                     os.remove(netlog_file)
 
+    def execute_js(self, script):
+        """Run javascipt"""
+        return DevtoolsBrowser.execute_js(self, script)
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         AndroidBrowser.on_start_recording(self, task)
