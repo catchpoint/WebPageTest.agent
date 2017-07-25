@@ -4,6 +4,8 @@
 """Logic for controlling a desktop Chrome browser"""
 import gzip
 import os
+import platform
+import subprocess
 import shutil
 import time
 from .desktop_browser import DesktopBrowser
@@ -119,6 +121,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.disconnect(self)
         DesktopBrowser.stop(self, job, task)
+        # Make SURE the firefox processes are gone
+        if platform.system() == "Linux":
+            subprocess.call(['killall', '-9', 'chrome'])
         netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
         if os.path.isfile(netlog_file):
             netlog_gzip = netlog_file + '.gz'
