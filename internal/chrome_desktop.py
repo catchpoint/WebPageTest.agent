@@ -83,8 +83,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
-        # JUST for testing
-        args.append('--no-sandbox')
+        if task['running_lighthouse'] and 'user_agent_string' in job \
+                and len(job['user_agent_string']):
+            args.extend(['--user-agent', '"{0}"'.format(job['user_agent_string'])])
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
