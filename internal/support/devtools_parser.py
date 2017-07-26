@@ -553,6 +553,7 @@ class DevToolsParser(object):
                    'priority': 'priority',
                    'protocol': 'protocol',
                    'socket': 'socket',
+                   'socket_group': 'socket_group',
                    'stream_id': 'http2_stream_id',
                    'parent_stream_id': 'http2_stream_dependency',
                    'weight': 'http2_stream_weight',
@@ -586,6 +587,15 @@ class DevToolsParser(object):
                                                                entry['start']))
                             if 'pushed' in entry and entry['pushed']:
                                 request['was_pushed'] = 1
+                            if 'server_address' in entry:
+                                parts = entry['server_address'].rsplit(':', 1)
+                                if len(parts) == 2:
+                                    request['ip_addr'] = parts[0]
+                                    request['server_port'] = parts[1]
+                            if 'client_address' in entry:
+                                parts = entry['client_address'].rsplit(':', 1)
+                                if len(parts) == 2:
+                                    request['client_port'] = parts[1]
                             break
             # Add any requests we didn't know about
             index = 0
