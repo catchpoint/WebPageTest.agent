@@ -466,6 +466,15 @@ class WebPageTest(object):
                             target = 'http://' + target
                         job['url'] = target
                         record = True
+                    elif command == 'addheader' or command == 'setheader':
+                        if target is not None and len(target):
+                            separator = target.find(':')
+                            if separator > 0:
+                                name = target[:separator].strip()
+                                value = target[separator + 1:].strip()
+                                if 'headers' not in task:
+                                    task['headers'] = {}
+                                task['headers'][name] = value
                     # commands that get pre-processed
                     elif command == 'setbrowsersize' or command == 'setviewportsize':
                         keep = False
