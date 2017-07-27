@@ -130,7 +130,7 @@ class DevtoolsBrowser(object):
     def on_stop_recording(self, task):
         """Stop recording"""
         if self.devtools is not None:
-            if self.job['pngss']:
+            if self.job['pngScreenShot']:
                 screen_shot = os.path.join(task['dir'],
                                            task['prefix'] + '_screen.png')
                 self.devtools.grab_screenshot(screen_shot, png=True)

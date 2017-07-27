@@ -272,8 +272,8 @@ class WebPageTest(object):
                     job['agent_version'] = self.version if self.version is not None else 1
                     if 'iq' not in job:
                         job['iq'] = DEFAULT_JPEG_QUALITY
-                    if 'pngss' not in job:
-                        job['pngss'] = 0
+                    if 'pngScreenShot' not in job:
+                        job['pngScreenShot'] = 0
                     if 'fvonly' not in job:
                         job['fvonly'] = 0
                     if 'width' not in job:

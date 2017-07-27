@@ -430,7 +430,7 @@ class Firefox(DesktopBrowser):
         self.recording = False
         DesktopBrowser.on_stop_recording(self, task)
         if self.connected:
-            if self.job['pngss']:
+            if self.job['pngScreenShot']:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
                 self.grab_screenshot(screen_shot, png=True)
             else:

@@ -150,7 +150,7 @@ class BlackBoxAndroid(AndroidBrowser):
         task['page_data']['result'] = 0
         task['page_data']['visualTest'] = 1
         if os.path.isfile(png_file):
-            if not self.job['pngss']:
+            if not self.job['pngScreenShot']:
                 jpeg_file = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 command = 'convert "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
                     png_file, 600, self.job['iq'], jpeg_file)
