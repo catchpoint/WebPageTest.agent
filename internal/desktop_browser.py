@@ -188,7 +188,6 @@ class DesktopBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        self.start_cpu_throttling()
         import psutil
         if task['log_data']:
             self.cpu_start = psutil.cpu_times()
@@ -228,7 +227,7 @@ class DesktopBrowser(object):
                     self.ffmpeg = subprocess.Popen(args)
                 except Exception:
                     pass
-                time.sleep(0.2)
+                time.sleep(1)
                 if task['navigated']:
                     self.execute_js(REMOVE_ORANGE)
 
@@ -237,6 +236,7 @@ class DesktopBrowser(object):
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()
+        self.start_cpu_throttling()
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
