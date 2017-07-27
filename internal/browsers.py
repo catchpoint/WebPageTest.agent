@@ -10,12 +10,12 @@ class Browsers(object):
     def __init__(self, options, browsers, adb):
         import ujson as json
         self.options = options
-        self.browsers = browsers
+        self.browsers = {k.lower(): v for k, v in browsers.items()}
         self.adb = adb
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
         with open(android_file, 'rb') as f_in:
-            self.android_browsers = json.load(f_in)
+            self.android_browsers = {k.lower(): v for k, v in json.load(f_in).items()}
 
     def is_ready(self):
         """Check to see if the configured browsers are ready to go"""
@@ -34,9 +34,10 @@ class Browsers(object):
     def get_browser(self, name, job):
         """Return an instance of the browser logic"""
         browser = None
+        name = name.lower()
         if self.options.android:
             if 'customBrowser_package' in job:
-                name = "Chrome"
+                name = "chrome"
             separator = name.find('-')
             if separator >= 0:
                 name = name[separator + 1:].strip()
