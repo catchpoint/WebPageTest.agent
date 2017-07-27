@@ -10,7 +10,9 @@ class Browsers(object):
     def __init__(self, options, browsers, adb):
         import ujson as json
         self.options = options
-        self.browsers = {k.lower(): v for k, v in browsers.items()}
+        self.browsers = None
+        if browsers is not None:
+            self.browsers = {k.lower(): v for k, v in browsers.items()}
         self.adb = adb
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
