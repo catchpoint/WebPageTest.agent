@@ -83,9 +83,6 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
-        if task['running_lighthouse'] and 'user_agent_string' in job \
-                and len(job['user_agent_string']):
-            args.extend(['--user-agent', '"{0}"'.format(job['user_agent_string'])])
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
@@ -122,7 +119,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.disconnect(self)
         DesktopBrowser.stop(self, job, task)
-        # Make SURE the firefox processes are gone
+        # Make SURE the chrome processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'chrome'])
         netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'

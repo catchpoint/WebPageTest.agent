@@ -124,9 +124,6 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if 'netlog' in job and job['netlog']:
             self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
             args.append('--log-net-log=/data/local/tmp/netlog.txt')
-        if task['running_lighthouse'] and 'user_agent_string' in job \
-                and len(job['user_agent_string']):
-            args.extend(['--user-agent', '"{0}"'.format(job['user_agent_string'])])
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
