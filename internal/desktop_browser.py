@@ -218,7 +218,7 @@ class DesktopBrowser(object):
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 args = ['ffmpeg', '-f', 'x11grab', '-video_size',
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
-                        '-framerate', str(self.options.fps),
+                        '-framerate', str(self.job['fps']),
                         '-draw_mouse', '0', '-i', self.job['capture_display'],
                         '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                         task['video_file']]

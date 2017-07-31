@@ -28,6 +28,7 @@ class WebPageTest(object):
         self.first_failure = None
         self.session = requests.Session()
         self.options = options
+        self.fps = options.fps
         self.test_run_count = 0
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
                                                datefmt="%H:%M:%S")
@@ -216,6 +217,10 @@ class WebPageTest(object):
                         self.validate_server_certificate = True
                     elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
+                    elif key == 'wpt_fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
+                    elif key == 'fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
                 pass
 
@@ -294,6 +299,8 @@ class WebPageTest(object):
                         job['type'] = ''
                     if job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    if 'fps' not in job:
+                        job['fps'] = self.fps
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
