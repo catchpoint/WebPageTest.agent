@@ -30,7 +30,7 @@ RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
 RUN add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
 
 RUN apt-get update && \
-  apt-get install -y \
+    apt-get install -y \
     google-chrome-stable \
     google-chrome-beta \
     google-chrome-unstable \

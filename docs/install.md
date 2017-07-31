@@ -19,7 +19,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
 * Xvfb (Linux only)
 * cgroup-tools (Linux only if mobile CPU emulation is desired)
 * Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
+    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
 * Chrome Browser
     * Linux stable and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
@@ -32,6 +32,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
         * ```sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa```
         * ```sudo apt-get update```
         * ```sudo apt-get install -y firefox firefox-trunk```
+        * ```sudo dbus-uuidgen --ensure```
 
 ## OS Tweaks
 ### Linux
