@@ -219,10 +219,14 @@ class DevTools(object):
             if 'trace' in self.job and self.job['trace']:
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
+                    if trace.find('netlog') >= 0:
+                        self.job['keep_netlog'] = True
                 else:
                     trace = "-*,toplevel,blink,v8,cc,gpu,blink.net," \
                             "disabled-by-default-v8.runtime_stats"
+                    self.job['keep_netlog'] = True
             else:
+                self.job['keep_netlog'] = False
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
                 trace += ",blink.console,devtools.timeline" \
@@ -1018,7 +1022,8 @@ class DevToolsClient(WebSocketClient):
             if self.trace_file is not None:
                 trace_events = msg['params']['value']
                 for _, trace_event in enumerate(trace_events):
-                    is_screenshot = False
+                    keep_event = True
+                    process_event = True
                     if self.video_prefix is not None and 'cat' in trace_event and \
                             'name' in trace_event and 'ts' in trace_event:
                         if trace_event['cat'] not in self.trace_event_counts:
@@ -1038,14 +1043,18 @@ class DevToolsClient(WebSocketClient):
                             self.trace_ts_start = trace_event['ts']
                         if trace_event['name'] == 'Screenshot' and \
                                 trace_event['cat'].find('devtools.screenshot') > -1:
-                            is_screenshot = True
+                            keep_event = False
+                            process_event = False
                             self.process_screenshot(trace_event)
-                    if not is_screenshot:
+                    if not self.job['keep_netlog'] and 'cat' in trace_event and \
+                            trace_event['cat'] == 'netlog':
+                        keep_event = False
+                    if process_event and self.trace_parser is not None:
+                        self.trace_parser.ProcessTraceEvent(trace_event)
+                    if keep_event:
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
-                        if self.trace_parser is not None:
-                            self.trace_parser.ProcessTraceEvent(trace_event)
                 logging.debug("Processed %d trace events", len(msg['params']['value']))
 
     def process_screenshot(self, trace_event):
