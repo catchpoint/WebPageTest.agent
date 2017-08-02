@@ -67,6 +67,7 @@ class OptimizationChecks(object):
             'BunnyCDN': ['.b-cdn.net'],
             'Cachefly': ['.cachefly.net'],
             'Caspowa': ['.caspowa.com'],
+            'Cedexis': ['.cedexis.net'],
             'CDN77': ['.cdn77.net',
                       '.cdn77.org'],
             'CDNetworks': ['.cdngc.net',
