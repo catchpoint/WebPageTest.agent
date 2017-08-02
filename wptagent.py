@@ -268,6 +268,8 @@ class WPTAgent(object):
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
             self.capture_display = os.environ['DISPLAY']
+        elif platform.system() == "Windows":
+            self.capture_display = 'desktop'
 
         if self.options.throttle:
             try:
