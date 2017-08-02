@@ -185,7 +185,10 @@ class Firefox(DesktopBrowser):
                     task['navigated'] = True
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            self.marionette.navigate('about:blank')
+            try:
+                self.marionette.navigate('about:blank')
+            except Exception:
+                logging.debug('Marionette exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
