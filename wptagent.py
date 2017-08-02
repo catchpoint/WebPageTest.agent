@@ -5,6 +5,7 @@
 """WebPageTest cross-platform agent"""
 import atexit
 import logging
+import logging.handlers
 import os
 import platform
 import signal
@@ -492,7 +493,8 @@ def main():
                         datefmt="%H:%M:%S")
 
     if options.log:
-        err_log = logging.FileHandler(options.log)
+        err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
+                                                       backupCount=5, delay=True)
         err_log.setLevel(logging.ERROR)
         logging.getLogger().addHandler(err_log)
 
