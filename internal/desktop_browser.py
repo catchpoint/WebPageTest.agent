@@ -8,6 +8,7 @@ import os
 import platform
 import Queue
 import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -216,7 +217,8 @@ class DesktopBrowser(object):
                     self.execute_js(SET_ORANGE)
                     time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-                args = ['ffmpeg', '-f', 'x11grab', '-video_size',
+                grab = 'gdigrab' if platform.system() == 'Windows' else 'x11grab'
+                args = ['ffmpeg', '-f', grab, '-video_size',
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
                         '-framerate', str(self.job['fps']),
                         '-draw_mouse', '0', '-i', self.job['capture_display'],
@@ -224,7 +226,11 @@ class DesktopBrowser(object):
                         task['video_file']]
                 logging.debug(' '.join(args))
                 try:
-                    self.ffmpeg = subprocess.Popen(args)
+                    if platform.system() == 'Windows':
+                        self.ffmpeg = subprocess.Popen(args, \
+                            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                    else:
+                        self.ffmpeg = subprocess.Popen(args)
                     # Wait up to 5 seconds for something to be captured
                     end_time = monotonic.monotonic() + 5
                     started = False
@@ -290,7 +296,10 @@ class DesktopBrowser(object):
             wait_for_all('tcpdump')
         if self.ffmpeg is not None:
             logging.debug('Stopping video capture')
-            self.ffmpeg.terminate()
+            if platform.system() == 'Windows':
+                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+            else:
+                self.ffmpeg.terminate()
             self.ffmpeg.communicate()
             self.ffmpeg = None
         # kick off the video processing (async)
