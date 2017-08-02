@@ -104,7 +104,7 @@ class DevTools(object):
                                 ret = True
                                 logging.debug('Dev tools interface is available')
             except Exception as err:
-                logging.critical("Connect to dev tools Error: %s", err.__str__())
+                logging.debug("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
         return ret
 
@@ -138,8 +138,8 @@ class DevTools(object):
                                 self.websocket.connect()
                                 ret = True
                             except Exception as err:
-                                logging.critical("Connect to dev tools websocket Error: %s",
-                                                 err.__str__())
+                                logging.debug("Connect to dev tools websocket Error: %s",
+                                              err.__str__())
                             if not ret:
                                 # try connecting to 127.0.0.1 instead of localhost
                                 try:
@@ -148,14 +148,14 @@ class DevTools(object):
                                     self.websocket.connect()
                                     ret = True
                                 except Exception as err:
-                                    logging.critical("Connect to dev tools websocket Error: %s",
-                                                     err.__str__())
+                                    logging.debug("Connect to dev tools websocket Error: %s",
+                                                  err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
                         time.sleep(0.5)
             except Exception as err:
-                logging.critical("Connect to dev tools Error: %s", err.__str__())
+                logging.debug("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
         return ret
 
@@ -519,7 +519,7 @@ class DevTools(object):
                         except Exception:
                             pass
             except Exception as err:
-                logging.critical("Websocket send error: %s", err.__str__())
+                logging.debug("Websocket send error: %s", err.__str__())
         return ret
 
     def wait_for_page_load(self):
