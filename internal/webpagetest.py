@@ -28,6 +28,7 @@ class WebPageTest(object):
         self.first_failure = None
         self.session = requests.Session()
         self.options = options
+        self.fps = options.fps
         self.test_run_count = 0
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
                                                datefmt="%H:%M:%S")
@@ -216,6 +217,10 @@ class WebPageTest(object):
                         self.validate_server_certificate = True
                     elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
+                    elif key == 'wpt_fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
+                    elif key == 'fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
                 pass
 
@@ -294,6 +299,8 @@ class WebPageTest(object):
                         job['type'] = ''
                     if job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    if 'fps' not in job:
+                        job['fps'] = self.fps
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
@@ -481,9 +488,10 @@ class WebPageTest(object):
                         if target is not None and value is not None:
                             width = int(re.search(r'\d+', str(target)).group())
                             height = int(re.search(r'\d+', str(value)).group())
+                            dpr = float(job['dpr']) if 'dpr' in job else 1.0
                             if width > 0 and height > 0 and width < 10000 and height < 10000:
-                                job['width'] = width
-                                job['height'] = height
+                                job['width'] = int(float(width) / dpr)
+                                job['height'] = int(float(height) / dpr)
                     elif command == 'setdevicescalefactor' and target is not None:
                         keep = False
                         job['dpr'] = target

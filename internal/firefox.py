@@ -109,21 +109,24 @@ class Firefox(DesktopBrowser):
             command_line = self.path
         command_line += ' ' + ' '.join(args)
         DesktopBrowser.launch_browser(self, command_line)
-        self.marionette = Marionette('localhost', port=2828)
-        self.marionette.start_session(timeout=self.task['time_limit'])
-        logging.debug('Installing extension')
-        self.addons = Addons(self.marionette)
-        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      'support', 'Firefox', 'extension')
-        self.extension_id = self.addons.install(extension_path, temp=True)
-        logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
-        self.marionette.set_window_position(x=0, y=0)
-        self.marionette.set_window_size(height=task['height'], width=task['width'])
-        self.marionette.navigate(START_PAGE)
-        time.sleep(0.5)
-        self.wait_for_extension()
-        if self.connected:
-            DesktopBrowser.wait_for_idle(self)
+        try:
+            self.marionette = Marionette('localhost', port=2828)
+            self.marionette.start_session(timeout=self.task['time_limit'])
+            logging.debug('Installing extension')
+            self.addons = Addons(self.marionette)
+            extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        'support', 'Firefox', 'extension')
+            self.extension_id = self.addons.install(extension_path, temp=True)
+            logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
+            self.marionette.set_window_position(x=0, y=0)
+            self.marionette.set_window_size(height=task['height'], width=task['width'])
+            self.marionette.navigate(START_PAGE)
+            time.sleep(0.5)
+            self.wait_for_extension()
+            if self.connected:
+                DesktopBrowser.wait_for_idle(self)
+        except Exception as err:
+            task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
 
     def stop(self, job, task):
         """Kill the browser"""
@@ -132,7 +135,10 @@ class Firefox(DesktopBrowser):
             self.extension_id = None
             self.addons = None
         if self.marionette is not None:
-            self.marionette.close()
+            try:
+                self.marionette.close()
+            except Exception:
+                pass
             self.marionette = None
         DesktopBrowser.stop(self, job, task)
         self.extension.stop()
@@ -170,7 +176,7 @@ class Firefox(DesktopBrowser):
                 try:
                     self.process_command(command)
                 except Exception:
-                    pass
+                    logging.exception("Exception running task")
                 if command['record']:
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
@@ -185,7 +191,10 @@ class Firefox(DesktopBrowser):
                     task['navigated'] = True
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            self.marionette.navigate('about:blank')
+            try:
+                self.marionette.navigate('about:blank')
+            except Exception:
+                logging.debug('Marionette exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
@@ -235,7 +244,10 @@ class Firefox(DesktopBrowser):
         """Run javascipt (stub for overriding"""
         ret = None
         if self.marionette is not None:
-            ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            try:
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            except Exception:
+                pass
         return ret
 
     def run_js_file(self, file_name):
@@ -247,7 +259,10 @@ class Firefox(DesktopBrowser):
             with open(script_file_path, 'rb') as script_file:
                 script = script_file.read()
         if script is not None:
-            ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            try:
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            except Exception:
+                pass
             if ret is not None:
                 logging.debug(ret)
         return ret
@@ -271,9 +286,12 @@ class Firefox(DesktopBrowser):
                 script = 'var wptCustomMetric = function() {' +\
                          self.job['customMetrics'][name] +\
                          '};try{return wptCustomMetric();}catch(e){};'
-                custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
-                if custom_metrics[name] is not None:
-                    logging.debug(custom_metrics[name])
+                try:
+                    custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+                    if custom_metrics[name] is not None:
+                        logging.debug(custom_metrics[name])
+                except Exception:
+                    pass
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
@@ -562,35 +580,41 @@ class Firefox(DesktopBrowser):
     def navigate(self, url):
         """Navigate to the given URL"""
         if self.marionette is not None:
-            self.marionette.navigate(url)
+            try:
+                self.marionette.navigate(url)
+            except Exception as err:
+                logging.debug("Error navigating Firefox: %s", str(err))
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if self.marionette is not None:
-            data = self.marionette.screenshot(format='binary', full=False)
-            if data is not None:
-                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
-                if png:
-                    with open(path, 'wb') as image_file:
-                        image_file.write(data)
-                    if len(resize_string):
-                        cmd = 'mogrify -format png -define png:color-type=2 '\
-                              '-depth 8 {0}"{1}"'.format(resize_string, path)
-                        logging.debug(cmd)
-                        subprocess.call(cmd, shell=True)
-                else:
-                    tmp_file = path + '.png'
-                    with open(tmp_file, 'wb') as image_file:
-                        image_file.write(data)
-                    command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
-                        tmp_file, resize_string, self.job['iq'], path)
-                    logging.debug(command)
-                    subprocess.call(command, shell=True)
-                    if os.path.isfile(tmp_file):
-                        try:
-                            os.remove(tmp_file)
-                        except Exception:
-                            pass
+            try:
+                data = self.marionette.screenshot(format='binary', full=False)
+                if data is not None:
+                    resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
+                    if png:
+                        with open(path, 'wb') as image_file:
+                            image_file.write(data)
+                        if len(resize_string):
+                            cmd = 'mogrify -format png -define png:color-type=2 '\
+                                '-depth 8 {0}"{1}"'.format(resize_string, path)
+                            logging.debug(cmd)
+                            subprocess.call(cmd, shell=True)
+                    else:
+                        tmp_file = path + '.png'
+                        with open(tmp_file, 'wb') as image_file:
+                            image_file.write(data)
+                        command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                            tmp_file, resize_string, self.job['iq'], path)
+                        logging.debug(command)
+                        subprocess.call(command, shell=True)
+                        if os.path.isfile(tmp_file):
+                            try:
+                                os.remove(tmp_file)
+                            except Exception:
+                                pass
+            except Exception as err:
+                logging.debug('Exception grabbing screen shot: %s', str(err))
 
     def process_requests(self, request_timings, task):
         """Convert all of the request and page events into the format needed for WPT"""
