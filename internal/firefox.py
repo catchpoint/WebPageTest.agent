@@ -170,7 +170,7 @@ class Firefox(DesktopBrowser):
                 try:
                     self.process_command(command)
                 except Exception:
-                    pass
+                    logging.exception("Exception running task")
                 if command['record']:
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):

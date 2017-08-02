@@ -8,7 +8,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Install docs are [here](docs/install.md)
 
 ## Command-line options
-### Server/location configuration
+### Basic agent config
 * **-v** : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
 * **--name** : Agent name (defaults to the machine's hostname).
 * **--exit** : Exit after the specified number of minutes.
@@ -16,6 +16,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
+* **--log** : Log critical errors to the given file.
 
 ### Video capture/display settings
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).

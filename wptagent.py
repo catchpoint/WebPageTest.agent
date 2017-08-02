@@ -76,7 +76,7 @@ class WPTAgent(object):
                                     msg = err.__str__()
                                 self.task['error'] = 'Unhandled exception running test: '\
                                     '{0}'.format(msg)
-                                logging.critical("Unhandled exception running test: %s", msg)
+                                logging.exception("Unhandled exception running test: %s", msg)
                                 traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
@@ -92,7 +92,7 @@ class WPTAgent(object):
                 if self.task is not None:
                     self.task['error'] = 'Unhandled exception preparing test: '\
                         '{0}'.format(msg)
-                logging.critical("Unhandled exception: %s", msg)
+                logging.exception("Unhandled exception: %s", msg)
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
                     browser.on_stop_recording(None)
@@ -121,7 +121,7 @@ class WPTAgent(object):
                         msg = err.__str__()
                     self.task['error'] = 'Unhandled exception in test run: '\
                         '{0}'.format(msg)
-                    logging.critical("Unhandled exception in test run: %s", msg)
+                    logging.exception("Unhandled exception in test run: %s", msg)
                     traceback.print_exc(file=sys.stdout)
             else:
                 self.task['error'] = "Error configuring traffic-shaping"
@@ -403,6 +403,8 @@ def main():
                         help="Load config settings from GCE user data.")
     parser.add_argument('--alive',
                         help="Watchdog file to update when successfully connected.")
+    parser.add_argument('--log',
+                        help="Log critical errors to the given file.")
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -489,6 +491,11 @@ def main():
     logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
                         datefmt="%H:%M:%S")
 
+    if options.log:
+        err_log = logging.FileHandler(options.log)
+        err_log.setLevel(logging.ERROR)
+        logging.getLogger().addHandler(err_log)
+
     browsers = None
     if not options.android:
         browsers = find_browsers()
@@ -502,7 +509,6 @@ def main():
         print "Running agent, hit Ctrl+C to exit"
         agent.run_testing()
         print "Done"
-
 
 if __name__ == '__main__':
     main()
