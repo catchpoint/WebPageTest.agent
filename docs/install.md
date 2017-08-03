@@ -41,14 +41,6 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ```* hard nofile 300000```
 * By default Linux will take 1-2 minutes to time out on socket connections.  You can lower it to 20 seconds to fail faster (and match windows) by configuring the retries in /etc/sysctl.conf:
     * ```net.ipv4.tcp_syn_retries = 4```
-* It can help to tighten up the tcp connection tracking timeouts so sockets don't linger (/etc/sysctl.conf):
-    * ```net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 60```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 5```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_close_wait = 5```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_last_ack = 30```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_time_wait = 5```
-    * ```net.netfilter.nf_conntrack_tcp_timeout_close = 5```
 
 ## For lighthouse testing
 * NodeJS 7.x
