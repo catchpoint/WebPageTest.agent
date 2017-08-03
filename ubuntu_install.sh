@@ -15,15 +15,15 @@ echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
 echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
 echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf
 echo '# wptagent end' | sudo tee -a /etc/security/limits.conf
-echo '# Settings updated for wptagent' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 60' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 5' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_close_wait = 5' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_last_ack = 30' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_time_wait = 5' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_close = 5' | sudo tee -a /etc/security/sysctl.conf
-echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/security/sysctl.conf
-echo '# wptagent end' | sudo tee -a /etc/security/sysctl.conf
+echo '# Settings updated for wptagent' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 60' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 5' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_close_wait = 5' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_last_ack = 30' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_time_wait = 5' | sudo tee -a /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_close = 5' | sudo tee -a /etc/sysctl.conf
+echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/sysctl.conf
+echo '# wptagent end' | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 echo 'Reboot is recommended before starting testing'
