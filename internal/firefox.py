@@ -131,7 +131,10 @@ class Firefox(DesktopBrowser):
     def stop(self, job, task):
         """Kill the browser"""
         if self.extension_id is not None and self.addons is not None:
-            self.addons.uninstall(self.extension_id)
+            try:
+                self.addons.uninstall(self.extension_id)
+            except Exception:
+                pass
             self.extension_id = None
             self.addons = None
         if self.marionette is not None:
