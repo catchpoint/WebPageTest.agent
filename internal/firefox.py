@@ -131,7 +131,10 @@ class Firefox(DesktopBrowser):
     def stop(self, job, task):
         """Kill the browser"""
         if self.extension_id is not None and self.addons is not None:
-            self.addons.uninstall(self.extension_id)
+            try:
+                self.addons.uninstall(self.extension_id)
+            except Exception:
+                pass
             self.extension_id = None
             self.addons = None
         if self.marionette is not None:
@@ -704,69 +707,84 @@ class Firefox(DesktopBrowser):
         requests = []
         # Start with the requests reported from the extension
         for req_id in self.requests:
-            req = self.requests[req_id]
-            if req['from_net'] and 'start' in req and 'url' in req:
-                request = self.get_empty_request(req['id'], req['url'])
-                if 'ip' in req:
-                    request['ip_addr'] = req['ip']
-                if 'method' in req:
-                    request['method'] = req['method']
-                if 'status' in req:
-                    request['responseCode'] = req['status']
-                if 'type' in req:
-                    request['requestType'] = req['type']
-                if 'request_headers' in req:
-                    for header in req['request_headers']:
-                        if 'name' in header and 'value' in header:
-                            header_text = '{0}: {1}'.format(header['name'], header['value'])
-                            request['bytesOut'] += len(header_text) + 2
-                            request['headers']['request'].append(header_text)
-                if 'status_line' in req:
-                    request['bytesIn'] += len(req['status_line']) + 2
-                    request['headers']['response'].append(req['status_line'])
-                if 'response_headers' in req:
-                    for header in req['response_headers']:
-                        if 'name' in header and 'value' in header:
-                            header_text = '{0}: {1}'.format(header['name'], header['value'])
-                            request['bytesIn'] += len(header_text) + 2
-                            request['headers']['response'].append(header_text)
-                if 'created' in req:
-                    request['created'] = req['created']
-                request['load_start'] = int(round(req['start'] * 1000.0))
-                if 'first_byte' in req:
-                    ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
-                    request['ttfb_ms'] = max(0, ttfb)
-                if 'end' in req:
-                    load_time = int(round((req['end'] - req['start']) * 1000.0))
-                    request['load_ms'] = max(0, load_time)
-                size = self.get_header_value(request['headers']['response'], 'Content-Length')
-                if len(size):
-                    request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
-                requests.append(request)
+            try:
+                req = self.requests[req_id]
+                if req['from_net'] and 'start' in req and 'url' in req:
+                    request = self.get_empty_request(req['id'], req['url'])
+                    if 'ip' in req:
+                        request['ip_addr'] = req['ip']
+                    if 'method' in req:
+                        request['method'] = req['method']
+                    if 'status' in req:
+                        request['responseCode'] = req['status']
+                    if 'type' in req:
+                        request['requestType'] = req['type']
+                    if 'request_headers' in req:
+                        for header in req['request_headers']:
+                            if 'name' in header and 'value' in header:
+                                header_text = '{0}: {1}'.format(header['name'], header['value'])
+                                request['bytesOut'] += len(header_text) + 2
+                                request['headers']['request'].append(header_text)
+                    if 'status_line' in req:
+                        request['bytesIn'] += len(req['status_line']) + 2
+                        request['headers']['response'].append(req['status_line'])
+                    if 'response_headers' in req:
+                        for header in req['response_headers']:
+                            if 'name' in header and 'value' in header:
+                                try:
+                                    header_text = '{0}: {1}'.format(header['name'], header['value'])
+                                    request['bytesIn'] += len(header_text) + 2
+                                    request['headers']['response'].append(header_text)
+                                except Exception:
+                                    pass
+                    if 'created' in req:
+                        request['created'] = req['created']
+                    request['load_start'] = int(round(req['start'] * 1000.0))
+                    if 'first_byte' in req:
+                        ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
+                        request['ttfb_ms'] = max(0, ttfb)
+                    if 'end' in req:
+                        load_time = int(round((req['end'] - req['start']) * 1000.0))
+                        request['load_ms'] = max(0, load_time)
+                    size = self.get_header_value(request['headers']['response'], 'Content-Length')
+                    if len(size):
+                        request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
+                    requests.append(request)
+            except Exception:
+                pass
         # Overwrite them with the same requests from the logs
         for request in requests:
             for req in request_timings:
-                if 'claimed' not in req and 'url' in req and 'full_url' in request \
-                        and 'start' in req and request['full_url'] == req['url']:
-                    req['claimed'] = True
-                    self.populate_request(request, req)
+                try:
+                    if 'claimed' not in req and 'url' in req and 'full_url' in request \
+                            and 'start' in req and request['full_url'] == req['url']:
+                        req['claimed'] = True
+                        self.populate_request(request, req)
+                except Exception:
+                    pass
         # Add any events from the logs that weren't reported by the extension
         for req in request_timings:
-            if 'claimed' not in req and 'url' in req and 'start' in req:
-                request = self.get_empty_request(req['id'], req['url'])
-                self.populate_request(request, req)
-                requests.append(request)
+            try:
+                if 'claimed' not in req and 'url' in req and 'start' in req:
+                    request = self.get_empty_request(req['id'], req['url'])
+                    self.populate_request(request, req)
+                    requests.append(request)
+            except Exception:
+                pass
         # parse values out of the headers
         for request in requests:
-            request['expires'] = self.get_header_value(request['headers']['response'], 'Expires')
-            request['cacheControl'] = self.get_header_value(request['headers']['response'],
-                                                            'Cache-Control')
-            request['contentType'] = self.get_header_value(request['headers']['response'],
-                                                           'Content-Type')
-            request['contentEncoding'] = self.get_header_value(request['headers']['response'],
-                                                               'Content-Encoding')
-            request['objectSize'] = self.get_header_value(request['headers']['response'],
-                                                          'Content-Length')
+            try:
+                request['expires'] = self.get_header_value(request['headers']['response'], 'Expires')
+                request['cacheControl'] = self.get_header_value(request['headers']['response'],
+                                                                'Cache-Control')
+                request['contentType'] = self.get_header_value(request['headers']['response'],
+                                                               'Content-Type')
+                request['contentEncoding'] = self.get_header_value(request['headers']['response'],
+                                                                   'Content-Encoding')
+                request['objectSize'] = self.get_header_value(request['headers']['response'],
+                                                              'Content-Length')
+            except Exception:
+                pass
         requests.sort(key=lambda x: x['load_start'])
         return requests
 
