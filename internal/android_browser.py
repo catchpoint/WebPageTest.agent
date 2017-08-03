@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import time
+import monotonic
 import ujson as json
 
 SET_ORANGE = "(function() {" \
@@ -225,3 +226,20 @@ class AndroidBrowser(object):
                         os.remove(self.tcpdump_file)
             except Exception:
                 pass
+
+    def step_complete(self, task):
+        """All of the processing for the current test step is complete"""
+        # Write out the accumulated page_data
+        if task['log_data'] and task['page_data']:
+            if 'browser' in self.job:
+                task['page_data']['browser_name'] = self.job['browser']
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            if 'run_start_time' in task:
+                task['page_data']['test_run_time_ms'] = \
+                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json_page_data)

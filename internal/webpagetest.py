@@ -436,6 +436,7 @@ class WebPageTest(object):
                         task['height'] = job['height'] + 120
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
+                task['run_start_time'] = monotonic.monotonic()
                 self.test_run_count += 1
         if task is None and os.path.isdir(self.workdir):
             try:
@@ -613,19 +614,8 @@ class WebPageTest(object):
                 os.remove(task['debug_log'])
             except Exception:
                 pass
-        # Write out the accumulated page_data
-        if task['page_data']:
-            if 'browser' in self.job:
-                task['page_data']['browser_name'] = self.job['browser']
-            if 'fullyLoadedCPUpct' in task['page_data']:
-                cpu_pct = task['page_data']['fullyLoadedCPUpct']
-            if 'step_name' in task:
-                task['page_data']['eventName'] = task['step_name']
-            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
-            json_page_data = json.dumps(task['page_data'])
-            logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
-                outfile.write(json_page_data)
+        if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
+            cpu_pct = task['page_data']['fullyLoadedCPUpct']
         data = {'id': task['id'],
                 'location': self.location,
                 'run': str(task['run']),

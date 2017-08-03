@@ -167,6 +167,7 @@ class DevtoolsBrowser(object):
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
+                        self.step_complete(task)
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
@@ -203,6 +204,7 @@ class DevtoolsBrowser(object):
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {}
+        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']

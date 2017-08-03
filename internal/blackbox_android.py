@@ -109,6 +109,7 @@ class BlackBoxAndroid(AndroidBrowser):
         if self.job['video']:
             task['video_directories'].append(task['video_subdirectory'])
         task['step_name'] = 'Navigate'
+        task['run_start_time'] = monotonic.monotonic()
         self.on_start_recording(task)
         while len(task['script']) and monotonic.monotonic() < end_time:
             command = task['script'].pop(0)
@@ -130,6 +131,7 @@ class BlackBoxAndroid(AndroidBrowser):
         self.on_stop_recording(task)
         self.on_start_processing(task)
         self.wait_for_processing(task)
+        self.step_complete(task)
 
     def run_lighthouse_test(self, task):
         """Stub for lighthouse test"""

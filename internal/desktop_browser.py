@@ -325,7 +325,7 @@ class DesktopBrowser(object):
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args)
 
-    def on_start_processing(self, _task):
+    def on_start_processing(self, task):
         """Start any processing of the captured data"""
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
@@ -359,6 +359,23 @@ class DesktopBrowser(object):
             self.pcap_thread.join()
             self.pcap_thread = None
         self.pcap_file = None
+
+    def step_complete(self, task):
+        """All of the processing for the current test step is complete"""
+        # Write out the accumulated page_data
+        if task['log_data'] and task['page_data']:
+            if 'browser' in self.job:
+                task['page_data']['browser_name'] = self.job['browser']
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            if 'run_start_time' in task:
+                task['page_data']['test_run_time_ms'] = \
+                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json_page_data)
 
     def process_pcap(self):
         """Process the pcap in a background thread"""
