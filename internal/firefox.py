@@ -2,18 +2,15 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for webdriver browsers"""
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from datetime import datetime, timedelta
 import glob
 import gzip
 import logging
 import os
 import platform
-import Queue
 import re
 import shutil
 import subprocess
-import threading
 import time
 import urlparse
 import monotonic
@@ -60,7 +57,6 @@ class Firefox(DesktopBrowser):
         self.marionette = None
         self.addons = None
         self.extension_id = None
-        self.extension = None
         self.nav_error = None
         self.page_loaded = None
         self.recording = False
@@ -94,9 +90,9 @@ class Firefox(DesktopBrowser):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        if self.job['message_server'] is not None:
+            self.job['message_server'].flush_messages()
         self.connected = False
-        self.extension = MessageServer()
-        self.extension.start()
         from marionette_driver.marionette import Marionette
         from marionette_driver.addons import Addons
         args = ['-profile', '"{0}"'.format(task['profile']),
@@ -115,7 +111,7 @@ class Firefox(DesktopBrowser):
             logging.debug('Installing extension')
             self.addons = Addons(self.marionette)
             extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                        'support', 'Firefox', 'extension')
+                                          'support', 'Firefox', 'extension')
             self.extension_id = self.addons.install(extension_path, temp=True)
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.marionette.set_window_position(x=0, y=0)
@@ -144,8 +140,6 @@ class Firefox(DesktopBrowser):
                 pass
             self.marionette = None
         DesktopBrowser.stop(self, job, task)
-        self.extension.stop()
-        self.extension = None
         # Make SURE the firefox processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'firefox'])
@@ -203,11 +197,11 @@ class Firefox(DesktopBrowser):
 
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
-        if self.extension is not None:
+        if self.job['message_server'] is not None:
             end_time = monotonic.monotonic()  + 30
             while monotonic.monotonic() < end_time:
                 try:
-                    self.extension.get_message(1)
+                    self.job['message_server'].get_message(1)
                     logging.debug('Extension started')
                     self.connected = True
                     break
@@ -216,13 +210,13 @@ class Firefox(DesktopBrowser):
 
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
-        if self.extension is not None and self.connected:
+        if self.job['message_server'] is not None and self.connected:
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             while not done:
                 try:
-                    self.process_message(self.extension.get_message(1))
+                    self.process_message(self.job['message_server'].get_message(1))
                 except Exception:
                     pass
                 now = monotonic.monotonic()
@@ -774,7 +768,8 @@ class Firefox(DesktopBrowser):
         # parse values out of the headers
         for request in requests:
             try:
-                request['expires'] = self.get_header_value(request['headers']['response'], 'Expires')
+                request['expires'] = self.get_header_value(request['headers']['response'],
+                                                           'Expires')
                 request['cacheControl'] = self.get_header_value(request['headers']['response'],
                                                                 'Cache-Control')
                 request['contentType'] = self.get_header_value(request['headers']['response'],
@@ -886,98 +881,3 @@ class Firefox(DesktopBrowser):
             else:
                 page['result'] = 12999
         return page
-
-class HandleMessage(BaseHTTPRequestHandler):
-    """Handle a single message from the extension"""
-    protocol_version = 'HTTP/1.1'
-
-    def __init__(self, server, *args):
-        self.message_server = server
-        try:
-            BaseHTTPRequestHandler.__init__(self, *args)
-        except Exception:
-            pass
-
-    def log_message(self, format, *args):
-        return
-
-    def _set_headers(self):
-        """Basic response headers"""
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header("Content-length", 0)
-        self.end_headers()
-
-    # pylint: disable=C0103
-    def do_GET(self):
-        """HTTP GET"""
-        self._set_headers()
-
-    def do_HEAD(self):
-        """HTTP HEAD"""
-        self._set_headers()
-
-    def do_POST(self):
-        """HTTP POST"""
-        try:
-            content_len = int(self.headers.getheader('content-length', 0))
-            messages = self.rfile.read(content_len) if content_len > 0 else None
-            self._set_headers()
-            for line in messages.splitlines():
-                line = line.strip()
-                if len(line):
-                    message = json.loads(line)
-                    if 'body' not in message:
-                        message['body'] = None
-                    self.message_server.handle_message(message)
-        except Exception:
-            pass
-    # pylint: enable=C0103
-
-def handler_template(server):
-    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
-    return lambda *args: HandleMessage(server, *args)
-
-class MessageServer(object):
-    """Local HTTP server for interacting with the extension"""
-    def __init__(self):
-        self.server = None
-        self.must_exit = False
-        self.thread = None
-        self.messages = Queue.Queue()
-
-    def get_message(self, timeout):
-        """Get a single message from the queue"""
-        message = self.messages.get(block=True, timeout=timeout)
-        self.messages.task_done()
-        return message
-
-    def handle_message(self, message):
-        """Add a received message to the queue"""
-        self.messages.put(message)
-
-    def start(self):
-        """Start running the server in a background thread"""
-        self.thread = threading.Thread(target=self.run)
-        self.thread.start()
-
-    def stop(self):
-        """Stop running the server"""
-        logging.debug("Shutting down extension server")
-        self.must_exit = True
-        if self.server is not None:
-            try:
-                self.server.shutdown()
-            except Exception:
-                logging.exception("Exception stopping extension server")
-        if self.thread is not None:
-            self.thread.join()
-        logging.debug("Extension server stopped")
-
-    def run(self):
-        """Main server loop"""
-        handler = handler_template(self)
-        logging.debug('Starting extension server on port 8888')
-        self.server = HTTPServer(('127.0.0.1', 8888), handler)
-        self.server.serve_forever()
-        self.server = None

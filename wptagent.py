@@ -3,16 +3,20 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """WebPageTest cross-platform agent"""
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import atexit
 import logging
 import logging.handlers
 import os
 import platform
+import Queue
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
+import ujson as json
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -43,6 +47,10 @@ class WPTAgent(object):
         start_time = monotonic.monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
+        message_server = None
+        if not self.options.android:
+            message_server = MessageServer()
+            message_server.start()
         while not self.must_exit:
             try:
                 if os.path.isfile(exit_file):
@@ -55,6 +63,7 @@ class WPTAgent(object):
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
+                        self.job['message_server'] = message_server
                         self.job['capture_display'] = self.capture_display
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
@@ -102,6 +111,8 @@ class WPTAgent(object):
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
+        if message_server is not None:
+            message_server.stop()
 
     def run_single_test(self):
         """Run a single test run"""
@@ -301,6 +312,110 @@ class WPTAgent(object):
                 ret = False
         return ret
 
+
+class HandleMessage(BaseHTTPRequestHandler):
+    """Handle a single message from the extension"""
+    protocol_version = 'HTTP/1.1'
+
+    def __init__(self, server, *args):
+        self.message_server = server
+        try:
+            BaseHTTPRequestHandler.__init__(self, *args)
+        except Exception:
+            pass
+
+    def log_message(self, format, *args):
+        return
+
+    def _set_headers(self):
+        """Basic response headers"""
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header("Content-length", 0)
+        self.end_headers()
+
+    # pylint: disable=C0103
+    def do_GET(self):
+        """HTTP GET"""
+        self._set_headers()
+
+    def do_HEAD(self):
+        """HTTP HEAD"""
+        self._set_headers()
+
+    def do_POST(self):
+        """HTTP POST"""
+        try:
+            content_len = int(self.headers.getheader('content-length', 0))
+            messages = self.rfile.read(content_len) if content_len > 0 else None
+            self._set_headers()
+            for line in messages.splitlines():
+                line = line.strip()
+                if len(line):
+                    message = json.loads(line)
+                    if 'body' not in message:
+                        message['body'] = None
+                    self.message_server.handle_message(message)
+        except Exception:
+            pass
+    # pylint: enable=C0103
+
+def handler_template(server):
+    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
+    return lambda *args: HandleMessage(server, *args)
+
+class MessageServer(object):
+    """Local HTTP server for interacting with the extension"""
+    def __init__(self):
+        self.server = None
+        self.must_exit = False
+        self.thread = None
+        self.messages = Queue.Queue()
+
+    def get_message(self, timeout):
+        """Get a single message from the queue"""
+        message = self.messages.get(block=True, timeout=timeout)
+        self.messages.task_done()
+        return message
+
+    def flush_messages(self):
+        """Flush all of the pending messages"""
+        try:
+            while True:
+                message = self.messages.get_nowait()
+                self.messages.task_done()
+        except Exception:
+            pass
+
+    def handle_message(self, message):
+        """Add a received message to the queue"""
+        self.messages.put(message)
+
+    def start(self):
+        """Start running the server in a background thread"""
+        self.thread = threading.Thread(target=self.run)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self):
+        """Stop running the server"""
+        logging.debug("Shutting down extension server")
+        self.must_exit = True
+        if self.server is not None:
+            try:
+                self.server.shutdown()
+            except Exception:
+                logging.exception("Exception stopping extension server")
+        self.thread = None
+        logging.debug("Extension server stopped")
+
+    def run(self):
+        """Main server loop"""
+        handler = handler_template(self)
+        logging.debug('Starting extension server on port 8888')
+        self.server = HTTPServer(('127.0.0.1', 8888), handler)
+        self.server.serve_forever()
+        self.server = None
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
