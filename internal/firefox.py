@@ -967,9 +967,9 @@ class MessageServer(object):
         self.must_exit = True
         if self.server is not None:
             try:
-                self.server.server_close()
+                self.server.shutdown()
             except Exception:
-                pass
+                logging.exception("Exception stopping extension server")
         if self.thread is not None:
             self.thread.join()
         logging.debug("Extension server stopped")
@@ -979,10 +979,5 @@ class MessageServer(object):
         handler = handler_template(self)
         logging.debug('Starting extension server on port 8888')
         self.server = HTTPServer(('127.0.0.1', 8888), handler)
-        self.server.timeout = 0.5
-        try:
-            while not self.must_exit:
-                self.server.handle_request()
-        except Exception:
-            pass
+        self.server.serve_forever()
         self.server = None
