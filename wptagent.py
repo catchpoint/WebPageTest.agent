@@ -316,15 +316,24 @@ class HandleMessage(BaseHTTPRequestHandler):
         except Exception:
             pass
 
+    def handle(self):
+        try:
+            BaseHTTPRequestHandler.handle(self)
+        except Exception:
+            pass
+
     def log_message(self, _, *args):
         return
 
     def _set_headers(self):
         """Basic response headers"""
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header("Content-length", 0)
-        self.end_headers()
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-length", 0)
+            self.end_headers()
+        except Exception:
+            pass
 
     # pylint: disable=C0103
     def do_GET(self):
