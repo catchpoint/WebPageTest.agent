@@ -111,8 +111,6 @@ class WPTAgent(object):
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
-        if message_server is not None:
-            message_server.stop()
 
     def run_single_test(self):
         """Run a single test run"""
