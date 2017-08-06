@@ -237,12 +237,6 @@ class WPTAgent(object):
             ret = False
 
         try:
-            import ujson as _
-        except ImportError:
-            print "Missing ujson parser. Please run 'pip install ujson'"
-            ret = False
-
-        try:
             subprocess.check_output(['python', '--version'])
         except Exception:
             print "Make sure python 2.7 is available in the path."
@@ -266,7 +260,7 @@ class WPTAgent(object):
         if platform.system() == "Linux" and not self.options.android and \
                 'DISPLAY' not in os.environ:
             self.options.xvfb = True
-        
+
         if self.options.xvfb:
             try:
                 from xvfbwrapper import Xvfb
@@ -322,7 +316,7 @@ class HandleMessage(BaseHTTPRequestHandler):
         except Exception:
             pass
 
-    def log_message(self, format, *args):
+    def log_message(self, _, *args):
         return
 
     def _set_headers(self):
@@ -347,13 +341,14 @@ class HandleMessage(BaseHTTPRequestHandler):
             content_len = int(self.headers.getheader('content-length', 0))
             messages = self.rfile.read(content_len) if content_len > 0 else None
             self._set_headers()
-            for line in messages.splitlines():
-                line = line.strip()
-                if len(line):
-                    message = json.loads(line)
-                    if 'body' not in message:
-                        message['body'] = None
-                    self.message_server.handle_message(message)
+            if messages is not None:
+                for line in messages.splitlines():
+                    line = line.strip()
+                    if len(line):
+                        message = json.loads(line)
+                        if 'body' not in message:
+                            message['body'] = None
+                        self.message_server.handle_message(message)
         except Exception:
             pass
     # pylint: enable=C0103
@@ -380,7 +375,7 @@ class MessageServer(object):
         """Flush all of the pending messages"""
         try:
             while True:
-                message = self.messages.get_nowait()
+                self.messages.get_nowait()
                 self.messages.task_done()
         except Exception:
             pass
