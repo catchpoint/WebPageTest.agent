@@ -60,10 +60,10 @@ class WPTAgent(object):
                         pass
                     self.must_exit = True
                     break
-                if message_server is not None and self.options.exit > 0 and \
-                        not message_server.is_ok():
-                    logging.error("Message server not responding, exiting")
-                    break
+                #if message_server is not None and self.options.exit > 0 and \
+                #        not message_server.is_ok():
+                #    logging.error("Message server not responding, exiting")
+                #    break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
