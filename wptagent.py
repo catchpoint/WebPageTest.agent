@@ -60,6 +60,10 @@ class WPTAgent(object):
                         pass
                     self.must_exit = True
                     break
+                if message_server is not None and self.options.exit > 0 and \
+                        not message_server.is_ok():
+                    logging.error("Message server not responding, exiting")
+                    break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
@@ -313,8 +317,13 @@ class HandleMessage(BaseHTTPRequestHandler):
         self.message_server = server
         try:
             BaseHTTPRequestHandler.__init__(self, *args)
+            self.timeout = 10
         except Exception:
             pass
+
+    def setup(self):
+        BaseHTTPRequestHandler.setup(self)
+        self.request.settimeout(60)
 
     def handle(self):
         try:
@@ -330,7 +339,7 @@ class HandleMessage(BaseHTTPRequestHandler):
         try:
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
-            self.send_header("Content-length", 0)
+            self.send_header("Content-length", '0')
             self.end_headers()
         except Exception:
             pass
@@ -338,7 +347,15 @@ class HandleMessage(BaseHTTPRequestHandler):
     # pylint: disable=C0103
     def do_GET(self):
         """HTTP GET"""
-        self._set_headers()
+        if self.path == '/ping':
+            response = 'pong'
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.send_header("Content-length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+        else:
+            self._set_headers()
 
     def do_HEAD(self):
         """HTTP HEAD"""
@@ -348,7 +365,10 @@ class HandleMessage(BaseHTTPRequestHandler):
         """HTTP POST"""
         try:
             content_len = int(self.headers.getheader('content-length', 0))
-            messages = self.rfile.read(content_len) if content_len > 0 else None
+            messages = None
+            if content_len > 0:
+                self.rfile._sock.settimeout(10)
+                messages = self.rfile.read(content_len)
             self._set_headers()
             if messages is not None:
                 for line in messages.splitlines():
@@ -411,13 +431,33 @@ class MessageServer(object):
         self.thread = None
         logging.debug("Extension server stopped")
 
+    def is_ok(self):
+        """Check that the server is responding and restart it if necessary"""
+        import requests
+        server_ok = False
+        try:
+            response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
+            if response.text == 'pong':
+                server_ok = True
+        except Exception:
+            logging.exception("Error checking local server")
+        return server_ok
+
     def run(self):
         """Main server loop"""
         handler = handler_template(self)
         logging.debug('Starting extension server on port 8888')
-        self.server = HTTPServer(('127.0.0.1', 8888), handler)
-        self.server.serve_forever()
-        self.server = None
+        try:
+            self.server = HTTPServer(('127.0.0.1', 8888), handler)
+            self.server.timeout = 10
+            self.server.serve_forever()
+        except Exception:
+            logging.exception("Message server main loop exception")
+        if self.server is not None:
+            try:
+                self.server.socket.close()
+            except Exception:
+                pass
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
