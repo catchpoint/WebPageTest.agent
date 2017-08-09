@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 import traceback
+import monotonic
 import ujson as json
 
 class WPTAgent(object):
@@ -60,10 +61,10 @@ class WPTAgent(object):
                         pass
                     self.must_exit = True
                     break
-                #if message_server is not None and self.options.exit > 0 and \
-                #        not message_server.is_ok():
-                #    logging.error("Message server not responding, exiting")
-                #    break
+                if message_server is not None and self.options.exit > 0 and \
+                        not message_server.is_ok():
+                    logging.error("Message server not responding, exiting")
+                    break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
@@ -393,6 +394,7 @@ class MessageServer(object):
         self.must_exit = False
         self.thread = None
         self.messages = Queue.Queue()
+        self.__is_started = threading.Event()
 
     def get_message(self, timeout):
         """Get a single message from the queue"""
@@ -415,9 +417,11 @@ class MessageServer(object):
 
     def start(self):
         """Start running the server in a background thread"""
+        self.__is_started.clear()
         self.thread = threading.Thread(target=self.run)
         self.thread.daemon = True
         self.thread.start()
+        self.__is_started.wait(timeout=30)
 
     def stop(self):
         """Stop running the server"""
@@ -434,13 +438,17 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
+        end_time = monotonic.monotonic() + 30
         server_ok = False
-        try:
-            response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
-            if response.text == 'pong':
-                server_ok = True
-        except Exception:
-            logging.exception("Error checking local server")
+        while not server_ok and monotonic.monotonic() < end_time:
+            try:
+                response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
+                if response.text == 'pong':
+                    server_ok = True
+            except Exception:
+                pass
+            if not server_ok:
+                time.sleep(5)
         return server_ok
 
     def run(self):
@@ -450,9 +458,11 @@ class MessageServer(object):
         try:
             self.server = HTTPServer(('127.0.0.1', 8888), handler)
             self.server.timeout = 10
+            self.__is_started.set()
             self.server.serve_forever()
         except Exception:
             logging.exception("Message server main loop exception")
+            self.__is_started.set()
         if self.server is not None:
             try:
                 self.server.socket.close()
