@@ -707,7 +707,6 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path, filename):
         """Send a multi-part post"""
-        import requests
         ret = True
         # pass the data fields as query params and any files as post data
         url += "?"
@@ -722,13 +721,7 @@ class WebPageTest(object):
                                   timeout=300,)
             else:
                 self.session.post(url)
-        except requests.exceptions.RequestException as err:
-            logging.critical("Upload: %s", err.strerror)
-            ret = False
-        except IOError as err:
-            logging.error("Upload Error: %s", err.strerror)
-            ret = False
         except Exception:
-            logging.error("Upload Exception")
+            logging.exception("Upload Exception")
             ret = False
         return ret
