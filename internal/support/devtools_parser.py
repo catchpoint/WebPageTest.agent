@@ -317,10 +317,11 @@ class DevToolsParser(object):
         dns_times = {}
         for raw_request in raw_requests:
             if 'url' in raw_request:
-                parts = urlparse.urlsplit(raw_request['url'])
+                url = raw_request['url'].split('#', 1)[0]
+                parts = urlparse.urlsplit(url)
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
-                request['full_url'] = raw_request['url']
+                request['full_url'] = url
                 request['is_secure'] = 1 if parts.scheme == 'https' else 0
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
