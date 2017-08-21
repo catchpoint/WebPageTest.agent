@@ -424,6 +424,14 @@ class WebPageTest(object):
                         block = block.strip()
                         if len(block):
                             task['block'].append(block)
+                if 'blockDomains' in job:
+                    if 'host_rules' not in task:
+                        task['host_rules'] = []
+                    domains = re.split(', ', job['blockDomains'])
+                    for domain in domains:
+                        domain = domain.strip()
+                        if len(domain) and domain.find('"') == -1:
+                            task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
@@ -507,7 +515,7 @@ class WebPageTest(object):
                         if target is not None:
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
-                            domains = target.split()
+                            domains = re.split(', ', target)
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
