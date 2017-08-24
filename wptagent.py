@@ -16,8 +16,6 @@ import sys
 import threading
 import time
 import traceback
-import monotonic
-import ujson as json
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -364,6 +362,7 @@ class HandleMessage(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """HTTP POST"""
+        import ujson as json
         try:
             content_len = int(self.headers.getheader('content-length', 0))
             messages = None
@@ -438,6 +437,7 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
+        import monotonic
         end_time = monotonic.monotonic() + 30
         server_ok = False
         while not server_ok and monotonic.monotonic() < end_time:
@@ -485,6 +485,13 @@ def parse_ini(ini):
             ret = None
     return ret
 
+def getWindowsBuild():
+    """Get the current Windows build number from the registry"""
+    key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+    val = 'CurrentBuild'
+    output = os.popen('REG QUERY "{0}" /V "{1}"'.format(key, val)).read()
+    return int(output.strip().split(' ')[-1])
+
 def find_browsers():
     """Find the various known-browsers in case they are not explicitly configured"""
     browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
@@ -525,6 +532,32 @@ def find_browsers():
             firefox_path = os.path.join(program_files_x86, 'Nightly', 'firefox.exe')
             if os.path.isfile(firefox_path):
                 browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
+        # Microsoft Edge
+        edge = None
+        build = getWindowsBuild()
+        if build >= 10240:
+            edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                    'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
+            if not os.path.isfile(edge_exe):
+                if build >= 15000:
+                    edge_version = 15
+                elif build >= 14000:
+                    edge_version = 14
+                elif build >= 10586:
+                    edge_version = 13
+                else:
+                    edge_version = 12
+                edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                        'support', 'edge', str(edge_version),
+                                        'MicrosoftWebDriver.exe')
+            if os.path.isfile(edge_exe):
+                edge = {'exe': edge_exe}
+        if edge is not None:
+            edge['type'] = 'Edge'
+            if 'Microsoft Edge' not in browsers:
+                browsers['Microsoft Edge'] = dict(edge)
+            if 'Edge' not in browsers:
+                browsers['Edge'] = dict(edge)
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):

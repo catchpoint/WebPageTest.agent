@@ -59,6 +59,9 @@ class Browsers(object):
             if 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Firefox':
                 from .firefox import Firefox
                 browser = Firefox(self.browsers[name]['exe'], self.options, job)
+            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Edge':
+                from .microsoft_edge import Edge
+                browser = Edge(self.browsers[name]['exe'], self.options, job)
             else:
                 from .chrome_desktop import ChromeDesktop
                 browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)

@@ -1,7 +1,7 @@
 # Copyright 2017 Google Inc. All rights reserved.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
-"""Base class support for webdriver browsers"""
+"""Support for Firefox"""
 from datetime import datetime, timedelta
 import glob
 import gzip
