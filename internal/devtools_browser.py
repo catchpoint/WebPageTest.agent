@@ -307,8 +307,8 @@ class DevtoolsBrowser(object):
                                                              str(command['target'])).group()) == 0)
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
-                self.task['activity_time'] = \
-                    max(0, min(30, int(re.search(r'\d+', str(command['target'])).group())))
+                milliseconds = int(re.search(r'\d+', str(command['target'])).group())
+                self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
