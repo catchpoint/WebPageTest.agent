@@ -134,8 +134,11 @@ class DesktopBrowser(object):
         logging.debug("Stopping browser")
         if self.proc:
             kill_all(os.path.basename(self.path), False)
-            self.proc.terminate()
-            self.proc.kill()
+            try:
+                self.proc.terminate()
+                self.proc.kill()
+            except Exception:
+                pass
             self.proc = None
         self.disable_cpu_throttling()
         # Clean up the downloads folder in case anything was downloaded
