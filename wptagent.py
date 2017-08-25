@@ -273,7 +273,7 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
-        
+
         # Figure out which display to capture from
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
@@ -605,6 +605,12 @@ def find_browsers():
                 browsers['Chrome Canary'] = {'exe': canary_path}
             if 'Canary' not in browsers:
                 browsers['Canary'] = {'exe': canary_path}
+        firefox_path = '/Applications/Firefox.app/Contents/MacOS/firefox'
+        if 'Firefox' not in browsers and os.path.isfile(firefox_path):
+            browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+        nightly_path = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
+        if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
+            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
     return browsers
 
 def main():
