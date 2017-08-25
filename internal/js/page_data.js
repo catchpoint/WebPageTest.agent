@@ -19,6 +19,13 @@ addTime("domContentLoadedEventEnd");
 addTime("loadEventStart");
 addTime("loadEventEnd");
 pageData["firstPaint"] = 0;
+try {
+  if (window.performance.timing["timeToNonBlankPaint"] > 0) {
+    pageData["firstPaint"] = Math.max(0, Math.round(
+      window.performance.timing["timeToNonBlankPaint"] -
+      window.performance.timing["navigationStart"]));
+  }
+} catch(e) {}
 if (window["chrome"] !== undefined &&
     window.chrome["loadTimes"] !== undefined) {
  var chromeTimes = window.chrome.loadTimes();

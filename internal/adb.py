@@ -30,6 +30,7 @@ class Adb(object):
         self.cache_dir = cache_dir
         self.simplert_path = None
         self.simplert = None
+        self.no_network_count = 0
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -455,11 +456,13 @@ class Adb(object):
         if self.options.simplert is not None:
             is_ready = self.check_simplert()
             if not is_ready:
+                self.no_network_count += 1
                 self.reset_simplert()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready:
             net_ok = False
             if self.ping(self.ping_address) is not None:
+                self.no_network_count = 0
                 net_ok = True
             else:
                 addresses = []
@@ -486,13 +489,19 @@ class Adb(object):
                 for address in addresses:
                     if self.ping(address) is not None:
                         self.ping_address = address
+                        self.no_network_count = 0
                         net_ok = True
                         break
             if not net_ok:
                 logging.info("Device not ready, network not responding")
                 if self.options.simplert is not None:
                     self.reset_simplert()
+                self.no_network_count += 1
                 is_ready = False
+        if not is_ready and self.no_network_count > 20:
+            self.no_network_count = 0
+            self.adb(['reboot'])
+            self.adb(['wait-for-device'])
         if is_ready and not self.initialized:
             self.initialized = True
             # Disable emergency alert notifications

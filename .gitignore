@@ -5,7 +5,11 @@
 /run.cmd
 /run.sh
 /android.sh
+/visible.sh
 /update.sh
 /work
 /*.cmd
 /alive.txt
+/10fps.sh
+error.log
+loop.sh

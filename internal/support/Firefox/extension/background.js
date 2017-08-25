@@ -6,7 +6,12 @@ var last_send = undefined;
 var send_messages = function() {
   message_timer = undefined;
   last_send = performance.now();
-  fetch(SERVER + 'messages', {method: 'POST', body: messages});
+  message_headers = new Headers({
+    "Content-Type": "application/json",
+    "Content-Length": messages.length.toString()
+  });
+  fetch(SERVER + 'messages',
+        {method: 'POST', headers: message_headers, body: messages});
   messages = '';
 };
 

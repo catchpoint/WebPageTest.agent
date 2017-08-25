@@ -109,6 +109,7 @@ class BlackBoxAndroid(AndroidBrowser):
         if self.job['video']:
             task['video_directories'].append(task['video_subdirectory'])
         task['step_name'] = 'Navigate'
+        task['run_start_time'] = monotonic.monotonic()
         self.on_start_recording(task)
         while len(task['script']) and monotonic.monotonic() < end_time:
             command = task['script'].pop(0)
@@ -130,6 +131,7 @@ class BlackBoxAndroid(AndroidBrowser):
         self.on_stop_recording(task)
         self.on_start_processing(task)
         self.wait_for_processing(task)
+        self.step_complete(task)
 
     def run_lighthouse_test(self, task):
         """Stub for lighthouse test"""
@@ -150,7 +152,7 @@ class BlackBoxAndroid(AndroidBrowser):
         task['page_data']['result'] = 0
         task['page_data']['visualTest'] = 1
         if os.path.isfile(png_file):
-            if not self.job['pngss']:
+            if not self.job['pngScreenShot']:
                 jpeg_file = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 command = 'convert "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
                     png_file, 600, self.job['iq'], jpeg_file)

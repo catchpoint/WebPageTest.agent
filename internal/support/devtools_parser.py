@@ -317,10 +317,11 @@ class DevToolsParser(object):
         dns_times = {}
         for raw_request in raw_requests:
             if 'url' in raw_request:
-                parts = urlparse.urlsplit(raw_request['url'])
+                url = raw_request['url'].split('#', 1)[0]
+                parts = urlparse.urlsplit(url)
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
-                request['full_url'] = raw_request['url']
+                request['full_url'] = url
                 request['is_secure'] = 1 if parts.scheme == 'https' else 0
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
@@ -353,14 +354,14 @@ class DevToolsParser(object):
                 if 'bytesIn' in raw_request:
                     request['bytesIn'] = int(round(raw_request['bytesIn']))
                 if 'bytesInEncoded' in raw_request and raw_request['bytesInEncoded'] > 0:
-                    request['objectSize'] = int(round(raw_request['bytesInEncoded']))
+                    request['objectSize'] = str(int(round(raw_request['bytesInEncoded'])))
                     if raw_request['bytesInEncoded'] > request['bytesIn']:
                         request['bytesIn'] = int(round(raw_request['bytesInEncoded']))
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
                             request['bytesIn'] += len(raw_request['response']['headersText'])
                 if 'bytesInData' in raw_request:
                     if request['objectSize'] == '':
-                        request['objectSize'] = int(round(raw_request['bytesInData']))
+                        request['objectSize'] = str(int(round(raw_request['bytesInData'])))
                     if request['bytesIn'] == 0:
                         request['bytesIn'] = int(round(raw_request['bytesInData']))
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
@@ -374,8 +375,14 @@ class DevToolsParser(object):
                         'Content-Type').split(';')[0]
                 request['contentEncoding'] = self.get_response_header(raw_request, \
                         'Content-Encoding').replace("\n", ", ").replace("\r", "")
-                request['objectSize'] = self.get_response_header(raw_request, \
+                object_size = self.get_response_header(raw_request, \
                         'Content-Length').split("\n")[0].replace("\r", "")
+                if object_size is not None and len(object_size):
+                    request['objectSize'] = object_size
+                if request['objectSize'] is None or len(request['objectSize']) == 0:
+                    request['objectSize'] = str(request['bytesIn'])
+                if len(request['objectSize']):
+                    request['objectSize'] = int(re.search(r'\d+', request['objectSize']).group())
                 request['socket'] = -1
                 if 'response' in raw_request and 'connectionId' in raw_request['response']:
                     request['socket'] = raw_request['response']['connectionId']
@@ -553,6 +560,7 @@ class DevToolsParser(object):
                    'priority': 'priority',
                    'protocol': 'protocol',
                    'socket': 'socket',
+                   'socket_group': 'socket_group',
                    'stream_id': 'http2_stream_id',
                    'parent_stream_id': 'http2_stream_dependency',
                    'weight': 'http2_stream_weight',
@@ -586,6 +594,15 @@ class DevToolsParser(object):
                                                                entry['start']))
                             if 'pushed' in entry and entry['pushed']:
                                 request['was_pushed'] = 1
+                            if 'server_address' in entry:
+                                parts = entry['server_address'].rsplit(':', 1)
+                                if len(parts) == 2:
+                                    request['ip_addr'] = parts[0]
+                                    request['server_port'] = parts[1]
+                            if 'client_address' in entry:
+                                parts = entry['client_address'].rsplit(':', 1)
+                                if len(parts) == 2:
+                                    request['client_port'] = parts[1]
                             break
             # Add any requests we didn't know about
             index = 0

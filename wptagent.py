@@ -3,13 +3,17 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """WebPageTest cross-platform agent"""
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import atexit
 import logging
+import logging.handlers
 import os
 import platform
+import Queue
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 
@@ -42,6 +46,10 @@ class WPTAgent(object):
         start_time = monotonic.monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
+        message_server = None
+        if not self.options.android:
+            message_server = MessageServer()
+            message_server.start()
         while not self.must_exit:
             try:
                 if os.path.isfile(exit_file):
@@ -51,9 +59,14 @@ class WPTAgent(object):
                         pass
                     self.must_exit = True
                     break
+                if message_server is not None and self.options.exit > 0 and \
+                        not message_server.is_ok():
+                    logging.error("Message server not responding, exiting")
+                    break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
+                        self.job['message_server'] = message_server
                         self.job['capture_display'] = self.capture_display
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
@@ -76,7 +89,7 @@ class WPTAgent(object):
                                     msg = err.__str__()
                                 self.task['error'] = 'Unhandled exception running test: '\
                                     '{0}'.format(msg)
-                                logging.critical("Unhandled exception running test: %s", msg)
+                                logging.exception("Unhandled exception running test: %s", msg)
                                 traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
@@ -92,7 +105,7 @@ class WPTAgent(object):
                 if self.task is not None:
                     self.task['error'] = 'Unhandled exception preparing test: '\
                         '{0}'.format(msg)
-                logging.critical("Unhandled exception: %s", msg)
+                logging.exception("Unhandled exception: %s", msg)
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
                     browser.on_stop_recording(None)
@@ -121,7 +134,7 @@ class WPTAgent(object):
                         msg = err.__str__()
                     self.task['error'] = 'Unhandled exception in test run: '\
                         '{0}'.format(msg)
-                    logging.critical("Unhandled exception in test run: %s", msg)
+                    logging.exception("Unhandled exception in test run: %s", msg)
                     traceback.print_exc(file=sys.stdout)
             else:
                 self.task['error'] = "Error configuring traffic-shaping"
@@ -227,12 +240,6 @@ class WPTAgent(object):
             ret = False
 
         try:
-            import ujson as _
-        except ImportError:
-            print "Missing ujson parser. Please run 'pip install ujson'"
-            ret = False
-
-        try:
             subprocess.check_output(['python', '--version'])
         except Exception:
             print "Make sure python 2.7 is available in the path."
@@ -256,7 +263,7 @@ class WPTAgent(object):
         if platform.system() == "Linux" and not self.options.android and \
                 'DISPLAY' not in os.environ:
             self.options.xvfb = True
-        
+
         if self.options.xvfb:
             try:
                 from xvfbwrapper import Xvfb
@@ -268,6 +275,8 @@ class WPTAgent(object):
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
             self.capture_display = os.environ['DISPLAY']
+        elif platform.system() == "Windows":
+            self.capture_display = 'desktop'
 
         if self.options.throttle:
             try:
@@ -299,6 +308,167 @@ class WPTAgent(object):
         return ret
 
 
+class HandleMessage(BaseHTTPRequestHandler):
+    """Handle a single message from the extension"""
+    protocol_version = 'HTTP/1.1'
+
+    def __init__(self, server, *args):
+        self.message_server = server
+        try:
+            BaseHTTPRequestHandler.__init__(self, *args)
+            self.timeout = 10
+        except Exception:
+            pass
+
+    def setup(self):
+        BaseHTTPRequestHandler.setup(self)
+        self.request.settimeout(60)
+
+    def handle(self):
+        try:
+            BaseHTTPRequestHandler.handle(self)
+        except Exception:
+            pass
+
+    def log_message(self, _, *args):
+        return
+
+    def _set_headers(self):
+        """Basic response headers"""
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-length", '0')
+            self.end_headers()
+        except Exception:
+            pass
+
+    # pylint: disable=C0103
+    def do_GET(self):
+        """HTTP GET"""
+        if self.path == '/ping':
+            response = 'pong'
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.send_header("Content-length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+        else:
+            self._set_headers()
+
+    def do_HEAD(self):
+        """HTTP HEAD"""
+        self._set_headers()
+
+    def do_POST(self):
+        """HTTP POST"""
+        import ujson as json
+        try:
+            content_len = int(self.headers.getheader('content-length', 0))
+            messages = None
+            if content_len > 0:
+                self.rfile._sock.settimeout(10)
+                messages = self.rfile.read(content_len)
+            self._set_headers()
+            if messages is not None:
+                for line in messages.splitlines():
+                    line = line.strip()
+                    if len(line):
+                        message = json.loads(line)
+                        if 'body' not in message:
+                            message['body'] = None
+                        self.message_server.handle_message(message)
+        except Exception:
+            pass
+    # pylint: enable=C0103
+
+def handler_template(server):
+    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
+    return lambda *args: HandleMessage(server, *args)
+
+class MessageServer(object):
+    """Local HTTP server for interacting with the extension"""
+    def __init__(self):
+        self.server = None
+        self.must_exit = False
+        self.thread = None
+        self.messages = Queue.Queue()
+        self.__is_started = threading.Event()
+
+    def get_message(self, timeout):
+        """Get a single message from the queue"""
+        message = self.messages.get(block=True, timeout=timeout)
+        self.messages.task_done()
+        return message
+
+    def flush_messages(self):
+        """Flush all of the pending messages"""
+        try:
+            while True:
+                self.messages.get_nowait()
+                self.messages.task_done()
+        except Exception:
+            pass
+
+    def handle_message(self, message):
+        """Add a received message to the queue"""
+        self.messages.put(message)
+
+    def start(self):
+        """Start running the server in a background thread"""
+        self.__is_started.clear()
+        self.thread = threading.Thread(target=self.run)
+        self.thread.daemon = True
+        self.thread.start()
+        self.__is_started.wait(timeout=30)
+
+    def stop(self):
+        """Stop running the server"""
+        logging.debug("Shutting down extension server")
+        self.must_exit = True
+        if self.server is not None:
+            try:
+                self.server.shutdown()
+            except Exception:
+                logging.exception("Exception stopping extension server")
+        self.thread = None
+        logging.debug("Extension server stopped")
+
+    def is_ok(self):
+        """Check that the server is responding and restart it if necessary"""
+        import requests
+        import monotonic
+        end_time = monotonic.monotonic() + 30
+        server_ok = False
+        while not server_ok and monotonic.monotonic() < end_time:
+            try:
+                response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
+                if response.text == 'pong':
+                    server_ok = True
+            except Exception:
+                pass
+            if not server_ok:
+                time.sleep(5)
+        return server_ok
+
+    def run(self):
+        """Main server loop"""
+        handler = handler_template(self)
+        logging.debug('Starting extension server on port 8888')
+        try:
+            self.server = HTTPServer(('127.0.0.1', 8888), handler)
+            self.server.timeout = 10
+            self.__is_started.set()
+            self.server.serve_forever()
+        except Exception:
+            logging.exception("Message server main loop exception")
+            self.__is_started.set()
+        if self.server is not None:
+            try:
+                self.server.socket.close()
+            except Exception:
+                pass
+
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
     import ConfigParser
@@ -314,6 +484,13 @@ def parse_ini(ini):
         if not ret:
             ret = None
     return ret
+
+def getWindowsBuild():
+    """Get the current Windows build number from the registry"""
+    key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+    val = 'CurrentBuild'
+    output = os.popen('REG QUERY "{0}" /V "{1}"'.format(key, val)).read()
+    return int(output.strip().split(' ')[-1])
 
 def find_browsers():
     """Find the various known-browsers in case they are not explicitly configured"""
@@ -355,6 +532,32 @@ def find_browsers():
             firefox_path = os.path.join(program_files_x86, 'Nightly', 'firefox.exe')
             if os.path.isfile(firefox_path):
                 browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
+        # Microsoft Edge
+        edge = None
+        build = getWindowsBuild()
+        if build >= 10240:
+            edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                    'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
+            if not os.path.isfile(edge_exe):
+                if build >= 15000:
+                    edge_version = 15
+                elif build >= 14000:
+                    edge_version = 14
+                elif build >= 10586:
+                    edge_version = 13
+                else:
+                    edge_version = 12
+                edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                        'support', 'edge', str(edge_version),
+                                        'MicrosoftWebDriver.exe')
+            if os.path.isfile(edge_exe):
+                edge = {'exe': edge_exe}
+        if edge is not None:
+            edge['type'] = 'Edge'
+            if 'Microsoft Edge' not in browsers:
+                browsers['Microsoft Edge'] = dict(edge)
+            if 'Edge' not in browsers:
+                browsers['Edge'] = dict(edge)
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
@@ -413,6 +616,8 @@ def main():
                         help="Load config settings from GCE user data.")
     parser.add_argument('--alive',
                         help="Watchdog file to update when successfully connected.")
+    parser.add_argument('--log',
+                        help="Log critical errors to the given file.")
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -499,6 +704,12 @@ def main():
     logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
                         datefmt="%H:%M:%S")
 
+    if options.log:
+        err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
+                                                       backupCount=5, delay=True)
+        err_log.setLevel(logging.ERROR)
+        logging.getLogger().addHandler(err_log)
+
     browsers = None
     if not options.android:
         browsers = find_browsers()
@@ -512,7 +723,6 @@ def main():
         print "Running agent, hit Ctrl+C to exit"
         agent.run_testing()
         print "Done"
-
 
 if __name__ == '__main__':
     main()

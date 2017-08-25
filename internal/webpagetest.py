@@ -28,6 +28,7 @@ class WebPageTest(object):
         self.first_failure = None
         self.session = requests.Session()
         self.options = options
+        self.fps = options.fps
         self.test_run_count = 0
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
                                                datefmt="%H:%M:%S")
@@ -216,6 +217,10 @@ class WebPageTest(object):
                         self.validate_server_certificate = True
                     elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
+                    elif key == 'wpt_fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
+                    elif key == 'fps':
+                        self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
                 pass
 
@@ -269,10 +274,11 @@ class WebPageTest(object):
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
+                    job['agent_version'] = self.version if self.version is not None else 1
                     if 'iq' not in job:
                         job['iq'] = DEFAULT_JPEG_QUALITY
-                    if 'pngss' not in job:
-                        job['pngss'] = 0
+                    if 'pngScreenShot' not in job:
+                        job['pngScreenShot'] = 0
                     if 'fvonly' not in job:
                         job['fvonly'] = 0
                     if 'width' not in job:
@@ -293,6 +299,8 @@ class WebPageTest(object):
                         job['type'] = ''
                     if job['type'] == 'traceroute':
                         job['fvonly'] = 1
+                    if 'fps' not in job:
+                        job['fps'] = self.fps
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
@@ -367,10 +375,12 @@ class WebPageTest(object):
                         'profile': profile_dir,
                         'error': None,
                         'log_data': True,
+                        'need_orange': False,
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],
-                        'page_data': {}}
+                        'page_data': {},
+                        'navigated': False}
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
@@ -403,6 +413,11 @@ class WebPageTest(object):
                         logging.getLogger().addHandler(self.log_handler)
                     except Exception:
                         pass
+                if 'AppendUA' in job:
+                    task['AppendUA'] = job['AppendUA'].replace('%TESTID%', test_id)\
+                                                      .replace('%RUN%', str(run))\
+                                                      .replace('%CACHED%', str(task['cached']))\
+                                                      .replace('%VERSION%', self.version)
                 task['block'] = []
                 if 'block' in job:
                     block_list = job['block'].split()
@@ -410,6 +425,14 @@ class WebPageTest(object):
                         block = block.strip()
                         if len(block):
                             task['block'].append(block)
+                if 'blockDomains' in job:
+                    if 'host_rules' not in task:
+                        task['host_rules'] = []
+                    domains = re.split(', ', job['blockDomains'])
+                    for domain in domains:
+                        domain = domain.strip()
+                        if len(domain) and domain.find('"') == -1:
+                            task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
@@ -422,6 +445,7 @@ class WebPageTest(object):
                         task['height'] = job['height'] + 120
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
+                task['run_start_time'] = monotonic.monotonic()
                 self.test_run_count += 1
         if task is None and os.path.isdir(self.workdir):
             try:
@@ -457,16 +481,27 @@ class WebPageTest(object):
                     if command == 'navigate':
                         if target is not None and target[:4] != 'http':
                             target = 'http://' + target
+                        job['url'] = target
                         record = True
+                    elif command == 'addheader' or command == 'setheader':
+                        if target is not None and len(target):
+                            separator = target.find(':')
+                            if separator > 0:
+                                name = target[:separator].strip()
+                                value = target[separator + 1:].strip()
+                                if 'headers' not in task:
+                                    task['headers'] = {}
+                                task['headers'][name] = value
                     # commands that get pre-processed
                     elif command == 'setbrowsersize' or command == 'setviewportsize':
                         keep = False
                         if target is not None and value is not None:
                             width = int(re.search(r'\d+', str(target)).group())
                             height = int(re.search(r'\d+', str(value)).group())
+                            dpr = float(job['dpr']) if 'dpr' in job else 1.0
                             if width > 0 and height > 0 and width < 10000 and height < 10000:
-                                job['width'] = width
-                                job['height'] = height
+                                job['width'] = int(float(width) / dpr)
+                                job['height'] = int(float(height) / dpr)
                     elif command == 'setdevicescalefactor' and target is not None:
                         keep = False
                         job['dpr'] = target
@@ -481,7 +516,7 @@ class WebPageTest(object):
                         if target is not None:
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
-                            domains = target.split()
+                            domains = re.split(', ', target)
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
@@ -512,17 +547,6 @@ class WebPageTest(object):
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
-
-                    elif command == 'addheader' or command == 'setheader':
-                        keep = False
-                        if target is not None:
-                            if 'headers' not in job:
-                                job['headers'] = {}
-                            separator = target.find(':')
-                            if separator > 0:
-                                name = target[:separator].strip()
-                                value = target[separator + 1:].strip()
-                                job['headers'][name] = value
                     # Commands that get translated into exec commands
                     elif command in ['click', 'selectvalue', 'sendclick', 'setinnerhtml',
                                      'setinnertext', 'setvalue', 'submitform']:
@@ -599,19 +623,8 @@ class WebPageTest(object):
                 os.remove(task['debug_log'])
             except Exception:
                 pass
-        # Write out the accumulated page_data
-        if task['page_data']:
-            if 'browser' in self.job:
-                task['page_data']['browser_name'] = self.job['browser']
-            if 'fullyLoadedCPUpct' in task['page_data']:
-                cpu_pct = task['page_data']['fullyLoadedCPUpct']
-            if 'step_name' in task:
-                task['page_data']['eventName'] = task['step_name']
-            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
-            json_page_data = json.dumps(task['page_data'])
-            logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
-                outfile.write(json_page_data)
+        if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
+            cpu_pct = task['page_data']['fullyLoadedCPUpct']
         data = {'id': task['id'],
                 'location': self.location,
                 'run': str(task['run']),
@@ -627,7 +640,7 @@ class WebPageTest(object):
         zip_path = None
         if os.path.isdir(task['dir']):
             # upload any video images
-            if len(task['video_directories']):
+            if bool(self.job['video']) and len(task['video_directories']):
                 for video_subdirectory in task['video_directories']:
                     video_dir = os.path.join(task['dir'], video_subdirectory)
                     if os.path.isdir(video_dir):
@@ -703,7 +716,6 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path, filename):
         """Send a multi-part post"""
-        import requests
         ret = True
         # pass the data fields as query params and any files as post data
         url += "?"
@@ -718,13 +730,7 @@ class WebPageTest(object):
                                   timeout=300,)
             else:
                 self.session.post(url)
-        except requests.exceptions.RequestException as err:
-            logging.critical("Upload: %s", err.strerror)
-            ret = False
-        except IOError as err:
-            logging.error("Upload Error: %s", err.strerror)
-            ret = False
         except Exception:
-            logging.error("Upload Exception")
+            logging.exception("Upload Exception")
             ret = False
         return ret

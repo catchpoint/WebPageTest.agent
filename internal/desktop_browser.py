@@ -8,11 +8,30 @@ import os
 import platform
 import Queue
 import shutil
+import signal
 import subprocess
 import threading
 import time
 import monotonic
 import ujson as json
+
+SET_ORANGE = "(function() {" \
+             "var wptDiv = document.createElement('div');" \
+             "wptDiv.id = 'wptorange';" \
+             "wptDiv.style.position = 'absolute';" \
+             "wptDiv.style.top = '0';" \
+             "wptDiv.style.left = '0';" \
+             "wptDiv.style.right = '0';" \
+             "wptDiv.style.bottom = '0';" \
+             "wptDiv.style.zIndex = '2147483647';" \
+             "wptDiv.style.backgroundColor = '#DE640D';" \
+             "document.body.appendChild(wptDiv);" \
+             "})();"
+
+REMOVE_ORANGE = "(function() {" \
+                "var wptDiv = document.getElementById('wptorange');" \
+                "wptDiv.parentNode.removeChild(wptDiv);" \
+                "})();"
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
@@ -164,9 +183,12 @@ class DesktopBrowser(object):
                 else:
                     break
 
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        return None
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        self.start_cpu_throttling()
         import psutil
         if task['log_data']:
             self.cpu_start = psutil.cpu_times()
@@ -191,26 +213,46 @@ class DesktopBrowser(object):
 
             # Start video capture
             if self.job['capture_display'] is not None:
+                if task['navigated'] or task['need_orange']:
+                    self.execute_js(SET_ORANGE)
+                    time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-                args = ['ffmpeg', '-f', 'x11grab', '-video_size',
+                grab = 'gdigrab' if platform.system() == 'Windows' else 'x11grab'
+                args = ['ffmpeg', '-f', grab, '-video_size',
                         '{0:d}x{1:d}'.format(task['width'], task['height']),
-                        '-framerate', str(self.options.fps),
+                        '-framerate', str(self.job['fps']),
                         '-draw_mouse', '0', '-i', self.job['capture_display'],
                         '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                         task['video_file']]
                 logging.debug(' '.join(args))
                 try:
-                    self.ffmpeg = subprocess.Popen(args)
+                    if platform.system() == 'Windows':
+                        self.ffmpeg = subprocess.Popen(args, \
+                            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                    else:
+                        self.ffmpeg = subprocess.Popen(args)
+                    # Wait up to 5 seconds for something to be captured
+                    end_time = monotonic.monotonic() + 5
+                    started = False
+                    while not started and monotonic.monotonic() < end_time:
+                        if os.path.isfile(task['video_file']):
+                            video_size = os.path.getsize(task['video_file'])
+                            logging.debug("Video file size: %d", video_size)
+                            if video_size > 10000:
+                                started = True
+                        if not started:
+                            time.sleep(0.1)
                 except Exception:
                     pass
-                if task['current_step'] == 1:
-                    time.sleep(0.2)
+                if task['navigated'] or task['need_orange']:
+                    self.execute_js(REMOVE_ORANGE)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()
+        self.start_cpu_throttling()
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -254,7 +296,10 @@ class DesktopBrowser(object):
             wait_for_all('tcpdump')
         if self.ffmpeg is not None:
             logging.debug('Stopping video capture')
-            self.ffmpeg.terminate()
+            if platform.system() == 'Windows':
+                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+            else:
+                self.ffmpeg.terminate()
             self.ffmpeg.communicate()
             self.ffmpeg = None
         # kick off the video processing (async)
@@ -271,16 +316,16 @@ class DesktopBrowser(object):
             visualmetrics = os.path.join(support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
                     '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                    '--maxframes', '50', '--histogram', histograms]
-            if task['current_step'] == 1:
-                args.extend(['--viewport', '--orange', '--forceblank'])
+                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+            if not task['navigated']:
+                args.append('--forceblank')
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args)
 
-    def on_start_processing(self, _task):
+    def on_start_processing(self, task):
         """Start any processing of the captured data"""
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
@@ -314,6 +359,23 @@ class DesktopBrowser(object):
             self.pcap_thread.join()
             self.pcap_thread = None
         self.pcap_file = None
+
+    def step_complete(self, task):
+        """All of the processing for the current test step is complete"""
+        # Write out the accumulated page_data
+        if task['log_data'] and task['page_data']:
+            if 'browser' in self.job:
+                task['page_data']['browser_name'] = self.job['browser']
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            if 'run_start_time' in task:
+                task['page_data']['test_run_time_ms'] = \
+                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json_page_data)
 
     def process_pcap(self):
         """Process the pcap in a background thread"""

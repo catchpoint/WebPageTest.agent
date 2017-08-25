@@ -9,7 +9,27 @@ import os
 import shutil
 import subprocess
 import time
+import monotonic
 import ujson as json
+
+SET_ORANGE = "(function() {" \
+             "var wptDiv = document.createElement('div');" \
+             "wptDiv.id = 'wptorange';" \
+             "wptDiv.style.position = 'absolute';" \
+             "wptDiv.style.top = '0';" \
+             "wptDiv.style.left = '0';" \
+             "wptDiv.style.right = '0';" \
+             "wptDiv.style.bottom = '0';" \
+             "wptDiv.style.zIndex = '2147483647';" \
+             "wptDiv.style.backgroundColor = '#DE640D';" \
+             "document.body.appendChild(wptDiv);" \
+             "})();"
+
+REMOVE_ORANGE = "(function() {" \
+                "var wptDiv = document.getElementById('wptorange');" \
+                "wptDiv.parentNode.removeChild(wptDiv);" \
+                "})();"
+
 
 class AndroidBrowser(object):
     """Android Browser base"""
@@ -99,6 +119,10 @@ class AndroidBrowser(object):
                 package = all_browsers[name]['package']
                 self.adb.shell(['am', 'force-stop', package])
 
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        return None
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
@@ -111,9 +135,14 @@ class AndroidBrowser(object):
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled:
+                if task['navigated']:
+                    self.execute_js(SET_ORANGE)
+                    time.sleep(0.5)
                 self.adb.start_screenrecord()
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(0.5)
+            if self.video_enabled and task['navigated']:
+                self.execute_js(REMOVE_ORANGE)
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
@@ -197,3 +226,20 @@ class AndroidBrowser(object):
                         os.remove(self.tcpdump_file)
             except Exception:
                 pass
+
+    def step_complete(self, task):
+        """All of the processing for the current test step is complete"""
+        # Write out the accumulated page_data
+        if task['log_data'] and task['page_data']:
+            if 'browser' in self.job:
+                task['page_data']['browser_name'] = self.job['browser']
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            if 'run_start_time' in task:
+                task['page_data']['test_run_time_ms'] = \
+                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json_page_data)

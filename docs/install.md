@@ -19,7 +19,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
 * Xvfb (Linux only)
 * cgroup-tools (Linux only if mobile CPU emulation is desired)
 * Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
+    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
 * Chrome Browser
     * Linux stable and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
@@ -32,13 +32,17 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
         * ```sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa```
         * ```sudo apt-get update```
         * ```sudo apt-get install -y firefox firefox-trunk```
+        * ```sudo dbus-uuidgen --ensure```
 
 ## OS Tweaks
 ### Linux
+* There are time when the default file handle limits are too small (particularly when testing Firefox).  Upping the limits in /etc/security/limits.conf (at the end of the file) can help:
+    * ```* soft nofile 250000```
+    * ```* hard nofile 300000```
 * By default Linux will take 1-2 minutes to time out on socket connections.  You can lower it to 20 seconds to fail faster (and match windows) by configuring the retries in /etc/sysctl.conf:
     * ```net.ipv4.tcp_syn_retries = 4```
 
-## For lighthouse testing (coming soon)
+## For lighthouse testing
 * NodeJS 7.x
     * Ubuntu/Debian:
         * ```curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -```

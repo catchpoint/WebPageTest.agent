@@ -1,18 +1,16 @@
 # Copyright 2017 Google Inc. All rights reserved.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
-"""Base class support for webdriver browsers"""
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+"""Support for Firefox"""
 from datetime import datetime, timedelta
 import glob
 import gzip
 import logging
 import os
-import Queue
+import platform
 import re
 import shutil
 import subprocess
-import threading
 import time
 import urlparse
 import monotonic
@@ -59,7 +57,6 @@ class Firefox(DesktopBrowser):
         self.marionette = None
         self.addons = None
         self.extension_id = None
-        self.extension = None
         self.nav_error = None
         self.page_loaded = None
         self.recording = False
@@ -69,6 +66,7 @@ class Firefox(DesktopBrowser):
         self.page = {}
         self.requests = {}
         self.last_activity = monotonic.monotonic()
+        self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -92,9 +90,9 @@ class Firefox(DesktopBrowser):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        if self.job['message_server'] is not None:
+            self.job['message_server'].flush_messages()
         self.connected = False
-        self.extension = MessageServer()
-        self.extension.start()
         from marionette_driver.marionette import Marionette
         from marionette_driver.addons import Addons
         args = ['-profile', '"{0}"'.format(task['profile']),
@@ -107,34 +105,45 @@ class Firefox(DesktopBrowser):
             command_line = self.path
         command_line += ' ' + ' '.join(args)
         DesktopBrowser.launch_browser(self, command_line)
-        self.marionette = Marionette('localhost', port=2828)
-        self.marionette.start_session(timeout=self.task['time_limit'])
-        logging.debug('Installing extension')
-        self.addons = Addons(self.marionette)
-        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      'support', 'Firefox', 'extension')
-        self.extension_id = self.addons.install(extension_path, temp=True)
-        logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
-        self.marionette.set_window_position(x=0, y=0)
-        self.marionette.set_window_size(height=task['height'], width=task['width'])
-        self.marionette.navigate(START_PAGE)
-        time.sleep(0.5)
-        self.wait_for_extension()
-        if self.connected:
-            DesktopBrowser.wait_for_idle(self)
+        try:
+            self.marionette = Marionette('localhost', port=2828)
+            self.marionette.start_session(timeout=self.task['time_limit'])
+            logging.debug('Installing extension')
+            self.addons = Addons(self.marionette)
+            extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                          'support', 'Firefox', 'extension')
+            self.extension_id = self.addons.install(extension_path, temp=True)
+            logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
+            self.marionette.set_window_position(x=0, y=0)
+            self.marionette.set_window_size(height=task['height'], width=task['width'])
+            self.marionette.navigate(START_PAGE)
+            time.sleep(0.5)
+            self.wait_for_extension()
+            if self.connected:
+                DesktopBrowser.wait_for_idle(self)
+        except Exception as err:
+            task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
 
     def stop(self, job, task):
         """Kill the browser"""
         if self.extension_id is not None and self.addons is not None:
-            self.addons.uninstall(self.extension_id)
+            try:
+                self.addons.uninstall(self.extension_id)
+            except Exception:
+                pass
             self.extension_id = None
             self.addons = None
         if self.marionette is not None:
-            self.marionette.close()
+            try:
+                self.marionette.close()
+            except Exception:
+                pass
             self.marionette = None
         DesktopBrowser.stop(self, job, task)
-        self.extension.stop()
-        self.extension = None
+        # Make SURE the firefox processes are gone
+        if platform.system() == "Linux":
+            subprocess.call(['killall', '-9', 'firefox'])
+            subprocess.call(['killall', '-9', 'firefox-trunk'])
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
         # delete the raw log files
@@ -164,7 +173,7 @@ class Firefox(DesktopBrowser):
                 try:
                     self.process_command(command)
                 except Exception:
-                    pass
+                    logging.exception("Exception running task")
                 if command['record']:
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
@@ -172,22 +181,27 @@ class Firefox(DesktopBrowser):
                         recording = False
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
+                        self.step_complete(task)
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
+                    task['navigated'] = True
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            self.marionette.navigate('about:blank')
+            try:
+                self.marionette.navigate('about:blank')
+            except Exception:
+                logging.debug('Marionette exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
-        if self.extension is not None:
+        if self.job['message_server'] is not None:
             end_time = monotonic.monotonic()  + 30
             while monotonic.monotonic() < end_time:
                 try:
-                    self.extension.get_message(1)
+                    self.job['message_server'].get_message(1)
                     logging.debug('Extension started')
                     self.connected = True
                     break
@@ -196,13 +210,13 @@ class Firefox(DesktopBrowser):
 
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
-        if self.extension is not None and self.connected:
+        if self.job['message_server'] is not None and self.connected:
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             while not done:
                 try:
-                    self.process_message(self.extension.get_message(1))
+                    self.process_message(self.job['message_server'].get_message(1))
                 except Exception:
                     pass
                 now = monotonic.monotonic()
@@ -223,6 +237,62 @@ class Firefox(DesktopBrowser):
                         done = True
                     elif self.task['error'] is not None:
                         done = True
+
+    def execute_js(self, script):
+        """Run javascipt (stub for overriding"""
+        ret = None
+        if self.marionette is not None:
+            try:
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            except Exception:
+                pass
+        return ret
+
+    def run_js_file(self, file_name):
+        """Execute one of our js scripts"""
+        ret = None
+        script = None
+        script_file_path = os.path.join(self.script_dir, file_name)
+        if os.path.isfile(script_file_path):
+            with open(script_file_path, 'rb') as script_file:
+                script = script_file.read()
+        if script is not None:
+            try:
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+            except Exception:
+                pass
+            if ret is not None:
+                logging.debug(ret)
+        return ret
+
+    def collect_browser_metrics(self, task):
+        """Collect all of the in-page browser metrics that we need"""
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
+        if 'customMetrics' in self.job:
+            custom_metrics = {}
+            for name in self.job['customMetrics']:
+                logging.debug("Collecting custom metric %s", name)
+                script = 'var wptCustomMetric = function() {' +\
+                         self.job['customMetrics'][name] +\
+                         '};try{return wptCustomMetric();}catch(e){};'
+                try:
+                    custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+                    if custom_metrics[name] is not None:
+                        logging.debug(custom_metrics[name])
+                except Exception:
+                    pass
+            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json.dumps(custom_metrics))
 
     def process_message(self, message):
         """Process a message from the extension"""
@@ -339,6 +409,7 @@ class Firefox(DesktopBrowser):
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {}
+        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -376,12 +447,14 @@ class Firefox(DesktopBrowser):
         self.recording = False
         DesktopBrowser.on_stop_recording(self, task)
         if self.connected:
-            if self.job['pngss']:
+            if self.job['pngScreenShot']:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
                 self.grab_screenshot(screen_shot, png=True)
             else:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 self.grab_screenshot(screen_shot, png=False, resize=600)
+        # Collect end of test data from the browser
+        self.collect_browser_metrics(task)
         # Copy the log files
         if self.moz_log is not None:
             task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
@@ -459,7 +532,7 @@ class Firefox(DesktopBrowser):
         if command['command'] == 'navigate':
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
-            self.marionette.execute_js_script(script)
+            self.marionette.execute_script(script)
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
             if int(re.search(r'\d+', str(command['target'])).group()):
@@ -474,7 +547,7 @@ class Firefox(DesktopBrowser):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
-            self.marionette.execute_js_script(command['target'])
+            self.marionette.execute_script(command['target'])
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
@@ -485,8 +558,8 @@ class Firefox(DesktopBrowser):
                                                            str(command['target'])).group()) == 0)
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
-                self.task['activity_time'] = \
-                    max(0, min(30, int(re.search(r'\d+', str(command['target'])).group())))
+                milliseconds = int(re.search(r'\d+', str(command['target'])).group())
+                self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
@@ -506,35 +579,41 @@ class Firefox(DesktopBrowser):
     def navigate(self, url):
         """Navigate to the given URL"""
         if self.marionette is not None:
-            self.marionette.navigate(url)
+            try:
+                self.marionette.navigate(url)
+            except Exception as err:
+                logging.debug("Error navigating Firefox: %s", str(err))
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if self.marionette is not None:
-            data = self.marionette.screenshot(format='binary', full=False)
-            if data is not None:
-                resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
-                if png:
-                    with open(path, 'wb') as image_file:
-                        image_file.write(data)
-                    if len(resize_string):
-                        cmd = 'mogrify -format png -define png:color-type=2 '\
-                              '-depth 8 {0}"{1}"'.format(resize_string, path)
-                        logging.debug(cmd)
-                        subprocess.call(cmd, shell=True)
-                else:
-                    tmp_file = path + '.png'
-                    with open(tmp_file, 'wb') as image_file:
-                        image_file.write(data)
-                    command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
-                        tmp_file, resize_string, self.job['iq'], path)
-                    logging.debug(command)
-                    subprocess.call(command, shell=True)
-                    if os.path.isfile(tmp_file):
-                        try:
-                            os.remove(tmp_file)
-                        except Exception:
-                            pass
+            try:
+                data = self.marionette.screenshot(format='binary', full=False)
+                if data is not None:
+                    resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
+                    if png:
+                        with open(path, 'wb') as image_file:
+                            image_file.write(data)
+                        if len(resize_string):
+                            cmd = 'mogrify -format png -define png:color-type=2 '\
+                                '-depth 8 {0}"{1}"'.format(resize_string, path)
+                            logging.debug(cmd)
+                            subprocess.call(cmd, shell=True)
+                    else:
+                        tmp_file = path + '.png'
+                        with open(tmp_file, 'wb') as image_file:
+                            image_file.write(data)
+                        command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                            tmp_file, resize_string, self.job['iq'], path)
+                        logging.debug(command)
+                        subprocess.call(command, shell=True)
+                        if os.path.isfile(tmp_file):
+                            try:
+                                os.remove(tmp_file)
+                            except Exception:
+                                pass
+            except Exception as err:
+                logging.debug('Exception grabbing screen shot: %s', str(err))
 
     def process_requests(self, request_timings, task):
         """Convert all of the request and page events into the format needed for WPT"""
@@ -622,69 +701,85 @@ class Firefox(DesktopBrowser):
         requests = []
         # Start with the requests reported from the extension
         for req_id in self.requests:
-            req = self.requests[req_id]
-            if req['from_net'] and 'start' in req and 'url' in req:
-                request = self.get_empty_request(req['id'], req['url'])
-                if 'ip' in req:
-                    request['ip_addr'] = req['ip']
-                if 'method' in req:
-                    request['method'] = req['method']
-                if 'status' in req:
-                    request['responseCode'] = req['status']
-                if 'type' in req:
-                    request['requestType'] = req['type']
-                if 'request_headers' in req:
-                    for header in req['request_headers']:
-                        if 'name' in header and 'value' in header:
-                            header_text = '{0}: {1}'.format(header['name'], header['value'])
-                            request['bytesOut'] += len(header_text) + 2
-                            request['headers']['request'].append(header_text)
-                if 'status_line' in req:
-                    request['bytesIn'] += len(req['status_line']) + 2
-                    request['headers']['response'].append(req['status_line'])
-                if 'response_headers' in req:
-                    for header in req['response_headers']:
-                        if 'name' in header and 'value' in header:
-                            header_text = '{0}: {1}'.format(header['name'], header['value'])
-                            request['bytesIn'] += len(header_text) + 2
-                            request['headers']['response'].append(header_text)
-                if 'created' in req:
-                    request['created'] = req['created']
-                request['load_start'] = int(round(req['start'] * 1000.0))
-                if 'first_byte' in req:
-                    ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
-                    request['ttfb_ms'] = max(0, ttfb)
-                if 'end' in req:
-                    load_time = int(round((req['end'] - req['start']) * 1000.0))
-                    request['load_ms'] = max(0, load_time)
-                size = self.get_header_value(request['headers']['response'], 'Content-Length')
-                if len(size):
-                    request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
-                requests.append(request)
+            try:
+                req = self.requests[req_id]
+                if req['from_net'] and 'start' in req and 'url' in req:
+                    request = self.get_empty_request(req['id'], req['url'])
+                    if 'ip' in req:
+                        request['ip_addr'] = req['ip']
+                    if 'method' in req:
+                        request['method'] = req['method']
+                    if 'status' in req:
+                        request['responseCode'] = req['status']
+                    if 'type' in req:
+                        request['requestType'] = req['type']
+                    if 'request_headers' in req:
+                        for header in req['request_headers']:
+                            if 'name' in header and 'value' in header:
+                                header_text = '{0}: {1}'.format(header['name'], header['value'])
+                                request['bytesOut'] += len(header_text) + 2
+                                request['headers']['request'].append(header_text)
+                    if 'status_line' in req:
+                        request['bytesIn'] += len(req['status_line']) + 2
+                        request['headers']['response'].append(req['status_line'])
+                    if 'response_headers' in req:
+                        for header in req['response_headers']:
+                            if 'name' in header and 'value' in header:
+                                try:
+                                    header_text = '{0}: {1}'.format(header['name'], header['value'])
+                                    request['bytesIn'] += len(header_text) + 2
+                                    request['headers']['response'].append(header_text)
+                                except Exception:
+                                    pass
+                    if 'created' in req:
+                        request['created'] = req['created']
+                    request['load_start'] = int(round(req['start'] * 1000.0))
+                    if 'first_byte' in req:
+                        ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
+                        request['ttfb_ms'] = max(0, ttfb)
+                    if 'end' in req:
+                        load_time = int(round((req['end'] - req['start']) * 1000.0))
+                        request['load_ms'] = max(0, load_time)
+                    size = self.get_header_value(request['headers']['response'], 'Content-Length')
+                    if len(size):
+                        request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
+                    requests.append(request)
+            except Exception:
+                pass
         # Overwrite them with the same requests from the logs
         for request in requests:
             for req in request_timings:
-                if 'claimed' not in req and 'url' in req and 'full_url' in request \
-                        and 'start' in req and request['full_url'] == req['url']:
-                    req['claimed'] = True
-                    self.populate_request(request, req)
+                try:
+                    if 'claimed' not in req and 'url' in req and 'full_url' in request \
+                            and 'start' in req and request['full_url'] == req['url']:
+                        req['claimed'] = True
+                        self.populate_request(request, req)
+                except Exception:
+                    pass
         # Add any events from the logs that weren't reported by the extension
         for req in request_timings:
-            if 'claimed' not in req and 'url' in req and 'start' in req:
-                request = self.get_empty_request(req['id'], req['url'])
-                self.populate_request(request, req)
-                requests.append(request)
+            try:
+                if 'claimed' not in req and 'url' in req and 'start' in req:
+                    request = self.get_empty_request(req['id'], req['url'])
+                    self.populate_request(request, req)
+                    requests.append(request)
+            except Exception:
+                pass
         # parse values out of the headers
         for request in requests:
-            request['expires'] = self.get_header_value(request['headers']['response'], 'Expires')
-            request['cacheControl'] = self.get_header_value(request['headers']['response'],
-                                                            'Cache-Control')
-            request['contentType'] = self.get_header_value(request['headers']['response'],
-                                                           'Content-Type')
-            request['contentEncoding'] = self.get_header_value(request['headers']['response'],
-                                                               'Content-Encoding')
-            request['objectSize'] = self.get_header_value(request['headers']['response'],
-                                                          'Content-Length')
+            try:
+                request['expires'] = self.get_header_value(request['headers']['response'],
+                                                           'Expires')
+                request['cacheControl'] = self.get_header_value(request['headers']['response'],
+                                                                'Cache-Control')
+                request['contentType'] = self.get_header_value(request['headers']['response'],
+                                                               'Content-Type')
+                request['contentEncoding'] = self.get_header_value(request['headers']['response'],
+                                                                   'Content-Encoding')
+                request['objectSize'] = self.get_header_value(request['headers']['response'],
+                                                              'Content-Length')
+            except Exception:
+                pass
         requests.sort(key=lambda x: x['load_start'])
         return requests
 
@@ -786,103 +881,3 @@ class Firefox(DesktopBrowser):
             else:
                 page['result'] = 12999
         return page
-
-class HandleMessage(BaseHTTPRequestHandler):
-    """Handle a single message from the extension"""
-    protocol_version = 'HTTP/1.1'
-
-    def __init__(self, server, *args):
-        self.message_server = server
-        try:
-            BaseHTTPRequestHandler.__init__(self, *args)
-        except Exception:
-            pass
-
-    def log_message(self, format, *args):
-        return
-
-    def _set_headers(self):
-        """Basic response headers"""
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header("Content-length", 0)
-        self.end_headers()
-
-    # pylint: disable=C0103
-    def do_GET(self):
-        """HTTP GET"""
-        self._set_headers()
-
-    def do_HEAD(self):
-        """HTTP HEAD"""
-        self._set_headers()
-
-    def do_POST(self):
-        """HTTP POST"""
-        try:
-            content_len = int(self.headers.getheader('content-length', 0))
-            messages = self.rfile.read(content_len) if content_len > 0 else None
-            self._set_headers()
-            for line in messages.splitlines():
-                line = line.strip()
-                if len(line):
-                    message = json.loads(line)
-                    if 'body' not in message:
-                        message['body'] = None
-                    self.message_server.handle_message(message)
-        except Exception:
-            pass
-    # pylint: enable=C0103
-
-def handler_template(server):
-    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
-    return lambda *args: HandleMessage(server, *args)
-
-class MessageServer(object):
-    """Local HTTP server for interacting with the extension"""
-    def __init__(self):
-        self.server = None
-        self.must_exit = False
-        self.thread = None
-        self.messages = Queue.Queue()
-
-    def get_message(self, timeout):
-        """Get a single message from the queue"""
-        message = self.messages.get(block=True, timeout=timeout)
-        self.messages.task_done()
-        return message
-
-    def handle_message(self, message):
-        """Add a received message to the queue"""
-        self.messages.put(message)
-
-    def start(self):
-        """Start running the server in a background thread"""
-        self.thread = threading.Thread(target=self.run)
-        self.thread.start()
-
-    def stop(self):
-        """Stop running the server"""
-        logging.debug("Shutting down extension server")
-        self.must_exit = True
-        if self.server is not None:
-            try:
-                self.server.server_close()
-            except Exception:
-                pass
-        if self.thread is not None:
-            self.thread.join()
-        logging.debug("Extension server stopped")
-
-    def run(self):
-        """Main server loop"""
-        handler = handler_template(self)
-        logging.debug('Starting extension server on port 8888')
-        self.server = HTTPServer(('127.0.0.1', 8888), handler)
-        self.server.timeout = 0.5
-        try:
-            while not self.must_exit:
-                self.server.handle_request()
-        except Exception:
-            pass
-        self.server = None

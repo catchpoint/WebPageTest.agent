@@ -67,12 +67,15 @@ class OptimizationChecks(object):
             'BunnyCDN': ['.b-cdn.net'],
             'Cachefly': ['.cachefly.net'],
             'Caspowa': ['.caspowa.com'],
+            'Cedexis': ['.cedexis.net'],
             'CDN77': ['.cdn77.net',
                       '.cdn77.org'],
             'CDNetworks': ['.cdngc.net',
                            '.gccdn.net',
                            '.panthercdn.com'],
             'CDNsun': ['.cdnsun.net'],
+            'CDNvideo': ['.cdnvideo.ru',
+                         '.cdnvideo.net'],
             'ChinaCache': ['.ccgslb.com'],
             'ChinaNetCenter': ['.lxdns.com',
                                '.wscdns.com',
@@ -156,6 +159,7 @@ class OptimizationChecks(object):
                        'tbcdn.cn',
                        '.taobaocdn.com'],
             'Telenor': ['.cdntel.net'],
+            'TRBCDN': ['.trbcdn.net'],
             'Twitter': ['.twimg.com'],
             'UnicornCDN': ['.unicorncdn.net'],
             'VoxCDN': ['.voxcdn.net'],
@@ -180,7 +184,7 @@ class OptimizationChecks(object):
             'Edgecast': [{'Server': 'ECS'},
                          {'Server': 'ECAcc'},
                          {'Server': 'ECD'}],
-            'Fastly': [{'Via': '', 'X-Served-By': 'cache-', 'X-Cache': ''}],
+            'Fastly': [{'X-Served-By': 'cache-', 'X-Cache': ''}],
             'GoCache': [{'Server': 'gocache'}],
             'Google': [{'Server': 'sffe'},
                        {'Server': 'gws'},
@@ -452,23 +456,37 @@ class OptimizationChecks(object):
                 self.cdn_results[request_id] = check
         self.cdn_time = monotonic.monotonic() - start
 
+    def find_dns_cdn(self, domain, depth=0):
+        """Recursively check a CNAME chain"""
+        import dns.resolver
+        provider = self.check_cdn_name(domain)
+        logging.debug("Looking up %s", domain)
+        if provider is None:
+            try:
+                answers = dns.resolver.query(domain, 'CNAME')
+                if answers and len(answers):
+                    for rdata in answers:
+                        name = '.'.join(rdata.target).strip(' .')
+                        logging.debug("%s -> %s", domain, name)
+                        if name != domain:
+                            provider = self.check_cdn_name(name)
+                            if provider is None and depth < 10:
+                                provider = self.find_dns_cdn(name, depth + 1)
+                        if provider is not None:
+                            break
+            except Exception:
+                pass
+        return provider
+
     def dns_worker(self):
         """Handle the DNS CNAME lookups and checking in multiple threads"""
-        import dns.resolver
         try:
             while True:
                 domain = self.dns_lookup_queue.get_nowait()
-                try:
-                    answers = dns.resolver.query(domain, 'CNAME')
-                    if answers and len(answers):
-                        for rdata in answers:
-                            name = '.'.join(rdata.target).strip(' .')
-                            provider = self.check_cdn_name(name)
-                            if provider is not None:
-                                self.dns_result_queue.put({'domain': domain, 'provider': provider})
-                                break
-                except Exception:
-                    pass
+                provider = self.find_dns_cdn(domain)
+                if provider is not None:
+                    self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                self.dns_lookup_queue.task_done()
         except Exception:
             pass
 

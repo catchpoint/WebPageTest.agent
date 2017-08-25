@@ -4,6 +4,8 @@
 """Logic for controlling a desktop Chrome browser"""
 import gzip
 import os
+import platform
+import subprocess
 import shutil
 import time
 from .desktop_browser import DesktopBrowser
@@ -81,8 +83,6 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
-        # JUST for testing
-        args.append('--no-sandbox')
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
@@ -111,10 +111,17 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
+    def execute_js(self, script):
+        """Run javascipt"""
+        return DevtoolsBrowser.execute_js(self, script)
+
     def stop(self, job, task):
         if self.connected:
             DevtoolsBrowser.disconnect(self)
         DesktopBrowser.stop(self, job, task)
+        # Make SURE the chrome processes are gone
+        if platform.system() == "Linux":
+            subprocess.call(['killall', '-9', 'chrome'])
         netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
         if os.path.isfile(netlog_file):
             netlog_gzip = netlog_file + '.gz'

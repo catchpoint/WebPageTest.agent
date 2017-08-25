@@ -8,7 +8,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * Install docs are [here](docs/install.md)
 
 ## Command-line options
-### Server/location configuration
+### Basic agent config
 * **-v** : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
 * **--name** : Agent name (defaults to the machine's hostname).
 * **--exit** : Exit after the specified number of minutes.
@@ -16,6 +16,7 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
+* **--log** : Log critical errors to the given file.
 
 ### Video capture/display settings
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).
@@ -70,8 +71,9 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * blockDomains
     * blockDomainsExcept
     * setDns
-    * addHeader
-    * setHeader (aliased to addHeader until devtools supports overriding headers)
+    * setHeader
+    * addHeader (can not add multiple values for the same header, effectively the same as setHeader)
+    * resetHeaders
     * setCookie
     * setABM
     * click (clickAndWait)
@@ -85,6 +87,8 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
 ## Not yet supported (actively being worked on)
 * Browser installs/updates
 * Windows general cleanup/health (temp files, downloads, killing processes, etc)
+* Script Commands:
+    * firefoxPref
 
 ## Not Supported (no plans to implement)
 * Script Commands:
@@ -100,8 +104,6 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * minInterval
     * endInterval
     * expireCache
-    * firefoxPref
-    * resetHeaders
     * requiredRequest
     * setDOMRequest
     * waitForJSDone (change semantics to console log message)
@@ -109,5 +111,5 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * if/else/endif
 
 ## Run with docker
-Check out [the docker instructions](docs/install.md) for information on how to
+Check out [the docker instructions](docs/docker.md) for information on how to
 run the agent in a docker container.

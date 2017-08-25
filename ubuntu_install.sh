@@ -1,5 +1,6 @@
 #!/bin/bash
-sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb cgroup-tools software-properties-common python-software-properties
+sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools software-properties-common python-software-properties psmisc
+sudo dbus-uuidgen --ensure
 sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver
 curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -
 sudo apt-get install -y nodejs
@@ -10,4 +11,12 @@ sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /et
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
 sudo apt-get update
 sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk
-
+echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
+echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
+echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf
+echo '# wptagent end' | sudo tee -a /etc/security/limits.conf
+echo '# Settings updated for wptagent' | sudo tee -a /etc/sysctl.conf
+echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/sysctl.conf
+echo '# wptagent end' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+echo 'Reboot is recommended before starting testing'

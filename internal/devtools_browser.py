@@ -17,7 +17,6 @@ from .optimization_checks import OptimizationChecks
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 30
-    CURRENT_VERSION = 1
 
     def __init__(self, options, job, use_devtools_video=True):
         self.options = options
@@ -108,13 +107,17 @@ class DevtoolsBrowser(object):
             if 'uastring' in self.job:
                 ua_string = self.job['uastring']
             if ua_string is not None and ('keepua' not in self.job or not self.job['keepua']):
-                ua_string += ' PTST/{0:d}'.format(self.CURRENT_VERSION)
+                if 'AppendUA' in task:
+                    ua_string += ' ' + task['AppendUA']
+                else:
+                    ua_string += ' PTST/{0}'.format(self.job['agent_version'])
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
             # Disable js
             if self.job['noscript']:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
+            self.devtools.prepare_browser()
 
     def on_start_recording(self, task):
         """Start recording"""
@@ -127,7 +130,7 @@ class DevtoolsBrowser(object):
     def on_stop_recording(self, task):
         """Stop recording"""
         if self.devtools is not None:
-            if self.job['pngss']:
+            if self.job['pngScreenShot']:
                 screen_shot = os.path.join(task['dir'],
                                            task['prefix'] + '_screen.png')
                 self.devtools.grab_screenshot(screen_shot, png=True)
@@ -164,10 +167,12 @@ class DevtoolsBrowser(object):
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
+                        self.step_complete(task)
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
                             self.event_name = None
+                    task['navigated'] = True
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
             if task['error'] is None:
@@ -189,9 +194,17 @@ class DevtoolsBrowser(object):
         """Stub for override"""
         pass
 
+    def execute_js(self, script):
+        """Run javascipt"""
+        ret = None
+        if self.devtools is not None:
+            ret = self.devtools.execute_js(script)
+        return ret
+
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {}
+        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -294,8 +307,8 @@ class DevtoolsBrowser(object):
                                                              str(command['target'])).group()) == 0)
         elif command['command'] == 'setactivitytimeout':
             if 'target' in command:
-                self.task['activity_time'] = \
-                    max(0, min(30, int(re.search(r'\d+', str(command['target'])).group())))
+                milliseconds = int(re.search(r'\d+', str(command['target'])).group())
+                self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
@@ -312,6 +325,12 @@ class DevtoolsBrowser(object):
                     if len(name) and len(value) and len(url):
                         self.devtools.send_command('Network.setCookie',
                                                    {'url': url, 'name': name, 'value': value})
+        elif command['command'] == 'addheader':
+            self.devtools.set_header(command['target'])
+        elif command['command'] == 'setheader':
+            self.devtools.set_header(command['target'])
+        elif command['command'] == 'resetheaders':
+            self.devtools.reset_headers()
 
     def navigate(self, url):
         """Navigate to the given URL"""
