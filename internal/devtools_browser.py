@@ -365,6 +365,8 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.append('--disable-device-emulation')
+            if len(task['block']):
+                command.extend(['--blocked-url-patterns=%s' % url for url in task['block']])
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
