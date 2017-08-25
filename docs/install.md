@@ -1,5 +1,5 @@
 # Requirements
-wptagent currently supports Windows and Linux hosts (possibly OSX but not tested).  If traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux.
+wptagent currently supports Windows and Linux hosts (possibly OSX but not tested).  If traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux and OSX (NOPASSWD in visudo).
 
 ## Software Requirements
 * Python 2.7 available on the path (python2.7 and  python-pip packages on Ubuntu/Debian) with the following modules installed (all available through pip):
@@ -51,7 +51,7 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
     * ```sudo npm install -g lighthouse```
 
 ## Configuration
-The default browser locations for Chrome and Firefox (Stable, Beta and Canary/Nightly) will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
+The default browser locations for Chrome, Firefox (Stable, Beta and Canary/Nightly) and Microsoft Edge will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
 
 On Linux, make sure to point to the actual chrome binary and not the symlink.  Usually something like:
 ```

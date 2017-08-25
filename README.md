@@ -1,11 +1,43 @@
 # wptagent
-Cross-platform WebPageTest agent (currently supports Chrome only on Windows and Linux)
+Cross-platform WebPageTest agent
+
+## Supported Platforms/Browsers
+Chrome is the only browser that currently supports capturing response bodies and manipulating requests (changing headers, blocking requests, etc).  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
+
+### Linux (with display or headless with Xvfb)
+* Chrome (Stable and Unstable)
+* Firefox (Stable and Nightly)
+
+### Windows
+* Chrome (Stable and Canary)
+* Firefox (Stable and Nightly)
+* Microsoft Edge (does not support complex scripts or waiting for page activity yet, just top-level page navigations)
+
+### OSX
+* Chrome (Stable and Canary)
+* Firefox (Stable and Nightly)
+
+### Android (requires a tethered host - Raspberry Pi's preferred)
+* Chrome (Stable, Beta and Unstable)
+* Several browsers run as "black box" tests (single page load, visual metrics only):
+    * Chrome (Stable, Beta, Dev and Canary)
+    * Opera
+    * Opera Mini
+    * UC Browser
+    * UC Mini
+    * Samsung Browser
+    * Firefox (Stable and Beta)
 
 ## Known Issues
 * Not all features have been implemented yet (see list below)
+* Microsoft Edge does not (yet) support waiting beyond a page's onload event for network activity
 
 ## Installation
 * Install docs are [here](docs/install.md)
+
+## Run with docker
+Check out [the docker instructions](docs/docker.md) for information on how to
+run the agent in a docker container.
 
 ## Command-line options
 ### Basic agent config
@@ -110,6 +142,3 @@ Cross-platform WebPageTest agent (currently supports Chrome only on Windows and 
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
 
-## Run with docker
-Check out [the docker instructions](docs/docker.md) for information on how to
-run the agent in a docker container.
