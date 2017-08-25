@@ -44,6 +44,8 @@ class TrafficShaper(object):
                     self.shaper = Dummynet()
             elif plat == "Linux":
                 self.shaper = NetEm(options=options)
+            elif plat == "Darwin":
+                self.shaper = MacDummynet()
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -183,7 +185,7 @@ class Dummynet(object):
                self.ipfw(['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff']) and\
                self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \
-                          'noerror', 'mask', 'dst-port', '0xffff']) and\
+                          'noerror', 'mask', 'src-port', '0xffff']) and\
                self.ipfw(['add', 'queue', self.in_pipe, 'ip', 'from', 'any', 'to', 'any',
                           'in']) and\
                self.ipfw(['add', 'queue', self.out_pipe, 'ip', 'from', 'any', 'to', 'any',
@@ -241,6 +243,86 @@ class Dummynet(object):
                self.ipfw(out_command) and\
                self.ipfw(in_queue_command) and\
                self.ipfw(out_queue_command)
+
+#
+# MacDummynet - Dummynet through pfctl
+#
+class MacDummynet(Dummynet):
+    """Configure dummynet through pfctl and dnctl"""
+    def __init__(self):
+        self.interface = None
+        self.in_pipe = '1'
+        self.out_pipe = '2'
+        self.token = None
+
+    def pfctl(self, args):
+        """Run a single pfctl command"""
+        cmd = ['sudo', 'pfctl']
+        cmd.extend(args)
+        logging.debug(' '.join(cmd))
+        return subprocess.call(cmd) == 0
+
+    def dnctl(self, args):
+        """Run a single dummynet command"""
+        cmd = ['sudo', 'dnctl']
+        cmd.extend(args)
+        logging.debug(' '.join(cmd))
+        return subprocess.call(cmd) == 0
+
+    def install(self):
+        """Set up the pipes"""
+        rules_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                  "support", "osx", "pfctl.rules")
+        return self.pfctl(['-E']) and\
+               self.dnctl(['-q', 'flush']) and\
+               self.dnctl(['-q', 'pipe', 'flush']) and\
+               self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.pfctl(['-f', rules_file])
+               
+
+    def remove(self):
+        """clear the config"""
+        return self.dnctl(['-q', 'flush']) and\
+               self.dnctl(['-q', 'pipe', 'flush']) and\
+               self.pfctl(['-f', '/etc/pf.conf']) and\
+               self.pfctl(['-d'])
+
+    def reset(self):
+        """Disable traffic-shaping"""
+        return self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
+               self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror'])
+
+    def configure(self, in_bps, out_bps, rtt, plr):
+        """Enable traffic-shaping"""
+        # inbound connection
+        in_kbps = int(in_bps / 1000)
+        in_latency = rtt / 2
+        if rtt % 2:
+            in_latency += 1
+        in_command = ['pipe', self.in_pipe, 'config']
+        if in_kbps > 0:
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
+        if in_latency >= 0:
+            in_command.extend(['delay', '{0:d}ms'.format(in_latency)])
+
+        # outbound connection
+        out_kbps = int(out_bps / 1000)
+        out_latency = rtt / 2
+        out_command = ['pipe', self.out_pipe, 'config']
+        if out_kbps > 0:
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
+        if out_latency >= 0:
+            out_command.extend(['delay', '{0:d}ms'.format(out_latency)])
+
+        # Packet loss get applied to the queues
+        plr = plr / 100.0
+        if plr > 0.0 and plr <= 1.0:
+            in_command.extend(['plr', '{0:.4f}'.format(plr)])
+            out_command.extend(['plr', '{0:.4f}'.format(plr)])
+
+        return self.dnctl(in_command) and\
+               self.dnctl(out_command)
 
 #
 # RemoteDummynet - Remote PC running dummynet with pre-configured pipes

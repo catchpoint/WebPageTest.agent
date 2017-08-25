@@ -10,6 +10,7 @@ import logging.handlers
 import os
 import platform
 import Queue
+import re
 import signal
 import subprocess
 import sys
@@ -272,9 +273,20 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
+
+        # Figure out which display to capture from
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
             self.capture_display = os.environ['DISPLAY']
+        elif platform.system() == "Darwin":
+            proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            _, err = proc.communicate()
+            for line in err.splitlines():
+                matches = re.search(r'\[(\d+)\] Capture screen', line)
+                if matches:
+                    self.capture_display = matches.group(1)
+                    break
         elif platform.system() == "Windows":
             self.capture_display = 'desktop'
 
@@ -582,7 +594,23 @@ def find_browsers():
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
     elif plat == "Darwin":
-        pass
+        chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        if 'Chrome' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome'] = {'exe': chrome_path}
+        canary_path = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
+        if os.path.isfile(canary_path):
+            if 'Chrome Dev' not in browsers:
+                browsers['Chrome Dev'] = {'exe': canary_path}
+            if 'Chrome Canary' not in browsers:
+                browsers['Chrome Canary'] = {'exe': canary_path}
+            if 'Canary' not in browsers:
+                browsers['Canary'] = {'exe': canary_path}
+        firefox_path = '/Applications/Firefox.app/Contents/MacOS/firefox'
+        if 'Firefox' not in browsers and os.path.isfile(firefox_path):
+            browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+        nightly_path = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
+        if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
+            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
     return browsers
 
 def main():

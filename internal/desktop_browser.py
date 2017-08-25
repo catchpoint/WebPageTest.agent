@@ -134,8 +134,11 @@ class DesktopBrowser(object):
         logging.debug("Stopping browser")
         if self.proc:
             kill_all(os.path.basename(self.path), False)
-            self.proc.terminate()
-            self.proc.kill()
+            try:
+                self.proc.terminate()
+                self.proc.kill()
+            except Exception:
+                pass
             self.proc = None
         self.disable_cpu_throttling()
         # Clean up the downloads folder in case anything was downloaded
@@ -217,13 +220,22 @@ class DesktopBrowser(object):
                     self.execute_js(SET_ORANGE)
                     time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-                grab = 'gdigrab' if platform.system() == 'Windows' else 'x11grab'
-                args = ['ffmpeg', '-f', grab, '-video_size',
-                        '{0:d}x{1:d}'.format(task['width'], task['height']),
-                        '-framerate', str(self.job['fps']),
-                        '-draw_mouse', '0', '-i', self.job['capture_display'],
-                        '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
-                        task['video_file']]
+                if platform.system() == 'Darwin':
+                    args = ['ffmpeg', '-f', 'avfoundation',
+                            '-i', str(self.job['capture_display']),
+                            '-r', str(self.job['fps']),
+                            '-filter:v',
+                            'crop={0:d}:{1:d}:0:0'.format(task['width'], task['height']),
+                            '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
+                            task['video_file']]
+                else:
+                    grab = 'gdigrab' if platform.system() == 'Windows' else 'x11grab'
+                    args = ['ffmpeg', '-f', grab, '-video_size',
+                            '{0:d}x{1:d}'.format(task['width'], task['height']),
+                            '-framerate', str(self.job['fps']),
+                            '-draw_mouse', '0', '-i', str(self.job['capture_display']),
+                            '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
+                            task['video_file']]
                 logging.debug(' '.join(args))
                 try:
                     if platform.system() == 'Windows':
