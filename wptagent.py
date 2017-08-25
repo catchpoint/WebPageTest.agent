@@ -10,6 +10,7 @@ import logging.handlers
 import os
 import platform
 import Queue
+import re
 import signal
 import subprocess
 import sys
@@ -272,9 +273,20 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
                 ret = False
+        
+        # Figure out which display to capture from
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
             logging.debug('Display: %s', os.environ['DISPLAY'])
             self.capture_display = os.environ['DISPLAY']
+        elif platform.system() == "Darwin":
+            proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            _, err = proc.communicate()
+            for line in err.splitlines():
+                matches = re.search(r'\[(\d+)\] Capture screen', line)
+                if matches:
+                    self.capture_display = matches.group(1)
+                    break
         elif platform.system() == "Windows":
             self.capture_display = 'desktop'
 
