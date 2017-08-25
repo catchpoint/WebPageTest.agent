@@ -30,7 +30,7 @@ class ETW(object):
         self.trace_name = None
         self.kernel_categories = []
         #self.kernel_categories = ['latency']
-        self.user_categories = ['Microsoft-IE',
+        self.user_categories = ['Microsoft-IE:0x30801308:0xff',
                                 #'Microsoft-IEFRAME',
                                 #'Microsoft-JScript',
                                 #'Microsoft-PerfTrack-IEFRAME',
