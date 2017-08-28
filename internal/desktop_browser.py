@@ -225,7 +225,7 @@ class DesktopBrowser(object):
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
                             '-filter:v',
-                            'crop={0:d}:{1:d}:0:0'.format(task['width'], task['height']),
+                            'crop={0:d}:{1:d}:0:0'.format(task['width']*2, task['height']*2),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 else:
