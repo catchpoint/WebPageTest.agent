@@ -25,6 +25,7 @@ class DevtoolsBrowser(object):
         self.task = None
         self.event_name = None
         self.browser_version = None
+        self.device_pixel_ratio = None
         self.use_devtools_video = use_devtools_video
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -60,6 +61,15 @@ class DevtoolsBrowser(object):
                 size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")
                 if size is not None and len(size) == 2:
                     task['actual_viewport'] = {"width": size[0], "height": size[1]}
+            # Get the native device pixel ratio
+            if self.device_pixel_ratio is None:
+                self.device_pixel_ratio = 1.0
+                try:
+                    ratio = self.devtools.execute_js('window.devicePixelRatio')
+                    if ratio is not None:
+                        self.device_pixel_ratio = max(1.0, float(ratio))
+                except Exception:
+                    pass
             # Clear the caches
             if not task['cached']:
                 self.devtools.send_command("Network.clearBrowserCache", {},

@@ -4,6 +4,7 @@
 """Base class support for desktop browsers"""
 import gzip
 import logging
+import math
 import os
 import platform
 import Queue
@@ -55,6 +56,7 @@ class DesktopBrowser(object):
         self.task = None
         self.cpu_start = None
         self.throttling_cpu = False
+        self.device_pixel_ratio = None
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, _job, task):
@@ -193,6 +195,14 @@ class DesktopBrowser(object):
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         import psutil
+        if self.device_pixel_ratio is None:
+            self.device_pixel_ratio = 1.0
+            try:
+                ratio = self.execute_js('window.devicePixelRatio')
+                if ratio is not None:
+                    self.device_pixel_ratio = max(1.0, float(ratio))
+            except Exception:
+                pass
         if task['log_data']:
             self.cpu_start = psutil.cpu_times()
             self.recording = True
@@ -221,11 +231,13 @@ class DesktopBrowser(object):
                     time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Darwin':
+                    width = int(math.ceil(task['width'] * self.device_pixel_ratio))
+                    height = int(math.ceil(task['height'] * self.device_pixel_ratio))
                     args = ['ffmpeg', '-f', 'avfoundation',
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
                             '-filter:v',
-                            'crop={0:d}:{1:d}:0:0'.format(task['width'], task['height']),
+                            'crop={0:d}:{1:d}:0:0'.format(width, height),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 else:
