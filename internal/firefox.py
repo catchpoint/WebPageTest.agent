@@ -62,6 +62,7 @@ class Firefox(DesktopBrowser):
         self.recording = False
         self.connected = False
         self.start_offset = None
+        self.browser_version = None
         self.log_pos = {}
         self.page = {}
         self.requests = {}
@@ -116,6 +117,8 @@ class Firefox(DesktopBrowser):
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.marionette.set_window_position(x=0, y=0)
             self.marionette.set_window_size(height=task['height'], width=task['width'])
+            if 'browserVersion' in self.marionette.session_capabilities:
+                self.browser_version = self.marionette.session_capabilities['browserVersion']
             self.marionette.navigate(START_PAGE)
             time.sleep(0.5)
             self.wait_for_extension()
@@ -426,6 +429,9 @@ class Firefox(DesktopBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.browser_version is not None and 'browserVersion' not in task['page_data']:
+            task['page_data']['browserVersion'] = self.browser_version
+            task['page_data']['browser_version'] = self.browser_version
         # Mark the start point in the various log files
         self.log_pos = {}
         if self.moz_log is not None:

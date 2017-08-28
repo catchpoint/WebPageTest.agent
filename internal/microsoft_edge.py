@@ -31,6 +31,7 @@ class Edge(DesktopBrowser):
         self.nav_error = None
         self.page_loaded = None
         self.recording = False
+        self.browser_version = None
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -50,6 +51,8 @@ class Edge(DesktopBrowser):
             logging.debug('Launching Edge')
             self.driver = webdriver.Edge(executable_path=self.path)
             self.driver.set_page_load_timeout(task['time_limit'])
+            if 'browserVersion' in self.driver.capabilities:
+                self.browser_version = self.driver.capabilities['browserVersion']
             self.driver.get('about:blank')
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
@@ -225,6 +228,9 @@ class Edge(DesktopBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.browser_version is not None and 'browserVersion' not in task['page_data']:
+            task['page_data']['browserVersion'] = self.browser_version
+            task['page_data']['browser_version'] = self.browser_version
         # Mark the start point in the various log files
         self.delete_logs()
         self.recording = True
