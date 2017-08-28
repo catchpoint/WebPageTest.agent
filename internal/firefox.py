@@ -293,6 +293,10 @@ class Firefox(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        logging.debug("Collecting browser data")
+        browser_data = self.run_js_file('browser_data.js')
+        if browser_data is not None:
+            task['page_data'].update(browser_data)
 
     def process_message(self, message):
         """Process a message from the extension"""
