@@ -501,8 +501,6 @@ class Firefox(DesktopBrowser):
             start_time = task['start_time'].strftime('%Y-%m-%d %H:%M:%S.%f')
             logging.debug('Parsing moz logs relative to %s start time', start_time)
             request_timings = parser.process_logs(task['moz_log'], start_time)
-            if len(request_timings) and task['current_step'] == 1:
-                self.adjust_timings(request_timings)
             files = sorted(glob.glob(task['moz_log'] + '*'))
             for path in files:
                 try:
@@ -510,6 +508,8 @@ class Firefox(DesktopBrowser):
                 except Exception:
                     pass
         # Build the request and page data
+        if len(request_timings) and task['current_step'] == 1:
+            self.adjust_timings(request_timings)
         self.process_requests(request_timings, task)
 
     def adjust_timings(self, requests):
@@ -519,14 +519,15 @@ class Firefox(DesktopBrowser):
         earliest = None
         for request in requests:
             for entry in timestamps:
-                if entry in request:
+                if entry in request and request[entry] >= 0:
                     if earliest is None or request[entry] < earliest:
                         earliest = request[entry]
+        logging.debug("Adjusting request timings by %0.3f seconds", earliest)
         if earliest is not None and earliest > 0:
             self.start_offset = earliest
             for request in requests:
                 for entry in timestamps:
-                    if entry in request:
+                    if entry in request and request[entry] >= 0:
                         request[entry] -= earliest
 
     def wait_for_processing(self, task):
