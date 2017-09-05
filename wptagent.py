@@ -25,6 +25,7 @@ class WPTAgent(object):
         from internal.webpagetest import WebPageTest
         from internal.traffic_shaping import TrafficShaper
         from internal.adb import Adb
+        from internal.ios_device import iOSDevice
         self.must_exit = False
         self.options = options
         self.capture_display = None
@@ -35,7 +36,8 @@ class WPTAgent(object):
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
         self.persistent_work_dir = self.wpt.get_persistent_dir()
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
-        self.browsers = Browsers(options, browsers, self.adb)
+        self.ios = iOSDevice(self.options.device) if self.options.iOS else None
+        self.browsers = Browsers(options, browsers, self.adb, self.ios)
         self.shaper = TrafficShaper(options)
         atexit.register(self.cleanup)
         signal.signal(signal.SIGTERM, self.signal_handler)
@@ -168,6 +170,8 @@ class WPTAgent(object):
             self.xvfb.stop()
         if self.adb is not None:
             self.adb.stop()
+        if self.ios is not None:
+            self.ios.disconnect()
 
     def sleep(self, seconds):
         """Sleep wrapped in an exception handler to properly deal with Ctrl+C"""
@@ -688,6 +692,13 @@ def main():
                         "should be passed as options:\n"\
                         "    <interface>,<dns1>: i.e. --simplert eth0,192.168.0.1")
 
+    # iOS options
+    parser.add_argument('--iOS', action='store_true', default=False,
+                        help="Run tests on an attached iOS device "\
+                        "(specify serial number in --device).")
+    parser.add_argument('--list', action='store_true', default=False,
+                        help="List available iOS devices.")
+
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
@@ -707,6 +718,15 @@ def main():
             exit(1)
     elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
         print "Requires python 2.7"
+        exit(1)
+
+    if options.list:
+        from internal.ios_device import iOSDevice
+        iOS = iOSDevice()
+        devices = iOS.get_devices()
+        print "Available iOS devices:"
+        for device in devices:
+            print device
         exit(1)
 
     # Set up logging
