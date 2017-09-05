@@ -69,7 +69,8 @@ class FirefoxLogParser(object):
         # Pull out the network requests and sort them
         for request_id in self.http['requests']:
             request = self.http['requests'][request_id]
-            if 'url' in request and request['url'][0:22] != 'http://127.0.0.1:8888/':
+            if 'url' in request and request['url'][0:22] != 'http://127.0.0.1:8888/'\
+                    and 'start' in request:
                 request['id'] = request_id
                 requests.append(dict(request))
         if len(requests):
@@ -105,16 +106,18 @@ class FirefoxLogParser(object):
         logging.debug("Processing %s", path)
         start = monotonic.monotonic()
         _, ext = os.path.splitext(path)
+        line_count = 0
         if ext.lower() == '.gz':
             f_in = gzip.open(path, 'rb')
         else:
             f_in = open(path, 'r')
         for line in f_in:
+            line_count += 1
             line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
         elapsed = monotonic.monotonic() - start
-        logging.debug("%0.3f s to process %s", elapsed, path)
+        logging.debug("%0.3f s to process %s (%d lines)", elapsed, path, line_count)
 
     def process_log_line(self, line):
         """Process a single log line"""
