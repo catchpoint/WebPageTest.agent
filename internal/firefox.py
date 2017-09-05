@@ -411,6 +411,8 @@ class Firefox(DesktopBrowser):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
+        self.page = {}
+        self.requests = {}
         task['page_data'] = {}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:

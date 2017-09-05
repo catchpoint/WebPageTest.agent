@@ -105,16 +105,18 @@ class FirefoxLogParser(object):
         logging.debug("Processing %s", path)
         start = monotonic.monotonic()
         _, ext = os.path.splitext(path)
+        line_count = 0
         if ext.lower() == '.gz':
             f_in = gzip.open(path, 'rb')
         else:
             f_in = open(path, 'r')
         for line in f_in:
+            line_count += 1
             line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
         elapsed = monotonic.monotonic() - start
-        logging.debug("%0.3f s to process %s", elapsed, path)
+        logging.debug("%0.3f s to process %s (%d lines)", elapsed, path, line_count)
 
     def process_log_line(self, line):
         """Process a single log line"""
