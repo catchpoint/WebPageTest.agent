@@ -109,6 +109,7 @@ class Firefox(DesktopBrowser):
         try:
             self.marionette = Marionette('localhost', port=2828)
             self.marionette.start_session(timeout=self.task['time_limit'])
+            self.configure_prefs()
             logging.debug('Installing extension')
             self.addons = Addons(self.marionette)
             extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -126,6 +127,36 @@ class Firefox(DesktopBrowser):
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
+
+    def configure_prefs(self):
+        """Load the prefs file and configure them through marionette"""
+        prefs = {}
+        prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                  'support', 'Firefox', 'profile', 'prefs.js')
+        with open(prefs_file) as f_in:
+            for line in f_in:
+                matches = re.search(r'user_pref\("([^"]+)",[\s]*([^\)]*)[\s]*\);', line)
+                if matches:
+                    key = matches.group(1).strip()
+                    value = matches.group(2).strip()
+                    str_match = re.match(r'^"(.*)"$', value)
+                    if value == 'true':
+                        value = True
+                    elif value == 'false':
+                        value = False
+                    elif re.match(r'^[\d]+$', value):
+                        value = int(value)
+                    elif str_match:
+                        value = str_match.group(1)
+                    else:
+                        value = None
+                    if value is not None:
+                        prefs[key] = value
+        if prefs:
+            try:
+                self.marionette.set_prefs(prefs, True)
+            except Exception:
+                pass
 
     def stop(self, job, task):
         """Kill the browser"""
