@@ -7,13 +7,14 @@ import os
 
 class Browsers(object):
     """Controller for handling several browsers"""
-    def __init__(self, options, browsers, adb):
+    def __init__(self, options, browsers, adb, ios):
         import ujson as json
         self.options = options
         self.browsers = None
         if browsers is not None:
             self.browsers = {k.lower(): v for k, v in browsers.items()}
         self.adb = adb
+        self.ios = ios
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
         with open(android_file, 'rb') as f_in:
@@ -24,6 +25,8 @@ class Browsers(object):
         ready = True
         if self.options.android and self.adb is not None:
             ready = self.adb.is_device_ready()
+        elif self.options.iOS and self.ios is not None:
+            ready = self.ios.is_device_ready()
         else:
             for browser in self.browsers:
                 if 'exe' in self.browsers[browser]:
