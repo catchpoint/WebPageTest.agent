@@ -251,7 +251,19 @@ class FirefoxLogParser(object):
                               msg['message'])
             if match:
                 trans_id = match.groupdict().get('id')
-                if trans_id in self.http['requests']:
+                if trans_id in self.http['requests'] and \
+                        'start' not in self.http['requests'][trans_id]:
+                    self.http['requests'][trans_id]['start'] = msg['timestamp']
+        elif msg['message'].startswith('nsHttpTransaction::OnSocketStatus ') and \
+                msg['message'].find(' status=804b0005 progress=') > -1:
+            match = re.search(r'^nsHttpTransaction::OnSocketStatus '\
+                              r'\[this=(?P<id>[\w\d]+) status=804b0005 progress=(?P<bytes>[\d+]+)',
+                              msg['message'])
+            if match:
+                trans_id = match.groupdict().get('id')
+                byte_count = int(match.groupdict().get('bytes'))
+                if byte_count > 0 and trans_id in self.http['requests'] and \
+                        'start' not in self.http['requests'][trans_id]:
                     self.http['requests'][trans_id]['start'] = msg['timestamp']
         elif msg['message'].startswith('nsHttpTransaction::ProcessData '):
             match = re.search(r'^nsHttpTransaction::ProcessData \[this=(?P<id>[\w\d]+)',
