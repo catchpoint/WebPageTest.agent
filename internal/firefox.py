@@ -836,6 +836,10 @@ class Firefox(DesktopBrowser):
             request['connect_start'] = int(log_request['connect_start'] * 1000)
         if 'connect_end' in log_request and log_request['connect_end'] >= 0:
             request['connect_end'] = int(round(log_request['connect_end'] * 1000.0))
+        if 'ssl_start' in log_request and log_request['ssl_start'] >= 0:
+            request['ssl_start'] = int(log_request['ssl_start'] * 1000)
+        if 'ssl_end' in log_request and log_request['ssl_end'] >= 0:
+            request['ssl_end'] = int(round(log_request['ssl_end'] * 1000.0))
         if 'connection' in log_request:
             request['socket'] = log_request['connection']
         request['load_start'] = int(round(log_request['start'] * 1000.0))

@@ -99,6 +99,9 @@ class FirefoxLogParser(object):
                             request['connect_start'] = socket['start']
                         if 'end' in socket:
                             request['connect_end'] = socket['end']
+                        if 'ssl_start' in connection and 'ssl_end' in connection:
+                            request['ssl_start'] = connection['ssl_start']
+                            request['ssl_end'] = connection['ssl_end']
         return requests
 
     def process_log_file(self, path):
@@ -245,6 +248,22 @@ class FirefoxLogParser(object):
                 socket = self.http['current_socket']
                 self.http['connections'][connection] = {'socket': socket}
             del self.http['current_socket']
+        elif msg['message'].startswith('nsHttpConnection::SetupSSL '):
+            match = re.search(r'^nsHttpConnection::SetupSSL (?P<connection>[\w\d]+)',
+                              msg['message'])
+            if match:
+                connection = match.groupdict().get('connection')
+                if connection in self.http['connections']:
+                    if 'ssl_start' not in self.http['connections'][connection]:
+                        self.http['connections'][connection]['ssl_start'] = msg['timestamp']
+        elif msg['message'].startswith('nsHttpConnection::EnsureNPNComplete '):
+            match = re.search(r'^nsHttpConnection::EnsureNPNComplete (?P<connection>[\w\d]+)',
+                              msg['message'])
+            if match:
+                connection = match.groupdict().get('connection')
+                if connection in self.http['connections']:
+                    if 'ssl_start' in self.http['connections'][connection]:
+                        self.http['connections'][connection]['ssl_end'] = msg['timestamp']
         elif msg['message'].startswith('nsHttpTransaction::OnTransportStatus ') and \
                 msg['message'].find(' SENDING_TO ') > -1:
             match = re.search(r'^nsHttpTransaction::OnTransportStatus (?P<id>[\w\d]+) SENDING_TO ',
