@@ -213,7 +213,7 @@ class DevtoolsBrowser(object):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
-        task['page_data'] = {}
+        task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']

@@ -444,7 +444,7 @@ class Firefox(DesktopBrowser):
         """Format the file prefixes for multi-step testing"""
         self.page = {}
         self.requests = {}
-        task['page_data'] = {}
+        task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
