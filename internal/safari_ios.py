@@ -206,7 +206,7 @@ class iWptBrowser(object):
         """Format the file prefixes for multi-step testing"""
         self.page = {}
         self.requests = {}
-        task['page_data'] = {}
+        task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -274,7 +274,10 @@ class iWptBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
-        pass
+        #TODO: Remove this when real processing is hooked up
+        task['page_data']['result'] = 0
+        task['page_data']['visualTest'] = 1
+        self.process_requests(task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -290,7 +293,20 @@ class iWptBrowser(object):
 
     def step_complete(self, task):
         """Final step processing"""
-        pass
+        # Write out the accumulated page_data
+        if task['log_data'] and task['page_data']:
+            if 'browser' in self.job:
+                task['page_data']['browser_name'] = self.job['browser']
+            if 'step_name' in task:
+                task['page_data']['eventName'] = task['step_name']
+            if 'run_start_time' in task:
+                task['page_data']['test_run_time_ms'] = \
+                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
+            json_page_data = json.dumps(task['page_data'])
+            logging.debug('Page Data: %s', json_page_data)
+            with gzip.open(path, 'wb', 7) as outfile:
+                outfile.write(json_page_data)
 
     def process_command(self, command):
         """Process an individual script command"""
@@ -362,3 +378,37 @@ class iWptBrowser(object):
                             os.remove(tmp_file)
                         except Exception:
                             pass
+
+    def process_requests(self, task):
+        """Convert all of the request and page events into the format needed for WPT"""
+        result = {}
+        result['requests'] = []
+        result['pageData'] = self.calculate_page_stats(result['requests'])
+        devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+        with gzip.open(devtools_file, 'wb', 7) as f_out:
+            json.dump(result, f_out)
+
+    def calculate_page_stats(self, requests):
+        """Calculate the page-level stats"""
+        page = {'loadTime': 0,
+                'docTime': 0,
+                'fullyLoaded': 0,
+                'bytesOut': 0,
+                'bytesOutDoc': 0,
+                'bytesIn': 0,
+                'bytesInDoc': 0,
+                'requests': 0,
+                'requestsDoc': 0,
+                'responses_200': 0,
+                'responses_404': 0,
+                'responses_other': 0,
+                'result': 0,
+                'testStartOffset': 0,
+                'cached': 1 if self.task['cached'] else 0,
+                'optimization_checked': 0,
+                'start_epoch': int((self.task['start_time'] - \
+                                    datetime.utcfromtimestamp(0)).total_seconds())
+               }
+        if 'loadEventStart' in self.task['page_data']:
+            page['docTime'] = self.task['page_data']['loadEventStart']
+        return page
