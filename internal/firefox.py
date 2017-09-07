@@ -109,6 +109,7 @@ class Firefox(DesktopBrowser):
         try:
             self.marionette = Marionette('localhost', port=2828)
             self.marionette.start_session(timeout=self.task['time_limit'])
+            self.configure_prefs()
             logging.debug('Installing extension')
             self.addons = Addons(self.marionette)
             extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -126,6 +127,36 @@ class Firefox(DesktopBrowser):
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
+
+    def configure_prefs(self):
+        """Load the prefs file and configure them through marionette"""
+        prefs = {}
+        prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                  'support', 'Firefox', 'profile', 'prefs.js')
+        with open(prefs_file) as f_in:
+            for line in f_in:
+                matches = re.search(r'user_pref\("([^"]+)",[\s]*([^\)]*)[\s]*\);', line)
+                if matches:
+                    key = matches.group(1).strip()
+                    value = matches.group(2).strip()
+                    str_match = re.match(r'^"(.*)"$', value)
+                    if value == 'true':
+                        value = True
+                    elif value == 'false':
+                        value = False
+                    elif re.match(r'^[\d]+$', value):
+                        value = int(value)
+                    elif str_match:
+                        value = str_match.group(1)
+                    else:
+                        value = None
+                    if value is not None:
+                        prefs[key] = value
+        if prefs:
+            try:
+                self.marionette.set_prefs(prefs, True)
+            except Exception:
+                pass
 
     def stop(self, job, task):
         """Kill the browser"""
@@ -413,7 +444,7 @@ class Firefox(DesktopBrowser):
         """Format the file prefixes for multi-step testing"""
         self.page = {}
         self.requests = {}
-        task['page_data'] = {}
+        task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -805,6 +836,10 @@ class Firefox(DesktopBrowser):
             request['connect_start'] = int(log_request['connect_start'] * 1000)
         if 'connect_end' in log_request and log_request['connect_end'] >= 0:
             request['connect_end'] = int(round(log_request['connect_end'] * 1000.0))
+        if 'ssl_start' in log_request and log_request['ssl_start'] >= 0:
+            request['ssl_start'] = int(log_request['ssl_start'] * 1000)
+        if 'ssl_end' in log_request and log_request['ssl_end'] >= 0:
+            request['ssl_end'] = int(round(log_request['ssl_end'] * 1000.0))
         if 'connection' in log_request:
             request['socket'] = log_request['connection']
         request['load_start'] = int(round(log_request['start'] * 1000.0))

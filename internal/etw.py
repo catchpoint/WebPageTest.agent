@@ -140,7 +140,7 @@ class ETW(object):
                     page_data, requests = self.ProcessResult(raw_result, task)
                     # Merge the page-level data into the existing page data
                     if 'page_data' not in task:
-                        task['page_data'] = {}
+                        task['page_data'] = {'date': time.time()}
                     for key in page_data:
                         task['page_data'][key] = page_data[key]
                 os.unlink(csv_file)
