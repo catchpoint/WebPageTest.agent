@@ -8,6 +8,7 @@ import Queue
 import select
 import threading
 import monotonic
+import ujson as json
 
 class iOSDevice(object):
     """iOS device interface"""
@@ -19,7 +20,9 @@ class iOSDevice(object):
         self.mux = USBMux()
         self.message_thread = None
         self.messages = Queue.Queue()
+        self.notification_queue = None
         self.current_id = 0
+        self.video_path = None
 
     def get_devices(self):
         """Get a list of available devices"""
@@ -37,6 +40,55 @@ class iOSDevice(object):
         if response and response > 0.75:
             is_ready = True
         return is_ready
+
+    def clear_cache(self):
+        """Clear the browser cache"""
+        is_ok = False
+        if self.send_message("clearcache"):
+            is_ok = True
+        return is_ok
+
+    def start_browser(self):
+        """Start the browser"""
+        is_ok = False
+        if self.send_message("startbrowser"):
+            is_ok = True
+        return is_ok
+
+    def stop_browser(self):
+        """Stop the browser"""
+        is_ok = False
+        if self.send_message("stopbrowser"):
+            is_ok = True
+        return is_ok
+
+    def navigate(self, url):
+        """Navigate to the given URL"""
+        is_ok = False
+        if self.send_message("navigate", data=url):
+            is_ok = True
+        return is_ok
+
+    def execute_js(self, script):
+        """Run the given script"""
+        ret = self.send_message("exec", data=script)
+        try:
+            ret = json.loads(ret)
+        except Exception:
+            pass
+        return ret
+
+    def show_orange(self):
+        """Bring up the orange overlay"""
+        is_ok = False
+        if self.send_message("showorange"):
+            is_ok = True
+        return is_ok
+
+    def screenshot(self, png=True):
+        """Capture a screenshot (PNG or JPEG)"""
+        msg = "screenshot" if png else "screenshotjpeg"
+        return self.send_message(msg)
 
     def connect(self):
         """Connect to the device with the matching serial number"""
@@ -64,33 +116,46 @@ class iOSDevice(object):
         self.must_disconnect = True
         if self.socket is not None:
             self.socket.close()
+            self.socket = None
         if self.message_thread is not None:
             self.message_thread.join()
+            self.message_thread = None
 
-    def send_message(self, message, wait=True, timeout=30):
+    def send_message(self, message, data=None, wait=True, timeout=30):
         """Send a command and get the response"""
         response = None
         if self.connect():
             self.current_id += 1
             message_id = self.current_id
-            logging.debug(">>> %d:%s", self.current_id, message)
+            msg = "{0:d}:{1}".format(message_id, message)
+            logging.debug(">>> %s", msg)
+            if data is not None:
+                logging.debug(data)
+                if data.find("\t") >= 0 or data.find("\n") >= 0 or data.find("\r") >= 0:
+                    msg += ".encoded"
+                    data = base64.b64encode(data)
+                msg += "\t"
+                msg += data
             try:
-                self.socket.send("{0:d}:{1}\n".format(self.current_id, message))
+                self.socket.send(msg + "\n")
                 if wait:
                     end = monotonic.monotonic() + timeout
-                    while not response and monotonic.monotonic() < end:
+                    while response is None and monotonic.monotonic() < end:
                         try:
                             msg = self.messages.get(timeout=1)
                             self.messages.task_done()
                             if msg:
-                                if 'id' in msg and msg['id'] == str(message_id):
+                                if msg['msg'] == 'disconnected':
+                                    self.disconnect()
+                                    self.connect()
+                                elif 'id' in msg and msg['id'] == str(message_id):
                                     if msg['msg'] == 'OK':
                                         if 'data' in msg:
                                             response = msg['data']
                                         else:
                                             response = True
                                     else:
-                                        response = False
+                                        break
                         except Exception:
                             pass
             except Exception:
@@ -147,9 +212,21 @@ class iOSDevice(object):
                                     msg['msg'] = parts[0].strip()
                                     if 'encoded' in parts and data is not None:
                                         data = base64.b64decode(data)
+                                        logging.debug(data[:200])
                                     if data is not None:
                                         msg['data'] = data
-                                    try:
-                                        self.messages.put(msg)
-                                    except Exception:
-                                        pass
+                                    if msg['msg'] == 'VideoData':
+                                        if self.video_path is not None:
+                                            with open(self.video_path, 'ab') as video_file:
+                                                data = base64.b64decode(data)
+                                                video_file.write(data)
+                                    elif 'id' in msg:
+                                        try:
+                                            self.messages.put(msg)
+                                        except Exception:
+                                            pass
+                                    elif self.notification_queue is not None:
+                                        try:
+                                            self.notification_queue.put(msg)
+                                        except Exception:
+                                            pass

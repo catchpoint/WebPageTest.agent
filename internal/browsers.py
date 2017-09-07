@@ -27,6 +27,8 @@ class Browsers(object):
             ready = self.adb.is_device_ready()
         elif self.options.iOS and self.ios is not None:
             ready = self.ios.is_device_ready()
+            if not ready:
+                self.ios.disconnect()
         else:
             for browser in self.browsers:
                 if 'exe' in self.browsers[browser]:
@@ -55,6 +57,9 @@ class Browsers(object):
                 if config['type'] == 'blackbox':
                     from .blackbox_android import BlackBoxAndroid
                     browser = BlackBoxAndroid(self.adb, config, self.options, job)
+        elif self.options.iOS and self.ios is not None:
+            from .safari_ios import iWptBrowser
+            browser = iWptBrowser(self.ios, self.options, job)
         elif 'type' in job and job['type'] == 'traceroute':
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
