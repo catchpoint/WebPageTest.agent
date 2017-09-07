@@ -57,6 +57,7 @@ class DesktopBrowser(object):
         self.cpu_start = None
         self.throttling_cpu = False
         self.device_pixel_ratio = None
+        self.need_orange = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, _job, task):
@@ -226,7 +227,7 @@ class DesktopBrowser(object):
 
             # Start video capture
             if self.job['capture_display'] is not None:
-                if task['navigated'] or task['need_orange']:
+                if task['navigated'] or self.need_orange:
                     self.execute_js(SET_ORANGE)
                     time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
@@ -268,7 +269,7 @@ class DesktopBrowser(object):
                             time.sleep(0.1)
                 except Exception:
                     pass
-                if task['navigated'] or task['need_orange']:
+                if task['navigated'] or self.need_orange:
                     self.execute_js(REMOVE_ORANGE)
 
             # start the background thread for monitoring CPU and bandwidth

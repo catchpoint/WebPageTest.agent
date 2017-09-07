@@ -375,7 +375,6 @@ class WebPageTest(object):
                         'profile': profile_dir,
                         'error': None,
                         'log_data': True,
-                        'need_orange': False,
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],

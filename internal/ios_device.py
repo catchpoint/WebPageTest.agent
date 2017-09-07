@@ -4,6 +4,7 @@
 """Interface for iWptBrowser on iOS devices"""
 import base64
 import logging
+import os
 import Queue
 import select
 import threading
@@ -69,9 +70,12 @@ class iOSDevice(object):
             is_ok = True
         return is_ok
 
-    def execute_js(self, script):
+    def execute_js(self, script, remove_orange=False):
         """Run the given script"""
-        ret = self.send_message("exec", data=script)
+        command = "exec"
+        if remove_orange:
+            command += ".orange"
+        ret = self.send_message(command, data=script)
         try:
             ret = json.loads(ret)
         except Exception:
@@ -89,6 +93,25 @@ class iOSDevice(object):
         """Capture a screenshot (PNG or JPEG)"""
         msg = "screenshot" if png else "screenshotjpeg"
         return self.send_message(msg)
+
+    def start_video(self):
+        """Start video capture"""
+        is_ok = False
+        if self.send_message("startvideo"):
+            is_ok = True
+        return is_ok
+
+    def stop_video(self, video_path):
+        """Stop the video capture and store it at the given path"""
+        is_ok = False
+        self.video_path = video_path
+        if self.send_message("stopvideo"):
+            if self.send_message("getvideo", timeout=600):
+                self.send_message("deletevideo")
+                if os.path.isfile(self.video_path):
+                    is_ok = True
+                self.video_path = None
+        return is_ok
 
     def connect(self):
         """Connect to the device with the matching serial number"""
@@ -215,18 +238,27 @@ class iOSDevice(object):
                                         logging.debug(data[:200])
                                     if data is not None:
                                         msg['data'] = data
-                                    if msg['msg'] == 'VideoData':
-                                        if self.video_path is not None:
-                                            with open(self.video_path, 'ab') as video_file:
-                                                data = base64.b64decode(data)
-                                                video_file.write(data)
-                                    elif 'id' in msg:
-                                        try:
-                                            self.messages.put(msg)
-                                        except Exception:
-                                            pass
-                                    elif self.notification_queue is not None:
-                                        try:
-                                            self.notification_queue.put(msg)
-                                        except Exception:
-                                            pass
+                                    self.process_message(msg)
+
+    def process_message(self, msg):
+        """Handle a single decoded message"""
+        if msg['msg'] == 'StartVideo':
+            if self.video_path is not None and os.path.isfile(self.video_path):
+                try:
+                    os.remove(self.video_path)
+                except Exception:
+                    pass
+        elif msg['msg'] == 'VideoData' and 'data' in msg:
+            if self.video_path is not None:
+                with open(self.video_path, 'ab') as video_file:
+                    video_file.write(msg['data'])
+        elif 'id' in msg:
+            try:
+                self.messages.put(msg)
+            except Exception:
+                pass
+        elif self.notification_queue is not None:
+            try:
+                self.notification_queue.put(msg)
+            except Exception:
+                pass

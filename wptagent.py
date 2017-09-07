@@ -310,7 +310,7 @@ class WPTAgent(object):
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
-        if not self.options.android:
+        if not self.options.android and not self.options.iOS:
             self.wait_for_idle(300)
         self.shaper.remove()
         if not self.shaper.install():

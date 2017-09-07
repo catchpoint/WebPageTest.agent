@@ -32,13 +32,13 @@ class Edge(DesktopBrowser):
         self.page_loaded = None
         self.recording = False
         self.browser_version = None
+        self.need_orange = True
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.etw_log = os.path.join(task['dir'], 'etw.log')
-        task['need_orange'] = True
         self.kill()
         if not task['cached']:
             self.clear_cache()

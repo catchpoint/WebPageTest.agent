@@ -28,6 +28,7 @@ class iWptBrowser(object):
         self.connected = False
         self.browser_version = None
         self.messages = Queue.Queue()
+        self.video_processing = None
         self.page = {}
         self.requests = {}
         self.last_activity = monotonic.monotonic()
@@ -223,6 +224,9 @@ class iWptBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        self.ios.show_orange()
+        task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
+        self.ios.start_video()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
@@ -238,13 +242,33 @@ class iWptBrowser(object):
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
         self.recording = False
-        if self.connected:
-            if self.job['pngScreenShot']:
-                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
-                self.grab_screenshot(screen_shot, png=True)
+        if self.job['pngScreenShot']:
+            screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
+            self.grab_screenshot(screen_shot, png=True)
+        else:
+            screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
+            self.grab_screenshot(screen_shot, png=False, resize=600)
+        # Grab the video and kick off processing async
+        if 'video_file' in task:
+            self.ios.stop_video(task['video_file'])
+            video_path = os.path.join(task['dir'], task['video_subdirectory'])
+            support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+            if task['current_step'] == 1:
+                filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
             else:
-                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
-                self.grab_screenshot(screen_shot, png=False, resize=600)
+                filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                         task['cached'],
+                                                                         task['current_step'])
+            histograms = os.path.join(task['dir'], filename)
+            visualmetrics = os.path.join(support_path, "visualmetrics.py")
+            args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                    '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+            if 'renderVideo' in self.job and self.job['renderVideo']:
+                video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                args.extend(['--render', video_out])
+            logging.debug(' '.join(args))
+            self.video_processing = subprocess.Popen(args)
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
 
@@ -254,7 +278,15 @@ class iWptBrowser(object):
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
-        pass
+        if self.video_processing is not None:
+            logging.debug('Waiting for video processing to finish')
+            self.video_processing.communicate()
+            self.video_processing = None
+            if not self.job['keepvideo']:
+                try:
+                    os.remove(task['video_file'])
+                except Exception:
+                    pass
 
     def step_complete(self, task):
         """Final step processing"""
@@ -280,7 +312,7 @@ class iWptBrowser(object):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
-            self.ios.execute_js(command['target'])
+            self.ios.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
