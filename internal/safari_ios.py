@@ -74,10 +74,10 @@ class iWptBrowser(object):
             recording = False
             while task['script'] and task['error'] is None and \
                     monotonic.monotonic() < end_time:
+                self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
                     recording = True
-                    self.prepare_task(task)
                     self.on_start_recording(task)
                 try:
                     self.process_command(command)
