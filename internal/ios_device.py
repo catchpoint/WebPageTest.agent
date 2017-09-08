@@ -102,7 +102,7 @@ class iOSDevice(object):
 
     def screenshot(self, png=True):
         """Capture a screenshot (PNG or JPEG)"""
-        msg = "screenshot" if png else "screenshotjpeg"
+        msg = "screenshotbig" if png else "screenshotbigjpeg"
         return self.send_message(msg)
 
     def start_video(self):
