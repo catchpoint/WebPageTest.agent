@@ -6,12 +6,14 @@ from datetime import datetime
 import gzip
 import logging
 import os
+import platform
 import Queue
 import re
 import subprocess
 import time
 import monotonic
 import ujson as json
+from ws4py.client.threadedclient import WebSocketClient
 
 class iWptBrowser(object):
     """iOS"""
@@ -33,6 +35,23 @@ class iWptBrowser(object):
         self.requests = {}
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.websocket = None
+        self.command_id = 0
+        self.command_responses = {}
+        self.pending_commands = []
+        self.webinspector_proxy = None
+        self.ios_utils_path = None
+        plat = platform.system()
+        if plat == "Darwin":
+            self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                               'support', 'ios', 'Darwin')
+        elif plat == "Linux":
+            if os.uname()[4].startswith('arm'):
+                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                   'support', 'ios', 'arm')
+            else:
+                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                   'support', 'ios', 'linux64')
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
@@ -58,11 +77,73 @@ class iWptBrowser(object):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        self.connected = False
         self.flush_messages()
-        self.connected = self.ios.start_browser()
+        if self.ios_utils_path and self.ios.start_browser():
+            # Start the webinspector proxy
+            exe = os.path.join(self.ios_utils_path, 'ios_webkit_debug_proxy')
+            args = [exe, '-F', '-u', self.ios.serial]
+            logging.debug(' '.join(args))
+            self.webinspector_proxy = subprocess.Popen(args)
+            if self.webinspector_proxy:
+                # Connect to the dev tools interface
+                self.connected = self.connect()
+        self.flush_messages()
+
+    def connect(self, timeout=30):
+        """Connect to the dev tools interface"""
+        import requests
+        ret = False
+        end_time = monotonic.monotonic() + timeout
+        while not ret and monotonic.monotonic() < end_time:
+            try:
+                response = requests.get("http://localhost:9222/json", timeout=timeout)
+                if len(response.text):
+                    tabs = response.json()
+                    logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
+                    if len(tabs):
+                        websocket_url = None
+                        for index in xrange(len(tabs)):
+                            if 'webSocketDebuggerUrl' in tabs[index]:
+                                websocket_url = tabs[index]['webSocketDebuggerUrl']
+                                break
+                        if websocket_url is not None:
+                            try:
+                                self.websocket = DevToolsClient(websocket_url)
+                                self.websocket.messages = self.messages
+                                self.websocket.connect()
+                                ret = True
+                            except Exception as err:
+                                logging.debug("Connect to dev tools websocket Error: %s",
+                                              err.__str__())
+                            if not ret:
+                                # try connecting to 127.0.0.1 instead of localhost
+                                try:
+                                    websocket_url = websocket_url.replace('localhost', '127.0.0.1')
+                                    self.websocket = DevToolsClient(websocket_url)
+                                    self.websocket.messages = self.messages
+                                    self.websocket.connect()
+                                    ret = True
+                                except Exception as err:
+                                    logging.debug("Connect to dev tools websocket Error: %s",
+                                                  err.__str__())
+                        else:
+                            time.sleep(0.5)
+                    else:
+                        time.sleep(0.5)
+            except Exception as err:
+                logging.debug("Connect to dev tools Error: %s", err.__str__())
+                time.sleep(0.5)
+        return ret        
 
     def stop(self, job, task):
         """Kill the browser"""
+        if self.websocket:
+            try:
+                self.websocket.close()
+            except Exception:
+                pass
+            self.websocket = None
         self.ios.stop_browser()
 
     def run_task(self, task):
@@ -195,12 +276,21 @@ class iWptBrowser(object):
 
     def process_message(self, message):
         """Process a message from the browser"""
-        logging.debug(message)
         if self.recording:
             if 'msg' in message and message['msg'].startswith('page.'):
                 self.last_activity = monotonic.monotonic()
                 if message['msg'] == 'page.didFinish' or message['msg'] == 'page.loadingFinished':
                     self.page_loaded = monotonic.monotonic()
+            elif 'method' in message:
+                parts = message['method'].split('.')
+                if len(parts) >= 2:
+                    category = parts[0]
+                    event = parts[1]
+        if 'id' in message:
+            response_id = int(re.search(r'\d+', str(message['id'])).group())
+            if response_id in self.pending_commands:
+                self.pending_commands.remove(response_id)
+                self.command_responses[response_id] = message
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
@@ -224,12 +314,21 @@ class iWptBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
-        self.ios.show_orange()
-        task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-        self.ios.start_video()
-        if self.browser_version is not None and 'browserVersion' not in task['page_data']:
-            task['page_data']['browserVersion'] = self.browser_version
-            task['page_data']['browser_version'] = self.browser_version
+        self.flush_messages()
+        self.send_command('Page.enable', {})
+        self.send_command('Inspector.enable', {})
+        self.send_command('Network.enable', {})
+        self.send_command('Inspector.enable', {})
+        if self.task['log_data']:
+            self.send_command('Console.enable', {})
+            if 'timeline' in self.job and self.job['timeline']:
+                self.send_command('Timeline.start', {})
+            self.ios.show_orange()
+            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
+            self.ios.start_video()
+            if self.browser_version is not None and 'browserVersion' not in task['page_data']:
+                task['page_data']['browserVersion'] = self.browser_version
+                task['page_data']['browser_version'] = self.browser_version
         self.recording = True
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
@@ -242,35 +341,43 @@ class iWptBrowser(object):
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
         self.recording = False
-        if self.job['pngScreenShot']:
-            screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
-            self.grab_screenshot(screen_shot, png=True)
-        else:
-            screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
-            self.grab_screenshot(screen_shot, png=False, resize=600)
-        # Grab the video and kick off processing async
-        if 'video_file' in task:
-            self.ios.stop_video(task['video_file'])
-            video_path = os.path.join(task['dir'], task['video_subdirectory'])
-            support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-            if task['current_step'] == 1:
-                filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
+        self.send_command('Page.disable', {})
+        self.send_command('Inspector.disable', {})
+        self.send_command('Network.disable', {})
+        self.send_command('Inspector.disable', {})
+        if self.task['log_data']:
+            self.send_command('Console.disable', {})
+            if 'timeline' in self.job and self.job['timeline']:
+                self.send_command('Timeline.stop', {})
+            if self.job['pngScreenShot']:
+                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
+                self.grab_screenshot(screen_shot, png=True)
             else:
-                filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
-                                                                         task['cached'],
-                                                                         task['current_step'])
-            histograms = os.path.join(task['dir'], filename)
-            visualmetrics = os.path.join(support_path, "visualmetrics.py")
-            args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
-                    '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                    '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
-            if 'renderVideo' in self.job and self.job['renderVideo']:
-                video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
-                args.extend(['--render', video_out])
-            logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args)
-        # Collect end of test data from the browser
-        self.collect_browser_metrics(task)
+                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
+                self.grab_screenshot(screen_shot, png=False, resize=600)
+            # Grab the video and kick off processing async
+            if 'video_file' in task:
+                self.ios.stop_video(task['video_file'])
+                video_path = os.path.join(task['dir'], task['video_subdirectory'])
+                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+                if task['current_step'] == 1:
+                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
+                else:
+                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                             task['cached'],
+                                                                             task['current_step'])
+                histograms = os.path.join(task['dir'], filename)
+                visualmetrics = os.path.join(support_path, "visualmetrics.py")
+                args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                        '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                        '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+                if 'renderVideo' in self.job and self.job['renderVideo']:
+                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                    args.extend(['--render', video_out])
+                logging.debug(' '.join(args))
+                self.video_processing = subprocess.Popen(args)
+            # Collect end of test data from the browser
+            self.collect_browser_metrics(task)
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
@@ -307,6 +414,37 @@ class iWptBrowser(object):
             logging.debug('Page Data: %s', json_page_data)
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json_page_data)
+
+    def send_command(self, method, params, wait=False, timeout=10):
+        """Send a raw dev tools message and optionally wait for the response"""
+        ret = None
+        if self.websocket:
+            self.command_id += 1
+            command_id = int(self.command_id)
+            if wait:
+                self.pending_commands.append(command_id)
+            msg = {'id': command_id, 'method': method, 'params': params}
+            try:
+                out = json.dumps(msg)
+                logging.debug("Sending: %s", out)
+                self.websocket.send(out)
+                if wait:
+                    end_time = monotonic.monotonic() + timeout
+                    while ret is None and monotonic.monotonic() < end_time:
+                        try:
+                            msg = self.messages.get(timeout=1)
+                            if msg:
+                                logging.debug(msg)
+                                self.process_message(msg)
+                                if command_id in self.command_responses:
+                                    ret = self.command_responses[command_id]
+                                    del self.command_responses[command_id]
+                        except Exception:
+                            pass
+            except Exception as err:
+                logging.debug("Websocket send error: %s", err.__str__())
+        return ret
+
 
     def process_command(self, command):
         """Process an individual script command"""
@@ -412,3 +550,36 @@ class iWptBrowser(object):
         if 'loadEventStart' in self.task['page_data']:
             page['docTime'] = self.task['page_data']['loadEventStart']
         return page
+
+class DevToolsClient(WebSocketClient):
+    """DevTools Websocket client"""
+    def __init__(self, url, protocols=None, extensions=None, heartbeat_freq=None,
+                 ssl_options=None, headers=None):
+        WebSocketClient.__init__(self, url, protocols, extensions, heartbeat_freq,
+                                 ssl_options, headers)
+        self.connected = False
+        self.messages = None
+        self.trace_file = None
+
+    def opened(self):
+        """Websocket interface - connection opened"""
+        logging.debug("DevTools websocket connected")
+        self.connected = True
+
+    def closed(self, code, reason=None):
+        """Websocket interface - connection closed"""
+        logging.debug("DevTools websocket disconnected")
+        self.connected = False
+
+    def received_message(self, raw):
+        """Websocket interface - message received"""
+        try:
+            if raw.is_text:
+                message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
+                logging.debug(message[:200])
+                if message:
+                    message = json.loads(message)
+                    if message:
+                        self.messages.put(message)
+        except Exception:
+            pass

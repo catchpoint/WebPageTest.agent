@@ -74,7 +74,7 @@ class iOSDevice(object):
         """Run the given script"""
         command = "exec"
         if remove_orange:
-            command += ".orange"
+            command += ".removeorange"
         ret = self.send_message(command, data=script)
         try:
             ret = json.loads(ret)
@@ -124,6 +124,7 @@ class iOSDevice(object):
                     for device in devices:
                         if self.serial is None or device.serial == self.serial:
                             logging.debug("Connecting to device %s", device.serial)
+                            self.serial = device.serial
                             self.must_disconnect = False
                             self.socket = self.mux.connect(device, 19222)
                             self.message_thread = threading.Thread(target=self.pump_messages)
@@ -153,7 +154,6 @@ class iOSDevice(object):
             msg = "{0:d}:{1}".format(message_id, message)
             logging.debug(">>> %s", msg)
             if data is not None:
-                logging.debug(data)
                 if data.find("\t") >= 0 or data.find("\n") >= 0 or data.find("\r") >= 0:
                     msg += ".encoded"
                     data = base64.b64encode(data)
@@ -217,7 +217,6 @@ class iOSDevice(object):
                         message = buff[:pos].strip()
                         buff = buff[pos + 1:]
                         if message:
-                            logging.debug("<<< %s", message[:200])
                             parts = message.split("\t")
                             if len(parts) > 1:
                                 msg = {'ts': parts[0]}
@@ -235,7 +234,6 @@ class iOSDevice(object):
                                     msg['msg'] = parts[0].strip()
                                     if 'encoded' in parts and data is not None:
                                         data = base64.b64decode(data)
-                                        logging.debug(data[:200])
                                     if data is not None:
                                         msg['data'] = data
                                     self.process_message(msg)
@@ -253,6 +251,7 @@ class iOSDevice(object):
                 with open(self.video_path, 'ab') as video_file:
                     video_file.write(msg['data'])
         elif 'id' in msg:
+            logging.debug('<<< %s:%s', msg['id'], msg['msg'])
             try:
                 self.messages.put(msg)
             except Exception:
