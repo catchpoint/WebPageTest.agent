@@ -65,7 +65,7 @@ class WebPageTest(object):
         # Get the screen resolution if we're in desktop mode
         self.screen_width = None
         self.screen_height = None
-        if not self.options.android:
+        if not self.options.android and not self.options.iOS:
             if self.options.xvfb:
                 self.screen_width = 1920
                 self.screen_height = 1200
@@ -122,7 +122,7 @@ class WebPageTest(object):
     def benchmark_cpu(self):
         """Benchmark the CPU for mobile emulation"""
         self.cpu_scale_multiplier = 1.0
-        if not self.options.android:
+        if not self.options.android and not self.options.iOS:
             import hashlib
             logging.debug('Starting CPU benchmark')
             hash_val = hashlib.sha256()

@@ -50,7 +50,7 @@ class WPTAgent(object):
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
         message_server = None
-        if not self.options.android:
+        if not self.options.android and not self.options.iOS:
             message_server = MessageServer()
             message_server.start()
         while not self.must_exit:
@@ -266,7 +266,7 @@ class WPTAgent(object):
 
         # if we are on Linux and there is no display, enable xvfb by default
         if platform.system() == "Linux" and not self.options.android and \
-                'DISPLAY' not in os.environ:
+                not self.options.iOS and 'DISPLAY' not in os.environ:
             self.options.xvfb = True
 
         if self.options.xvfb:
