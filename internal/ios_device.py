@@ -42,6 +42,10 @@ class iOSDevice(object):
             is_ready = True
         return is_ready
 
+    def get_os_version(self):
+        """Get the running version of iOS"""
+        return self.send_message("osversion")
+
     def clear_cache(self):
         """Clear the browser cache"""
         is_ok = False
@@ -82,6 +86,13 @@ class iOSDevice(object):
             pass
         return ret
 
+    def set_user_agent(self, ua_string):
+        """Override the UA string"""
+        is_ok = False
+        if self.send_message("setuseragent", data=ua_string):
+            is_ok = True
+        return is_ok
+
     def show_orange(self):
         """Bring up the orange overlay"""
         is_ok = False
@@ -111,6 +122,20 @@ class iOSDevice(object):
                 if os.path.isfile(self.video_path):
                     is_ok = True
                 self.video_path = None
+        return is_ok
+
+    def landscape(self):
+        """Switch to landscape orientation"""
+        is_ok = False
+        if self.send_message("landscape"):
+            is_ok = True
+        return is_ok
+
+    def portrait(self):
+        """Switch to portrait orientation"""
+        is_ok = False
+        if self.send_message("portrait"):
+            is_ok = True
         return is_ok
 
     def connect(self):
@@ -257,6 +282,7 @@ class iOSDevice(object):
             except Exception:
                 pass
         elif self.notification_queue is not None:
+            logging.debug('<<< %s', msg['msg'])
             try:
                 self.notification_queue.put(msg)
             except Exception:

@@ -41,6 +41,7 @@ class iWptBrowser(object):
         self.pending_commands = []
         self.webinspector_proxy = None
         self.ios_utils_path = None
+        self.ios_version = None
         plat = platform.system()
         if plat == "Darwin":
             self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -79,6 +80,7 @@ class iWptBrowser(object):
         """Launch the browser"""
         self.connected = False
         self.flush_messages()
+        self.ios_version = self.ios.get_os_version()
         if self.ios_utils_path and self.ios.start_browser():
             # Start the webinspector proxy
             exe = os.path.join(self.ios_utils_path, 'ios_webkit_debug_proxy')
@@ -195,7 +197,7 @@ class iWptBrowser(object):
 
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
-        if self.job['message_server'] is not None and self.connected:
+        if self.connected:
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
@@ -280,6 +282,7 @@ class iWptBrowser(object):
             if 'msg' in message and message['msg'].startswith('page.'):
                 self.last_activity = monotonic.monotonic()
                 if message['msg'] == 'page.didFinish' or message['msg'] == 'page.loadingFinished':
+                    logging.debug("Page loaded: %s", message['msg'])
                     self.page_loaded = monotonic.monotonic()
             elif 'method' in message:
                 parts = message['method'].split('.')
@@ -326,6 +329,9 @@ class iWptBrowser(object):
             self.ios.show_orange()
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.ios.start_video()
+            if self.ios_version:
+                task['page_data']['osVersion'] = self.ios_version
+                task['page_data']['os_version'] = self.ios_version
             if self.browser_version is not None and 'browserVersion' not in task['page_data']:
                 task['page_data']['browserVersion'] = self.browser_version
                 task['page_data']['browser_version'] = self.browser_version
