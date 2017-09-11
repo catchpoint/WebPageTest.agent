@@ -368,6 +368,9 @@ class iWptBrowser(object):
                     self.page['start'] = msg['params']['timestamp']
                 # For a redirect, close out the existing request and start a new one
                 if 'redirectResponse' in msg['params']:
+                    request['end'] = msg['params']['timestamp']
+                    if 'firstByte' not in request:
+                        request['firstByte'] = msg['params']['timestamp']
                     request['is_redirect'] = True
                     response = msg['params']['redirectResponse']
                     request['status'] = response['status']
@@ -523,7 +526,6 @@ class iWptBrowser(object):
                     if optimization_checks_disabled and self.bodies_zip_file is None:
                         need_body = False
                     if need_body:
-                        target_id = None
                         response = self.send_command("Network.getResponseBody",
                                                      {'requestId': original_id}, wait=True)
                         if response is None:
@@ -930,7 +932,20 @@ class iWptBrowser(object):
                     request['bytesOut'] = r['bytesOut']
                 if 'transfer_size' in r:
                     request['objectSize'] = r['transfer_size']
-                #TODO: populate initiator
+                if 'initiator' in r:
+                    if 'url' in r['initiator']:
+                        request['initiator'] = r['initiator']['url']
+                        if 'lineNumber' in r['initiator']:
+                            request['initiator_line'] = r['initiator']['lineNumber']
+                    elif 'stackTrace' in r['initiator'] and r['initiator']['stackTrace']:
+                        for entry in r['initiator']['stackTrace']:
+                            if 'url' in entry and entry['url'].startswith('http'):
+                                request['initiator'] = entry['url']
+                                if 'lineNumber' in entry:
+                                    request['initiator_line'] = entry['lineNumber']
+                                    if 'columnNumber' in entry:
+                                        request['initiator_column'] = entry['columnNumber']
+                                break
                 if 'request_headers' in r:
                     for name in r['request_headers']:
                         for value in r['request_headers'][name].splitlines():
