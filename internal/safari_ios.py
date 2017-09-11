@@ -646,25 +646,7 @@ class iWptBrowser(object):
                 self.grab_screenshot(screen_shot, png=False, resize=600)
             # Grab the video and kick off processing async
             if 'video_file' in task:
-                self.ios.stop_video(task['video_file'])
-                video_path = os.path.join(task['dir'], task['video_subdirectory'])
-                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-                if task['current_step'] == 1:
-                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
-                else:
-                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
-                                                                             task['cached'],
-                                                                             task['current_step'])
-                histograms = os.path.join(task['dir'], filename)
-                visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
-                        '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                        '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
-                if 'renderVideo' in self.job and self.job['renderVideo']:
-                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
-                    args.extend(['--render', video_out])
-                logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args)
+                self.ios.stop_video()
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
         if self.bodies_zip_file is not None:
@@ -686,6 +668,27 @@ class iWptBrowser(object):
             # Start the optimization checks in a background thread
             self.optimization = OptimizationChecks(self.job, task, requests)
             self.optimization.start()
+            # Grab the video and kick off processing async
+            if 'video_file' in task:
+                if self.ios.get_video(task['video_file']):
+                    video_path = os.path.join(task['dir'], task['video_subdirectory'])
+                    support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+                    if task['current_step'] == 1:
+                        filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
+                    else:
+                        filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                                 task['cached'],
+                                                                                 task['current_step'])
+                    histograms = os.path.join(task['dir'], filename)
+                    visualmetrics = os.path.join(support_path, "visualmetrics.py")
+                    args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                            '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                            '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+                    if 'renderVideo' in self.job and self.job['renderVideo']:
+                        video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                        args.extend(['--render', video_out])
+                    logging.debug(' '.join(args))
+                    self.video_processing = subprocess.Popen(args)
             # Calculate the request and page stats
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)

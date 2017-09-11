@@ -114,18 +114,24 @@ class iOSDevice(object):
             is_ok = True
         return is_ok
 
-    def stop_video(self, video_path):
+    def stop_video(self):
         """Stop the video capture and store it at the given path"""
         is_ok = False
+        if self.send_message("stopvideo"):
+            is_ok = True
+        return is_ok
+
+    def get_video(self, video_path):
+        """Retrieve the recorded video"""
         self.video_size = 0
         self.video_path = video_path
-        if self.send_message("stopvideo"):
-            if self.send_message("getvideo", timeout=600):
-                logging.debug("Video complete: %d bytes", self.video_size)
-                self.send_message("deletevideo")
-                if os.path.isfile(self.video_path):
-                    is_ok = True
-                self.video_path = None
+        is_ok = False
+        if self.send_message("getvideo", timeout=600):
+            logging.debug("Video complete: %d bytes", self.video_size)
+            self.send_message("deletevideo")
+            if os.path.isfile(self.video_path):
+                is_ok = True
+            self.video_path = None
         return is_ok
 
     def landscape(self):
