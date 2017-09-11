@@ -12,10 +12,12 @@ import Queue
 import re
 import subprocess
 import time
+import urlparse
 import zipfile
 import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
+from .optimization_checks import OptimizationChecks
 
 class iWptBrowser(object):
     """iOS"""
@@ -31,14 +33,15 @@ class iWptBrowser(object):
         self.page_loaded = None
         self.recording = False
         self.connected = False
-        self.browser_version = None
         self.messages = Queue.Queue()
         self.video_processing = None
+        self.optimization = None
         self.is_navigating = False
         self.main_frame = None
         self.main_request = None
         self.page = {}
         self.requests = {}
+        self.wpt_result = None
         self.id_map = {}
         self.response_bodies = {}
         self.bodies_zip_file = None
@@ -321,9 +324,9 @@ class iWptBrowser(object):
             self.page['start'] = msg['params']['timestamp']
         if event == 'loadEventFired':
             self.page_loaded = monotonic.monotonic()
-            self.page['load'] = msg['params']['timestamp']
+            self.page['loaded'] = msg['params']['timestamp']
         elif event == 'domContentEventFired':
-            self.page['domContentLoaded'] = msg['params']['timestamp']
+            self.page['DOMContentLoaded'] = msg['params']['timestamp']
         elif event == 'frameStartedLoading':
             if self.is_navigating and self.main_frame is None:
                 self.is_navigating = False
@@ -353,19 +356,22 @@ class iWptBrowser(object):
             if request_id not in self.requests:
                 self.requests[request_id] = {'id': request_id,
                                              'original_id': original_request_id,
-                                             'bytesIn': 0}
+                                             'bytesIn': 0,
+                                             'transfer_size': 0}
             request = self.requests[request_id]
             if 'targetId' in msg['params']:
                 request['targetId'] = msg['params']['targetId']
             ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
+                if 'start' not in self.page:
+                    self.page['start'] = msg['params']['timestamp']
                 # For a redirect, close out the existing request and start a new one
                 if 'redirectResponse' in msg['params']:
                     request['is_redirect'] = True
                     response = msg['params']['redirectResponse']
                     request['status'] = response['status']
                     request['statusText'] = response['statusText']
-                    request['responseHeaders'] = response['headers']
+                    request['response_headers'] = response['headers']
                     if response['source'] != 'network':
                         request['fromNet'] = False
                     if 'timing' in response:
@@ -377,7 +383,8 @@ class iWptBrowser(object):
                     request_id = str(request_id) + '.' + str(self.id_map[original_request_id])
                     self.requests[request_id] = {'id': request_id,
                                                  'original_id': original_request_id,
-                                                 'bytesIn': 0}
+                                                 'bytesIn': 0,
+                                                 'transfer_size': 0}
                     request = self.requests[request_id]
                     if 'targetId' in msg['params']:
                         request['targetId'] = msg['params']['targetId']
@@ -386,7 +393,7 @@ class iWptBrowser(object):
                 request['initiator'] = msg['params']['initiator']
                 request['url'] = msg['params']['request']['url']
                 request['method'] = msg['params']['request']['method']
-                request['requestHeaders'] = msg['params']['request']['headers']
+                request['request_headers'] = msg['params']['request']['headers']
                 if 'type' in msg['params']:
                     request['type'] = msg['params']['type']
                 if request['url'].endswith('.mp4'):
@@ -404,7 +411,7 @@ class iWptBrowser(object):
                 response = msg['params']['response']
                 request['status'] = response['status']
                 request['statusText'] = response['statusText']
-                request['responseHeaders'] = response['headers']
+                request['response_headers'] = response['headers']
                 if response['source'] != 'network':
                     request['fromNet'] = False
                 if 'timing' in response:
@@ -415,12 +422,18 @@ class iWptBrowser(object):
                     request['firstByte'] = msg['params']['timestamp']
                 request['end'] = msg['params']['timestamp']
             elif event == 'dataReceived':
+                if 'firstByte' not in request:
+                    request['firstByte'] = msg['params']['timestamp']
                 if 'encodedDataLength' in msg['params']:
                     request['bytesIn'] += msg['params']['encodedDataLength']
+                    request['transfer_size'] += msg['params']['encodedDataLength']
                 elif 'dataLength' in msg['params']:
                     request['bytesIn'] += msg['params']['dataLength']
+                    request['transfer_size'] += msg['params']['dataLength']
                 request['end'] = msg['params']['timestamp']
             elif event == 'loadingFinished':
+                if 'firstByte' not in request:
+                    request['firstByte'] = msg['params']['timestamp']
                 request['end'] = msg['params']['timestamp']
                 if 'metrics' in msg['params']:
                     metrics = msg['params']['metrics']
@@ -436,6 +449,7 @@ class iWptBrowser(object):
                             request['bytesOut'] += metrics['requestBodyBytesSent']
                     if 'responseBodyBytesReceived' in metrics:
                         request['bytesIn'] = metrics['responseBodyBytesReceived']
+                        request['transfer_size'] = metrics['responseBodyBytesReceived']
                         if 'responseHeaderBytesReceived' in metrics:
                             request['bytesIn'] += metrics['responseHeaderBytesReceived']
                 if request['fromNet']:
@@ -476,7 +490,7 @@ class iWptBrowser(object):
         """Retrieve and store the given response body (if necessary)"""
         if original_id not in self.response_bodies and self.body_fail_count < 3:
             request = self.requests[request_id]
-            if 'status' in request and request['status'] == 200 and 'responseHeaders' in request:
+            if 'status' in request and request['status'] == 200 and 'response_headers' in request:
                 logging.debug('Getting body for %s (%d) - %s', request_id,
                               request['bytesIn'], request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')
@@ -487,7 +501,7 @@ class iWptBrowser(object):
                     # Only grab bodies needed for optimization checks
                     # or if we are saving full bodies
                     need_body = True
-                    content_type = self.get_header_value(request['responseHeaders'],
+                    content_type = self.get_header_value(request['response_headers'],
                                                          'Content-Type')
                     is_text = False
                     if content_type is not None:
@@ -537,6 +551,8 @@ class iWptBrowser(object):
                         else:
                             self.body_fail_count = 0
                             self.response_bodies[request_id] = response['result']['body']
+                if os.path.exists(body_file_path):
+                    request['body'] = body_file_path
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
@@ -557,6 +573,8 @@ class iWptBrowser(object):
         """Format the file prefixes for multi-step testing"""
         self.page = {}
         self.requests = {}
+        self.response_bodies = {}
+        self.wpt_result = None
         task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
@@ -590,9 +608,8 @@ class iWptBrowser(object):
             if self.ios_version:
                 task['page_data']['osVersion'] = self.ios_version
                 task['page_data']['os_version'] = self.ios_version
-            if self.browser_version is not None and 'browserVersion' not in task['page_data']:
-                task['page_data']['browserVersion'] = self.browser_version
-                task['page_data']['browser_version'] = self.browser_version
+                task['page_data']['browserVersion'] = self.ios_version
+                task['page_data']['browser_version'] = self.ios_version
         self.recording = True
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
@@ -648,7 +665,23 @@ class iWptBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
-        self.process_requests(task)
+        if task['log_data']:
+            # Attach response bodies to all of the appropriate requests
+            requests = {}
+            for request_id in self.requests:
+                request = self.requests[request_id]
+                if request['fromNet']:
+                    if 'is_redirect' not in request and \
+                            request['original_id'] in self.response_bodies:
+                        request['response_body'] = self.response_bodies[request['original_id']]
+                    requests[request_id] = request
+            # Start the optimization checks in a background thread
+            self.optimization = OptimizationChecks(self.job, task, requests)
+            self.optimization.start()
+            # Calculate the request and page stats
+            self.wpt_result = {}
+            self.wpt_result['requests'] = self.process_requests(requests)
+            self.wpt_result['pageData'] = self.calculate_page_stats(self.wpt_result['requests'])
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -661,6 +694,15 @@ class iWptBrowser(object):
                     os.remove(task['video_file'])
                 except Exception:
                     pass
+        opt = None
+        if self.optimization is not None:
+            opt = self.optimization.join()
+        if self.wpt_result is not None:
+            self.process_optimization_results(self.wpt_result['pageData'],
+                                              self.wpt_result['requests'], opt)
+            devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+            with gzip.open(devtools_file, 'wb', 7) as f_out:
+                json.dump(self.wpt_result, f_out)
 
     def step_complete(self, task):
         """Final step processing"""
@@ -780,14 +822,99 @@ class iWptBrowser(object):
                         except Exception:
                             pass
 
-    def process_requests(self, task):
-        """Convert all of the request and page events into the format needed for WPT"""
-        result = {}
-        result['requests'] = []
-        result['pageData'] = self.calculate_page_stats(result['requests'])
-        devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'wb', 7) as f_out:
-            json.dump(result, f_out)
+    def get_empty_request(self, request_id, url):
+        """Return and empty, initialized request"""
+        parts = urlparse.urlsplit(url)
+        request = {'type': 3,
+                   'id': request_id,
+                   'request_id': request_id,
+                   'ip_addr': '',
+                   'full_url': url,
+                   'is_secure': 1 if parts.scheme == 'https' else 0,
+                   'method': '',
+                   'host': parts.netloc,
+                   'url': parts.path,
+                   'responseCode': -1,
+                   'load_start': -1,
+                   'load_ms': -1,
+                   'ttfb_ms': -1,
+                   'dns_start': -1,
+                   'dns_end': -1,
+                   'dns_ms': -1,
+                   'connect_start': -1,
+                   'connect_end': -1,
+                   'connect_ms': -1,
+                   'ssl_start': -1,
+                   'ssl_end': -1,
+                   'ssl_ms': -1,
+                   'bytesIn': 0,
+                   'bytesOut': 0,
+                   'objectSize': 0,
+                   'initiator': '',
+                   'initiator_line': '',
+                   'initiator_column': '',
+                   'server_rtt': None,
+                   'headers': {'request': [], 'response': []},
+                   'score_cache': -1,
+                   'score_cdn': -1,
+                   'score_gzip': -1,
+                   'score_cookies': -1,
+                   'score_keep-alive': -1,
+                   'score_minify': -1,
+                   'score_combine': -1,
+                   'score_compress': -1,
+                   'score_etags': -1,
+                   'gzip_total': None,
+                   'gzip_save': None,
+                   'minify_total': None,
+                   'minify_save': None,
+                   'image_total': None,
+                   'image_save': None,
+                   'cache_time': None,
+                   'cdn_provider': None,
+                   'server_count': None,
+                   'socket': -1
+                  }
+        if parts.query:
+            request['url'] += '?' + parts.query
+        return request
+
+    def process_requests(self, raw_requests):
+        """Convert all of the request events into the format needed for WPT"""
+        requests = []
+        if 'start' in self.page:
+            start = self.page['start']
+            for request_id in raw_requests:
+                r = raw_requests[request_id]
+                request = self.get_empty_request(request_id, r['url'])
+                if 'ip' in r:
+                    request['ip_addr'] = r['ip']
+                if 'method' in r:
+                    request['method'] = r['method']
+                if 'status' in r:
+                    request['responseCode'] = r['status']
+                request['load_start'] = int(round((r['start'] - start) * 1000.0))
+                if 'end' in r:
+                    request['load_ms'] = int(round((r['end'] - r['start']) * 1000.0))
+                if 'firstByte' in r:
+                    request['ttfb_ms'] = int(round((r['firstByte'] - r['start']) * 1000.0))
+                request['bytesIn'] = r['bytesIn']
+                if 'bytesOut' in r:
+                    request['bytesOut'] = r['bytesOut']
+                if 'transfer_size' in r:
+                    request['objectSize'] = r['transfer_size']
+                #TODO: populate initiator
+                if 'request_headers' in r:
+                    for name in r['request_headers']:
+                        for value in r['request_headers'][name].splitlines():
+                            request['headers']['request'].append('{0}: {1}'.format(name, value))
+                if 'response_headers' in r:
+                    for name in r['response_headers']:
+                        for value in r['response_headers'][name].splitlines():
+                            request['headers']['response'].append('{0}: {1}'.format(name, value))
+                requests.append(request)
+        requests.sort(key=lambda x: x['load_start'])
+        return requests
 
     def calculate_page_stats(self, requests):
         """Calculate the page-level stats"""
@@ -798,7 +925,7 @@ class iWptBrowser(object):
                 'bytesOutDoc': 0,
                 'bytesIn': 0,
                 'bytesInDoc': 0,
-                'requests': 0,
+                'requests': len(requests),
                 'requestsDoc': 0,
                 'responses_200': 0,
                 'responses_404': 0,
@@ -811,8 +938,154 @@ class iWptBrowser(object):
                                     datetime.utcfromtimestamp(0)).total_seconds())
                }
         if 'loadEventStart' in self.task['page_data']:
-            page['docTime'] = self.task['page_data']['loadEventStart']
+            page['loadTime'] = self.task['page_data']['loadEventStart']
+            page['docTime'] = page['loadTime']
+            page['loadEventStart'] = page['loadTime']
+            page['loadEventEnd'] = page['loadTime']
+        if 'loaded' in self.page:
+            page['loadTime'] = int(round((self.page['loaded'] - self.page['start']) * 1000.0))
+            page['docTime'] = page['loadTime']
+            page['loadEventStart'] = page['loadTime']
+            page['loadEventEnd'] = page['loadTime']
+        if 'DOMContentLoaded' in self.page:
+            page['domContentLoadedEventStart'] = int(round((self.page['DOMContentLoaded'] -
+                                                            self.page['start']) * 1000.0))
+            page['domContentLoadedEventEnd'] = page['domContentLoadedEventStart']
+
+        main_request = None
+        index = 0
+        for request in requests:
+            if request['load_ms'] >= 0:
+                end_time = request['load_start'] + request['load_ms']
+                if end_time > page['fullyLoaded']:
+                    page['fullyLoaded'] = end_time
+                if end_time <= page['loadTime']:
+                    page['requestsDoc'] += 1
+                    page['bytesInDoc'] += request['bytesIn']
+                    page['bytesOutDoc'] += request['bytesOut']
+            page['bytesIn'] += request['bytesIn']
+            page['bytesOut'] += request['bytesOut']
+            if request['responseCode'] == 200:
+                page['responses_200'] += 1
+            elif request['responseCode'] == 404:
+                page['responses_404'] += 1
+                page['result'] = 99999
+            elif request['responseCode'] > -1:
+                page['responses_other'] += 1
+            if main_request is None and \
+                    (request['responseCode'] == 200 or request['responseCode'] == 304):
+                main_request = request['id']
+                request['is_base_page'] = True
+                page['final_base_page_request'] = index
+                page['final_base_page_request_id'] = main_request
+                page['final_url'] = request['full_url']
+                if request['ttfb_ms'] >= 0:
+                    page['TTFB'] = request['load_start'] + request['ttfb_ms']
+                if request['ssl_end'] >= request['ssl_start'] and \
+                        request['ssl_start'] >= 0:
+                    page['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                        request['ssl_start']))
+        if page['responses_200'] == 0 and len(requests):
+            if 'responseCode' in requests[0]:
+                page['result'] = requests[0]['responseCode']
+            else:
+                page['result'] = 12999
         return page
+
+    def process_optimization_results(self, page_data, requests, optimization_results):
+        """Merge the data from the optimization checks file"""
+        if optimization_results:
+            page_data['score_cache'] = -1
+            page_data['score_cdn'] = -1
+            page_data['score_gzip'] = -1
+            page_data['score_cookies'] = -1
+            page_data['score_keep-alive'] = -1
+            page_data['score_minify'] = -1
+            page_data['score_combine'] = -1
+            page_data['score_compress'] = -1
+            page_data['score_etags'] = -1
+            page_data['score_progressive_jpeg'] = -1
+            page_data['gzip_total'] = 0
+            page_data['gzip_savings'] = 0
+            page_data['minify_total'] = -1
+            page_data['minify_savings'] = -1
+            page_data['image_total'] = 0
+            page_data['image_savings'] = 0
+            page_data['optimization_checked'] = 1
+            page_data['base_page_cdn'] = ''
+            cache_count = 0
+            cache_total = 0
+            cdn_count = 0
+            cdn_total = 0
+            keep_alive_count = 0
+            keep_alive_total = 0
+            progressive_total_bytes = 0
+            progressive_bytes = 0
+            for request in requests:
+                if request['responseCode'] == 200:
+                    request_id = str(request['id'])
+                    pos = request_id.find('-')
+                    if pos > 0:
+                        request_id = request_id[:pos]
+                    if request_id in optimization_results:
+                        opt = optimization_results[request_id]
+                        if 'cache' in opt:
+                            request['score_cache'] = opt['cache']['score']
+                            request['cache_time'] = opt['cache']['time']
+                            cache_count += 1
+                            cache_total += request['score_cache']
+                        if 'cdn' in opt:
+                            request['score_cdn'] = opt['cdn']['score']
+                            request['cdn_provider'] = opt['cdn']['provider']
+                            cdn_count += 1
+                            cdn_total += request['score_cdn']
+                            if 'is_base_page' in request and request['is_base_page'] and \
+                                    request['cdn_provider'] is not None:
+                                page_data['base_page_cdn'] = request['cdn_provider']
+                        if 'keep_alive' in opt:
+                            request['score_keep-alive'] = opt['keep_alive']['score']
+                            keep_alive_count += 1
+                            keep_alive_total += request['score_keep-alive']
+                        if 'gzip' in opt:
+                            savings = opt['gzip']['size'] - opt['gzip']['target_size']
+                            request['score_gzip'] = opt['gzip']['score']
+                            request['gzip_total'] = opt['gzip']['size']
+                            request['gzip_save'] = savings
+                            page_data['gzip_total'] += opt['gzip']['size']
+                            page_data['gzip_savings'] += savings
+                        if 'image' in opt:
+                            savings = opt['image']['size'] - opt['image']['target_size']
+                            request['score_compress'] = opt['image']['score']
+                            request['image_total'] = opt['image']['size']
+                            request['image_save'] = savings
+                            page_data['image_total'] += opt['image']['size']
+                            page_data['image_savings'] += savings
+                        if 'progressive' in opt:
+                            size = opt['progressive']['size']
+                            request['jpeg_scan_count'] = opt['progressive']['scan_count']
+                            progressive_total_bytes += size
+                            if request['jpeg_scan_count'] > 1:
+                                request['score_progressive_jpeg'] = 100
+                                progressive_bytes += size
+                            elif size < 10240:
+                                request['score_progressive_jpeg'] = 50
+                            else:
+                                request['score_progressive_jpeg'] = 0
+            if cache_count > 0:
+                page_data['score_cache'] = int(round(cache_total / cache_count))
+            if cdn_count > 0:
+                page_data['score_cdn'] = int(round(cdn_total / cdn_count))
+            if keep_alive_count > 0:
+                page_data['score_keep-alive'] = int(round(keep_alive_total / keep_alive_count))
+            if page_data['gzip_total'] > 0:
+                page_data['score_gzip'] = 100 - int(page_data['gzip_savings'] * 100 /
+                                                    page_data['gzip_total'])
+            if page_data['image_total'] > 0:
+                page_data['score_compress'] = 100 - int(page_data['image_savings'] * 100 /
+                                                        page_data['image_total'])
+            if progressive_total_bytes > 0:
+                page_data['score_progressive_jpeg'] = int(round(progressive_bytes * 100 /
+                                                                progressive_total_bytes))
 
 class DevToolsClient(WebSocketClient):
     """DevTools Websocket client"""

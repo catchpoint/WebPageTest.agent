@@ -289,6 +289,7 @@ class OptimizationChecks(object):
                 if gz_file:
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
+        return self.results
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
@@ -418,7 +419,7 @@ class OptimizationChecks(object):
         # Spawn several workers to do CNAME lookups for the unknown domains
         count = 0
         for domain in domains:
-            if not len(domains[domain]):
+            if not domains[domain]:
                 count += 1
                 self.dns_lookup_queue.put(domain)
         if count:
@@ -445,10 +446,10 @@ class OptimizationChecks(object):
             if 'url' in request:
                 domain = urlparse(request['url']).hostname
                 if domain is not None:
-                    if domain in domains and len(domains[domain]):
+                    if domain in domains and domains[domain]:
                         check['score'] = 100
                         check['provider'] = domains[domain]
-                if not len(check['provider']) and 'response_headers' in request:
+                if not check['provider'] and 'response_headers' in request:
                     provider = self.check_cdn_headers(request['response_headers'])
                     if provider is not None:
                         check['score'] = 100
