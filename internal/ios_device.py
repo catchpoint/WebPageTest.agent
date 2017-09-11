@@ -24,6 +24,8 @@ class iOSDevice(object):
         self.notification_queue = None
         self.current_id = 0
         self.video_path = None
+        self.last_video_data = None
+        self.video_size = 0
 
     def get_devices(self):
         """Get a list of available devices"""
@@ -115,9 +117,11 @@ class iOSDevice(object):
     def stop_video(self, video_path):
         """Stop the video capture and store it at the given path"""
         is_ok = False
+        self.video_size = 0
         self.video_path = video_path
         if self.send_message("stopvideo"):
             if self.send_message("getvideo", timeout=600):
+                logging.debug("Video complete: %d bytes", self.video_size)
                 self.send_message("deletevideo")
                 if os.path.isfile(self.video_path):
                     is_ok = True
@@ -272,6 +276,11 @@ class iOSDevice(object):
                 except Exception:
                     pass
         elif msg['msg'] == 'VideoData' and 'data' in msg:
+            now = monotonic.monotonic()
+            self.video_size += len(msg['data'])
+            if self.last_video_data is None or now - self.last_video_data >= 0.5:
+                logging.debug('<<< Video data (current size: %d)', self.video_size)
+                self.last_video_data = now
             if self.video_path is not None:
                 with open(self.video_path, 'ab') as video_file:
                     video_file.write(msg['data'])

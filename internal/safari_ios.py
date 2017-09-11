@@ -357,7 +357,8 @@ class iWptBrowser(object):
                 self.requests[request_id] = {'id': request_id,
                                              'original_id': original_request_id,
                                              'bytesIn': 0,
-                                             'transfer_size': 0}
+                                             'transfer_size': 0,
+                                             'fromNet': False}
             request = self.requests[request_id]
             if 'targetId' in msg['params']:
                 request['targetId'] = msg['params']['targetId']
@@ -372,7 +373,9 @@ class iWptBrowser(object):
                     request['status'] = response['status']
                     request['statusText'] = response['statusText']
                     request['response_headers'] = response['headers']
-                    if response['source'] != 'network':
+                    if 'fromDiskCache' in response and response['fromDiskCache']:
+                        request['fromNet'] = False
+                    if 'source' in response and response['source'] != 'network':
                         request['fromNet'] = False
                     if 'timing' in response:
                         request['timing'] = response['timing']
@@ -384,7 +387,8 @@ class iWptBrowser(object):
                     self.requests[request_id] = {'id': request_id,
                                                  'original_id': original_request_id,
                                                  'bytesIn': 0,
-                                                 'transfer_size': 0}
+                                                 'transfer_size': 0,
+                                                 'fromNet': False}
                     request = self.requests[request_id]
                     if 'targetId' in msg['params']:
                         request['targetId'] = msg['params']['targetId']
@@ -412,7 +416,9 @@ class iWptBrowser(object):
                 request['status'] = response['status']
                 request['statusText'] = response['statusText']
                 request['response_headers'] = response['headers']
-                if response['source'] != 'network':
+                if 'fromDiskCache' in response and response['fromDiskCache']:
+                    request['fromNet'] = False
+                if 'source' in response and response['source'] != 'network':
                     request['fromNet'] = False
                 if 'timing' in response:
                     request['timing'] = response['timing']
@@ -898,6 +904,27 @@ class iWptBrowser(object):
                     request['load_ms'] = int(round((r['end'] - r['start']) * 1000.0))
                 if 'firstByte' in r:
                     request['ttfb_ms'] = int(round((r['firstByte'] - r['start']) * 1000.0))
+                if 'timing' in r:
+                    start_ms = int(request['load_start'])
+                    timing = r['timing']
+                    if timing['domainLookupStart'] > 0 or timing['domainLookupEnd'] > 0:
+                        request['dns_start'] = int(round(start_ms + timing['domainLookupStart']))
+                        request['dns_end'] = int(round(start_ms + timing['domainLookupEnd']))
+                    if timing['connectStart'] > 0 or timing['connectEnd'] > 0:
+                        request['connect_start'] = int(round(start_ms + timing['connectStart']))
+                        request['connect_end'] = int(round(start_ms + timing['connectEnd']))
+                        if timing['secureConnectionStart'] >= 0:
+                            request['ssl_start'] = int(round(start_ms +
+                                                             timing['secureConnectionStart']))
+                            request['ssl_end'] = request['connect_end']
+                            request['connect_end'] = request['ssl_start']
+                    if timing['requestStart'] >= 0:
+                        request['load_start'] = int(round(start_ms + timing['requestStart']))
+                        request['load_ms'] -= int(round(timing['requestStart']))
+                        request['ttfb_ms'] -= int(round(timing['requestStart']))
+                        if timing['responseStart'] >= 0:
+                            request['ttfb_ms'] = int(round(timing['responseStart'] -
+                                                           timing['requestStart']))
                 request['bytesIn'] = r['bytesIn']
                 if 'bytesOut' in r:
                     request['bytesOut'] = r['bytesOut']
@@ -1112,7 +1139,8 @@ class DevToolsClient(WebSocketClient):
         try:
             if raw.is_text:
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
-                logging.debug(message[:200])
+                if message.find("Timeline.eventRecorded") == -1:
+                    logging.debug(message[:200])
                 if message:
                     message = json.loads(message)
                     if message:
