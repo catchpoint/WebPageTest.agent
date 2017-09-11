@@ -2,6 +2,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Support for Safari on iOS using iWptBrowser"""
+import base64
 from datetime import datetime
 import gzip
 import logging
@@ -11,6 +12,7 @@ import Queue
 import re
 import subprocess
 import time
+import zipfile
 import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
@@ -25,16 +27,26 @@ class iWptBrowser(object):
         self.ios = ios_device
         self.event_name = None
         self.nav_error = None
+        self.nav_error_code = None
         self.page_loaded = None
         self.recording = False
         self.connected = False
         self.browser_version = None
         self.messages = Queue.Queue()
         self.video_processing = None
+        self.is_navigating = False
+        self.main_frame = None
+        self.main_request = None
         self.page = {}
         self.requests = {}
+        self.id_map = {}
+        self.response_bodies = {}
+        self.bodies_zip_file = None
+        self.body_fail_count = 0
+        self.body_index = 0
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.path_base = None
         self.websocket = None
         self.command_id = 0
         self.command_responses = {}
@@ -56,12 +68,23 @@ class iWptBrowser(object):
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
+        self.task = task
         self.page = {}
         self.requests = {}
+        self.nav_error = None
+        self.nav_error_code = None
+        self.main_request = None
         self.ios.notification_queue = self.messages
         self.ios.stop_browser()
         if not task['cached']:
             self.clear_profile(task)
+        self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        if self.bodies_zip_file is not None:
+            self.bodies_zip_file.close()
+            self.bodies_zip_file = None
+        if 'bodies' in self.job and self.job['bodies']:
+            self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
+                                                   zipfile.ZIP_DEFLATED)
 
     def clear_profile(self, _):
         """Clear the browser profile"""
@@ -100,10 +123,10 @@ class iWptBrowser(object):
         while not ret and monotonic.monotonic() < end_time:
             try:
                 response = requests.get("http://localhost:9222/json", timeout=timeout)
-                if len(response.text):
+                if response.text:
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
-                    if len(tabs):
+                    if tabs:
                         websocket_url = None
                         for index in xrange(len(tabs)):
                             if 'webSocketDebuggerUrl' in tabs[index]:
@@ -136,7 +159,7 @@ class iWptBrowser(object):
             except Exception as err:
                 logging.debug("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
-        return ret        
+        return ret
 
     def stop(self, job, task):
         """Kill the browser"""
@@ -182,19 +205,6 @@ class iWptBrowser(object):
                     task['navigated'] = True
             self.task = None
 
-    def wait_for_extension(self):
-        """Wait for the extension to send the started message"""
-        if self.job['message_server'] is not None:
-            end_time = monotonic.monotonic()  + 30
-            while monotonic.monotonic() < end_time:
-                try:
-                    self.job['message_server'].get_message(1)
-                    logging.debug('Extension started')
-                    self.connected = True
-                    break
-                except Exception:
-                    pass
-
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
         if self.connected:
@@ -212,6 +222,8 @@ class iWptBrowser(object):
                     done = True
                     if self.page_loaded is None:
                         self.task['error'] = self.nav_error
+                        if self.nav_error_code is not None:
+                            self.task['page_data']['result'] = self.nav_error_code
                 elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event
@@ -276,24 +288,270 @@ class iWptBrowser(object):
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
 
-    def process_message(self, message):
-        """Process a message from the browser"""
-        if self.recording:
-            if 'msg' in message and message['msg'].startswith('page.'):
-                self.last_activity = monotonic.monotonic()
-                if message['msg'] == 'page.didFinish' or message['msg'] == 'page.loadingFinished':
-                    logging.debug("Page loaded: %s", message['msg'])
-                    self.page_loaded = monotonic.monotonic()
-            elif 'method' in message:
-                parts = message['method'].split('.')
+    def process_message(self, msg):
+        """Process a message from the browser
+        https://trac.webkit.org/browser/webkit/trunk/Source/JavaScriptCore/inspector/protocol"""
+        try:
+            if 'method' in msg and self.recording:
+                parts = msg['method'].split('.')
                 if len(parts) >= 2:
                     category = parts[0]
                     event = parts[1]
-        if 'id' in message:
-            response_id = int(re.search(r'\d+', str(message['id'])).group())
+                    if category == 'Page':
+                        self.process_page_event(event, msg)
+                    elif category == 'Network':
+                        self.process_network_event(event, msg)
+                    elif category == 'Inspector':
+                        self.process_inspector_event(event)
+                    elif category == 'Timeline':
+                        self.process_timeline_event(event, msg)
+                    elif category == 'Console':
+                        self.process_console_event(event, msg)
+        except Exception:
+            pass
+        if 'id' in msg:
+            response_id = int(re.search(r'\d+', str(msg['id'])).group())
             if response_id in self.pending_commands:
                 self.pending_commands.remove(response_id)
-                self.command_responses[response_id] = message
+                self.command_responses[response_id] = msg
+
+    def process_page_event(self, event, msg):
+        """Process Page.* dev tools events"""
+        if 'start' not in self.page:
+            self.page['start'] = msg['params']['timestamp']
+        if event == 'loadEventFired':
+            self.page_loaded = monotonic.monotonic()
+            self.page['load'] = msg['params']['timestamp']
+        elif event == 'domContentEventFired':
+            self.page['domContentLoaded'] = msg['params']['timestamp']
+        elif event == 'frameStartedLoading':
+            if self.is_navigating and self.main_frame is None:
+                self.is_navigating = False
+                self.main_frame = msg['params']['frameId']
+            if self.main_frame == msg['params']['frameId']:
+                logging.debug("Navigating main frame")
+                self.last_activity = monotonic.monotonic()
+                self.page_loaded = None
+        elif event == 'frameStoppedLoading':
+            if self.main_frame is not None and \
+                    not self.page_loaded and \
+                    self.main_frame == msg['params']['frameId']:
+                if self.nav_error is not None:
+                    self.task['error'] = self.nav_error
+                    logging.debug("Page load failed: %s", self.nav_error)
+                    if self.nav_error_code is not None:
+                        self.task['page_data']['result'] = self.nav_error_code
+                self.page_loaded = monotonic.monotonic()
+
+    def process_network_event(self, event, msg):
+        """Process Network.* dev tools events"""
+        if 'requestId' in msg['params']:
+            request_id = msg['params']['requestId']
+            original_request_id = request_id
+            if original_request_id in self.id_map:
+                request_id = str(request_id) + '.' + str(self.id_map[original_request_id])
+            if request_id not in self.requests:
+                self.requests[request_id] = {'id': request_id,
+                                             'original_id': original_request_id,
+                                             'bytesIn': 0}
+            request = self.requests[request_id]
+            if 'targetId' in msg['params']:
+                request['targetId'] = msg['params']['targetId']
+            ignore_activity = request['is_video'] if 'is_video' in request else False
+            if event == 'requestWillBeSent':
+                # For a redirect, close out the existing request and start a new one
+                if 'redirectResponse' in msg['params']:
+                    request['is_redirect'] = True
+                    response = msg['params']['redirectResponse']
+                    request['status'] = response['status']
+                    request['statusText'] = response['statusText']
+                    request['responseHeaders'] = response['headers']
+                    if response['source'] != 'network':
+                        request['fromNet'] = False
+                    if 'timing' in response:
+                        request['timing'] = response['timing']
+                    if original_request_id in self.id_map:
+                        self.id_map[original_request_id] += 1
+                    else:
+                        self.id_map[original_request_id] = 1
+                    request_id = str(request_id) + '.' + str(self.id_map[original_request_id])
+                    self.requests[request_id] = {'id': request_id,
+                                                 'original_id': original_request_id,
+                                                 'bytesIn': 0}
+                    request = self.requests[request_id]
+                    if 'targetId' in msg['params']:
+                        request['targetId'] = msg['params']['targetId']
+                if 'start' not in request:
+                    request['start'] = msg['params']['timestamp']
+                request['initiator'] = msg['params']['initiator']
+                request['url'] = msg['params']['request']['url']
+                request['method'] = msg['params']['request']['method']
+                request['requestHeaders'] = msg['params']['request']['headers']
+                if 'type' in msg['params']:
+                    request['type'] = msg['params']['type']
+                if request['url'].endswith('.mp4'):
+                    request['is_video'] = True
+                request['fromNet'] = True
+                if msg['params']['frameId'] != self.main_frame:
+                    request['frame'] = msg['params']['frameId']
+                if self.main_frame is not None and \
+                        self.main_request is None and \
+                        msg['params']['frameId'] == self.main_frame:
+                    logging.debug('Main request detected')
+                    self.main_request = request_id
+                    self.page['start'] = float(msg['params']['timestamp'])
+            elif event == 'responseReceived':
+                response = msg['params']['response']
+                request['status'] = response['status']
+                request['statusText'] = response['statusText']
+                request['responseHeaders'] = response['headers']
+                if response['source'] != 'network':
+                    request['fromNet'] = False
+                if 'timing' in response:
+                    request['timing'] = response['timing']
+                if 'mimeType' in response and response['mimeType'].startswith('video/'):
+                    request['is_video'] = True
+                if 'firstByte' not in request:
+                    request['firstByte'] = msg['params']['timestamp']
+                request['end'] = msg['params']['timestamp']
+            elif event == 'dataReceived':
+                if 'encodedDataLength' in msg['params']:
+                    request['bytesIn'] += msg['params']['encodedDataLength']
+                elif 'dataLength' in msg['params']:
+                    request['bytesIn'] += msg['params']['dataLength']
+                request['end'] = msg['params']['timestamp']
+            elif event == 'loadingFinished':
+                request['end'] = msg['params']['timestamp']
+                if 'metrics' in msg['params']:
+                    metrics = msg['params']['metrics']
+                    if 'priority' in metrics:
+                        request['priority'] = metrics['priority']
+                    if 'protocol' in metrics:
+                        request['protocol'] = metrics['protocol']
+                    if 'remoteAddress' in metrics:
+                        request['ip'] = metrics['remoteAddress']
+                    if 'requestHeaderBytesSent' in metrics:
+                        request['bytesOut'] = metrics['requestHeaderBytesSent']
+                        if 'requestBodyBytesSent' in metrics:
+                            request['bytesOut'] += metrics['requestBodyBytesSent']
+                    if 'responseBodyBytesReceived' in metrics:
+                        request['bytesIn'] = metrics['responseBodyBytesReceived']
+                        if 'responseHeaderBytesReceived' in metrics:
+                            request['bytesIn'] += metrics['responseHeaderBytesReceived']
+                if request['fromNet']:
+                    self.get_response_body(request_id, original_request_id)
+            elif event == 'loadingFailed':
+                request['end'] = msg['params']['timestamp']
+                request['statusText'] = msg['params']['errorText']
+                if self.main_request is not None and \
+                        request_id == self.main_request and \
+                        'canceled' in msg['params'] and \
+                        not msg['params']['canceled']:
+                    self.nav_error = msg['params']['errorText']
+                    self.nav_error_code = 404
+                    logging.debug('Navigation error: %s', self.nav_error)
+            elif event == 'requestServedFromMemoryCache':
+                request['fromNet'] = False
+            else:
+                ignore_activity = True
+            if not self.task['stop_at_onload'] and not ignore_activity:
+                self.last_activity = monotonic.monotonic()
+
+    def process_inspector_event(self, event):
+        """Process Inspector.* dev tools events"""
+        if event == 'detached':
+            self.task['error'] = 'Inspector detached, possibly crashed.'
+        elif event == 'targetCrashed':
+            self.task['error'] = 'Browser crashed.'
+
+    def process_timeline_event(self, event, msg):
+        """Handle Timeline.* events"""
+        return
+
+    def process_console_event(self, event, msg):
+        """Handle Console.* events"""
+        return
+
+    def get_response_body(self, request_id, original_id):
+        """Retrieve and store the given response body (if necessary)"""
+        if original_id not in self.response_bodies and self.body_fail_count < 3:
+            request = self.requests[request_id]
+            if 'status' in request and request['status'] == 200 and 'responseHeaders' in request:
+                logging.debug('Getting body for %s (%d) - %s', request_id,
+                              request['bytesIn'], request['url'])
+                path = os.path.join(self.task['dir'], 'bodies')
+                if not os.path.isdir(path):
+                    os.makedirs(path)
+                body_file_path = os.path.join(path, original_id)
+                if not os.path.exists(body_file_path):
+                    # Only grab bodies needed for optimization checks
+                    # or if we are saving full bodies
+                    need_body = True
+                    content_type = self.get_header_value(request['responseHeaders'],
+                                                         'Content-Type')
+                    is_text = False
+                    if content_type is not None:
+                        content_type = content_type.lower()
+                        if content_type.startswith('text/') or \
+                                content_type.find('javascript') >= 0 or \
+                                content_type.find('json') >= 0:
+                            is_text = True
+                        # Ignore video files over 10MB
+                        if content_type[:6] == 'video/' and request['bytesIn'] > 10000000:
+                            need_body = False
+                    optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
+                    if optimization_checks_disabled and self.bodies_zip_file is None:
+                        need_body = False
+                    if need_body:
+                        target_id = None
+                        response = self.send_command("Network.getResponseBody",
+                                                     {'requestId': original_id}, wait=True)
+                        if response is None:
+                            self.body_fail_count += 1
+                            logging.warning('No response to body request for request %s',
+                                            request_id)
+                        elif 'result' not in response or \
+                                'body' not in response['result']:
+                            self.body_fail_count = 0
+                            logging.warning('Missing response body for request %s',
+                                            request_id)
+                        elif len(response['result']['body']):
+                            self.body_fail_count = 0
+                            # Write the raw body to a file (all bodies)
+                            if 'base64Encoded' in response['result'] and \
+                                    response['result']['base64Encoded']:
+                                body = base64.b64decode(response['result']['body'])
+                            else:
+                                body = response['result']['body'].encode('utf-8')
+                                is_text = True
+                            # Add text bodies to the zip archive
+                            if self.bodies_zip_file is not None and is_text:
+                                self.body_index += 1
+                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                self.bodies_zip_file.writestr(name, body)
+                                logging.debug('%s: Stored body in zip', request_id)
+                            logging.debug('%s: Body length: %d', request_id, len(body))
+                            self.response_bodies[request_id] = body
+                            with open(body_file_path, 'wb') as body_file:
+                                body_file.write(body)
+                        else:
+                            self.body_fail_count = 0
+                            self.response_bodies[request_id] = response['result']['body']
+
+    def get_header_value(self, headers, name):
+        """Get the value for the requested header"""
+        value = None
+        if headers:
+            if name in headers:
+                value = headers[name]
+            else:
+                find = name.lower()
+                for header_name in headers:
+                    check = header_name.lower()
+                    if check == find or (check[0] == ':' and check[1:] == find):
+                        value = headers[header_name]
+                        break
+        return value
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
@@ -384,12 +642,12 @@ class iWptBrowser(object):
                 self.video_processing = subprocess.Popen(args)
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
+        if self.bodies_zip_file is not None:
+            self.bodies_zip_file.close()
+            self.bodies_zip_file = None
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
-        #TODO: Remove this when real processing is hooked up
-        task['page_data']['result'] = 0
-        task['page_data']['visualTest'] = 1
         self.process_requests(task)
 
     def wait_for_processing(self, task):
@@ -440,7 +698,6 @@ class iWptBrowser(object):
                         try:
                             msg = self.messages.get(timeout=1)
                             if msg:
-                                logging.debug(msg)
                                 self.process_message(msg)
                                 if command_id in self.command_responses:
                                     ret = self.command_responses[command_id]
