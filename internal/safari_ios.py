@@ -320,7 +320,7 @@ class iWptBrowser(object):
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
-        if 'start' not in self.page:
+        if 'start' not in self.page and 'params' in msg and 'timestamp' in msg['params']:
             self.page['start'] = msg['params']['timestamp']
         if event == 'loadEventFired':
             self.page_loaded = monotonic.monotonic()
@@ -482,13 +482,12 @@ class iWptBrowser(object):
             elif event == 'loadingFailed':
                 request['end'] = msg['params']['timestamp']
                 request['statusText'] = msg['params']['errorText']
-                if self.main_request is not None and \
-                        request_id == self.main_request and \
-                        'canceled' in msg['params'] and \
-                        not msg['params']['canceled']:
-                    self.nav_error = msg['params']['errorText']
-                    self.nav_error_code = 404
-                    logging.debug('Navigation error: %s', self.nav_error)
+                if self.main_request is not None and request_id == self.main_request:
+                    if 'canceled' not in msg['params'] or not msg['params']['canceled']:
+                        self.task['error'] = msg['params']['errorText']
+                        self.nav_error = msg['params']['errorText']
+                        self.nav_error_code = 12999
+                        logging.debug('Navigation error: %s', self.nav_error)
             elif event == 'requestServedFromMemoryCache':
                 request['fromNet'] = False
             else:
@@ -782,6 +781,9 @@ class iWptBrowser(object):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
+            self.main_frame = None
+            self.main_request = None
+            self.is_navigating = True
             self.ios.navigate(command['target'])
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
@@ -797,6 +799,10 @@ class iWptBrowser(object):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
+            if command['record']:
+                self.main_frame = None
+                self.main_request = None
+                self.is_navigating = True
             self.ios.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
@@ -1076,7 +1082,9 @@ class iWptBrowser(object):
                         request['ssl_start'] >= 0:
                     page['basePageSSLTime'] = int(round(request['ssl_end'] - \
                                                         request['ssl_start']))
-        if page['responses_200'] == 0 and len(requests):
+        if self.nav_error_code is not None:
+            page['result'] = self.nav_error_code
+        elif page['responses_200'] == 0 and len(requests):
             if 'responseCode' in requests[0]:
                 page['result'] = requests[0]['responseCode']
             else:
