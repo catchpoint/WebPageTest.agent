@@ -23,7 +23,7 @@ class iOSDevice(object):
         self.messages = Queue.Queue()
         self.notification_queue = None
         self.current_id = 0
-        self.video_path = None
+        self.video_file = None
         self.last_video_data = None
         self.video_size = 0
 
@@ -123,15 +123,19 @@ class iOSDevice(object):
 
     def get_video(self, video_path):
         """Retrieve the recorded video"""
-        self.video_size = 0
-        self.video_path = video_path
         is_ok = False
-        if self.send_message("getvideo", timeout=600):
-            logging.debug("Video complete: %d bytes", self.video_size)
-            self.send_message("deletevideo")
-            if os.path.isfile(self.video_path):
-                is_ok = True
-            self.video_path = None
+        self.video_size = 0
+        if self.video_file is not None:
+            self.video_file.close()
+        self.video_file = open(video_path, 'wb')
+        if self.video_file:
+            if self.send_message("getvideo", timeout=600):
+                logging.debug("Video complete: %d bytes", self.video_size)
+                self.send_message("deletevideo")
+                if self.video_size > 0:
+                    is_ok = True
+            self.video_file.close()
+            self.video_file = None
         return is_ok
 
     def landscape(self):
@@ -252,44 +256,48 @@ class iOSDevice(object):
                         message = buff[:pos].strip()
                         buff = buff[pos + 1:]
                         if message:
-                            parts = message.split("\t")
-                            if len(parts) > 1:
-                                msg = {'ts': parts[0]}
-                                data = None
-                                if len(parts) > 2:
-                                    data = parts[2]
-                                parts = parts[1].split(":")
-                                if len(parts) > 1:
-                                    msg['id'] = parts[0]
-                                    message = parts[1].strip()
-                                else:
-                                    message = parts[0].strip()
-                                if message:
-                                    parts = message.split("!")
-                                    msg['msg'] = parts[0].strip()
-                                    if 'encoded' in parts and data is not None:
-                                        data = base64.b64decode(data)
-                                    if data is not None:
-                                        msg['data'] = data
-                                    self.process_message(msg)
+                            self.process_raw_message(message)
+
+    def process_raw_message(self, message):
+        """Process a single message string"""
+        ts_end = message.find("\t")
+        if ts_end > 0:
+            message_len = len(message)
+            timestamp = message[:ts_end]
+            event_end = message.find("\t", ts_end + 1)
+            if event_end == -1:
+                event_end = message_len
+            event = message[ts_end + 1:event_end]
+            if timestamp and event:
+                msg = {'ts': timestamp}
+                data = None
+                if event_end < message_len:
+                    data = message[event_end + 1:]
+                parts = event.split(":")
+                if len(parts) > 1:
+                    msg['id'] = parts[0]
+                    message = parts[1].strip()
+                else:
+                    message = parts[0].strip()
+                if message:
+                    parts = message.split("!")
+                    msg['msg'] = parts[0].strip()
+                    if 'encoded' in parts and data is not None:
+                        data = base64.b64decode(data)
+                    if data is not None:
+                        msg['data'] = data
+                    self.process_message(msg)
 
     def process_message(self, msg):
         """Handle a single decoded message"""
-        if msg['msg'] == 'StartVideo':
-            if self.video_path is not None and os.path.isfile(self.video_path):
-                try:
-                    os.remove(self.video_path)
-                except Exception:
-                    pass
-        elif msg['msg'] == 'VideoData' and 'data' in msg:
+        if msg['msg'] == 'VideoData' and 'data' in msg:
             now = monotonic.monotonic()
             self.video_size += len(msg['data'])
             if self.last_video_data is None or now - self.last_video_data >= 0.5:
                 logging.debug('<<< Video data (current size: %d)', self.video_size)
                 self.last_video_data = now
-            if self.video_path is not None:
-                with open(self.video_path, 'ab') as video_file:
-                    video_file.write(msg['data'])
+            if self.video_file is not None:
+                self.video_file.write(msg['data'])
         elif 'id' in msg:
             logging.debug('<<< %s:%s', msg['id'], msg['msg'])
             try:

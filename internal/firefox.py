@@ -808,16 +808,21 @@ class Firefox(DesktopBrowser):
         # parse values out of the headers
         for request in requests:
             try:
-                request['expires'] = self.get_header_value(request['headers']['response'],
-                                                           'Expires')
-                request['cacheControl'] = self.get_header_value(request['headers']['response'],
-                                                                'Cache-Control')
-                request['contentType'] = self.get_header_value(request['headers']['response'],
-                                                               'Content-Type')
-                request['contentEncoding'] = self.get_header_value(request['headers']['response'],
-                                                                   'Content-Encoding')
-                request['objectSize'] = self.get_header_value(request['headers']['response'],
-                                                              'Content-Length')
+                value = self.get_header_value(request['headers']['response'], 'Expires')
+                if value:
+                    request['expires'] = value
+                value = self.get_header_value(request['headers']['response'], 'Cache-Control')
+                if value:
+                    request['cacheControl'] = value
+                value = self.get_header_value(request['headers']['response'], 'Content-Type')
+                if value:
+                    request['contentType'] = value
+                value = self.get_header_value(request['headers']['response'], 'Content-Encoding')
+                if value:
+                    request['contentEncoding'] = value
+                value = self.get_header_value(request['headers']['response'], 'Content-Length')
+                if value:
+                    request['objectSize'] = value
             except Exception:
                 pass
         requests.sort(key=lambda x: x['load_start'])

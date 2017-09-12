@@ -357,8 +357,12 @@ class iWptBrowser(object):
                 self.requests[request_id] = {'id': request_id,
                                              'original_id': original_request_id,
                                              'bytesIn': 0,
+                                             'objectSize': 0,
+                                             'objectSizeUncompressed': 0,
                                              'transfer_size': 0,
                                              'fromNet': False}
+                if 'params' in msg and 'timestamp' in msg['params']:
+                    self.requests[request_id]['created'] = msg['params']['timestamp']
             request = self.requests[request_id]
             if 'targetId' in msg['params']:
                 request['targetId'] = msg['params']['targetId']
@@ -390,8 +394,12 @@ class iWptBrowser(object):
                     self.requests[request_id] = {'id': request_id,
                                                  'original_id': original_request_id,
                                                  'bytesIn': 0,
+                                                 'objectSize': 0,
+                                                 'objectSizeUncompressed': 0,
                                                  'transfer_size': 0,
                                                  'fromNet': False}
+                    if 'params' in msg and 'timestamp' in msg['params']:
+                        self.requests[request_id]['created'] = msg['params']['timestamp']
                     request = self.requests[request_id]
                     if 'targetId' in msg['params']:
                         request['targetId'] = msg['params']['targetId']
@@ -433,12 +441,17 @@ class iWptBrowser(object):
             elif event == 'dataReceived':
                 if 'firstByte' not in request:
                     request['firstByte'] = msg['params']['timestamp']
-                if 'encodedDataLength' in msg['params']:
+                if 'encodedDataLength' in msg['params'] and \
+                        msg['params']['encodedDataLength'] >= 0:
+                    request['objectSize'] += msg['params']['encodedDataLength']
                     request['bytesIn'] += msg['params']['encodedDataLength']
                     request['transfer_size'] += msg['params']['encodedDataLength']
-                elif 'dataLength' in msg['params']:
+                elif 'dataLength' in msg['params'] and msg['params']['dataLength'] >= 0:
+                    request['objectSize'] += msg['params']['dataLength']
                     request['bytesIn'] += msg['params']['dataLength']
                     request['transfer_size'] += msg['params']['dataLength']
+                if 'dataLength' in msg['params'] and msg['params']['dataLength'] >= 0:
+                    request['objectSizeUncompressed'] += msg['params']['dataLength']
                 request['end'] = msg['params']['timestamp']
             elif event == 'loadingFinished':
                 if 'firstByte' not in request:
@@ -456,10 +469,13 @@ class iWptBrowser(object):
                         request['bytesOut'] = metrics['requestHeaderBytesSent']
                         if 'requestBodyBytesSent' in metrics:
                             request['bytesOut'] += metrics['requestBodyBytesSent']
-                    if 'responseBodyBytesReceived' in metrics:
+                    if 'responseBodyBytesReceived' in metrics and \
+                            metrics['responseBodyBytesReceived'] >= 0:
                         request['bytesIn'] = metrics['responseBodyBytesReceived']
+                        request['objectSize'] = metrics['responseBodyBytesReceived']
                         request['transfer_size'] = metrics['responseBodyBytesReceived']
-                        if 'responseHeaderBytesReceived' in metrics:
+                        if 'responseHeaderBytesReceived' in metrics and \
+                                metrics['responseHeaderBytesReceived'] >= 0:
                             request['bytesIn'] += metrics['responseHeaderBytesReceived']
                 if request['fromNet']:
                     self.get_response_body(request_id, original_request_id)
@@ -669,26 +685,25 @@ class iWptBrowser(object):
             self.optimization = OptimizationChecks(self.job, task, requests)
             self.optimization.start()
             # Grab the video and kick off processing async
-            if 'video_file' in task:
-                if self.ios.get_video(task['video_file']):
-                    video_path = os.path.join(task['dir'], task['video_subdirectory'])
-                    support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-                    if task['current_step'] == 1:
-                        filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
-                    else:
-                        filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
-                                                                                 task['cached'],
-                                                                                 task['current_step'])
-                    histograms = os.path.join(task['dir'], filename)
-                    visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                    args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
-                            '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
-                            '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
-                    if 'renderVideo' in self.job and self.job['renderVideo']:
-                        video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
-                        args.extend(['--render', video_out])
-                    logging.debug(' '.join(args))
-                    self.video_processing = subprocess.Popen(args)
+            if 'video_file' in task and self.ios.get_video(task['video_file']):
+                video_path = os.path.join(task['dir'], task['video_subdirectory'])
+                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+                if task['current_step'] == 1:
+                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
+                else:
+                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                             task['cached'],
+                                                                             task['current_step'])
+                histograms = os.path.join(task['dir'], filename)
+                visualmetrics = os.path.join(support_path, "visualmetrics.py")
+                args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                        '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
+                        '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+                if 'renderVideo' in self.job and self.job['renderVideo']:
+                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                    args.extend(['--render', video_out])
+                logging.debug(' '.join(args))
+                self.video_processing = subprocess.Popen(args)
             # Calculate the request and page stats
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)
@@ -904,6 +919,10 @@ class iWptBrowser(object):
                     request['method'] = r['method']
                 if 'status' in r:
                     request['responseCode'] = r['status']
+                if 'type' in r:
+                    request['requestType'] = r['type']
+                if 'created' in r:
+                    request['created'] = int(round((r['created'] - start) * 1000.0))
                 request['load_start'] = int(round((r['start'] - start) * 1000.0))
                 if 'end' in r:
                     request['load_ms'] = int(round((r['end'] - r['start']) * 1000.0))
@@ -933,8 +952,10 @@ class iWptBrowser(object):
                 request['bytesIn'] = r['bytesIn']
                 if 'bytesOut' in r:
                     request['bytesOut'] = r['bytesOut']
-                if 'transfer_size' in r:
-                    request['objectSize'] = r['transfer_size']
+                if 'objectSize' in r:
+                    request['objectSize'] = r['objectSize']
+                if 'objectSizeUncompressed' in r:
+                    request['objectSizeUncompressed'] = r['objectSizeUncompressed']
                 if 'initiator' in r:
                     if 'url' in r['initiator']:
                         request['initiator'] = r['initiator']['url']
@@ -957,6 +978,31 @@ class iWptBrowser(object):
                     for name in r['response_headers']:
                         for value in r['response_headers'][name].splitlines():
                             request['headers']['response'].append('{0}: {1}'.format(name, value))
+                    value = self.get_header_value(r['response_headers'], 'Expires')
+                    if value:
+                        request['expires'] = value
+                    value = self.get_header_value(r['response_headers'], 'Cache-Control')
+                    if value:
+                        request['cacheControl'] = value
+                    value = self.get_header_value(r['response_headers'], 'Content-Type')
+                    if value:
+                        request['contentType'] = value
+                    value = self.get_header_value(r['response_headers'], 'Content-Encoding')
+                    if value:
+                        request['contentEncoding'] = value
+                    # If a content-length header is available, use that instead of the values
+                    # reported by Safari which only show the unencoded size (even though it
+                    # claims otherwise).
+                    try:
+                        value = self.get_header_value(r['response_headers'], 'Content-Length')
+                        if value:
+                            content_length = int(value)
+                            if content_length >= 0:
+                                request['objectSize'] = content_length
+                                request['bytesIn'] = content_length + \
+                                        sum(len(s) for s in request['headers']['response'])
+                    except Exception:
+                        pass
                 requests.append(request)
         requests.sort(key=lambda x: x['load_start'])
         return requests
