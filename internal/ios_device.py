@@ -176,12 +176,13 @@ class iOSDevice(object):
 
     def disconnect(self):
         """Disconnect from the device"""
+        logging.debug("Disconnecting from iOS device")
         self.must_disconnect = True
         if self.socket is not None:
             self.socket.close()
             self.socket = None
         if self.message_thread is not None:
-            self.message_thread.join()
+            #self.message_thread.join()
             self.message_thread = None
 
     def send_message(self, message, data=None, wait=True, timeout=30):

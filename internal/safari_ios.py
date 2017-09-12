@@ -67,7 +67,7 @@ class iWptBrowser(object):
                                                    'support', 'ios', 'arm')
             else:
                 self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'support', 'ios', 'linux64')
+                                                   'support', 'ios', 'Linux64')
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
