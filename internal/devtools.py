@@ -574,12 +574,12 @@ class DevTools(object):
                             '-depth 8 {0}"{1}"'.format(resize_string, path)
                     logging.debug(cmd)
                     subprocess.call(cmd, shell=True)
-                    self.crop_screen_shot(path)
+                    #self.crop_screen_shot(path)
                 else:
                     tmp_file = path + '.png'
                     with open(tmp_file, 'wb') as image_file:
                         image_file.write(base64.b64decode(response['result']['data']))
-                    self.crop_screen_shot(tmp_file)
+                    #self.crop_screen_shot(tmp_file)
                     command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
                         tmp_file, resize_string, self.job['iq'], path)
                     logging.debug(command)
