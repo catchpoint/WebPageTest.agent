@@ -580,16 +580,19 @@ class iWptBrowser(object):
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
         value = None
-        if headers:
-            if name in headers:
-                value = headers[name]
-            else:
-                find = name.lower()
-                for header_name in headers:
-                    check = header_name.lower()
-                    if check == find or (check[0] == ':' and check[1:] == find):
-                        value = headers[header_name]
-                        break
+        try:
+            if headers:
+                if name in headers:
+                    value = headers[name]
+                else:
+                    find = name.lower()
+                    for header_name in headers:
+                        check = header_name.lower()
+                        if check == find or (check[0] == ':' and check[1:] == find):
+                            value = headers[header_name]
+                            break
+        except Exception:
+            pass
         return value
 
     def prepare_task(self, task):
@@ -979,11 +982,11 @@ class iWptBrowser(object):
                 if 'request_headers' in r:
                     for name in r['request_headers']:
                         for value in r['request_headers'][name].splitlines():
-                            request['headers']['request'].append('{0}: {1}'.format(name, value))
+                            request['headers']['request'].append(u'{0}: {1}'.format(name, value))
                 if 'response_headers' in r:
                     for name in r['response_headers']:
                         for value in r['response_headers'][name].splitlines():
-                            request['headers']['response'].append('{0}: {1}'.format(name, value))
+                            request['headers']['response'].append(u'{0}: {1}'.format(name, value))
                     value = self.get_header_value(r['response_headers'], 'Expires')
                     if value:
                         request['expires'] = value
