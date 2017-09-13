@@ -219,6 +219,8 @@ class DevTools(object):
             if 'trace' in self.job and self.job['trace']:
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
+                    if not trace.startswith('-*,'):
+                        trace = '-*,' + trace
                     if trace.find('netlog') >= 0:
                         self.job['keep_netlog'] = True
                 else:
