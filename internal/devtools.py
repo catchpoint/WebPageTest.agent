@@ -219,6 +219,8 @@ class DevTools(object):
             if 'trace' in self.job and self.job['trace']:
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
+                    if not trace.startswith('-*,'):
+                        trace = '-*,' + trace
                     if trace.find('netlog') >= 0:
                         self.job['keep_netlog'] = True
                 else:
@@ -229,12 +231,19 @@ class DevTools(object):
                 self.job['keep_netlog'] = False
                 trace = "-*"
             if 'timeline' in self.job and self.job['timeline']:
-                trace += ",blink.console,devtools.timeline" \
-                         ",disabled-by-default-blink.feature_usage"
+                trace += ",blink.console,devtools.timeline"
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
-            trace += ",rail,blink.user_timing,netlog"
+            # Add the required trace events
+            if trace.find(',rail') == -1:
+                trace += ',rail'
+            if trace.find(',blink.user_timing') == -1:
+                trace += ',blink.user_timing'
+            if trace.find(',netlog') == -1:
+                trace += ',netlog'
+            if trace.find(',disabled-by-default-blink.feature_usage') == -1:
+                trace += ',disabled-by-default-blink.feature_usage'
             self.trace_enabled = True
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'},
@@ -317,7 +326,7 @@ class DevTools(object):
                 else:
                     content_length = 0
                 logging.debug('Getting body for %s (%d) - %s', request_id,
-                               content_length, request['url'])
+                              content_length, request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')
                 if not os.path.isdir(path):
                     os.makedirs(path)
