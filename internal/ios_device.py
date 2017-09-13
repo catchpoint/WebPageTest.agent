@@ -4,7 +4,6 @@
 """Interface for iWptBrowser on iOS devices"""
 import base64
 import logging
-import os
 import Queue
 import select
 import threading

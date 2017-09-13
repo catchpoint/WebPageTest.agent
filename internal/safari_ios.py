@@ -172,6 +172,10 @@ class iWptBrowser(object):
             except Exception:
                 pass
             self.websocket = None
+        if self.webinspector_proxy:
+            self.webinspector_proxy.terminate()
+            self.webinspector_proxy.communicate()
+            self.webinspector_proxy = None
         self.ios.stop_browser()
 
     def run_task(self, task):
