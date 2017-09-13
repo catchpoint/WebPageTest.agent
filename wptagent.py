@@ -749,7 +749,7 @@ def main():
         logging.getLogger().addHandler(err_log)
 
     browsers = None
-    if not options.android:
+    if not options.android and not options.iOS:
         browsers = find_browsers()
         if len(browsers) == 0:
             print "No browsers configured. Check that browsers.ini is present and correct."

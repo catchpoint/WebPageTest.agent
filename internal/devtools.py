@@ -574,12 +574,10 @@ class DevTools(object):
                             '-depth 8 {0}"{1}"'.format(resize_string, path)
                     logging.debug(cmd)
                     subprocess.call(cmd, shell=True)
-                    self.crop_screen_shot(path)
                 else:
                     tmp_file = path + '.png'
                     with open(tmp_file, 'wb') as image_file:
                         image_file.write(base64.b64decode(response['result']['data']))
-                    self.crop_screen_shot(tmp_file)
                     command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
                         tmp_file, resize_string, self.job['iq'], path)
                     logging.debug(command)
@@ -602,62 +600,6 @@ class DevTools(object):
         if delta_sum > threshold:
             similar = False
         return similar
-
-    def crop_screen_shot(self, path):
-        """Crop screenshots to the viewport (for mobile emulation tests)"""
-        if not self.options.android and 'mobile' in self.job and self.job['mobile']:
-            try:
-                # detect the viewport if we haven't already
-                if self.mobile_viewport is None:
-                    from PIL import Image
-                    image = Image.open(path)
-                    width, height = image.size
-                    if 'width' in self.job and 'height' in self.job and \
-                            width >= self.job['width'] and height > self.job['height']:
-                        viewport_width = self.job['width']
-                        viewport_height = self.job['height']
-                    else:
-                        pixels = image.load()
-                        background = pixels[10, 10]
-                        viewport_width = None
-                        viewport_height = None
-                        x_pos = 10
-                        y_pos = 10
-                        while viewport_width is None and x_pos < width:
-                            pixel_color = pixels[x_pos, y_pos]
-                            if not self.colors_are_similar(background, pixel_color):
-                                viewport_width = x_pos
-                            else:
-                                x_pos += 1
-                        if viewport_width is None:
-                            viewport_width = width
-                        x_pos = 10
-                        while viewport_height is None and y_pos < height:
-                            pixel_color = pixels[x_pos, y_pos]
-                            if not self.colors_are_similar(background, pixel_color):
-                                viewport_height = y_pos
-                            else:
-                                y_pos += 1
-                        if viewport_height is None:
-                            viewport_height = height
-                    self.mobile_viewport = '{0:d}x{1:d}+0+0'.format(viewport_width, viewport_height)
-                    logging.debug('Mobile viewport found: %s in %dx%d screen shot',
-                                  self.mobile_viewport, width, height)
-                    if width > 0 and height > 0:
-                        if width != viewport_width or height != viewport_height:
-                            self.task['crop_pct'] = {
-                                "width": int(float(viewport_width * 100) / float(width)),
-                                "height": int(float(viewport_height * 100) / float(height)),
-                            }
-                            logging.debug("Crop percentages: %f%% x %f%%",
-                                          self.task['crop_pct']['width'],
-                                          self.task['crop_pct']['height'])
-                if self.mobile_viewport is not None:
-                    command = 'mogrify -crop {0} "{1}"'.format(self.mobile_viewport, path)
-                    logging.debug(command)
-                    subprocess.call(command, shell=True)
-            except Exception:
-                pass
 
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""

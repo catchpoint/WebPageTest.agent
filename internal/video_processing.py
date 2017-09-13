@@ -25,7 +25,8 @@ class VideoProcessing(object):
         if os.path.isdir(self.video_path):
             self.cap_frame_count(self.video_path, 50)
             # Crop the video frames
-            if not self.options.android and 'mobile' in self.job and self.job['mobile'] and \
+            if not self.options.android and not self.options.iOS and \
+                    'mobile' in self.job and self.job['mobile'] and \
                     'crop_pct' in self.task:
                 crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
                                                   self.task['crop_pct']['height'])
