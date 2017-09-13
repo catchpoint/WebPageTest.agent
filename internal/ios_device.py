@@ -236,27 +236,30 @@ class iOSDevice(object):
     def pump_messages(self):
         """Background thread for reading messages from the browser"""
         buff = ""
-        while not self.must_disconnect and self.socket != None:
-            rlo, _, xlo = select.select([self.socket], [], [self.socket])
-            if xlo:
-                logging.debug("iWptBrowser disconnected")
-                self.messages.put({"msg":"disconnected"})
-                return
-            if rlo:
-                data_in = self.socket.recv(8192)
-                if not data_in:
+        try:
+            while not self.must_disconnect and self.socket != None:
+                rlo, _, xlo = select.select([self.socket], [], [self.socket])
+                if xlo:
                     logging.debug("iWptBrowser disconnected")
                     self.messages.put({"msg":"disconnected"})
                     return
-                buff += data_in
-                pos = 0
-                while pos >= 0:
-                    pos = buff.find("\n")
-                    if pos >= 0:
-                        message = buff[:pos].strip()
-                        buff = buff[pos + 1:]
-                        if message:
-                            self.process_raw_message(message)
+                if rlo:
+                    data_in = self.socket.recv(8192)
+                    if not data_in:
+                        logging.debug("iWptBrowser disconnected")
+                        self.messages.put({"msg":"disconnected"})
+                        return
+                    buff += data_in
+                    pos = 0
+                    while pos >= 0:
+                        pos = buff.find("\n")
+                        if pos >= 0:
+                            message = buff[:pos].strip()
+                            buff = buff[pos + 1:]
+                            if message:
+                                self.process_raw_message(message)
+        except Exception:
+            pass
 
     def process_raw_message(self, message):
         """Process a single message string"""
