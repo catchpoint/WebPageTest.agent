@@ -6,6 +6,8 @@ To run the agent, simply specify a few environment variables with docker:
 * `LOCATION`: will be passed as `--location`
 * `KEY`: will be passed as `--key`
 * `NAME`: will be passed as `--name` (optional)
+* `SHAPER`: will be passed as `--shaper` (optional)
+* `EXTRA_ARGS`: extra command-line options that will be passed through verbatim (optional)
 
 ## Prerequisites to use traffic shaping in docker
 **Experimental**: Running the agent with traffic shaping is experimental. It might
@@ -18,6 +20,8 @@ For traffic shaping to work correctly, you need to load the ifb module on the **
 
 Also, the container needs `NET_ADMIN` capabilities, so run the container with 
 `--cap-add=NET_ADMIN`.
+
+To disable traffic-shaping, pass SHAPER="none".
 
 ## Example
 

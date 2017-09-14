@@ -11,7 +11,9 @@ if [ -z "$LOCATION" ]; then
   exit 1
 fi
 
-EXTRA_ARGS=""
+if [ -z "$EXTRA_ARGS" ]; then
+  EXTRA_ARGS=""
+fi
 
 if [ -n "$NAME" ]; then
   EXTRA_ARGS="$EXTRA_ARGS --name $NAME"
@@ -21,6 +23,9 @@ if [ -n "$KEY" ]; then
   EXTRA_ARGS="$EXTRA_ARGS --key $KEY"
 fi
 
+if [ -n "$SHAPER" ]; then
+  EXTRA_ARGS="$EXTRA_ARGS --shaper $SHAPER"
+fi
 
 # exec replaces the shell process by the python process and is required to
 # propagate signals (i.e. SIGTERM)
