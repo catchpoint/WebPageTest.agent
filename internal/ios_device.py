@@ -184,6 +184,7 @@ class iOSDevice(object):
 
     def connect(self):
         """Connect to the device with the matching serial number"""
+        self.startup()
         try:
             if self.socket is None:
                 self.disconnect()
