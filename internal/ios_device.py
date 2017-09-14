@@ -17,11 +17,10 @@ import ujson as json
 class iOSDevice(object):
     """iOS device interface"""
     def __init__(self, serial=None):
-        from .support.ios.usbmux import USBMux
         self.socket = None
         self.serial = serial
         self.must_disconnect = False
-        self.mux = USBMux()
+        self.mux = None
         self.message_thread = None
         self.messages = Queue.Queue()
         self.notification_queue = None
@@ -46,8 +45,18 @@ class iOSDevice(object):
             print "iOS is only supported on Mac and Linux"
         return ret
 
+    def startup(self):
+        """Initialize USBMux if it isn't already"""
+        if self.mux is None:
+            try:
+                from .support.ios.usbmux import USBMux
+                self.mux = USBMux()
+            except Exception:
+                logging.critical("Error initializing usbmux")
+
     def get_devices(self):
         """Get a list of available devices"""
+        self.startup()
         devices = []
         self.mux.process(0.1)
         if self.mux.devices:
@@ -61,6 +70,8 @@ class iOSDevice(object):
         response = self.send_message("battery")
         if response and response > 0.75:
             is_ready = True
+        else:
+            logging.debug("Phone is not connected (or battery is below 75%)")
         return is_ready
 
     def get_os_version(self):
@@ -173,6 +184,7 @@ class iOSDevice(object):
 
     def connect(self):
         """Connect to the device with the matching serial number"""
+        self.startup()
         try:
             if self.socket is None:
                 self.disconnect()
@@ -195,7 +207,6 @@ class iOSDevice(object):
 
     def disconnect(self):
         """Disconnect from the device"""
-        logging.debug("Disconnecting from iOS device")
         self.must_disconnect = True
         if self.socket is not None:
             self.socket.close()
@@ -351,22 +362,22 @@ def install_main():
         for filename in os.listdir(src_path):
             src = os.path.join(src_path, filename)
             if os.path.isfile(src):
-                dest_path = None
+                dest = None
                 if filename == 'usbmuxd':
                     dest = os.path.join('/usr/local/sbin', filename)
                 elif filename.startswith('idevice'):
                     dest = os.path.join('/usr/local/bin', filename)
                 elif filename.find('.so') >= 0:
                     dest = os.path.join('/usr/local/lib', filename)
-                if dest_path is not None and not os.path.isfile(dest):
+                if dest is not None and not os.path.isfile(dest):
                     print "Copying {0} to {1}".format(filename, dest)
-                    shutil.copyfile(src, dest_path)
+                    shutil.copy(src, dest)
         # Update the library cache
         subprocess.call(['ldconfig'])
         # Start and initialize usbmuxd
         print "Starting usbmuxd"
-        subprocess.call(['usbmuxd'])
-        subprocess.call(['ideviceinfo'])
+        subprocess.call(['/usr/local/sbin/usbmuxd'])
+        subprocess.call(['/usr/local/bin/ideviceinfo'])
 
 if __name__ == '__main__':
     install_main()
