@@ -1,5 +1,5 @@
 # Requirements
-wptagent currently supports Windows and Linux hosts (possibly OSX but not tested).  If traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux and OSX (NOPASSWD in visudo).
+wptagent currently supports Windows, Linux and OSX for desktop browsers as well as Android and iOS for mobile devices (mobile testing requires a host computer connected to drive the testing).  If local traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux and OSX (NOPASSWD in visudo).
 
 ## Software Requirements
 * Python 2.7 available on the path (python2.7 and  python-pip packages on Ubuntu/Debian) with the following modules installed (all available through pip):
@@ -49,6 +49,22 @@ wptagent currently supports Windows and Linux hosts (possibly OSX but not tested
         * ```sudo apt-get install -y nodejs```
 * The lighthouse npm module
     * ```sudo npm install -g lighthouse```
+
+## Remote traffic-shaping
+wptagent supports configuring an external FreeBSD network bridge for traffic-shaping.  This is particularly useful for mobile device testing where the devices can be connected to a WiFi access point and the access point is connected through a FreeBSD bridge to get to the network.
+
+i.e. mobile phone <--> WiFi <--> FreeBSD bridge <--> Internet
+
+In this configuration the mobile devices are given static IP addresses and the FreeBSD bridge is pre-configured with 2 dummynet pipes for each IP address (one for inbound and one for outbound traffic).  The root account needs to allow for cert-based ssh access from the test machine (with the cert installed in authorized_keys).
+
+Passing the agent a "--shaper external" command-line flag you give it the IP address of the FreeBSD bridge as well as the pipe numbers for inbound and outbound traffic for the device.  At test time the agent will ssh to the bridge and adjust the settings for the device as needed.
+
+## iOS testing
+iOS testing requires an iOS device running [iWptBrowser](https://github.com/WPO-Foundation/iWptBrowser/blob/master/docs/walkthrough.md) (a Safari shell), the --iOS command-line flag and is supported on Mac as well as Linux hosts for controlling the device (a Raspberry Pi is recommended).
+
+Local traffic-shaping isn't supported so either "none" or "external" needs to be specified for --shaper.
+
+On Linux the usbmuxd support libraries should be installed automatically but if there are problems talking to the device you may need to install them manually.  To verify connectivity to the device you can run "ideviceinfo" from the command-line to make sure things are working.
 
 ## Configuration
 The default browser locations for Chrome, Firefox (Stable, Beta and Canary/Nightly) and Microsoft Edge will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
