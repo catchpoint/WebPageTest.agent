@@ -682,7 +682,7 @@ class iWptBrowser(object):
             requests = {}
             for request_id in self.requests:
                 request = self.requests[request_id]
-                if request['fromNet']:
+                if request['fromNet'] and 'url' in request and request['url'].startswith('http'):
                     if 'is_redirect' not in request and \
                             request['original_id'] in self.response_bodies:
                         request['response_body'] = self.response_bodies[request['original_id']]
