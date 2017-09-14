@@ -309,6 +309,10 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
+        
+        # Check the iOS install
+        if self.ios is not None:
+            ret = self.ios.check_install()
 
         if not self.options.android and not self.options.iOS:
             self.wait_for_idle(300)

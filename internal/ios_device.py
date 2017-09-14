@@ -4,8 +4,12 @@
 """Interface for iWptBrowser on iOS devices"""
 import base64
 import logging
+import os
+import platform
 import Queue
 import select
+import shutil
+import subprocess
 import threading
 import monotonic
 import ujson as json
@@ -25,6 +29,22 @@ class iOSDevice(object):
         self.video_file = None
         self.last_video_data = None
         self.video_size = 0
+
+    def check_install(self):
+        """Check to make sure usbmux is installed and the device is available"""
+        ret = False
+        plat = platform.system()
+        if plat == "Darwin" or plat == "Linux":
+            if not os.path.exists('/var/run/usbmuxd') and plat == "Linux":
+                args = ['sudo', 'python', __file__, '--install']
+                subprocess.call(args)
+            if os.path.exists('/var/run/usbmuxd'):
+                ret = True
+            else:
+                print "usbmuxd is not available, please try installing it manually"
+        else:
+            print "iOS is only supported on Mac and Linux"
+        return ret
 
     def get_devices(self):
         """Get a list of available devices"""
@@ -313,3 +333,40 @@ class iOSDevice(object):
                 self.notification_queue.put(msg)
             except Exception:
                 pass
+
+def install_main():
+    """Main entry-point when running as an installer (under sudo permissions)"""
+    if os.getuid() != 0:
+        print "Must run as sudo"
+        exit(1)
+    if not os.path.exists('/var/run/usbmuxd') and platform.system() == "Linux":
+        print "Installing usbmuxd"
+        if os.uname()[4].startswith('arm'):
+            src_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'support', 'ios', 'arm')
+        else:
+            src_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                    'support', 'ios', 'Linux64')
+        # Make sure all of the files are where they need to be
+        for filename in os.listdir(src_path):
+            src = os.path.join(src_path, filename)
+            if os.path.isfile(src):
+                dest_path = None
+                if filename == 'usbmuxd':
+                    dest = os.path.join('/usr/local/sbin', filename)
+                elif filename.startswith('idevice'):
+                    dest = os.path.join('/usr/local/bin', filename)
+                elif filename.find('.so') >= 0:
+                    dest = os.path.join('/usr/local/lib', filename)
+                if dest_path is not None and not os.path.isfile(dest):
+                    print "Copying {0} to {1}".format(filename, dest)
+                    shutil.copyfile(src, dest_path)
+        # Update the library cache
+        subprocess.call(['ldconfig'])
+        # Start and initialize usbmuxd
+        print "Starting usbmuxd"
+        subprocess.call(['usbmuxd'])
+        subprocess.call(['ideviceinfo'])
+
+if __name__ == '__main__':
+    install_main()
