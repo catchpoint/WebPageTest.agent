@@ -170,17 +170,11 @@ class iOSDevice(object):
 
     def landscape(self):
         """Switch to landscape orientation"""
-        is_ok = False
-        if self.send_message("landscape"):
-            is_ok = True
-        return is_ok
+        self.send_message("landscape", wait=False)
 
     def portrait(self):
         """Switch to portrait orientation"""
-        is_ok = False
-        if self.send_message("portrait"):
-            is_ok = True
-        return is_ok
+        self.send_message("portrait", wait=False)
 
     def connect(self):
         """Connect to the device with the matching serial number"""

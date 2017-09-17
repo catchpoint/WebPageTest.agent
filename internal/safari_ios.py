@@ -79,6 +79,10 @@ class iWptBrowser(object):
         self.main_request = None
         self.ios.notification_queue = self.messages
         self.ios.stop_browser()
+        if 'browser' in job and job['browser'].lower().find('landscape') >= 0:
+            self.ios.landscape()
+        else:
+            self.ios.portrait()
         if not task['cached']:
             self.clear_profile(task)
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
