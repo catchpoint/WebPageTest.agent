@@ -322,6 +322,17 @@ class Trace():
             if 'callInfo' in event and 'url' in event and event['url'].startswith(
                     'http'):
                 e['js'] = event['url'].split('#', 1)[0]
+            elif 'data' in event and 'url' in event['data'] and \
+                    event['data']['url'].startswith('http'):
+                e['js'] = event['data']['url'].split('#', 1)[0]
+            elif 'data' in event and 'scriptName' in event['data'] and \
+                    event['data']['scriptName'].startswith('http'):
+                e['js'] = event['data']['scriptName'].split('#', 1)[0]
+            elif 'stackTrace' in event and event['stackTrace']:
+                for stack_frame in event['stackTrace']:
+                    if 'url' in stack_frame and stack_frame['url'].startswith('http'):
+                        e['js'] = stack_frame['url'].split('#', 1)[0]
+                        break
             # Process profile child events
             if 'data' in event and 'profile' in event['data'] and 'rootNodes' in event['data']['profile']:
                 for child in event['data']['profile']['rootNodes']:

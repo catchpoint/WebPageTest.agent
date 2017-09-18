@@ -42,6 +42,8 @@ class iWptBrowser(object):
         self.page = {}
         self.requests = {}
         self.console_log = []
+        self.timeline = None
+        self.trace_parser = None
         self.wpt_result = None
         self.id_map = {}
         self.response_bodies = {}
@@ -76,6 +78,9 @@ class iWptBrowser(object):
         self.page = {}
         self.requests = {}
         self.console_log = []
+        if self.timeline is not None:
+            self.timeline.close()
+            self.timeline = None
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
@@ -275,8 +280,8 @@ class iWptBrowser(object):
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         logging.debug(user_timing)
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+        if user_timing is not None and self.path_base is not None:
+            path = self.path_base + '_timed_events.json.gz'
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
@@ -297,9 +302,10 @@ class iWptBrowser(object):
                         logging.debug(custom_metrics[name])
                 except Exception:
                     pass
-            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
-                outfile.write(json.dumps(custom_metrics))
+            if  self.path_base is not None:
+                path = self.path_base + '_metrics.json.gz'
+                with gzip.open(path, 'wb', 7) as outfile:
+                    outfile.write(json.dumps(custom_metrics))
 
     def process_message(self, msg):
         """Process a message from the browser
@@ -322,6 +328,9 @@ class iWptBrowser(object):
                         self.process_console_event(event, msg)
         except Exception:
             pass
+        if self.timeline and 'method' in msg and self.recording:
+            json.dump(msg, self.timeline)
+            self.timeline.write(",\n")
         if 'id' in msg:
             response_id = int(re.search(r'\d+', str(msg['id'])).group())
             if response_id in self.pending_commands:
@@ -514,7 +523,19 @@ class iWptBrowser(object):
 
     def process_timeline_event(self, event, msg):
         """Handle Timeline.* events"""
-        return
+        if self.trace_parser is not None and 'params' in msg and 'record' in msg['params']:
+            if 'start' not in self.page:
+                return
+            if self.trace_parser.start_time is None:
+                self.trace_parser.start_time = self.page['start'] * 1000000.0
+                self.trace_parser.end_time = self.page['start'] * 1000000.0
+            if 'timestamp' in msg['params']:
+                timestamp = msg['params']['timestamp'] * 1000000.0
+                if timestamp > self.trace_parser.end_time:
+                    self.trace_parser.end_time = timestamp
+            processed = self.trace_parser.ProcessOldTimelineEvent(msg['params']['record'], None)
+            if processed is not None:
+                self.trace_parser.timeline_events.append(processed)
 
     def process_console_event(self, event, msg):
         """Handle Console.* events"""
@@ -612,6 +633,9 @@ class iWptBrowser(object):
         self.requests = {}
         self.console_log = []
         self.response_bodies = {}
+        if self.timeline is not None:
+            self.timeline.close()
+            self.timeline = None
         self.wpt_result = None
         task['page_data'] = {'date': time.time()}
         task['run_start_time'] = monotonic.monotonic()
@@ -639,10 +663,20 @@ class iWptBrowser(object):
         if self.task['log_data']:
             self.send_command('Console.enable', {})
             if 'timeline' in self.job and self.job['timeline']:
+                if self.path_base is not None:
+                    timeline_path = self.path_base + '_devtools.json.gz'
+                    self.timeline = gzip.open(timeline_path, 'wb', 7)
+                    if self.timeline:
+                        self.timeline.write('[\n')
+                from internal.support.trace_parser import Trace
+                self.trace_parser = Trace()
+                self.trace_parser.cpu['main_thread'] = '0'
+                self.trace_parser.threads['0'] = {}
                 self.send_command('Timeline.start', {})
             self.ios.show_orange()
-            task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
-            self.ios.start_video()
+            if self.path_base is not None:
+                task['video_file'] = self.path_base + '_video.mp4'
+                self.ios.start_video()
             if self.ios_version:
                 task['page_data']['osVersion'] = self.ios_version
                 task['page_data']['os_version'] = self.ios_version
@@ -668,11 +702,11 @@ class iWptBrowser(object):
             self.send_command('Console.disable', {})
             if 'timeline' in self.job and self.job['timeline']:
                 self.send_command('Timeline.stop', {})
-            if self.job['pngScreenShot']:
-                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
+            if self.job['pngScreenShot'] and self.path_base is not None:
+                screen_shot = self.path_base + '_screen.png'
                 self.grab_screenshot(screen_shot, png=True)
-            else:
-                screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
+            elif self.path_base is not None:
+                screen_shot = self.path_base + '_screen.jpg'
                 self.grab_screenshot(screen_shot, png=False, resize=600)
             # Grab the video and kick off processing async
             if 'video_file' in task:
@@ -698,10 +732,15 @@ class iWptBrowser(object):
             # Start the optimization checks in a background thread
             self.optimization = OptimizationChecks(self.job, task, requests)
             self.optimization.start()
+            support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+            # Start processing the timeline
+            if self.timeline:
+                self.timeline.write("{}]")
+                self.timeline.close()
+                self.timeline = None
             # Grab the video and kick off processing async
             if 'video_file' in task and self.ios.get_video(task['video_file']):
                 video_path = os.path.join(task['dir'], task['video_subdirectory'])
-                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
                 if task['current_step'] == 1:
                     filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'], task['cached'])
                 else:
@@ -714,15 +753,26 @@ class iWptBrowser(object):
                         '-d', video_path, '--force', '--quality', '{0:d}'.format(self.job['iq']),
                         '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
                 if 'renderVideo' in self.job and self.job['renderVideo']:
-                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                    video_out = self.path_base + '_rendered_video.mp4'
                     args.extend(['--render', video_out])
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args)
             # Save the console logs
-            if self.console_log:
-                log_file = os.path.join(task['dir'], task['prefix']) + '_console_log.json.gz'
+            if self.console_log and self.path_base is not None:
+                log_file = self.path_base + '_console_log.json.gz'
                 with gzip.open(log_file, 'wb', 7) as f_out:
                     json.dump(self.console_log, f_out)
+            # Process the timeline data
+            if self.trace_parser is not None and self.path_base is not None:
+                start = monotonic.monotonic()
+                logging.debug("Processing the trace timeline events")
+                self.trace_parser.ProcessTimelineEvents()
+                self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
+                self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
+                self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
+                elapsed = monotonic.monotonic() - start
+                logging.debug("Done processing the trace events: %0.3fs", elapsed)
+            self.trace_parser = None
             # Calculate the request and page stats
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)
@@ -745,9 +795,10 @@ class iWptBrowser(object):
         if self.wpt_result is not None:
             self.process_optimization_results(self.wpt_result['pageData'],
                                               self.wpt_result['requests'], opt)
-            devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-            with gzip.open(devtools_file, 'wb', 7) as f_out:
-                json.dump(self.wpt_result, f_out)
+            if self.path_base is not None:
+                devtools_file = self.path_base + '_devtools_requests.json.gz'
+                with gzip.open(devtools_file, 'wb', 7) as f_out:
+                    json.dump(self.wpt_result, f_out)
 
     def step_complete(self, task):
         """Final step processing"""
@@ -760,11 +811,12 @@ class iWptBrowser(object):
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
                         int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
-            path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
-            json_page_data = json.dumps(task['page_data'])
-            logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
-                outfile.write(json_page_data)
+            if self.path_base is not None:
+                path = self.path_base + '_page_data.json.gz'
+                json_page_data = json.dumps(task['page_data'])
+                logging.debug('Page Data: %s', json_page_data)
+                with gzip.open(path, 'wb', 7) as outfile:
+                    outfile.write(json_page_data)
 
     def send_command(self, method, params, wait=False, timeout=10):
         """Send a raw dev tools message and optionally wait for the response"""
