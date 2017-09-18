@@ -41,6 +41,7 @@ class iWptBrowser(object):
         self.main_request = None
         self.page = {}
         self.requests = {}
+        self.console_log = []
         self.wpt_result = None
         self.id_map = {}
         self.response_bodies = {}
@@ -74,6 +75,7 @@ class iWptBrowser(object):
         self.task = task
         self.page = {}
         self.requests = {}
+        self.console_log = []
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
@@ -516,7 +518,8 @@ class iWptBrowser(object):
 
     def process_console_event(self, event, msg):
         """Handle Console.* events"""
-        return
+        if event == 'messageAdded' and 'message' in msg['params']:
+            self.console_log.append(msg['params']['message'])
 
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
@@ -607,6 +610,7 @@ class iWptBrowser(object):
         """Format the file prefixes for multi-step testing"""
         self.page = {}
         self.requests = {}
+        self.console_log = []
         self.response_bodies = {}
         self.wpt_result = None
         task['page_data'] = {'date': time.time()}
@@ -714,6 +718,11 @@ class iWptBrowser(object):
                     args.extend(['--render', video_out])
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args)
+            # Save the console logs
+            if self.console_log:
+                log_file = os.path.join(task['dir'], task['prefix']) + '_console_log.json.gz'
+                with gzip.open(log_file, 'wb', 7) as f_out:
+                    json.dump(self.console_log, f_out)
             # Calculate the request and page stats
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)
