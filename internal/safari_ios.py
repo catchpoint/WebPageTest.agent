@@ -41,6 +41,8 @@ class iWptBrowser(object):
         self.main_request = None
         self.page = {}
         self.requests = {}
+        self.connections = {}
+        self.last_connection_id = 0
         self.console_log = []
         self.timeline = None
         self.trace_parser = None
@@ -368,10 +370,13 @@ class iWptBrowser(object):
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
         if 'requestId' in msg['params']:
+            timestamp = None
+            if 'params' in msg and 'timestamp' in msg['params']:
+                timestamp = msg['params']['timestamp']
             request_id = msg['params']['requestId']
             original_request_id = request_id
             if original_request_id in self.id_map:
-                request_id = str(request_id) + '.' + str(self.id_map[original_request_id])
+                request_id = str(original_request_id) + '.' + str(self.id_map[original_request_id])
             if request_id not in self.requests:
                 self.requests[request_id] = {'id': request_id,
                                              'original_id': original_request_id,
@@ -379,21 +384,24 @@ class iWptBrowser(object):
                                              'objectSize': 0,
                                              'objectSizeUncompressed': 0,
                                              'transfer_size': 0,
-                                             'fromNet': False}
-                if 'params' in msg and 'timestamp' in msg['params']:
-                    self.requests[request_id]['created'] = msg['params']['timestamp']
+                                             'fromNet': False,
+                                             'is_redirect': False}
+                if timestamp:
+                    self.requests[request_id]['created'] = timestamp
             request = self.requests[request_id]
             if 'targetId' in msg['params']:
                 request['targetId'] = msg['params']['targetId']
             ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
-                if 'start' not in self.page:
-                    self.page['start'] = msg['params']['timestamp']
+                if 'start' not in self.page and timestamp:
+                    self.page['start'] = timestamp
                 # For a redirect, close out the existing request and start a new one
                 if 'redirectResponse' in msg['params']:
-                    request['end'] = msg['params']['timestamp']
-                    if 'firstByte' not in request:
-                        request['firstByte'] = msg['params']['timestamp']
+                    if timestamp and 'start' in request and timestamp > request['start']:
+                        if 'firstByte' not in request or timestamp < request['firstByte']:
+                            request['firstByte'] = timestamp
+                        if 'end' not in request or timestamp > request['end']:
+                            request['end'] = timestamp
                     request['is_redirect'] = True
                     response = msg['params']['redirectResponse']
                     request['status'] = response['status']
@@ -401,7 +409,7 @@ class iWptBrowser(object):
                     request['response_headers'] = response['headers']
                     if 'fromDiskCache' in response and response['fromDiskCache']:
                         request['fromNet'] = False
-                    if 'source' in response and response['source'] != 'network':
+                    if 'source' in response and response['source'] not in ['network', 'unknown']:
                         request['fromNet'] = False
                     if 'timing' in response:
                         request['timing'] = response['timing']
@@ -409,21 +417,21 @@ class iWptBrowser(object):
                         self.id_map[original_request_id] += 1
                     else:
                         self.id_map[original_request_id] = 1
-                    request_id = str(request_id) + '.' + str(self.id_map[original_request_id])
+                    request_id = str(original_request_id) + '.' + \
+                                 str(self.id_map[original_request_id])
                     self.requests[request_id] = {'id': request_id,
                                                  'original_id': original_request_id,
                                                  'bytesIn': 0,
                                                  'objectSize': 0,
                                                  'objectSizeUncompressed': 0,
                                                  'transfer_size': 0,
-                                                 'fromNet': False}
-                    if 'params' in msg and 'timestamp' in msg['params']:
-                        self.requests[request_id]['created'] = msg['params']['timestamp']
+                                                 'fromNet': False,
+                                                 'is_redirect': True}
+                    if timestamp:
+                        self.requests[request_id]['created'] = timestamp
                     request = self.requests[request_id]
-                    if 'targetId' in msg['params']:
-                        request['targetId'] = msg['params']['targetId']
-                if 'start' not in request:
-                    request['start'] = msg['params']['timestamp']
+                if timestamp:
+                    request['start'] = timestamp
                 request['initiator'] = msg['params']['initiator']
                 request['url'] = msg['params']['request']['url']
                 request['method'] = msg['params']['request']['method']
@@ -440,7 +448,8 @@ class iWptBrowser(object):
                         msg['params']['frameId'] == self.main_frame:
                     logging.debug('Main request detected')
                     self.main_request = request_id
-                    self.page['start'] = float(msg['params']['timestamp'])
+                    if timestamp:
+                        self.page['start'] = float(msg['params']['timestamp'])
             elif event == 'responseReceived':
                 response = msg['params']['response']
                 request['status'] = response['status']
@@ -448,18 +457,18 @@ class iWptBrowser(object):
                 request['response_headers'] = response['headers']
                 if 'fromDiskCache' in response and response['fromDiskCache']:
                     request['fromNet'] = False
-                if 'source' in response and response['source'] != 'network':
+                if 'source' in response and response['source'] not in ['network', 'unknown']:
                     request['fromNet'] = False
                 if 'timing' in response:
                     request['timing'] = response['timing']
                 if 'mimeType' in response and response['mimeType'].startswith('video/'):
                     request['is_video'] = True
-                if 'firstByte' not in request:
-                    request['firstByte'] = msg['params']['timestamp']
-                request['end'] = msg['params']['timestamp']
+                if timestamp and 'start' in request and timestamp > request['start']:
+                    if 'firstByte' not in request or timestamp < request['firstByte']:
+                        request['firstByte'] = timestamp
+                    if 'end' not in request or timestamp > request['end']:
+                        request['end'] = timestamp
             elif event == 'dataReceived':
-                if 'firstByte' not in request:
-                    request['firstByte'] = msg['params']['timestamp']
                 if 'encodedDataLength' in msg['params'] and \
                         msg['params']['encodedDataLength'] >= 0:
                     request['objectSize'] += msg['params']['encodedDataLength']
@@ -471,11 +480,17 @@ class iWptBrowser(object):
                     request['transfer_size'] += msg['params']['dataLength']
                 if 'dataLength' in msg['params'] and msg['params']['dataLength'] >= 0:
                     request['objectSizeUncompressed'] += msg['params']['dataLength']
-                request['end'] = msg['params']['timestamp']
+                if timestamp and 'start' in request and timestamp > request['start']:
+                    if 'firstByte' not in request or timestamp < request['firstByte']:
+                        request['firstByte'] = timestamp
+                    if 'end' not in request or timestamp > request['end']:
+                        request['end'] = timestamp
             elif event == 'loadingFinished':
-                if 'firstByte' not in request:
-                    request['firstByte'] = msg['params']['timestamp']
-                request['end'] = msg['params']['timestamp']
+                if timestamp and 'start' in request and timestamp > request['start']:
+                    if 'firstByte' not in request or timestamp < request['firstByte']:
+                        request['firstByte'] = timestamp
+                    if 'end' not in request or timestamp > request['end']:
+                        request['end'] = timestamp
                 if 'metrics' in msg['params']:
                     metrics = msg['params']['metrics']
                     if 'priority' in metrics:
@@ -483,23 +498,43 @@ class iWptBrowser(object):
                     if 'protocol' in metrics:
                         request['protocol'] = metrics['protocol']
                     if 'remoteAddress' in metrics:
-                        request['ip'] = metrics['remoteAddress']
-                    if 'requestHeaderBytesSent' in metrics:
-                        request['bytesOut'] = metrics['requestHeaderBytesSent']
-                        if 'requestBodyBytesSent' in metrics:
-                            request['bytesOut'] += metrics['requestBodyBytesSent']
-                    if 'responseBodyBytesReceived' in metrics and \
-                            metrics['responseBodyBytesReceived'] >= 0:
-                        request['bytesIn'] = metrics['responseBodyBytesReceived']
-                        request['objectSize'] = metrics['responseBodyBytesReceived']
-                        request['transfer_size'] = metrics['responseBodyBytesReceived']
-                        if 'responseHeaderBytesReceived' in metrics and \
-                                metrics['responseHeaderBytesReceived'] >= 0:
-                            request['bytesIn'] += metrics['responseHeaderBytesReceived']
+                        separator = metrics['remoteAddress'].rfind(':')
+                        if separator >= 0:
+                            request['ip'] = metrics['remoteAddress'][:separator]
+                        else:
+                            request['ip'] = metrics['remoteAddress']
+                    if 'connectionIdentifier' in metrics:
+                        identifier = metrics['connectionIdentifier']
+                        if identifier in self.connections:
+                            request['connection'] = self.connections[identifier]
+                        else:
+                            self.last_connection_id += 1
+                            self.connections[identifier] = self.last_connection_id
+                            request['connection'] = self.last_connection_id
+                if 'requestHeaderBytesSent' in msg['params']:
+                    request['bytesOut'] = msg['params']['requestHeaderBytesSent']
+                    if 'requestBodyBytesSent' in msg['params']:
+                        request['bytesOut'] += msg['params']['requestBodyBytesSent']
+                if 'responseBodyBytesReceived' in msg['params'] and \
+                        msg['params']['responseBodyBytesReceived'] >= 0:
+                    request['bytesIn'] = msg['params']['responseBodyBytesReceived']
+                    request['objectSize'] = msg['params']['responseBodyBytesReceived']
+                    request['transfer_size'] = msg['params']['responseBodyBytesReceived']
+                    if 'responseHeaderBytesReceived' in msg['params'] and \
+                            msg['params']['responseHeaderBytesReceived'] >= 0:
+                        request['bytesIn'] += msg['params']['responseHeaderBytesReceived']
+                    if 'responseBodyDecodedSize' in msg['params'] and \
+                            msg['params']['responseBodyDecodedSize'] >= 0:
+                        request['objectSizeUncompressed'] = \
+                                msg['params']['responseBodyDecodedSize']
                 if request['fromNet']:
                     self.get_response_body(request_id, original_request_id)
             elif event == 'loadingFailed':
-                request['end'] = msg['params']['timestamp']
+                if timestamp and 'start' in request and timestamp > request['start']:
+                    if 'firstByte' not in request or timestamp < request['firstByte']:
+                        request['firstByte'] = timestamp
+                    if 'end' not in request or timestamp > request['end']:
+                        request['end'] = timestamp
                 request['statusText'] = msg['params']['errorText']
                 if self.main_request is not None and request_id == self.main_request:
                     if 'canceled' not in msg['params'] or not msg['params']['canceled']:
@@ -725,7 +760,7 @@ class iWptBrowser(object):
             for request_id in self.requests:
                 request = self.requests[request_id]
                 if request['fromNet'] and 'url' in request and request['url'].startswith('http'):
-                    if 'is_redirect' not in request and \
+                    if not request['is_redirect'] and \
                             request['original_id'] in self.response_bodies:
                         request['response_body'] = self.response_bodies[request['original_id']]
                     requests[request_id] = request
@@ -993,6 +1028,12 @@ class iWptBrowser(object):
                 request = self.get_empty_request(request_id, r['url'])
                 if 'ip' in r:
                     request['ip_addr'] = r['ip']
+                if 'connection' in r:
+                    request['socket'] = r['connection']
+                if 'priority' in r:
+                    request['priority'] = r['priority']
+                if 'protocol' in r:
+                    request['protocol'] = r['protocol']
                 if 'method' in r:
                     request['method'] = r['method']
                 if 'status' in r:
@@ -1006,7 +1047,7 @@ class iWptBrowser(object):
                     request['load_ms'] = int(round((r['end'] - r['start']) * 1000.0))
                 if 'firstByte' in r:
                     request['ttfb_ms'] = int(round((r['firstByte'] - r['start']) * 1000.0))
-                if 'timing' in r:
+                if 'timing' in r and not r['is_redirect']:
                     start_ms = int(request['load_start'])
                     timing = r['timing']
                     if timing['domainLookupStart'] > 0 or timing['domainLookupEnd'] > 0:
