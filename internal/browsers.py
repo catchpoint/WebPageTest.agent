@@ -45,7 +45,7 @@ class Browsers(object):
         if self.options.android:
             if 'customBrowser_package' in job:
                 name = "chrome"
-            separator = name.find('-')
+            separator = name.rfind('-')
             if separator >= 0:
                 name = name[separator + 1:].strip()
             if name in self.android_browsers:
