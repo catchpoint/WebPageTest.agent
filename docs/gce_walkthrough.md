@@ -47,6 +47,7 @@ Since GCE images are not publicly shareable it is necessary to configure a new i
     * Paste the following script (ctrl-O to save, ctrl-X to exit after you're done):
 ```sh
 #!/bin/sh
+export DEBIAN_FRONTEND=noninteractive
 cd ~/wptagent
 echo "Waiting for 30 second startup delay"
 sleep 30
@@ -57,8 +58,14 @@ done
 while :
 do
     echo "Updating OS"
-    sudo timeout 20m apt-get update
-    sudo apt-get -y dist-upgrade
+    until sudo timeout 20m apt-get update
+    do
+        sleep 1
+    done
+    until sudo apt-get -yq dist-upgrade
+    do
+        sleep 1
+    done
     sudo apt-get -y autoremove
     sudo npm i -g lighthouse
     sudo npm -g outdated --parseable=true | cut -d : -f 4 | xargs -n 1 sudo npm -g install
