@@ -155,12 +155,12 @@ class DesktopBrowser(object):
                     pass
 
     def wait_for_idle(self):
-        """Wait for no more than 20% of a single core used for 500ms"""
+        """Wait for no more than 50% of a single core used for 500ms"""
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 20. / float(cpu_count)
+            target_pct = 50. / float(cpu_count)
             idle_start = None
             end_time = monotonic.monotonic() + self.START_BROWSER_TIME_LIMIT
             idle = False
@@ -170,7 +170,7 @@ class DesktopBrowser(object):
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic.monotonic() - idle_start > 0.5:
+                    if monotonic.monotonic() - idle_start >= 0.4:
                         idle = True
                 else:
                     idle_start = None

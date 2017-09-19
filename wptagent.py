@@ -181,20 +181,20 @@ class WPTAgent(object):
             pass
 
     def wait_for_idle(self, timeout=30):
-        """Wait for the system to go idle"""
+        """Wait for the system to go idle for at least 2 seconds"""
         import monotonic
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 20. / float(cpu_count)
+            target_pct = 50. / float(cpu_count)
             idle_start = None
             end_time = monotonic.monotonic() + timeout
             idle = False
             while not idle and monotonic.monotonic() < end_time:
                 self.alive()
                 check_start = monotonic.monotonic()
-                pct = psutil.cpu_percent(interval=1)
+                pct = psutil.cpu_percent(interval=0.5)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
