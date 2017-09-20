@@ -128,6 +128,21 @@ class Firefox(DesktopBrowser):
         except Exception as err:
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
 
+    def get_pref_value(self, value):
+        """Convert a json pref value to Python"""
+        str_match = re.match(r'^"(.*)"$', value)
+        if value == 'true':
+            value = True
+        elif value == 'false':
+            value = False
+        elif re.match(r'^[\d]+$', value):
+            value = int(value)
+        elif str_match:
+            value = str_match.group(1)
+        else:
+            value = None
+        return value
+
     def configure_prefs(self):
         """Load the prefs file and configure them through marionette"""
         prefs = {}
@@ -138,18 +153,7 @@ class Firefox(DesktopBrowser):
                 matches = re.search(r'user_pref\("([^"]+)",[\s]*([^\)]*)[\s]*\);', line)
                 if matches:
                     key = matches.group(1).strip()
-                    value = matches.group(2).strip()
-                    str_match = re.match(r'^"(.*)"$', value)
-                    if value == 'true':
-                        value = True
-                    elif value == 'false':
-                        value = False
-                    elif re.match(r'^[\d]+$', value):
-                        value = int(value)
-                    elif str_match:
-                        value = str_match.group(1)
-                    else:
-                        value = None
+                    value = self.get_pref_value(matches.group(2).strip())
                     if value is not None:
                         prefs[key] = value
         if prefs:
@@ -615,6 +619,9 @@ class Firefox(DesktopBrowser):
                     value = cookie[pos+1:].strip()
                     if len(name) and len(value) and len(url):
                         self.marionette.add_cookie({'url': url, 'name': name, 'value': value})
+        elif command['command'] == 'firefoxpref':
+            if 'target' in command and 'value' in command:
+                self.set_pref(command['target'], command['value'])
 
     def navigate(self, url):
         """Navigate to the given URL"""
@@ -623,6 +630,16 @@ class Firefox(DesktopBrowser):
                 self.marionette.navigate(url)
             except Exception as err:
                 logging.debug("Error navigating Firefox: %s", str(err))
+
+    def set_pref(self, key, value_str):
+        """Set an individual pref value"""
+        value = self.get_pref_value(value_str.strip())
+        if value is not None:
+            try:
+                logging.debug('Setting Pref "%s" to %s', key, value_str)
+                self.marionette.set_pref(key, value)
+            except Exception:
+                pass
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
