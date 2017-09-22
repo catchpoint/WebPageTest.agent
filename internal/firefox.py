@@ -88,6 +88,21 @@ class Firefox(DesktopBrowser):
                 shutil.copytree(profile_template, task['profile'])
             except Exception:
                 pass
+        # delete any unsent crash reports
+        crash_dir = None
+        if platform.system() == 'Windows':
+            if 'APPDATA' in os.environ:
+                crash_dir = os.path.join(os.environ['APPDATA'],
+                                         'Mozilla', 'Firefox', 'Crash Reports')
+        else:
+            crash_dir = os.path.join(os.path.expanduser('~'),
+                                     '.mozilla', 'firefox', 'Crash Reports')
+        if crash_dir and os.path.isdir(crash_dir):
+            logging.debug("Clearing crash reports in %s", crash_dir)
+            try:
+                shutil.rmtree(crash_dir)
+            except Exception:
+                pass
 
     def launch(self, _job, task):
         """Launch the browser"""
