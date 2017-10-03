@@ -68,10 +68,15 @@ class iOSDevice(object):
         """Get the battery level and only if it responds and is over 75% is it ok"""
         is_ready = False
         response = self.send_message("battery")
-        if response and response > 0.75:
-            is_ready = True
+        if response:
+            level = int(round(float(response) * 100))
+            if level > 75:
+                is_ready = True
+            else:
+                logging.debug("Phone battery is low (%d%%)", level)
         else:
-            logging.debug("Phone is not connected (or battery is below 75%)")
+            logging.debug("Phone is not connected (or iWptBrowser is not running)")
+            self.disconnect()
         return is_ready
 
     def get_os_version(self):

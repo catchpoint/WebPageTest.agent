@@ -15,3 +15,4 @@ error.log
 loop.sh
 agent.sh
 ios.sh
+throttle.sh
