@@ -427,7 +427,7 @@ class WebPageTest(object):
                 if 'blockDomains' in job:
                     if 'host_rules' not in task:
                         task['host_rules'] = []
-                    domains = re.split(', ', job['blockDomains'])
+                    domains = re.split('[, ]', job['blockDomains'])
                     for domain in domains:
                         domain = domain.strip()
                         if len(domain) and domain.find('"') == -1:
