@@ -73,9 +73,9 @@ class iOSDevice(object):
             if level > 75:
                 is_ready = True
             else:
-                logging.debug("Phone battery is low (%d%%)", level)
+                logging.debug("Device battery is low (%d%%)", level)
         else:
-            logging.debug("Phone is not connected (or iWptBrowser is not running)")
+            logging.debug("Device is not connected (or iWptBrowser is not running)")
             self.disconnect()
         return is_ready
 

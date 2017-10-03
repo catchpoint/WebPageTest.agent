@@ -94,13 +94,6 @@ class iWptBrowser(object):
             self.ios.portrait()
         if not task['cached']:
             self.clear_profile(task)
-        self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
-        if self.bodies_zip_file is not None:
-            self.bodies_zip_file.close()
-            self.bodies_zip_file = None
-        if 'bodies' in self.job and self.job['bodies']:
-            self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
-                                                   zipfile.ZIP_DEFLATED)
 
     def clear_profile(self, _):
         """Clear the browser profile"""
@@ -687,6 +680,7 @@ class iWptBrowser(object):
             task['step_name'] = self.event_name
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
+        self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
@@ -696,6 +690,12 @@ class iWptBrowser(object):
         self.send_command('Network.enable', {})
         self.send_command('Inspector.enable', {})
         if self.task['log_data']:
+            if self.bodies_zip_file is not None:
+                self.bodies_zip_file.close()
+                self.bodies_zip_file = None
+            if 'bodies' in self.job and self.job['bodies']:
+                self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
+                                                       zipfile.ZIP_DEFLATED)
             self.send_command('Console.enable', {})
             if 'timeline' in self.job and self.job['timeline']:
                 if self.path_base is not None:
@@ -837,6 +837,7 @@ class iWptBrowser(object):
 
     def step_complete(self, task):
         """Final step processing"""
+        logging.debug("Writing end-of-step data")
         # Write out the accumulated page_data
         if task['log_data'] and task['page_data']:
             if 'browser' in self.job:
