@@ -9,6 +9,7 @@ import os
 import platform
 import re
 import shutil
+import socket
 import subprocess
 import time
 import urllib
@@ -546,6 +547,26 @@ class WebPageTest(object):
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
+                    elif command == 'setdnsname':
+                        # Resolve the IP and treat it like a setdns command
+                        keep = False
+                        if target is not None and value is not None and len(target) and len(value):
+                            addr = None
+                            try:
+                                result = socket.getaddrinfo(value, 80)
+                                if result and len(result) > 0:
+                                    for entry in result:
+                                        if entry and len(entry) >= 5:
+                                            sockaddr = entry[4]
+                                            if sockaddr and len(sockaddr) >= 1:
+                                                addr = sockaddr[0]
+                                                break
+                            except Exception:
+                                pass
+                            if addr is not None and target.find('"') == -1:
+                                if 'host_rules' not in task:
+                                    task['host_rules'] = []
+                                task['host_rules'].append('"MAP {0} {1}"'.format(target, addr))
                     # Commands that get translated into exec commands
                     elif command in ['click', 'selectvalue', 'sendclick', 'setinnerhtml',
                                      'setinnertext', 'setvalue', 'submitform']:
