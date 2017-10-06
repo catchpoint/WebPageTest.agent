@@ -192,13 +192,6 @@ class DevToolsParser(object):
                                         not params['response']['fromDiskCache'] and \
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
-                                # if we didn't get explicit bytes, fall back to any responses that
-                                # had content-length headers
-                                if ('bytesIn' not in request or request['bytesIn'] == 0) and \
-                                        'headers' in params['response'] and \
-                                        'Content-Length' in params['response']['headers']:
-                                    request['bytesIn'] = int(re.search(r'\d+', \
-                                        params['response']['headers']['Content-Length']).group())
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
                                 if 'firstByteTime' not in request:
@@ -355,10 +348,9 @@ class DevToolsParser(object):
                     request['bytesIn'] = int(round(raw_request['bytesIn']))
                 if 'bytesInEncoded' in raw_request and raw_request['bytesInEncoded'] > 0:
                     request['objectSize'] = str(int(round(raw_request['bytesInEncoded'])))
-                    if raw_request['bytesInEncoded'] > request['bytesIn']:
-                        request['bytesIn'] = int(round(raw_request['bytesInEncoded']))
-                        if 'response' in raw_request and 'headersText' in raw_request['response']:
-                            request['bytesIn'] += len(raw_request['response']['headersText'])
+                    request['bytesIn'] = int(round(raw_request['bytesInEncoded']))
+                    if 'response' in raw_request and 'headersText' in raw_request['response']:
+                        request['bytesIn'] += len(raw_request['response']['headersText'])
                 if 'bytesInData' in raw_request:
                     if request['objectSize'] == '':
                         request['objectSize'] = str(int(round(raw_request['bytesInData'])))
@@ -367,6 +359,13 @@ class DevToolsParser(object):
                         if 'response' in raw_request and 'headersText' in raw_request['response']:
                             request['bytesIn'] += len(raw_request['response']['headersText'])
                     request['objectSizeUncompressed'] = int(round(raw_request['bytesInData']))
+                # if we didn't get explicit bytes, fall back to any responses that
+                # had content-length headers
+                if request['bytesIn'] == 0 and 'response' in raw_request and \
+                        'headers' in raw_request['response'] and \
+                        'Content-Length' in raw_request['response']['headers']:
+                    request['bytesIn'] = int(re.search(r'\d+', \
+                        raw_request['response']['headers']['Content-Length']).group())
                 request['expires'] = self.get_response_header(raw_request, \
                         'Expires').replace("\n", ", ").replace("\r", "")
                 request['cacheControl'] = self.get_response_header(raw_request, \

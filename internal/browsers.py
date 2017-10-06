@@ -27,8 +27,6 @@ class Browsers(object):
             ready = self.adb.is_device_ready()
         elif self.options.iOS and self.ios is not None:
             ready = self.ios.is_device_ready()
-            if not ready:
-                self.ios.disconnect()
         else:
             for browser in self.browsers:
                 if 'exe' in self.browsers[browser]:
