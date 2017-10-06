@@ -47,7 +47,6 @@ Since GCE images are not publicly shareable it is necessary to configure a new i
     * Paste the following script (ctrl-O to save, ctrl-X to exit after you're done):
 ```sh
 #!/bin/sh
-export DEBIAN_FRONTEND=noninteractive
 cd ~/wptagent
 echo "Waiting for 30 second startup delay"
 sleep 30
@@ -62,7 +61,7 @@ do
     do
         sleep 1
     done
-    until sudo apt-get -yq dist-upgrade
+    until sudo DEBIAN_FRONTEND=noninteractive apt-get -yq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
     do
         sleep 1
     done
