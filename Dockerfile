@@ -19,6 +19,7 @@ RUN apt-get update && \
     ffmpeg \
     net-tools \
     tcpdump \
+    traceroute \
     bind9utils \
     software-properties-common \
     python-software-properties

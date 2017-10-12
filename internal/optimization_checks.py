@@ -466,12 +466,13 @@ class OptimizationChecks(object):
 
     def find_dns_cdn(self, domain, depth=0):
         """Recursively check a CNAME chain"""
-        import dns.resolver
+        from dns import resolver
         provider = self.check_cdn_name(domain)
         logging.debug("Looking up %s", domain)
+        # First do a CNAME check
         if provider is None:
             try:
-                answers = dns.resolver.query(domain, 'CNAME')
+                answers = resolver.query(domain, 'CNAME')
                 if answers and len(answers):
                     for rdata in answers:
                         name = '.'.join(rdata.target).strip(' .')
@@ -482,6 +483,20 @@ class OptimizationChecks(object):
                                 provider = self.find_dns_cdn(name, depth + 1)
                         if provider is not None:
                             break
+            except Exception:
+                pass
+        # Try a reverse-lookup of the address
+        if provider is None:
+            try:
+                import socket
+                addresses = socket.getaddrinfo(domain, 80)
+                if addresses:
+                    addr = addresses[0][4][0]
+                    answer = socket.gethostbyaddr(addr)
+                    if answer:
+                        name = answer[0]
+                        logging.debug("%s -> %s -> %s", domain, addr, name)
+                        provider = self.check_cdn_name(name)
             except Exception:
                 pass
         return provider
