@@ -131,7 +131,10 @@ class DevTools(object):
                                     self.tab_id = tabs[index]['id']
                                 else:
                                     # Close extra tabs
-                                    requests.get(self.url + '/close/' + tabs[index]['id'])
+                                    try:
+                                        requests.get(self.url + '/close/' + tabs[index]['id'])
+                                    except Exception:
+                                        pass
                         if websocket_url is not None:
                             try:
                                 self.websocket = DevToolsClient(websocket_url)
@@ -181,7 +184,10 @@ class DevTools(object):
             self.websocket = None
         if close_tab and self.tab_id is not None:
             import requests
-            requests.get(self.url + '/close/' + self.tab_id)
+            try:
+                requests.get(self.url + '/close/' + self.tab_id)
+            except Exception:
+                pass
         self.tab_id = None
 
     def start_recording(self):
