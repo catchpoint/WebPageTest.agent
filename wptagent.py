@@ -264,6 +264,13 @@ class WPTAgent(object):
                   "and make sure it is in the path."
             ret = False
 
+        if platform.system() == "Linux":
+            try:
+                subprocess.check_output(['traceroute', '--version'])
+            except Exception:
+                logging.debug("Traceroute is missing, installing...")
+                subprocess.call(['sudo', 'apt-get', '-yq', 'install', 'traceroute'])
+
         # if we are on Linux and there is no display, enable xvfb by default
         if platform.system() == "Linux" and not self.options.android and \
                 not self.options.iOS and 'DISPLAY' not in os.environ:

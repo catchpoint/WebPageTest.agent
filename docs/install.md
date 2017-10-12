@@ -18,8 +18,9 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 * ffmpeg installed and available in the path
 * Xvfb (Linux only)
 * cgroup-tools (Linux only if mobile CPU emulation is desired)
+* traceroute (Mac and Linux)
 * Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
+    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
 * Chrome Browser
     * Linux stable and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
