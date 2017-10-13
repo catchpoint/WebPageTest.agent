@@ -81,9 +81,13 @@ class WPTAgent(object):
                                 if self.task['run'] == 1 and not self.task['cached'] and \
                                         self.task['error'] is None and \
                                         'lighthouse' in self.job and self.job['lighthouse']:
-                                    self.task['running_lighthouse'] = True
-                                    self.wpt.running_another_test(self.task)
-                                    self.run_single_test()
+                                    if 'page_result' not in self.task or \
+                                            self.task['page_result'] is None or \
+                                            self.task['page_result'] == 0 or \
+                                            self.task['page_result'] == 99999:
+                                        self.task['running_lighthouse'] = True
+                                        self.wpt.running_another_test(self.task)
+                                        self.run_single_test()
                                 elapsed = monotonic.monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:

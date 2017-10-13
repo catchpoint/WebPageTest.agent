@@ -666,6 +666,7 @@ class iWptBrowser(object):
             self.timeline = None
         self.wpt_result = None
         task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -1203,6 +1204,7 @@ class iWptBrowser(object):
                 page['result'] = requests[0]['responseCode']
             else:
                 page['result'] = 12999
+        self.task['page_result'] = page['result']
         return page
 
     def process_optimization_results(self, page_data, requests, optimization_results):
