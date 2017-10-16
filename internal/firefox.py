@@ -464,6 +464,7 @@ class Firefox(DesktopBrowser):
         self.page = {}
         self.requests = {}
         task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -961,4 +962,5 @@ class Firefox(DesktopBrowser):
                 page['result'] = requests[0]['responseCode']
             else:
                 page['result'] = 12999
+        self.task['page_result'] = page['result']
         return page

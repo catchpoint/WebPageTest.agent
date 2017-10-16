@@ -211,6 +211,7 @@ class Edge(DesktopBrowser):
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -265,6 +266,8 @@ class Edge(DesktopBrowser):
         DesktopBrowser.on_start_processing(self, task)
         if self.etw is not None:
             requests = self.etw.process(task)
+            if 'page_data' in task and 'result' in task['page_data']:
+                task['page_result'] = task['page_data']['result']
             if requests is not None:
                 requests_file = os.path.join(task['dir'], task['prefix'] + '_requests.json.gz')
                 with gzip.open(requests_file, 'wb', 7) as f_out:
