@@ -129,7 +129,10 @@ class DesktopBrowser(object):
         """Launch the browser and keep track of the process"""
         command_line = self.enable_cpu_throttling(command_line)
         logging.debug(command_line)
-        self.proc = subprocess.Popen(command_line, shell=True)
+        if platform.system() == 'Windows':
+            self.proc = subprocess.Popen(command_line, shell=True)
+        else:
+            self.proc = subprocess.Popen(command_line, preexec_fn=os.setsid, shell=True)
 
     def stop(self, _job, _task):
         """Terminate the browser (gently at first but forced if needed)"""
@@ -138,6 +141,8 @@ class DesktopBrowser(object):
         if self.proc:
             kill_all(os.path.basename(self.path), False)
             try:
+                if platform.system() != 'Windows':
+                    os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
                 self.proc.terminate()
                 self.proc.kill()
             except Exception:
