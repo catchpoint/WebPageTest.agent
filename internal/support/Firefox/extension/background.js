@@ -66,37 +66,37 @@ browser.webNavigation.onErrorOccurred.addListener(evt => {
 
 // Request handlers
 browser.webRequest.onBeforeRequest.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onBeforeRequest', details);
 }, {urls: ["<all_urls>"]});
 
 browser.webRequest.onSendHeaders.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onSendHeaders', details);
 }, {urls: ["<all_urls>"]}, ["requestHeaders"]);
 
 browser.webRequest.onHeadersReceived.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onHeadersReceived', details);
 }, {urls: ["<all_urls>"]}, ["responseHeaders"]);
 
 browser.webRequest.onResponseStarted.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onResponseStarted', details);
 }, {urls: ["<all_urls>"]}, ["responseHeaders"]);
 
 browser.webRequest.onBeforeRedirect.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onBeforeRedirect', details);
 }, {urls: ["<all_urls>"]}, ["responseHeaders"]);
 
 browser.webRequest.onCompleted.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onCompleted', details);
 }, {urls: ["<all_urls>"]}, ["responseHeaders"]);
 
 browser.webRequest.onErrorOccurred.addListener(details => {
-  if (details.url.substring(0, 22) != 'http://127.0.0.1:8888/')
+  if (!details.url.startsWith(SERVER))
     send_message('webRequest.onErrorOccurred', details);
 }, {urls: ["<all_urls>"]});
 
