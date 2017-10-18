@@ -533,26 +533,21 @@ def find_browsers():
         local_appdata = os.getenv('LOCALAPPDATA')
         program_files = os.getenv('ProgramFiles')
         program_files_x86 = os.getenv('ProgramFiles(x86)')
-        if program_files is not None and 'Chrome' not in browsers:
-            chrome_path = os.path.join(program_files, 'Google', 'Chrome',
-                                       'Application', 'chrome.exe')
-            if os.path.isfile(chrome_path):
-                browsers['Chrome'] = {'exe': chrome_path}
-        if program_files_x86 is not None and 'Chrome' not in browsers:
-            chrome_path = os.path.join(program_files_x86, 'Google', 'Chrome',
-                                       'Application', 'chrome.exe')
-            if os.path.isfile(chrome_path):
-                browsers['Chrome'] = {'exe': chrome_path}
-        if local_appdata is not None and 'Chrome' not in browsers:
-            chrome_path = os.path.join(local_appdata, 'Google', 'Chrome',
-                                       'Application', 'chrome.exe')
-            if os.path.isfile(chrome_path):
-                browsers['Chrome'] = {'exe': chrome_path}
+        paths = [program_files, program_files_x86, local_appdata]
+        channels = ['Chrome', 'Chrome Beta', 'Chrome Dev']
+        for channel in channels:
+            for path in paths:
+                if path is not None and channel not in browsers:
+                    chrome_path = os.path.join(path, 'Google', channel,
+                                               'Application', 'chrome.exe')
+                    if os.path.isfile(chrome_path):
+                        browsers[channel] = {'exe': chrome_path}
         if local_appdata is not None and 'Canary' not in browsers:
             canary_path = os.path.join(local_appdata, 'Google', 'Chrome SxS',
                                        'Application', 'chrome.exe')
             if os.path.isfile(canary_path):
                 browsers['Canary'] = {'exe': canary_path}
+                browsers['Chrome Canary'] = {'exe': canary_path}
         # Firefox browsers
         if program_files_x86 is not None and 'Firefox' not in browsers:
             firefox_path = os.path.join(program_files_x86, 'Mozilla Firefox',
