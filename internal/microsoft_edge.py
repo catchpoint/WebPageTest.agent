@@ -48,7 +48,7 @@ class Edge(DesktopBrowser):
         """Launch the browser"""
         try:
             from selenium import webdriver
-            logging.debug('Launching Edge')
+            logging.debug('Launching Edge : %s', self.path)
             self.driver = webdriver.Edge(executable_path=self.path)
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
@@ -59,7 +59,7 @@ class Edge(DesktopBrowser):
             self.driver.set_window_size(task['width'], task['height'])
             DesktopBrowser.wait_for_idle(self)
         except Exception as err:
-            task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
+            task['error'] = 'Error starting Microsoft Edge: {0}'.format(err.__str__())
 
     def stop(self, job, task):
         """Kill the browser"""
