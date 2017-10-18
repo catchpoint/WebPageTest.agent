@@ -214,6 +214,7 @@ class DevtoolsBrowser(object):
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
         task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
@@ -249,6 +250,8 @@ class DevtoolsBrowser(object):
             options['optimization'] = optimization if os.path.isfile(optimization) else None
             parser = DevToolsParser(options)
             parser.process()
+            if 'page_data' in parser.result and 'result' in parser.result['page_data']:
+                self.task['page_result'] = parser.result['page_data']['result']
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
