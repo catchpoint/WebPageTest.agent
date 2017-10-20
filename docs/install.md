@@ -43,6 +43,10 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 * By default Linux will take 1-2 minutes to time out on socket connections.  You can lower it to 20 seconds to fail faster (and match windows) by configuring the retries in /etc/sysctl.conf:
     * ```net.ipv4.tcp_syn_retries = 4```
 
+### Windows
+* Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
+* Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
+
 ## For lighthouse testing
 * NodeJS 7.x
     * Ubuntu/Debian:
