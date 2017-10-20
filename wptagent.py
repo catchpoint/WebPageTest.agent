@@ -329,7 +329,10 @@ class WPTAgent(object):
             self.wait_for_idle(300)
         self.shaper.remove()
         if not self.shaper.install():
-            print "Error configuring traffic shaping, make sure it is installed."
+            if platform.system() == "Windows":
+                print "Error configuring traffic shaping, make sure secure boot is disabled."
+            else:
+                print "Error configuring traffic shaping, make sure it is installed."
             ret = False
 
         if self.adb is not None:
