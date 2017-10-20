@@ -292,7 +292,7 @@ class Firefox(DesktopBrowser):
                         done = True
 
     def execute_js(self, script):
-        """Run javascipt (stub for overriding"""
+        """Run javascipt"""
         ret = None
         if self.marionette is not None:
             try:

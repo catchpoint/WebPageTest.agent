@@ -377,6 +377,7 @@ class HandleMessage(BaseHTTPRequestHandler):
     # pylint: disable=C0103
     def do_GET(self):
         """HTTP GET"""
+        logging.debug(self.path)
         if self.path == '/ping':
             response = 'pong'
             self.send_response(200)
@@ -393,6 +394,7 @@ class HandleMessage(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """HTTP POST"""
+        logging.debug(self.path)
         import ujson as json
         try:
             content_len = int(self.headers.getheader('content-length', 0))
@@ -408,6 +410,7 @@ class HandleMessage(BaseHTTPRequestHandler):
                         message = json.loads(line)
                         if 'body' not in message:
                             message['body'] = None
+                        logging.debug(message)
                         self.message_server.handle_message(message)
         except Exception:
             pass
@@ -549,15 +552,36 @@ def find_browsers():
                 browsers['Canary'] = {'exe': canary_path}
                 browsers['Chrome Canary'] = {'exe': canary_path}
         # Firefox browsers
-        if program_files_x86 is not None and 'Firefox' not in browsers:
-            firefox_path = os.path.join(program_files_x86, 'Mozilla Firefox',
-                                        'firefox.exe')
-            if os.path.isfile(firefox_path):
-                browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
-        if program_files_x86 is not None and 'Firefox Nightly' not in browsers:
-            firefox_path = os.path.join(program_files_x86, 'Nightly', 'firefox.exe')
-            if os.path.isfile(firefox_path):
-                browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
+        paths = [program_files, program_files_x86]
+        for path in paths:
+            if path is not None and 'Firefox' not in browsers:
+                firefox_path = os.path.join(path, 'Mozilla Firefox', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox' not in browsers:
+                firefox_path = os.path.join(path, 'Firefox', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox Beta' not in browsers:
+                firefox_path = os.path.join(path, 'Mozilla Firefox Beta', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox Beta'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox Beta' not in browsers:
+                firefox_path = os.path.join(path, 'Firefox Beta', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox Beta'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox Dev' not in browsers:
+                firefox_path = os.path.join(path, 'Mozilla Firefox Dev', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox Dev'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox Dev' not in browsers:
+                firefox_path = os.path.join(path, 'Firefox Dev', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox Dev'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox Nightly' not in browsers:
+                firefox_path = os.path.join(path, 'Nightly', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
         # Microsoft Edge
         edge = None
         build = getWindowsBuild()
