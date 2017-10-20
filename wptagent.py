@@ -654,6 +654,7 @@ def find_browsers():
         nightly_path = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
+    logging.debug(browsers)
     return browsers
 
 def main():
