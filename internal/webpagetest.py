@@ -199,7 +199,14 @@ class WebPageTest(object):
                     value = parts[1].strip()
                     logging.debug('Setting config option "%s" to "%s"', key, value)
                     if key == 'wpt_server':
-                        self.url = 'http://{0}/work/'.format(value)
+                        if re.search( r'^https?://', value ):
+                            self.url = value
+                            if value.endswith( '/' ):
+                                self.url += 'work/'
+                            else:
+                                self.url += '/work/'
+                        else:
+                            self.url = 'http://{0}/work/'.format(value)
                     if key == 'wpt_url':
                         self.url = value
                     elif key == 'wpt_loc' or key == 'wpt_location':
