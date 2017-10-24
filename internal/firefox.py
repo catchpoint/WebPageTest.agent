@@ -690,7 +690,7 @@ class Firefox(DesktopBrowser):
                         with open(tmp_file, 'wb') as image_file:
                             image_file.write(data)
                         command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
-                            tmp_file, resize_string, self.job['iq'], path)
+                            tmp_file, resize_string, self.job['imageQuality'], path)
                         logging.debug(command)
                         subprocess.call(command, shell=True)
                         if os.path.isfile(tmp_file):

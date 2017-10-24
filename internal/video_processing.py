@@ -71,7 +71,7 @@ class VideoProcessing(object):
             # Compress to the target quality and size
             for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
                 command = 'mogrify -define jpeg:dct-method=fast -resize {0:d}x{0:d} '\
-                    '-quality {1:d} "{2}"'.format(VIDEO_SIZE, self.job['iq'], path)
+                    '-quality {1:d} "{2}"'.format(VIDEO_SIZE, self.job['imageQuality'], path)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
             # Run visualmetrics against them

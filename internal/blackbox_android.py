@@ -155,7 +155,7 @@ class BlackBoxAndroid(AndroidBrowser):
             if not self.job['pngScreenShot']:
                 jpeg_file = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 command = 'convert "{0}" -resize {1:d}x{1:d} -quality {2:d} "{3}"'.format(
-                    png_file, 600, self.job['iq'], jpeg_file)
+                    png_file, 600, self.job['imageQuality'], jpeg_file)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
                 if os.path.isfile(jpeg_file):

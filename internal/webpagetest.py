@@ -283,8 +283,8 @@ class WebPageTest(object):
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
                     job['agent_version'] = self.version if self.version is not None else 1
-                    if 'iq' not in job:
-                        job['iq'] = DEFAULT_JPEG_QUALITY
+                    if 'imageQuality' not in job:
+                        job['imageQuality'] = DEFAULT_JPEG_QUALITY
                     if 'pngScreenShot' not in job:
                         job['pngScreenShot'] = 0
                     if 'fvonly' not in job:
