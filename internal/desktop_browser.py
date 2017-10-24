@@ -82,7 +82,7 @@ class DesktopBrowser(object):
                 if not os.path.isdir(task['profile']):
                     os.makedirs(task['profile'])
         except Exception as err:
-            logging.critical("Exception preparing Browser: %s", err.__str__())
+            logging.exception("Exception preparing Browser: %s", err.__str__())
 
     def find_default_interface(self):
         """Look through the list of interfaces for the non-loopback interface"""

@@ -104,7 +104,7 @@ class Firefox(DesktopBrowser):
             except Exception:
                 pass
 
-    def launch(self, _job, task):
+    def launch(self, job, task):
         """Launch the browser"""
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
@@ -139,6 +139,19 @@ class Firefox(DesktopBrowser):
             time.sleep(0.5)
             self.wait_for_extension()
             if self.connected:
+                # Override the UA String if necessary
+                ua_string = self.execute_js('navigator.userAgent;')
+                modified = False
+                if 'uastring' in self.job:
+                    ua_string = self.job['uastring']
+                    modified = True
+                if ua_string is not None and 'AppendUA' in task:
+                    ua_string += ' ' + task['AppendUA']
+                    modified = True
+                if modified:
+                    logging.debug(ua_string)
+                    self.marionette.set_pref('general.useragent.override', ua_string)
+                # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())

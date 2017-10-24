@@ -110,7 +110,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             else:
                 self.clear_profile(task)
         except Exception as err:
-            logging.critical("Exception preparing Browser: %s", err.__str__())
+            logging.exception("Exception preparing Browser: %s", err.__str__())
 
     def launch(self, job, task):
         """Launch the browser"""

@@ -421,11 +421,21 @@ class WebPageTest(object):
                         logging.getLogger().addHandler(self.log_handler)
                     except Exception:
                         pass
+                if 'keepua' not in job or not job['keepua']:
+                    task['AppendUA'] = 'PTST'
+                    if 'UAModifier' in job:
+                        task['AppendUA'] = job['UAModifier']
+                    task['AppendUA'] += '/{0}'.format(self.version)
                 if 'AppendUA' in job:
-                    task['AppendUA'] = job['AppendUA'].replace('%TESTID%', test_id)\
-                                                      .replace('%RUN%', str(run))\
-                                                      .replace('%CACHED%', str(task['cached']))\
-                                                      .replace('%VERSION%', self.version)
+                    if 'AppendUA' in task:
+                        task['AppendUA'] += ' ' + job['AppendUA']
+                    else:
+                        task['AppendUA'] = job['AppendUA']
+                if 'AppendUA' in task:
+                    task['AppendUA'] = task['AppendUA'].replace('%TESTID%', test_id)\
+                                                       .replace('%RUN%', str(run))\
+                                                       .replace('%CACHED%', str(task['cached']))\
+                                                       .replace('%VERSION%', self.version)
                 task['block'] = []
                 if 'block' in job:
                     block_list = job['block'].split()
