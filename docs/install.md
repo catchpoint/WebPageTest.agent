@@ -35,7 +35,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
         * ```sudo apt-get install -y firefox firefox-trunk```
         * ```sudo dbus-uuidgen --ensure```
 
-## OS Tweaks
+## OS Notes
 ### Linux
 * There are time when the default file handle limits are too small (particularly when testing Firefox).  Upping the limits in /etc/security/limits.conf (at the end of the file) can help:
     * ```* soft nofile 250000```
@@ -46,6 +46,22 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 ### Windows
 * Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
 * Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
+* Disable UAC so it doesn't prompt when admin commands need to be run
+* Consider using [browser-install](https://github.com/WPO-Foundation/browser-install) to keep the browsers up to date
+* Running the agent from a batch file configured to start at user login (task scheduler) is a good way to run a headless agent.  Here is the batch file the public instance uses (reboots the system daily):
+```bat
+@echo off
+cd C:\Users\WebPageTest\browser-install
+git pull origin master
+python.exe C:\Users\WebPageTest\browser-install\browser_install.py -vvvv --all
+cd C:\Users\WebPageTest\wptagent
+call npm i -g lighthouse
+FOR /L %%x IN (1, 1, 24) DO (
+git pull origin master
+python.exe C:\Users\WebPageTest\wptagent\wptagent.py -vvvv --server "http://www.example.com/work/" --location Location_ID --key Location_key --exit 60
+)
+shutdown /r /f
+```
 
 ## For lighthouse testing
 * NodeJS 7.x
