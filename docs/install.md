@@ -42,6 +42,11 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * ```* hard nofile 300000```
 * By default Linux will take 1-2 minutes to time out on socket connections.  You can lower it to 20 seconds to fail faster (and match windows) by configuring the retries in /etc/sysctl.conf:
     * ```net.ipv4.tcp_syn_retries = 4```
+* If you are seeing slow DNS resolution it could be that the test machine has IPv6 configuration issues and disabling IPv6 may fix it.  Add the following to /etc/sysctl.conf:
+    * ```net.ipv6.conf.all.disable_ipv6 = 1```
+    * ```net.ipv6.conf.default.disable_ipv6 = 1```
+    * ```net.ipv6.conf.lo.disable_ipv6 = 1```
+
 
 ### Windows
 * Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
