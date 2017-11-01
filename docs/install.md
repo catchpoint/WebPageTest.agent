@@ -13,6 +13,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * xvfbwrapper (Linux only)
     * bind9utils (Linux only, for rndc)
     * marionette_driver (Firefox)
+    * selenium (Windows only)
 * Imagemagick installed and available in the path
     * The legacy tools (convert, compare, etc) need to be installed which may be optional on Windows
 * ffmpeg installed and available in the path
