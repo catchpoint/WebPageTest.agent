@@ -2,7 +2,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Microsoft Edge testing"""
-from datetime import datetime
+from datetime import datetime, timedelta
 import glob
 import gzip
 import logging
@@ -11,10 +11,10 @@ import re
 import shutil
 import subprocess
 import time
+import urlparse
 import monotonic
 import ujson as json
 from .desktop_browser import DesktopBrowser
-from .etw import ETW
 
 class Edge(DesktopBrowser):
     """Microsoft Edge"""
@@ -25,27 +25,50 @@ class Edge(DesktopBrowser):
         self.options = options
         self.path = path
         self.event_name = None
-        self.etw = None
-        self.etw_log = None
         self.driver = None
         self.nav_error = None
         self.page_loaded = None
         self.recording = False
         self.browser_version = None
         self.need_orange = True
-        self.last_activity = monotonic.monotonic()
+        self.extension_loaded = False
+        self.navigating = False
+        self.page = {}
+        self.requests = {}
+        self.last_activity = None
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.wpt_etw_done = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                         'support', 'edge', 'wpt-etw', 'wpt-etw.done')
+        self.wpt_etw_proc = None
+        self.dns = {}
+        self.sockets = {}
+        self.socket_ports = {}
+        self.requests = {}
+        self.pageContexts = []
+        self.CMarkup = []
+        self.start = None
+
+    def reset(self):
+        """Reset the ETW tracking"""
+        self.dns = {}
+        self.sockets = {}
+        self.socket_ports = {}
+        self.requests = {}
+        self.CMarkup = []
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
-        self.etw_log = os.path.join(task['dir'], 'etw.log')
         self.kill()
+        self.page = {}
+        self.requests = {}
         if not task['cached']:
             self.clear_cache()
         DesktopBrowser.prepare(self, job, task)
 
     def launch(self, _job, task):
         """Launch the browser"""
+        if self.job['message_server'] is not None:
+            self.job['message_server'].flush_messages()
         try:
             from selenium import webdriver
             logging.debug('Launching Edge : %s', self.path)
@@ -57,7 +80,21 @@ class Edge(DesktopBrowser):
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
             self.driver.set_window_size(task['width'], task['height'])
-            DesktopBrowser.wait_for_idle(self)
+            # Start the relay agent to capture ETW events
+            wpt_etw_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        'support', 'edge', 'wpt-etw', 'wpt-etw.exe')
+            if os.path.isfile(self.wpt_etw_done):
+                try:
+                    os.remove(self.wpt_etw_done)
+                except Exception:
+                    pass
+            from .os_util import run_elevated
+            self.wpt_etw_proc = run_elevated(wpt_etw_path, '', wait=False)
+            self.wait_for_extension()
+            if self.extension_loaded:
+                DesktopBrowser.wait_for_idle(self)
+            else:
+                task['error'] = 'Error waiting for wpt-etw to start. Make sure .net is installed'
         except Exception as err:
             task['error'] = 'Error starting Microsoft Edge: {0}'.format(err.__str__())
 
@@ -70,42 +107,53 @@ class Edge(DesktopBrowser):
                 pass
             self.driver = None
         DesktopBrowser.stop(self, job, task)
+        if self.wpt_etw_proc is not None:
+            with open(self.wpt_etw_done, 'a'):
+                os.utime(self.wpt_etw_done, None)
+            from .os_util import wait_for_elevated_process
+            wait_for_elevated_process(self.wpt_etw_proc)
+            self.wpt_etw_proc = None
+            if os.path.isfile(self.wpt_etw_done):
+                try:
+                    os.remove(self.wpt_etw_done)
+                except Exception:
+                    pass
         self.kill()
-        self.delete_logs()
 
     def kill(self):
         """Kill any running instances"""
+        from .os_util import run_elevated
         processes = ['MicrosoftEdge.exe', 'MicrosoftEdgeCP.exe', 'plugin-container.exe',
-                     'browser_broker.exe', 'smartscreen.exe']
+                     'browser_broker.exe', 'smartscreen.exe', 'dllhost.exe']
         for exe in processes:
-            subprocess.call(['taskkill', '/F', '/T', '/IM', exe])
-
-    def clear_cache(self):
-        """Clear the browser cache"""
-        local_app_data = os.getenv('LOCALAPPDATA')
-        edge_root = os.path.join(local_app_data, 'Packages',
-                                 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe')
-        directories = ['AC', 'AppData']
-        for directory in directories:
-            path = os.path.join(edge_root, directory)
             try:
-                shutil.rmtree(path)
+                run_elevated('taskkill', '/F /T /IM {0}'.format(exe))
             except Exception:
                 pass
 
-    def delete_logs(self):
-        """Delete the ETW logs"""
-        if self.etw_log is not None:
-            files = sorted(glob.glob(self.etw_log + '*'))
-            for path in files:
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
+    def clear_cache(self):
+        """Clear the browser cache"""
+        appdata = os.environ.get('LOCALAPPDATA')
+        edge_dir = os.path.join(appdata, 'Packages', 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe') 
+        temp_dir = os.path.join(edge_dir, 'AC')
+        app_dir = os.path.join(edge_dir, 'AppData')
+        if os.path.exists(temp_dir):
+            for directory in os.listdir(temp_dir):
+                if directory.startswith('#!'):
+                    try:
+                        shutil.rmtree(os.path.join(temp_dir, directory),
+                                      ignore_errors=True)
+                    except Exception:
+                        pass
+        if os.path.exists(app_dir):
+            try:
+                shutil.rmtree(app_dir, ignore_errors=True)
+            except Exception:
+                pass
 
     def run_task(self, task):
         """Run an individual test"""
-        if self.driver is not None:
+        if self.driver is not None and self.extension_loaded:
             self.task = task
             logging.debug("Running test")
             end_time = monotonic.monotonic() + task['time_limit']
@@ -143,11 +191,304 @@ class Edge(DesktopBrowser):
                 logging.debug('Webdriver exception navigating to about:blank after the test')
             self.task = None
 
+    def wait_for_extension(self):
+        """Wait for the extension to send the started message"""
+        if self.job['message_server'] is not None:
+            end_time = monotonic.monotonic()  + 30
+            while monotonic.monotonic() < end_time:
+                try:
+                    message = self.job['message_server'].get_message(1)
+                    logging.debug(message)
+                    logging.debug('Extension started')
+                    self.extension_loaded = True
+                    break
+                except Exception:
+                    pass
+
     def wait_for_page_load(self):
-        """Wait for the page to finish loading"""
-        # For right now, just wait for 2 seconds since webdriver returns when loaded.
-        # TODO: switch to waiting for network idle
-        time.sleep(2)
+        """Wait for the onload event from the extension"""
+        if self.job['message_server'] is not None:
+            logging.debug("Waiting for page load...")
+            start_time = monotonic.monotonic()
+            end_time = start_time + self.task['time_limit']
+            done = False
+            self.last_activity = None
+            while not done:
+                try:
+                    self.process_message(self.job['message_server'].get_message(1))
+                except Exception:
+                    pass
+                now = monotonic.monotonic()
+                elapsed_test = now - start_time
+                if self.nav_error is not None:
+                    done = True
+                    if self.page_loaded is None:
+                        self.task['error'] = self.nav_error
+                    logging.debug("Page load navigation error: %s", self.nav_error)
+                elif now >= end_time:
+                    done = True
+                    logging.debug("Page load reached time limit")
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Page Load Timeout"
+                elif self.last_activity is not None and \
+                        ('time' not in self.job or elapsed_test > self.job['time']):
+                    elapsed_activity = now - self.last_activity
+                    elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
+                    if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
+                        logging.debug("Page Load Activity Time Finished")
+                        done = True
+                    elif self.task['error'] is not None:
+                        logging.debug("Page load error: %s", self.task['error'])
+                        done = True
+
+    def process_message(self, message):
+        """Process a message from the extension"""
+        logging.debug(message)
+        if self.recording:
+            self.last_activity = monotonic.monotonic()
+            try:
+                if 'Provider' in message and 'Event' in message and 'ts' in message:
+                    if message['Provider'] == 'Microsoft-IE':
+                        self.process_ie_message(message)
+                    elif message['Provider'] == 'Microsoft-Windows-WinINet':
+                        self.process_wininet_message(message)
+            except Exception:
+                pass
+
+    def process_ie_message(self, message):
+        """Handle IE trace events"""
+        if message['Event'] == 'Mshtml_CWindow_SuperNavigate2/Start':
+            self.navigating = True
+            self.page_loaded = None
+        if self.navigating and message['Event'] == 'Mshtml_CDoc_Navigation' and 'data' in message:
+            if 'EventContextId' in message['data'] and 'CMarkup' in message['data']:
+                self.pageContexts.append(message['data']['EventContextId'])
+                self.CMarkup.append(message['data']['CMarkup'])
+                self.navigating = False
+                if 'start' not in self.page:
+                    self.page['start'] = message['ts']
+                if 'data' in message and 'URL' in message['data'] and 'URL' not in self.page:
+                    self.page['URL'] = message['data']['URL']
+        # Page Navigation events
+        if 'start' in self.page and 'data' in message:
+            elapsed = message['ts'] - self.page['start']
+            if 'EventContextId' in message['data'] and \
+                    message['data']['EventContextId'] in self.pageContexts:
+                if message['Event'] == 'Mshtml_WebOCEvents_DocumentComplete':
+                    if 'CMarkup' in message['data'] and message['data']['CMarkup'] in self.CMarkup:
+                        if 'loadEventStart' not in self.page:
+                            self.page['loadEventStart'] = elapsed
+                        self.page_loaded = monotonic.monotonic()
+                if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
+                    self.page['domContentLoadedEventStart'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
+                    self.page['domContentLoadedEventEnd'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Start/Start':
+                    self.page['loadEventStart'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
+                    self.page['loadEventEnd'] = elapsed
+                    self.page_loaded = monotonic.monotonic()
+
+    def process_wininet_message(self, message):
+        """Handle WinInet trace events"""
+        if 'Activity' in message:
+            self.process_dns_message(message)
+            self.process_socket_message(message)
+            self.process_request_message(message)
+
+    def process_dns_message(self, message):
+        """Handle DNS events"""
+        event_id = message['Activity']
+        if message['Event'] == 'WININET_DNS_QUERY/Start' and event_id not in self.dns:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'data' in message and 'HostName' in message['data']:
+                self.dns[event_id] = {'host': message['data']['HostName']}
+        if message['Event'] == 'WININET_DNS_QUERY/Stop' and event_id in self.dns:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'data' in message and 'AddressList' in message['data']:
+                self.dns[event_id]['addresses'] = list(
+                    filter(None, message['data']['AddressList'].split(';')))
+        if message['Event'] == 'Wininet_Getaddrinfo/Start' and event_id in self.dns:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.dns[event_id]['start'] = message['ts'] - self.page['start']
+        if message['Event'] == 'Wininet_Getaddrinfo/Stop' and event_id in self.dns:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.dns[event_id]['end'] = message['ts'] - self.page['start']
+
+    def process_socket_message(self, message):
+        """Handle socket connect events"""
+        event_id = message['Activity']
+        if message['Event'] == 'Wininet_SocketConnect/Start' and event_id not in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.sockets[event_id] = {'start': message['ts'] - self.page['start'],
+                                      'index': len(self.sockets)}
+            if 'data' in message and 'Socket' in message['data']:
+                self.sockets[event_id]['socket'] = message['data']['Socket']
+            if 'data' in message and 'SourcePort' in message['data']:
+                # keep a mapping from the source port to the connection activity id
+                self.socket_ports[message['data']['SourcePort']] = event_id
+                self.sockets[event_id]['srcPort'] = message['data']['SourcePort']
+            if 'data' in message and 'RemoteAddressIndex' in message['data']:
+                self.sockets[event_id]['addrIndex'] = message['data']['RemoteAddressIndex']
+        if message['Event'] == 'Wininet_SocketConnect/Stop' and event_id in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.sockets[event_id]['end'] = message['ts'] - self.page['start']
+        if message['Event'] == 'WININET_TCP_CONNECTION/Start' and event_id in self.sockets:
+            if 'ServerName' in message['data']:
+                self.sockets[event_id]['host'] = message['data']['ServerName']
+        if message['Event'] == 'WININET_TCP_CONNECTION/Stop' and event_id in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'end' not in self.sockets[event_id]:
+                self.sockets[event_id]['end'] = message['ts'] - self.page['start']
+            if 'srcPort' in self.sockets[event_id] and \
+                    self.sockets[event_id]['srcPort'] in self.socket_ports:
+                del self.socket_ports[self.sockets[event_id]['srcPort']]
+        if message['Event'] == 'WININET_TCP_CONNECTION/Fail' and event_id in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'end' not in self.sockets[event_id]:
+                self.sockets[event_id]['end'] = message['ts'] - self.page['start']
+            if 'data' in message and 'Error' in message['data']:
+                self.sockets[event_id]['error'] = message['data']['Error']
+        if message['Event'] == 'Wininet_Connect/Stop':
+            if 'data' in message and 'Socket' in message['data'] and \
+                    message['data']['Socket'] in self.socket_ports:
+                connect_id = self.socket_ports[message['data']['Socket']]
+                if connect_id in self.sockets:
+                    if 'LocalAddress' in message['data']:
+                        self.sockets[connect_id]['local'] = message['data']['LocalAddress']
+                    if 'RemoteAddress' in message['data']:
+                        self.sockets[connect_id]['remote'] = message['data']['RemoteAddress']
+        # TLS
+        if message['Event'] == 'WININET_HTTPS_NEGOTIATION/Start' and event_id in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.sockets[event_id]['tlsStart'] = message['ts'] - self.page['start']
+        if message['Event'] == 'WININET_HTTPS_NEGOTIATION/Stop' and event_id in self.sockets:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.sockets[event_id]['tlsEnd'] = message['ts'] - self.page['start']
+
+    def process_request_message(self, message):
+        """Handle request-level messages"""
+        event_id = message['Activity']
+        # Request created (not necessarily sent)
+        if message['Event'] == 'Wininet_SendRequest/Start':
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if event_id not in self.requests:
+                self.requests[event_id] = {}
+            if 'created' not in self.requests[event_id]:
+                self.requests[event_id]['created'] = message['ts'] - self.page['start']
+            if 'data' in message and 'AddressName' in message['data'] and \
+                    'URL' not in self.requests[event_id]:
+                self.requests[event_id]['URL'] = message['data']['AddressName']
+        # Headers and size of outbound request - Length, Headers
+        if message['Event'] == 'WININET_REQUEST_HEADER':
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if event_id not in self.requests:
+                self.requests[event_id] = {}
+            if 'created' not in self.requests[event_id]:
+                self.requests[event_id]['created'] = message['ts'] - self.page['start']
+            if 'data' in message and 'Headers' in message['data']:
+                self.requests[event_id]['outHeaders'] = message['data']['Headers']
+                self.requests[event_id]['outBytes'] = len(self.requests[event_id]['outHeaders'])
+            if 'start' not in self.requests[event_id]:
+                self.requests[event_id]['start'] = message['ts'] - self.page['start']
+            if 'data' in message and 'Length' in message['data'] and \
+                    'outBytes' not in self.requests[event_id]:
+                length = int(message['data']['Length'])
+                if length > 0:
+                    self.requests[event_id]['outBytes'] = length
+        # size of outbound request (and actual start) - Size
+        if message['Event'] == 'Wininet_SendRequest_Main':
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if event_id not in self.requests:
+                self.requests[event_id] = {}
+            if 'created' not in self.requests[event_id]:
+                self.requests[event_id]['created'] = message['ts'] - self.page['start']
+            self.requests[event_id]['start'] = message['ts'] - self.page['start']
+            if 'data' in message and 'Size' in message['data']:
+                length = int(message['data']['Size'])
+                if length > 0:
+                    self.requests[event_id]['outBytes'] = int(message['data']['Size'])
+        # Maps request to source port of connection "Socket" == local port
+        if message['Event'] == 'Wininet_LookupConnection/Stop':
+            if 'data' in message and 'Socket' in message['data'] and \
+                    message['data']['Socket'] in self.socket_ports:
+                if event_id not in self.requests:
+                    self.requests[event_id] = {}
+                connect_id = self.socket_ports[message['data']['Socket']]
+                self.requests[event_id]['connection'] = connect_id
+                if connect_id not in self.sockets:
+                    self.sockets[connect_id] = {'index': len(self.sockets)}
+                if 'requests' not in self.sockets[connect_id]:
+                    self.sockets[connect_id]['requests'] = []
+                self.sockets[connect_id]['requests'].append(event_id)
+        # Headers and size of headers - Length, Headers
+        if message['Event'] == 'WININET_RESPONSE_HEADER' and event_id in self.requests:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.requests[event_id]['end'] = message['ts'] - self.page['start']
+            if 'firstByte' not in self.requests[event_id]:
+                self.requests[event_id]['firstByte'] = message['ts'] - self.page['start']
+            if 'data' in message and 'Headers' in message['data']:
+                self.requests[event_id]['inHeaders'] = message['data']['Headers']
+            if 'data' in message and 'Length' in message['data']:
+                self.requests[event_id]['inHeadersLen'] = int(message['data']['Length'])
+        # inbound bytes (ttfb, keep incrementing end) - Size
+        if message['Event'] == 'Wininet_ReadData' and event_id in self.requests:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'start' in self.requests[event_id]:
+                self.requests[event_id]['end'] = message['ts'] - self.page['start']
+                if 'firstByte' not in self.requests[event_id]:
+                    self.requests[event_id]['firstByte'] = message['ts'] - self.page['start']
+                if 'data' in message and 'Size' in message['data']:
+                    if 'inBytes' not in self.requests[event_id]:
+                        self.requests[event_id]['inBytes'] = 0
+                    self.requests[event_id]['inBytes'] += int(message['data']['Size'])
+        if message['Event'] == 'WININET_STREAM_DATA_INDICATED' and event_id in self.requests:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            self.requests[event_id]['protocol'] = 'HTTP/2'
+            if 'start' in self.requests[event_id]:
+                self.requests[event_id]['end'] = message['ts'] - self.page['start']
+                if 'firstByte' not in self.requests[event_id]:
+                    self.requests[event_id]['firstByte'] = message['ts'] - self.page['start']
+                if 'data' in message and 'Size' in message['data']:
+                    if 'inBytes' not in self.requests[event_id]:
+                        self.requests[event_id]['inBytes'] = 0
+                    self.requests[event_id]['inBytes'] += int(message['data']['Size'])
+        # completely finished
+        if message['Event'] == 'Wininet_UsageLogRequest' and \
+                event_id in self.requests and 'data' in message:
+            if 'URL' in message['data']:
+                self.requests[event_id]['URL'] = message['data']['URL']
+            if 'Verb' in message['data']:
+                self.requests[event_id]['verb'] = message['data']['Verb']
+            if 'Status' in message['data']:
+                self.requests[event_id]['status'] = message['data']['Status']
+            if 'RequestHeaders' in message['data']:
+                self.requests[event_id]['outHeaders'] = message['data']['RequestHeaders']
+            if 'ResponseHeaders' in message['data']:
+                self.requests[event_id]['inHeaders'] = message['data']['ResponseHeaders']
+        # Headers done - Direction changing for capture (no params)
+        if message['Event'] == 'Wininet_SendRequest/Stop' and event_id in self.requests:
+            if 'start' not in self.page:
+                self.page['start'] = message['ts']
+            if 'end' not in self.requests[event_id]:
+                self.requests[event_id]['end'] = message['ts'] - self.page['start']
 
     def execute_js(self, script):
         """Run javascipt"""
@@ -210,9 +551,6 @@ class Edge(DesktopBrowser):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
-        task['page_data'] = {'date': time.time()}
-        task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -229,17 +567,21 @@ class Edge(DesktopBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        # Clear the state
+        self.page = {}
+        self.requests = {}
+        self.reset()
+        task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
+        task['run_start_time'] = monotonic.monotonic()
+        if self.job['message_server'] is not None:
+            self.job['message_server'].flush_messages()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
-        # Mark the start point in the various log files
-        self.delete_logs()
         self.recording = True
-        self.etw = ETW()
-        self.etw.start_recording(self.etw_log)
+        self.navigating = True
         now = monotonic.monotonic()
-        if not self.task['stop_at_onload']:
-            self.last_activity = now
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
@@ -256,22 +598,13 @@ class Edge(DesktopBrowser):
         else:
             screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
             self.grab_screenshot(screen_shot, png=False, resize=600)
-        if self.etw is not None:
-            self.etw.stop_recording()
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         DesktopBrowser.on_start_processing(self, task)
-        if self.etw is not None:
-            requests = self.etw.process(task)
-            if 'page_data' in task and 'result' in task['page_data']:
-                task['page_result'] = task['page_data']['result']
-            if requests is not None:
-                requests_file = os.path.join(task['dir'], task['prefix'] + '_requests.json.gz')
-                with gzip.open(requests_file, 'wb', 7) as f_out:
-                    json.dump(requests, f_out)
+        self.process_requests(task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -283,7 +616,11 @@ class Edge(DesktopBrowser):
         logging.debug(command)
         if command['command'] == 'navigate':
             self.task['url'] = command['target']
-            self.driver.get(command['target'])
+            url = str(command['target']).replace('"', '\"')
+            script = 'window.location="{0}";'.format(url)
+            self.driver.set_script_timeout(30)
+            self.driver.execute_script(script)
+            self.page_loaded = None
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
             if int(re.search(r'\d+', str(command['target'])).group()):
@@ -356,7 +693,7 @@ class Edge(DesktopBrowser):
                         with open(tmp_file, 'wb') as image_file:
                             image_file.write(data)
                         command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
-                            tmp_file, resize_string, self.job['iq'], path)
+                            tmp_file, resize_string, self.job['imageQuality'], path)
                         logging.debug(command)
                         subprocess.call(command, shell=True)
                         if os.path.isfile(tmp_file):
@@ -366,3 +703,297 @@ class Edge(DesktopBrowser):
                                 pass
             except Exception as err:
                 logging.debug('Exception grabbing screen shot: %s', str(err))
+
+    def process_requests(self, task):
+        """Convert all of the request and page events into the format needed for WPT"""
+        result = {}
+        self.process_sockets()
+        result['requests'] = self.process_raw_requests()
+        result['pageData'] = self.calculate_page_stats(result['requests'])
+        devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+        with gzip.open(devtools_file, 'wb', 7) as f_out:
+            json.dump(result, f_out)
+
+    def process_sockets(self):
+        """Map/claim the DNS and socket-connection level details"""
+        # Fill in the host and address for any sockets that had a DNS entry
+        # (even if the DNS did not require a lookup)
+        for event_id in self.sockets:
+            if event_id in self.dns:
+                if 'host' not in self.sockets[event_id] and 'host' in self.dns[event_id]:
+                    self.sockets[event_id]['host'] = self.dns[event_id]['host']
+                if 'addresses' in self.dns[event_id]:
+                    self.sockets[event_id]['addresses'] = self.dns[event_id]['addresses']
+                    if 'addrIndex' in self.sockets[event_id]:
+                        index = self.sockets[event_id]['addrIndex']
+                        if index < len(self.dns[event_id]['addresses']):
+                            self.sockets[event_id]['address'] = \
+                                    self.dns[event_id]['addresses'][index]
+        # Copy over the connect and dns timings to the first request on a given
+        # socket.
+        for event_id in self.sockets:
+            try:
+                if 'requests' in self.sockets[event_id]:
+                    first_request = None
+                    first_request_time = None
+                    count = len(self.sockets[event_id]['requests'])
+                    for i in xrange(0, count):
+                        rid = self.sockets[event_id]['requests'][i]
+                        if rid in self.requests and 'start' in self.requests[rid]:
+                            if first_request is None or \
+                                    self.requests[rid]['start'] < first_request_time:
+                                first_request = rid
+                                first_request_time = self.requests[rid]['start']
+                    if first_request is not None:
+                        if 'start' in self.sockets[event_id]:
+                            self.requests[first_request]['connectStart'] = \
+                                self.sockets[event_id]['start']
+                            if 'end' in self.sockets[event_id]:
+                                self.requests[first_request]['connectEnd'] = \
+                                    self.sockets[event_id]['end']
+                        if 'tlsStart' in self.sockets[event_id]:
+                            self.requests[first_request]['tlsStart'] = \
+                                self.sockets[event_id]['tlsStart']
+                            if 'tlsEnd' in self.sockets[event_id]:
+                                self.requests[first_request]['tlsEnd'] = \
+                                    self.sockets[event_id]['tlsEnd']
+                        if event_id in self.dns:
+                            if 'start' in self.dns[event_id]:
+                                self.requests[first_request]['dnsStart'] = \
+                                    self.dns[event_id]['start']
+                                if 'end' in self.dns[event_id]:
+                                    self.requests[first_request]['dnsEnd'] = \
+                                        self.dns[event_id]['end']
+            except Exception:
+                pass
+
+    def get_empty_request(self, request_id, url):
+        """Return and empty, initialized request"""
+        parts = urlparse.urlsplit(url)
+        request = {'type': 3,
+                   'id': request_id,
+                   'request_id': request_id,
+                   'ip_addr': '',
+                   'full_url': url,
+                   'is_secure': 1 if parts.scheme == 'https' else 0,
+                   'method': '',
+                   'host': parts.netloc,
+                   'url': parts.path,
+                   'responseCode': -1,
+                   'load_start': -1,
+                   'load_ms': -1,
+                   'ttfb_ms': -1,
+                   'dns_start': -1,
+                   'dns_end': -1,
+                   'dns_ms': -1,
+                   'connect_start': -1,
+                   'connect_end': -1,
+                   'connect_ms': -1,
+                   'ssl_start': -1,
+                   'ssl_end': -1,
+                   'ssl_ms': -1,
+                   'bytesIn': 0,
+                   'bytesOut': 0,
+                   'objectSize': 0,
+                   'initiator': '',
+                   'initiator_line': '',
+                   'initiator_column': '',
+                   'server_rtt': None,
+                   'headers': {'request': [], 'response': []},
+                   'score_cache': -1,
+                   'score_cdn': -1,
+                   'score_gzip': -1,
+                   'score_cookies': -1,
+                   'score_keep-alive': -1,
+                   'score_minify': -1,
+                   'score_combine': -1,
+                   'score_compress': -1,
+                   'score_etags': -1,
+                   'gzip_total': None,
+                   'gzip_save': None,
+                   'minify_total': None,
+                   'minify_save': None,
+                   'image_total': None,
+                   'image_save': None,
+                   'cache_time': None,
+                   'cdn_provider': None,
+                   'server_count': None,
+                   'socket': -1
+                  }
+        if len(parts.query):
+            request['url'] += '?' + parts.query
+        return request
+
+    def get_header_value(self, headers, name):
+        """Return the value for the given header"""
+        value = ''
+        name = name.lower()
+        for header in headers:
+            pos = header.find(':')
+            if pos > 0:
+                key = header[0:pos].lower()
+                if key.startswith(name):
+                    val = header[pos + 1:].strip()
+                    if len(value):
+                        value += '; '
+                    value += val
+        return value
+
+    def process_raw_requests(self):
+        """Convert the requests into the format WPT is expecting"""
+        requests = []
+        for req_id in self.requests:
+            try:
+                req = self.requests[req_id]
+                if 'start' in req and 'URL' in req:
+                    request = self.get_empty_request(req_id, req['URL'])
+                    if 'verb' in req:
+                        request['method'] = req['verb']
+                    if 'status' in req:
+                        request['responseCode'] = req['status']
+                    if 'protocol' in req:
+                        request['protocol'] = req['protocol']
+                    if 'created' in req:
+                        request['created'] = req['created']
+                    if 'start' in req:
+                        request['load_start'] = int(round(req['start']))
+                    if 'firstByte' in req:
+                        ttfb = int(round(req['firstByte'] - req['start']))
+                        request['ttfb_ms'] = max(0, ttfb)
+                    if 'end' in req:
+                        load_time = int(round(req['end'] - req['start']))
+                        request['load_ms'] = max(0, load_time)
+                    if 'dnsStart' in req:
+                        request['dns_start'] = int(round(req['dnsStart']))
+                    if 'dnsEnd' in req:
+                        request['dns_end'] = int(round(req['dnsEnd']))
+                    if 'connectStart' in req:
+                        request['connect_start'] = int(round(req['connectStart']))
+                    if 'connectEnd' in req:
+                        request['connect_end'] = int(round(req['connectEnd']))
+                    if 'tlsStart' in req:
+                        request['ssl_start'] = int(round(req['tlsStart']))
+                    if 'tlsEnd' in req:
+                        request['ssl_end'] = int(round(req['tlsEnd']))
+                    if 'inBytes' in req:
+                        request['bytesIn'] = req['inBytes']
+                    if 'outBytes' in req:
+                        request['bytesOut'] = req['outBytes']
+                    if 'connection' in req:
+                        connect_id = req['connection']
+                        if connect_id not in self.sockets:
+                            self.sockets[connect_id] = {'index': len(self.sockets)}
+                        request['socket'] = self.sockets[connect_id]['index']
+                        if 'address' in self.sockets[connect_id]:
+                            request['ip_addr'] = self.sockets[connect_id]['address']
+                    # Process the headers
+                    if 'outHeaders' in req:
+                        for header in req['outHeaders'].splitlines():
+                            if len(header):
+                                request['headers']['request'].append(header)
+                    if 'inHeaders' in req:
+                        for header in req['inHeaders'].splitlines():
+                            if len(header):
+                                request['headers']['response'].append(header)
+                    value = self.get_header_value(request['headers']['response'], 'Expires')
+                    if value:
+                        request['expires'] = value
+                    value = self.get_header_value(request['headers']['response'], 'Cache-Control')
+                    if value:
+                        request['cacheControl'] = value
+                    value = self.get_header_value(request['headers']['response'], 'Content-Type')
+                    if value:
+                        request['contentType'] = value
+                    value = self.get_header_value(request['headers']['response'],
+                                                  'Content-Encoding')
+                    if value:
+                        request['contentEncoding'] = value
+                    value = self.get_header_value(request['headers']['response'], 'Content-Length')
+                    if value:
+                        request['objectSize'] = value
+                    requests.append(request)
+            except Exception:
+                pass
+        requests.sort(key=lambda x: x['load_start'])
+        return requests
+
+    def calculate_page_stats(self, requests):
+        """Calculate the page-level stats"""
+        page = {'loadTime': 0,
+                'docTime': 0,
+                'fullyLoaded': 0,
+                'bytesOut': 0,
+                'bytesOutDoc': 0,
+                'bytesIn': 0,
+                'bytesInDoc': 0,
+                'requests': len(requests),
+                'requestsDoc': 0,
+                'responses_200': 0,
+                'responses_404': 0,
+                'responses_other': 0,
+                'result': 0,
+                'testStartOffset': 0,
+                'cached': 1 if self.task['cached'] else 0,
+                'optimization_checked': 0,
+                'start_epoch': int((self.task['start_time'] - \
+                                    datetime.utcfromtimestamp(0)).total_seconds())
+               }
+        if 'loadEventStart' in self.page:
+            page['loadTime'] = int(round(self.page['loadEventStart']))
+            page['docTime'] = page['loadTime']
+            page['fullyLoaded'] = page['loadTime']
+            page['loadEventStart'] = page['loadTime']
+            page['loadEventEnd'] = page['loadTime']
+            if 'loadEventEnd' in self.page:
+                page['loadEventEnd'] = int(round(self.page['loadEventEnd']))
+        if 'domContentLoadedEventStart' in self.page:
+            page['domContentLoadedEventStart'] = int(round(self.page['domContentLoadedEventStart']))
+            page['domContentLoadedEventEnd'] = page['domContentLoadedEventStart']
+            if 'domContentLoadedEventEnd' in self.page:
+                page['domContentLoadedEventEnd'] = int(round(self.page['domContentLoadedEventEnd']))
+
+        main_request = None
+        index = 0
+        for request in requests:
+            if request['load_ms'] >= 0:
+                end_time = request['load_start'] + request['load_ms']
+                if end_time > page['fullyLoaded']:
+                    page['fullyLoaded'] = end_time
+                if end_time <= page['loadTime']:
+                    page['requestsDoc'] += 1
+                    page['bytesInDoc'] += request['bytesIn']
+                    page['bytesOutDoc'] += request['bytesOut']
+            page['bytesIn'] += request['bytesIn']
+            page['bytesOut'] += request['bytesOut']
+            if request['responseCode'] == 200:
+                page['responses_200'] += 1
+            elif request['responseCode'] == 404:
+                page['responses_404'] += 1
+                page['result'] = 99999
+            elif request['responseCode'] > -1:
+                page['responses_other'] += 1
+            if main_request is None and \
+                    (request['responseCode'] == 200 or \
+                     request['responseCode'] == 304 or \
+                     request['responseCode'] >= 400):
+                main_request = request['id']
+                request['is_base_page'] = True
+                page['final_base_page_request'] = index
+                page['final_base_page_request_id'] = main_request
+                page['final_url'] = request['full_url']
+                if request['ttfb_ms'] >= 0:
+                    page['TTFB'] = request['load_start'] + request['ttfb_ms']
+                if request['ssl_end'] >= request['ssl_start'] and \
+                        request['ssl_start'] >= 0:
+                    page['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                        request['ssl_start']))
+                if request['responseCode'] >= 400:
+                    page['result'] = request['responseCode']
+        if (page['result'] == 0 or page['result'] == 99999) and \
+                page['responses_200'] == 0 and len(requests):
+            if 'responseCode' in requests[0]:
+                page['result'] = requests[0]['responseCode']
+            else:
+                page['result'] = 12999
+        self.task['page_result'] = page['result']
+        return page

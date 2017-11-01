@@ -320,7 +320,7 @@ class WPTAgent(object):
             except ImportError:
                 print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
-        
+
         # Check the iOS install
         if self.ios is not None:
             ret = self.ios.check_install()
@@ -397,7 +397,6 @@ class HandleMessage(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """HTTP POST"""
-        logging.debug(self.path)
         import ujson as json
         try:
             content_len = int(self.headers.getheader('content-length', 0))
@@ -411,9 +410,8 @@ class HandleMessage(BaseHTTPRequestHandler):
                     line = line.strip()
                     if len(line):
                         message = json.loads(line)
-                        if 'body' not in message:
+                        if 'body' not in message and self.path != '/etw':
                             message['body'] = None
-                        logging.debug(message)
                         self.message_server.handle_message(message)
         except Exception:
             pass

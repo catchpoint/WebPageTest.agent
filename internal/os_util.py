@@ -55,7 +55,7 @@ def flush_dns():
         subprocess.call(['sudo', 'rndc', 'restart'])
 
 # pylint: disable=E0611,E0401
-def run_elevated(command, args):
+def run_elevated(command, args, wait=True):
     """Run the given command as an elevated user and wait for it to return"""
     ret = 1
     if command.find(' ') > -1:
@@ -73,12 +73,26 @@ def run_elevated(command, args):
                                       lpVerb='runas',
                                       lpFile=command,
                                       lpParameters=args)
-        win32event.WaitForSingleObject(process_info['hProcess'], win32event.INFINITE)
-        ret = win32process.GetExitCodeProcess(process_info['hProcess'])
-        win32api.CloseHandle(process_info['hProcess'])
+        if wait:
+            win32event.WaitForSingleObject(process_info['hProcess'], 600000)
+            ret = win32process.GetExitCodeProcess(process_info['hProcess'])
+            win32api.CloseHandle(process_info['hProcess'])
+        else:
+            ret = process_info
     else:
         logging.debug('sudo ' + command + ' ' + args)
         ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
+    return ret
+
+def wait_for_elevated_process(process_info):
+    if platform.system() == 'Windows' and 'hProcess' in process_info:
+        import win32api
+        import win32con
+        import win32event
+        import win32process
+        win32event.WaitForSingleObject(process_info['hProcess'], 600000)
+        ret = win32process.GetExitCodeProcess(process_info['hProcess'])
+        win32api.CloseHandle(process_info['hProcess'])
     return ret
 # pylint: enable=E0611,E0401
 
