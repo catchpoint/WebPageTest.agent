@@ -657,17 +657,6 @@ class iWptBrowser(object):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
-        self.page = {}
-        self.requests = {}
-        self.console_log = []
-        self.response_bodies = {}
-        if self.timeline is not None:
-            self.timeline.close()
-            self.timeline = None
-        self.wpt_result = None
-        task['page_data'] = {'date': time.time()}
-        task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -685,6 +674,17 @@ class iWptBrowser(object):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        self.page = {}
+        self.requests = {}
+        self.console_log = []
+        self.response_bodies = {}
+        if self.timeline is not None:
+            self.timeline.close()
+            self.timeline = None
+        self.wpt_result = None
+        task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
+        task['run_start_time'] = monotonic.monotonic()
         self.flush_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})

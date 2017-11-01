@@ -128,6 +128,9 @@ class DevtoolsBrowser(object):
 
     def on_start_recording(self, task):
         """Start recording"""
+        task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
+        task['run_start_time'] = monotonic.monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
@@ -210,9 +213,6 @@ class DevtoolsBrowser(object):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
-        task['page_data'] = {'date': time.time()}
-        task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
