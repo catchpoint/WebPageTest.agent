@@ -24,7 +24,9 @@ class InternetExplorer(Edge):
             path = os.path.join(path, 'amd64', 'IEDriverServer.exe')
         else:
             path = os.path.join(path, 'x86', 'IEDriverServer.exe')
-        driver = webdriver.Ie(executable_path=path)
+        capabilities = webdriver.DesiredCapabilities.INTERNETEXPLORER.copy()
+        capabilities['ie.enableFullPageScreenshot'] = False
+        driver = webdriver.Ie(executable_path=path, capabilities=capabilities)
         return driver
 
     def kill(self):
