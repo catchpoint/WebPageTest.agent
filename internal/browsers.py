@@ -40,6 +40,8 @@ class Browsers(object):
         """Return an instance of the browser logic"""
         browser = None
         name = name.lower()
+        if name.startswith('ie '):
+            name = 'ie'
         if self.options.android:
             if 'customBrowser_package' in job:
                 name = "chrome"
@@ -68,6 +70,9 @@ class Browsers(object):
             elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Edge':
                 from .microsoft_edge import Edge
                 browser = Edge(self.browsers[name]['exe'], self.options, job)
+            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'IE':
+                from .internet_explorer import InternetExplorer
+                browser = InternetExplorer(self.browsers[name]['exe'], self.options, job)
             else:
                 from .chrome_desktop import ChromeDesktop
                 browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)

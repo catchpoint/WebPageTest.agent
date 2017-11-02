@@ -611,6 +611,13 @@ def find_browsers():
                 browsers['Microsoft Edge'] = dict(edge)
             if 'Edge' not in browsers:
                 browsers['Edge'] = dict(edge)
+        # Internet Explorer
+        paths = [program_files, program_files_x86]
+        for path in paths:
+            if path is not None and 'IE' not in browsers:
+                ie_path = os.path.join(path, 'Internet Explorer', 'iexplore.exe')
+                if os.path.isfile(ie_path):
+                    browsers['ie'] = {'exe': ie_path, 'type': 'IE'}
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):

@@ -53,6 +53,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 * Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
 * Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
 * Disable UAC so it doesn't prompt when admin commands need to be run
+* Make sure all of the security zones in IE have the same setting for the "protected mode" checkbox (all enabled or all disabled)
 * Consider using [browser-install](https://github.com/WPO-Foundation/browser-install) to keep the browsers up to date
 * Running the agent from a batch file configured to start at user login (task scheduler) is a good way to run a headless agent.  Here is the batch file the public instance uses (reboots the system daily):
 ```bat

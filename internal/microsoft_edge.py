@@ -70,15 +70,20 @@ class Edge(DesktopBrowser):
         if not task['cached']:
             self.clear_cache()
         DesktopBrowser.prepare(self, job, task)
+    
+    def get_driver(self):
+        """Get the webdriver instance"""
+        from selenium import webdriver
+        driver = webdriver.Edge(executable_path=self.path)
+        return driver
 
     def launch(self, _job, task):
         """Launch the browser"""
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         try:
-            from selenium import webdriver
             logging.debug('Launching Edge : %s', self.path)
-            self.driver = webdriver.Edge(executable_path=self.path)
+            self.driver = self.get_driver()
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
                 self.browser_version = self.driver.capabilities['browserVersion']
