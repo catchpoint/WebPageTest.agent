@@ -15,6 +15,7 @@ import urlparse
 import monotonic
 import ujson as json
 from .desktop_browser import DesktopBrowser
+from .optimization_checks import OptimizationChecks
 
 class Edge(DesktopBrowser):
     """Microsoft Edge"""
@@ -47,6 +48,8 @@ class Edge(DesktopBrowser):
         self.pageContexts = []
         self.CMarkup = []
         self.start = None
+        self.bodies_path = None
+        self.pid = None
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -61,6 +64,9 @@ class Edge(DesktopBrowser):
         self.kill()
         self.page = {}
         self.requests = {}
+        self.bodies_path = os.path.join(task['dir'], 'bodies')
+        if not os.path.isdir(self.bodies_path):
+            os.makedirs(self.bodies_path)
         if not task['cached']:
             self.clear_cache()
         DesktopBrowser.prepare(self, job, task)
@@ -89,7 +95,9 @@ class Edge(DesktopBrowser):
                 except Exception:
                     pass
             from .os_util import run_elevated
-            self.wpt_etw_proc = run_elevated(wpt_etw_path, '', wait=False)
+            self.wpt_etw_proc = run_elevated(wpt_etw_path,
+                                             '--bodies "{0}"'.format(self.bodies_path),
+                                             wait=False)
             self.wait_for_extension()
             if self.extension_loaded:
                 DesktopBrowser.wait_for_idle(self)
@@ -119,6 +127,8 @@ class Edge(DesktopBrowser):
                 except Exception:
                     pass
         self.kill()
+        if self.bodies_path is not None and os.path.isdir(self.bodies_path):
+            shutil.rmtree(self.bodies_path, ignore_errors=True)
 
     def kill(self):
         """Kill any running instances"""
@@ -134,7 +144,7 @@ class Edge(DesktopBrowser):
     def clear_cache(self):
         """Clear the browser cache"""
         appdata = os.environ.get('LOCALAPPDATA')
-        edge_dir = os.path.join(appdata, 'Packages', 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe') 
+        edge_dir = os.path.join(appdata, 'Packages', 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe')
         temp_dir = os.path.join(edge_dir, 'AC')
         app_dir = os.path.join(edge_dir, 'AppData')
         if os.path.exists(temp_dir):
@@ -248,10 +258,15 @@ class Edge(DesktopBrowser):
         if self.recording:
             self.last_activity = monotonic.monotonic()
             try:
-                if 'Provider' in message and 'Event' in message and 'ts' in message:
+                if 'Provider' in message and 'Event' in message and \
+                        'ts' in message and 'pid' in message:
                     if message['Provider'] == 'Microsoft-IE':
-                        self.process_ie_message(message)
-                    elif message['Provider'] == 'Microsoft-Windows-WinINet':
+                        if self.pid is None:
+                            self.pid = message['pid']
+                        if message['pid'] == self.pid:
+                            self.process_ie_message(message)
+                    elif message['Provider'] == 'Microsoft-Windows-WinINet' and \
+                            message['pid'] == self.pid:
                         self.process_wininet_message(message)
             except Exception:
                 pass
@@ -268,8 +283,8 @@ class Edge(DesktopBrowser):
                 self.navigating = False
                 if 'start' not in self.page:
                     self.page['start'] = message['ts']
-                if 'data' in message and 'URL' in message['data'] and 'URL' not in self.page:
-                    self.page['URL'] = message['data']['URL']
+                if 'data' in message and 'URL' in message['data'] and 'url' not in self.page:
+                    self.page['url'] = message['data']['URL']
         # Page Navigation events
         if 'start' in self.page and 'data' in message:
             elapsed = message['ts'] - self.page['start']
@@ -385,18 +400,18 @@ class Edge(DesktopBrowser):
             if 'start' not in self.page:
                 self.page['start'] = message['ts']
             if event_id not in self.requests:
-                self.requests[event_id] = {}
+                self.requests[event_id] = {'activity': event_id, 'id': len(self.requests) + 1}
             if 'created' not in self.requests[event_id]:
                 self.requests[event_id]['created'] = message['ts'] - self.page['start']
             if 'data' in message and 'AddressName' in message['data'] and \
-                    'URL' not in self.requests[event_id]:
-                self.requests[event_id]['URL'] = message['data']['AddressName']
+                    'url' not in self.requests[event_id]:
+                self.requests[event_id]['url'] = message['data']['AddressName']
         # Headers and size of outbound request - Length, Headers
         if message['Event'] == 'WININET_REQUEST_HEADER':
             if 'start' not in self.page:
                 self.page['start'] = message['ts']
             if event_id not in self.requests:
-                self.requests[event_id] = {}
+                self.requests[event_id] = {'activity': event_id, 'id': len(self.requests) + 1}
             if 'created' not in self.requests[event_id]:
                 self.requests[event_id]['created'] = message['ts'] - self.page['start']
             if 'data' in message and 'Headers' in message['data']:
@@ -414,7 +429,7 @@ class Edge(DesktopBrowser):
             if 'start' not in self.page:
                 self.page['start'] = message['ts']
             if event_id not in self.requests:
-                self.requests[event_id] = {}
+                self.requests[event_id] = {'activity': event_id, 'id': len(self.requests) + 1}
             if 'created' not in self.requests[event_id]:
                 self.requests[event_id]['created'] = message['ts'] - self.page['start']
             self.requests[event_id]['start'] = message['ts'] - self.page['start']
@@ -427,7 +442,7 @@ class Edge(DesktopBrowser):
             if 'data' in message and 'Socket' in message['data'] and \
                     message['data']['Socket'] in self.socket_ports:
                 if event_id not in self.requests:
-                    self.requests[event_id] = {}
+                    self.requests[event_id] = {'activity': event_id, 'id': len(self.requests) + 1}
                 connect_id = self.socket_ports[message['data']['Socket']]
                 self.requests[event_id]['connection'] = connect_id
                 if connect_id not in self.sockets:
@@ -474,7 +489,7 @@ class Edge(DesktopBrowser):
         if message['Event'] == 'Wininet_UsageLogRequest' and \
                 event_id in self.requests and 'data' in message:
             if 'URL' in message['data']:
-                self.requests[event_id]['URL'] = message['data']['URL']
+                self.requests[event_id]['url'] = message['data']['URL']
             if 'Verb' in message['data']:
                 self.requests[event_id]['verb'] = message['data']['Verb']
             if 'Status' in message['data']:
@@ -710,6 +725,7 @@ class Edge(DesktopBrowser):
         self.process_sockets()
         result['requests'] = self.process_raw_requests()
         result['pageData'] = self.calculate_page_stats(result['requests'])
+        self.check_optimization(task, result['requests'], result['pageData'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
         with gzip.open(devtools_file, 'wb', 7) as f_out:
             json.dump(result, f_out)
@@ -841,12 +857,20 @@ class Edge(DesktopBrowser):
 
     def process_raw_requests(self):
         """Convert the requests into the format WPT is expecting"""
+        import zipfile
         requests = []
+        bodies_zip_file = None
+        body_index = 0
+        if 'bodies' in self.job and self.job['bodies']:
+            bodies_zip_path = os.path.join(self.task['dir'], \
+                                           self.task['prefix'] + '_bodies.zip')
+            bodies_zip_file = zipfile.ZipFile(bodies_zip_path, 'w', zipfile.ZIP_DEFLATED)
         for req_id in self.requests:
             try:
                 req = self.requests[req_id]
-                if 'start' in req and 'URL' in req:
-                    request = self.get_empty_request(req_id, req['URL'])
+                if 'start' in req and 'url' in req and \
+                        not req['url'].startswith("https://www.bing.com/cortanaassist/gping"):
+                    request = self.get_empty_request(req['id'], req['url'])
                     if 'verb' in req:
                         request['method'] = req['verb']
                     if 'status' in req:
@@ -877,6 +901,7 @@ class Edge(DesktopBrowser):
                         request['ssl_end'] = int(round(req['tlsEnd']))
                     if 'inBytes' in req:
                         request['bytesIn'] = req['inBytes']
+                        request['objectSize'] = req['inBytes']
                     if 'outBytes' in req:
                         request['bytesOut'] = req['outBytes']
                     if 'connection' in req:
@@ -895,6 +920,18 @@ class Edge(DesktopBrowser):
                         for header in req['inHeaders'].splitlines():
                             if len(header):
                                 request['headers']['response'].append(header)
+                        # key: value format for the optimization checks
+                        request['response_headers'] = {}
+                        for header in request['headers']['response']:
+                            split_pos = header.find(":", 1)
+                            if split_pos > 1:
+                                name = header[:split_pos].strip()
+                                value = header[split_pos + 1:].strip()
+                                if len(name) and len(value):
+                                    if name in request['response_headers']:
+                                        request['response_headers'][name] += "\r\n" + value
+                                    else:
+                                        request['response_headers'][name] = value
                     value = self.get_header_value(request['headers']['response'], 'Expires')
                     if value:
                         request['expires'] = value
@@ -910,12 +947,157 @@ class Edge(DesktopBrowser):
                         request['contentEncoding'] = value
                     value = self.get_header_value(request['headers']['response'], 'Content-Length')
                     if value:
-                        request['objectSize'] = value
+                        if 'objectSize' not in request or value < request['objectSize']:
+                            request['objectSize'] = value
+                    # process the response body
+                    body_file = os.path.join(self.bodies_path, req_id)
+                    if os.path.isfile(body_file):
+                        request['body'] = body_file
+                        request['objectSizeUncompressed'] = os.path.getsize(body_file)
+                        is_text = False
+                        if 'contentType' in request and 'responseCode' in request and \
+                                request['responseCode'] == 200:
+                            if request['contentType'].startswith('text/') or \
+                                    request['contentType'].find('javascript') >= 0 or \
+                                    request['contentType'].find('json') >= 0 or \
+                                    request['contentType'].find('xml') >= 0 or\
+                                    request['contentType'].find('/svg') >= 0:
+                                is_text = True
+                        if bodies_zip_file is not None and is_text:
+                            body_index += 1
+                            name = '{0:03d}-{1}-body.txt'.format(body_index, request['id'])
+                            bodies_zip_file.write(body_file, name)
+                            request['body_id'] = request['id']
+                            logging.debug('%s: Stored body in zip for (%s)',
+                                          request['id'], request['url'])
+
                     requests.append(request)
             except Exception:
                 pass
+        if bodies_zip_file is not None:
+            bodies_zip_file.close()
         requests.sort(key=lambda x: x['load_start'])
         return requests
+
+    def check_optimization(self, task, requests, page_data):
+        """Run the optimization checks"""
+        # build an dictionary of the requests
+        opt_requests = {}
+        for request in requests:
+            opt_requests[request['id']] = request
+
+        optimization = OptimizationChecks(self.job, task, opt_requests)
+        optimization.start()
+        optimization.join()
+
+        # remove the temporary entries we added
+        for request in requests:
+            if 'response_headers' in request:
+                del request['response_headers']
+            if 'body' in request:
+                del request['body']
+            if 'response_body' in request:
+                del request['response_body']
+
+        # merge the optimization results
+        optimization_file = os.path.join(self.task['dir'], self.task['prefix']) + \
+                            '_optimization.json.gz'
+        if os.path.isfile(optimization_file):
+            with gzip.open(optimization_file, 'rb') as f_in:
+                optimization_results = json.load(f_in)
+            page_data['score_cache'] = -1
+            page_data['score_cdn'] = -1
+            page_data['score_gzip'] = -1
+            page_data['score_cookies'] = -1
+            page_data['score_keep-alive'] = -1
+            page_data['score_minify'] = -1
+            page_data['score_combine'] = -1
+            page_data['score_compress'] = -1
+            page_data['score_etags'] = -1
+            page_data['score_progressive_jpeg'] = -1
+            page_data['gzip_total'] = 0
+            page_data['gzip_savings'] = 0
+            page_data['minify_total'] = -1
+            page_data['minify_savings'] = -1
+            page_data['image_total'] = 0
+            page_data['image_savings'] = 0
+            page_data['optimization_checked'] = 1
+            page_data['base_page_cdn'] = ''
+            cache_count = 0
+            cache_total = 0
+            cdn_count = 0
+            cdn_total = 0
+            keep_alive_count = 0
+            keep_alive_total = 0
+            progressive_total_bytes = 0
+            progressive_bytes = 0
+            for request in requests:
+                if request['responseCode'] == 200:
+                    request_id = str(request['id'])
+                    if request_id in optimization_results:
+                        opt = optimization_results[request_id]
+                        if 'cache' in opt:
+                            request['score_cache'] = opt['cache']['score']
+                            request['cache_time'] = opt['cache']['time']
+                            if request['score_cache'] >= 0:
+                                cache_count += 1
+                                cache_total += request['score_cache']
+                        if 'cdn' in opt:
+                            request['score_cdn'] = opt['cdn']['score']
+                            request['cdn_provider'] = opt['cdn']['provider']
+                            if request['score_cdn'] >= 0:
+                                cdn_count += 1
+                                cdn_total += request['score_cdn']
+                            if 'is_base_page' in request and request['is_base_page'] and \
+                                    request['cdn_provider'] is not None:
+                                page_data['base_page_cdn'] = request['cdn_provider']
+                        if 'keep_alive' in opt:
+                            request['score_keep-alive'] = opt['keep_alive']['score']
+                            if request['score_keep-alive'] >= 0:
+                                keep_alive_count += 1
+                                keep_alive_total += request['score_keep-alive']
+                        if 'gzip' in opt:
+                            savings = opt['gzip']['size'] - opt['gzip']['target_size']
+                            request['score_gzip'] = opt['gzip']['score']
+                            request['gzip_total'] = opt['gzip']['size']
+                            request['gzip_save'] = savings
+                            if request['score_gzip']  >= 0:
+                                page_data['gzip_total'] += opt['gzip']['size']
+                                page_data['gzip_savings'] += savings
+                        if 'image' in opt:
+                            savings = opt['image']['size'] - opt['image']['target_size']
+                            request['score_compress'] = opt['image']['score']
+                            request['image_total'] = opt['image']['size']
+                            request['image_save'] = savings
+                            if request['score_compress'] >= 0:
+                                page_data['image_total'] += opt['image']['size']
+                                page_data['image_savings'] += savings
+                        if 'progressive' in opt:
+                            size = opt['progressive']['size']
+                            request['jpeg_scan_count'] = opt['progressive']['scan_count']
+                            progressive_total_bytes += size
+                            if request['jpeg_scan_count'] > 1:
+                                request['score_progressive_jpeg'] = 100
+                                progressive_bytes += size
+                            elif size < 10240:
+                                request['score_progressive_jpeg'] = 50
+                            else:
+                                request['score_progressive_jpeg'] = 0
+            if cache_count > 0:
+                page_data['score_cache'] = int(round(cache_total / cache_count))
+            if cdn_count > 0:
+                page_data['score_cdn'] = int(round(cdn_total / cdn_count))
+            if keep_alive_count > 0:
+                page_data['score_keep-alive'] = int(round(keep_alive_total / keep_alive_count))
+            if page_data['gzip_total'] > 0:
+                page_data['score_gzip'] = 100 - int(page_data['gzip_savings'] * 100 /
+                                                    page_data['gzip_total'])
+            if page_data['image_total'] > 0:
+                page_data['score_compress'] = 100 - int(page_data['image_savings'] * 100 /
+                                                        page_data['image_total'])
+            if progressive_total_bytes > 0:
+                page_data['score_progressive_jpeg'] = int(round(progressive_bytes * 100 /
+                                                                progressive_total_bytes))
 
     def calculate_page_stats(self, requests):
         """Calculate the page-level stats"""

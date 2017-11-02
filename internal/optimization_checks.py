@@ -304,13 +304,16 @@ class OptimizationChecks(object):
                 request = self.requests[request_id]
                 if 'url' in request:
                     check = {'score': 100}
-                    domain = urlparse(request['url']).hostname
+                    url = request['full_url'] if 'full_url' in request else request['url']
+                    domain = urlparse(url).hostname
                     # See if there are any other requests on the same domain
                     other_requests = False
                     for r_id in self.requests:
                         if r_id != request_id:
                             if 'url' in self.requests[r_id]:
-                                other_domain = urlparse(self.requests[r_id]['url']).hostname
+                                url = self.requests[r_id]['full_url'] if 'full_url' in \
+                                        self.requests[r_id] else self.requests[r_id]['url']
+                                other_domain = urlparse(url).hostname
                                 if other_domain == domain:
                                     other_requests = True
                                     break
@@ -418,7 +421,8 @@ class OptimizationChecks(object):
             if is_static:
                 static_requests[request_id] = True
             if 'url' in request:
-                domain = urlparse(request['url']).hostname
+                url = request['full_url'] if 'full_url' in request else request['url']
+                domain = urlparse(url).hostname
                 if domain is not None:
                     if domain not in domains:
                         # Check the domain itself against the CDN list
@@ -454,7 +458,8 @@ class OptimizationChecks(object):
             if request_id in static_requests:
                 check['score'] = 0
             if 'url' in request:
-                domain = urlparse(request['url']).hostname
+                url = request['full_url'] if 'full_url' in request else request['url']
+                domain = urlparse(url).hostname
                 if domain is not None:
                     if domain in domains and domains[domain]:
                         check['score'] = 100
@@ -554,7 +559,9 @@ class OptimizationChecks(object):
                 request = self.requests[request_id]
                 content_length = self.get_header_value(request['response_headers'],
                                                        'Content-Length')
-                if content_length is not None:
+                if 'objectSize' in request:
+                    content_length = request['objectSize']
+                elif content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
@@ -648,7 +655,11 @@ class OptimizationChecks(object):
                                     check['score'] = int(target_size * 100 / content_length)
                                 else:
                                     check['score'] = 100
-                    elif sniff_type == 'png' and 'response_body' in request:
+                    elif sniff_type == 'png':
+                        if 'response_body' not in request:
+                            request['response_body'] = ''
+                            with open(request['body'], 'rb') as f_in:
+                                request['response_body'] = f_in.read()
                         if content_length < 1400:
                             check['score'] = 100
                         else:
@@ -729,10 +740,14 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                if 'response_body' in request:
-                    body = request['response_body']
-                    sniff_type = self.sniff_content(body)
+                if 'body' in request:
+                    sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type == 'jpeg':
+                        if 'response_body' not in request:
+                            request['response_body'] = ''
+                            with open(request['body'], 'rb') as f_in:
+                                request['response_body'] = f_in.read()
+                        body = request['response_body']
                         content_length = len(request['response_body'])
                         check = {'size': content_length, 'scan_count': 0}
                         pos = 0

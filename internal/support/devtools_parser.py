@@ -814,34 +814,39 @@ class DevToolsParser(object):
                         if 'cache' in opt:
                             request['score_cache'] = opt['cache']['score']
                             request['cache_time'] = opt['cache']['time']
-                            cache_count += 1
-                            cache_total += request['score_cache']
+                            if request['score_cache'] >= 0:
+                                cache_count += 1
+                                cache_total += request['score_cache']
                         if 'cdn' in opt:
                             request['score_cdn'] = opt['cdn']['score']
                             request['cdn_provider'] = opt['cdn']['provider']
-                            cdn_count += 1
-                            cdn_total += request['score_cdn']
+                            if request['score_cdn'] >= 0:
+                                cdn_count += 1
+                                cdn_total += request['score_cdn']
                             if 'is_base_page' in request and request['is_base_page'] and \
                                     request['cdn_provider'] is not None:
                                 page_data['base_page_cdn'] = request['cdn_provider']
                         if 'keep_alive' in opt:
                             request['score_keep-alive'] = opt['keep_alive']['score']
-                            keep_alive_count += 1
-                            keep_alive_total += request['score_keep-alive']
+                            if request['score_keep-alive'] >= 0:
+                                keep_alive_count += 1
+                                keep_alive_total += request['score_keep-alive']
                         if 'gzip' in opt:
                             savings = opt['gzip']['size'] - opt['gzip']['target_size']
                             request['score_gzip'] = opt['gzip']['score']
                             request['gzip_total'] = opt['gzip']['size']
                             request['gzip_save'] = savings
-                            page_data['gzip_total'] += opt['gzip']['size']
-                            page_data['gzip_savings'] += savings
+                            if request['score_gzip'] >= 0:
+                                page_data['gzip_total'] += opt['gzip']['size']
+                                page_data['gzip_savings'] += savings
                         if 'image' in opt:
                             savings = opt['image']['size'] - opt['image']['target_size']
                             request['score_compress'] = opt['image']['score']
                             request['image_total'] = opt['image']['size']
                             request['image_save'] = savings
-                            page_data['image_total'] += opt['image']['size']
-                            page_data['image_savings'] += savings
+                            if request['score_compress'] >= 0:
+                                page_data['image_total'] += opt['image']['size']
+                                page_data['image_savings'] += savings
                         if 'progressive' in opt:
                             size = opt['progressive']['size']
                             request['jpeg_scan_count'] = opt['progressive']['scan_count']
