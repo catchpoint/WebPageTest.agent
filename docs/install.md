@@ -48,7 +48,6 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * ```net.ipv6.conf.default.disable_ipv6 = 1```
     * ```net.ipv6.conf.lo.disable_ipv6 = 1```
 
-
 ### Windows
 * Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
 * Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
@@ -95,7 +94,7 @@ Local traffic-shaping isn't supported so either "none" or "external" needs to be
 On Linux the usbmuxd support libraries should be installed automatically but if there are problems talking to the device you may need to install them manually.  To verify connectivity to the device you can run "ideviceinfo" from the command-line to make sure things are working.
 
 ## Configuration
-The default browser locations for Chrome, Firefox (Stable, Beta and Canary/Nightly) and Microsoft Edge will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
+The default browser locations for Chrome, Firefox (Stable, Beta and Canary/Nightly), Microsoft Edge and Internet Explorer will automatically be detected.  If you need to support different locations or provide different browsers you can rename browsers.ini.sample to browsers.ini and define the browser locations.
 
 On Linux, make sure to point to the actual chrome binary and not the symlink.  Usually something like:
 ```

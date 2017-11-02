@@ -2,16 +2,17 @@
 Cross-platform WebPageTest agent
 
 ## Supported Platforms/Browsers
-Chrome is the only browser that currently supports capturing response bodies and manipulating requests (changing headers, blocking requests, etc).  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
+Chrome is the only browser that currently supports manipulating requests (changing headers, blocking requests, etc).  Chrome, IE and Microsoft Edge are the only browsers that currently support capturing response bodieas and running optimizarion checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
 
 ### Linux (with display or headless with Xvfb)
 * Chrome (Stable and Unstable)
 * Firefox (Stable and Nightly)
 
 ### Windows
-* Chrome (Stable and Canary)
-* Firefox (Stable and Nightly)
-* Microsoft Edge (does not support complex scripts or waiting for page activity yet, just top-level page navigations)
+* Chrome (Stable, Beta, Dev and Canary)
+* Firefox (Stable, ESR, Developer Edition, Beta and Nightly)
+* Microsoft Edge
+* Internet Explorer
 
 ### OSX
 * Chrome (Stable and Canary)
@@ -103,6 +104,7 @@ run the agent in a docker container.
     * blockDomains
     * blockDomainsExcept
     * setDns
+    * setDnsName
     * setHeader
     * addHeader (can not add multiple values for the same header, effectively the same as setHeader)
     * resetHeaders
@@ -127,7 +129,6 @@ run the agent in a docker container.
     * sendKeyDown
     * setDOMElement
     * waitForComplete
-    * setDnsName
     * overrideHostUrl
     * ignoreErrors
     * logErrors
