@@ -60,7 +60,7 @@ class DesktopBrowser(object):
         self.need_orange = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
-    def prepare(self, _job, task):
+    def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.task = task
         self.find_default_interface()
@@ -73,6 +73,9 @@ class DesktopBrowser(object):
             from .os_util import flush_dns
             logging.debug("Preparing browser")
             kill_all(os.path.basename(self.path), True)
+            if 'browser_info' in job and 'other_exes' in job['browser_info']:
+                for exe in job['browser_info']['other_exes']:
+                    kill_all(exe, True)
             if self.options.shaper is None or self.options.shaper != 'none':
                 flush_dns()
             if 'profile' in task:
@@ -134,12 +137,15 @@ class DesktopBrowser(object):
         else:
             self.proc = subprocess.Popen(command_line, preexec_fn=os.setsid, shell=True)
 
-    def stop(self, _job, _task):
+    def stop(self, job, _task):
         """Terminate the browser (gently at first but forced if needed)"""
         from .os_util import kill_all
         logging.debug("Stopping browser")
         if self.proc:
             kill_all(os.path.basename(self.path), False)
+            if 'browser_info' in job and 'other_exes' in job['browser_info']:
+                for exe in job['browser_info']['other_exes']:
+                    kill_all(exe, False)
             try:
                 if platform.system() != 'Windows':
                     os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)

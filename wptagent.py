@@ -537,6 +537,7 @@ def find_browsers():
         local_appdata = os.getenv('LOCALAPPDATA')
         program_files = os.getenv('ProgramFiles')
         program_files_x86 = os.getenv('ProgramFiles(x86)')
+        # Chrome
         paths = [program_files, program_files_x86, local_appdata]
         channels = ['Chrome', 'Chrome Beta', 'Chrome Dev']
         for channel in channels:
@@ -552,6 +553,15 @@ def find_browsers():
             if os.path.isfile(canary_path):
                 browsers['Canary'] = {'exe': canary_path}
                 browsers['Chrome Canary'] = {'exe': canary_path}
+        # Opera (same engine as Chrome)
+        paths = [program_files, program_files_x86]
+        channels = ['Opera', 'Opera beta', 'Opera developer']
+        for channel in channels:
+            for path in paths:
+                if path is not None and channel not in browsers:
+                    opera_path = os.path.join(path, channel, 'launcher.exe')
+                    if os.path.isfile(opera_path):
+                        browsers[channel] = {'exe': opera_path, 'other_exes': ['opera.exe']}
         # Firefox browsers
         paths = [program_files, program_files_x86]
         for path in paths:

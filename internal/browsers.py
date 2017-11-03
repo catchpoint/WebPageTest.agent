@@ -64,6 +64,7 @@ class Browsers(object):
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
         elif name in self.browsers and 'exe' in self.browsers[name]:
+            job['browser_info'] = self.browsers[name]
             if 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Firefox':
                 from .firefox import Firefox
                 browser = Firefox(self.browsers[name]['exe'], self.options, job)
