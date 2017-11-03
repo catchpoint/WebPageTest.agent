@@ -9,8 +9,12 @@ sudo npm update -g
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
 sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' 
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
+wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -
+sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'
+sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'
+sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'
 sudo apt-get update
-sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk opera-stable opera-beta opera-developer
 echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
 echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
 echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf

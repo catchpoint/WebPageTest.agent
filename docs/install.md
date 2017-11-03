@@ -23,7 +23,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 * Debian:
     * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute && sudo pip install dnspython monotonic pillow psutil requests ujson xvfbwrapper marionette_driver```
 * Chrome Browser
-    * Linux stable and unstable channels on Ubuntu/Debian:
+    * Linux stable, beta and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
         * ```sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'```
         * ```sudo apt-get update```
@@ -35,6 +35,14 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
         * ```sudo apt-get update```
         * ```sudo apt-get install -y firefox firefox-trunk```
         * ```sudo dbus-uuidgen --ensure```
+* Opera Browser
+    * Linux stable, beta and developer builds on Ubuntu/Debian:
+        * ```wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -```
+        * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'```
+        * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'```
+        * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'```
+        * ```sudo apt-get update```
+        * ```sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq opera-stable opera-beta opera-developer```
 
 ## OS Notes
 ### Linux

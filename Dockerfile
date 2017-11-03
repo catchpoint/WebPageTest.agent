@@ -26,17 +26,24 @@ RUN apt-get update && \
 
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+  wget -qO- https://deb.opera.com/archive.key | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
 
-RUN add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
+RUN add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
+  add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free' && \
+  add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free' && \
+  add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'
 
 RUN apt-get update && \
-    apt-get install -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq \
     google-chrome-stable \
     google-chrome-beta \
     google-chrome-unstable \
     firefox \
     firefox-trunk \
+    opera-stable \
+    opera-beta \
+    opera-developer \
     nodejs
 
 RUN npm install -g lighthouse

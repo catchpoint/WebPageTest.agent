@@ -7,6 +7,7 @@ Chrome is the only browser that currently supports manipulating requests (changi
 ### Linux (with display or headless with Xvfb)
 * Chrome (Stable, Beta and Unstable)
 * Firefox (Stable and Nightly)
+* Opera (Stable, Beta and Developer)
 
 ### Windows
 * Chrome (Stable, Beta, Dev and Canary)
