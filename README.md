@@ -5,7 +5,7 @@ Cross-platform WebPageTest agent
 Chrome is the only browser that currently supports manipulating requests (changing headers, blocking requests, etc).  Chrome, IE and Microsoft Edge are the only browsers that currently support capturing response bodieas and running optimizarion checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
 
 ### Linux (with display or headless with Xvfb)
-* Chrome (Stable and Unstable)
+* Chrome (Stable, Beta and Unstable)
 * Firefox (Stable and Nightly)
 
 ### Windows
@@ -13,6 +13,7 @@ Chrome is the only browser that currently supports manipulating requests (changi
 * Firefox (Stable, ESR, Developer Edition, Beta and Nightly)
 * Microsoft Edge
 * Internet Explorer
+* Opera (Stable, Beta and Developer)
 
 ### OSX
 * Chrome (Stable and Canary)
