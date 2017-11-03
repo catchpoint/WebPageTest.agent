@@ -20,7 +20,7 @@ Chrome is the only browser that currently supports manipulating requests (changi
 * Firefox (Stable and Nightly)
 
 ### Android (requires a tethered host - Raspberry Pi's preferred)
-* Chrome (Stable, Beta and Unstable)
+* Chrome (Stable, Beta, Dev and Canary)
 * Several browsers run as "black box" tests (single page load, visual metrics only):
     * Chrome (Stable, Beta, Dev and Canary)
     * Opera
@@ -32,7 +32,7 @@ Chrome is the only browser that currently supports manipulating requests (changi
 
 ## Known Issues
 * Not all features have been implemented yet (see list below)
-* Microsoft Edge does not (yet) support waiting beyond a page's onload event for network activity
+* Microsoft Edge and Firefox do not (yet) support manipulating requests (adding headers, blocking requests, etc)
 
 ## Installation
 * Install docs are [here](docs/install.md)
