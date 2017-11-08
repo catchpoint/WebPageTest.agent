@@ -60,6 +60,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
+        self.install_policy()
         args = list(CHROME_COMMAND_LINE_OPTIONS)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
@@ -130,6 +131,27 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                     shutil.copyfileobj(f_in, f_out)
             if os.path.isfile(netlog_gzip):
                 os.remove(netlog_file)
+        self.remove_policy()
+
+    def install_policy(self):
+        """Install the required policy list (Linux only right now)"""
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'mkdir', '-p', '/etc/opt/chrome/policies/managed'])
+            subprocess.call(['sudo', 'chmod', '-w', '/etc/opt/chrome/policies/managed'])
+            subprocess.call(['sudo', 'mkdir', '-p', '/etc/chromium/policies/managed'])
+            subprocess.call(['sudo', 'chmod', '-w', '/etc/chromium/policies/managed'])
+            src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'support', 'chrome', 'wpt_policy.json')
+            subprocess.call(['sudo', 'cp', src,
+                             '/etc/opt/chrome/policies/managed/wpt_policy.json'])
+            subprocess.call(['sudo', 'cp', src,
+                             '/etc/chromium/policies/managed/wpt_policy.json'])
+
+    def remove_policy(self):
+        """Remove the installed policy"""
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'rm', '/etc/opt/chrome/policies/managed/wpt_policy.json'])
+            subprocess.call(['sudo', 'rm', '/etc/chromium/policies/managed/wpt_policy.json'])
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
