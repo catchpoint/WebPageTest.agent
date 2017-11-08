@@ -363,10 +363,11 @@ class DevtoolsBrowser(object):
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
+            time_limit = min(int(task['time_limit']), 80)
             command = ['lighthouse',
                        '--disable-network-throttling',
                        '--disable-cpu-throttling',
-                       '--max-wait-for-load', str(int(task['time_limit'] * 1000)),
+                       '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
@@ -378,10 +379,10 @@ class DevtoolsBrowser(object):
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             logging.debug(cmd)
-            # Give lighthouse up to the max test time to run
+            # Give lighthouse up to 3x the time limit to run all of the audits
             proc = subprocess.Popen(cmd, shell=True)
             kill_proc = lambda p: p.kill()
-            timer = Timer(task['time_limit'] * 2, kill_proc, [proc])
+            timer = Timer(time_limit * 3, kill_proc, [proc])
             try:
                 timer.start()
                 proc.communicate()
