@@ -1,0 +1,25 @@
+{
+  "autofill": {
+    "enabled": false
+  },
+  "browser": {
+    "check_default_browser": false
+  },
+  "distribution": {
+    "import_bookmarks": false,
+    "import_history": false,
+    "import_search_engine": false,
+    "make_chrome_default_for_user": false,
+    "show_welcome_page": false,
+    "skip_first_run_ui": true
+  },
+  "profile":{
+    "default_content_setting_values": {
+      "geolocation": 2
+    },
+    "password_manager_enabled": false
+  },
+  "translate": {
+    "enabled": false
+  }
+}

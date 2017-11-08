@@ -76,6 +76,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--log-net-log="{0}"'.format(netlog_file))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
+            self.setup_prefs(task['profile'])
         if self.options.xvfb:
             args.append('--disable-gpu')
         if self.options.dockerized:
@@ -133,6 +134,17 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 os.remove(netlog_file)
         self.remove_policy()
 
+    def setup_prefs(self, profile_dir):
+        """Install our base set of preferences"""
+        src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           'support', 'chrome', 'prefs.json')
+        dest_dir = os.path.join(profile_dir, 'Default')
+        try:
+            os.makedirs(dest_dir)
+            shutil.copy(src, os.path.join(dest_dir, 'Preferences'))
+        except Exception:
+            pass
+        
     def install_policy(self):
         """Install the required policy list (Linux only right now)"""
         if platform.system() == "Linux":
