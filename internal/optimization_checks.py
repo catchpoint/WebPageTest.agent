@@ -638,9 +638,10 @@ class OptimizationChecks(object):
                         else:
                             # Compress it as a quality 85 stripped progressive image and compare
                             jpeg_file = request['body'] + '.jpg'
-                            command = 'convert -define jpeg:dct-method=fast -strip '\
+                            command = '{0} -define jpeg:dct-method=fast -strip '\
                                 '-interlace Plane -quality 85 '\
-                                '"{0}" "{1}"'.format(request['body'], jpeg_file)
+                                '"{1}" "{2}"'.format(self.job['image_magick']['convert'],
+                                                     request['body'], jpeg_file)
                             subprocess.call(command, shell=True)
                             if os.path.isfile(jpeg_file):
                                 target_size = os.path.getsize(jpeg_file)

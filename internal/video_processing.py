@@ -31,8 +31,8 @@ class VideoProcessing(object):
                 crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
                                                   self.task['crop_pct']['height'])
                 for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                    command = 'mogrify -define jpeg:dct-method=fast -crop {0} "{1}"'.format(crop,
-                                                                                            path)
+                    command = '{0} -define jpeg:dct-method=fast -crop {1} "{2}"'.format(\
+                            self.job['image_magick']['mogrify'], crop, path)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
             # Make the initial screen shot the same size as the video
@@ -45,7 +45,8 @@ class VideoProcessing(object):
             if count > 1:
                 with Image.open(files[1]) as image:
                     width, height = image.size
-                    command = 'convert "{0}" -resize {1:d}x{2:d} "{0}"'.format(
+                    command = '{0} "{1}" -resize {2:d}x{3:d} "{1}"'.format(
+                        self.job['image_magick']['convert'],
                         files[0], width, height)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
@@ -70,8 +71,9 @@ class VideoProcessing(object):
                         baseline = files[index]
             # Compress to the target quality and size
             for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                command = 'mogrify -define jpeg:dct-method=fast -resize {0:d}x{0:d} '\
-                    '-quality {1:d} "{2}"'.format(VIDEO_SIZE, self.job['imageQuality'], path)
+                command = '{0} -define jpeg:dct-method=fast -resize {1:d}x{1:d} '\
+                    '-quality {2:d} "{3}"'.format(self.job['image_magick']['mogrify'],
+                                                  VIDEO_SIZE, self.job['imageQuality'], path)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
             # Run visualmetrics against them
@@ -99,7 +101,10 @@ class VideoProcessing(object):
         if crop_region is not None:
             crop = '-crop {0} '.format(crop_region)
         match = False
-        command = 'convert {0} {1} {2}miff:- | compare -metric AE -'.format(image1, image2, crop)
+        command = '{0} {1} {2} {3}miff:- | {4} -metric AE -'.format(\
+            self.job['image_magick']['convert'],
+            image1, image2, crop,
+            self.job['image_magick']['compare'])
         if fuzz_percent > 0:
             command += ' -fuzz {0:d}%'.format(fuzz_percent)
         command += ' null:'.format()

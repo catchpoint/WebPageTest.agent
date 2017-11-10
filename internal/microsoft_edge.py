@@ -704,15 +704,17 @@ class Edge(DesktopBrowser):
                         with open(path, 'wb') as image_file:
                             image_file.write(data)
                         if len(resize_string):
-                            cmd = 'mogrify -format png -define png:color-type=2 '\
-                                  '-depth 8 {0}"{1}"'.format(resize_string, path)
+                            cmd = '{0} -format png -define png:color-type=2 '\
+                                  '-depth 8 {1}"{2}"'.format(self.job['image_magick']['mogrify'],
+                                                             resize_string, path)
                             logging.debug(cmd)
                             subprocess.call(cmd, shell=True)
                     else:
                         tmp_file = path + '.png'
                         with open(tmp_file, 'wb') as image_file:
                             image_file.write(data)
-                        command = 'convert "{0}" {1}-quality {2:d} "{3}"'.format(
+                        command = '{0} "{1}" {2}-quality {3:d} "{4}"'.format(
+                            self.job['image_magick']['convert'],
                             tmp_file, resize_string, self.job['imageQuality'], path)
                         logging.debug(command)
                         subprocess.call(command, shell=True)

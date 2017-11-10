@@ -42,6 +42,30 @@ class WPTAgent(object):
         atexit.register(self.cleanup)
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
+        self.image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
+        if platform.system() == "Windows":
+            paths = [os.getenv('ProgramFiles'), os.getenv('ProgramFiles(x86)')]
+            for path in paths:
+                if path is not None and os.path.isdir(path):
+                    dirs = sorted(os.listdir(path), reverse=True)
+                    for subdir in dirs:
+                        if subdir.lower().startswith('imagemagick'):
+                            convert = os.path.join(path, subdir, 'convert.exe')
+                            compare = os.path.join(path, subdir, 'compare.exe')
+                            mogrify = os.path.join(path, subdir, 'mogrify.exe')
+                            if os.path.isfile(convert) and \
+                                    os.path.isfile(compare) and \
+                                    os.path.isfile(mogrify):
+                                if convert.find(' ') >= 0:
+                                    convert = '"{0}"'.format(convert)
+                                if compare.find(' ') >= 0:
+                                    compare = '"{0}"'.format(compare)
+                                if mogrify.find(' ') >= 0:
+                                    mogrify = '"{0}"'.format(mogrify)
+                                self.image_magick['convert'] = convert
+                                self.image_magick['compare'] = compare
+                                self.image_magick['mogrify'] = mogrify
+                                break
 
     def run_testing(self):
         """Main testing flow"""
@@ -69,6 +93,7 @@ class WPTAgent(object):
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test()
                     if self.job is not None:
+                        self.job['image_magick'] = self.image_magick
                         self.job['message_server'] = message_server
                         self.job['capture_display'] = self.capture_display
                         self.task = self.wpt.get_task(self.job)
@@ -255,14 +280,14 @@ class WPTAgent(object):
             ret = False
 
         try:
-            subprocess.check_output('convert -version', shell=True)
+            subprocess.check_output('{0} -version'.format(self.image_magick['convert']), shell=True)
         except Exception:
             print "Missing convert utility. Please install ImageMagick " \
                   "and make sure it is in the path."
             ret = False
 
         try:
-            subprocess.check_output('mogrify -version', shell=True)
+            subprocess.check_output('{0} -version'.format(self.image_magick['mogrify']), shell=True)
         except Exception:
             print "Missing mogrify utility. Please install ImageMagick " \
                   "and make sure it is in the path."

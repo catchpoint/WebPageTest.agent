@@ -42,6 +42,7 @@ import tempfile
 # Globals
 options = None
 client_viewport = None
+image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
 
 
 # #################################################################################################
@@ -687,6 +688,7 @@ def eliminate_similar_frames(directory):
 
 def blank_first_frame(directory):
     global options
+    global image_magick
     try:
         if options.forceblank:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -695,8 +697,8 @@ def blank_first_frame(directory):
                 from PIL import Image
                 with Image.open(files[0]) as im:
                     width, height = im.size
-                command = 'convert -size {0}x{1} xc:white PNG24:"{2}"'.format(
-                    width, height, files[0])
+                command = '{0} -size {1}x{2} xc:white PNG24:"{3}"'.format(
+                    image_magick['convert'], width, height, files[0])
                 subprocess.call(command, shell=True)
     except BaseException:
         logging.exception('Error blanking first frame')
@@ -704,6 +706,7 @@ def blank_first_frame(directory):
 
 def crop_viewport(directory):
     global client_viewport
+    global image_magick
     if client_viewport is not None:
         try:
             files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
@@ -712,8 +715,8 @@ def crop_viewport(directory):
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(client_viewport['width'], client_viewport['height'],
                                                         client_viewport['x'], client_viewport['y'])
                 for i in xrange(count):
-                    command = 'convert "{0}" -crop {1} "{0}"'.format(
-                        files[i], crop)
+                    command = '{0} "{1}" -crop {2} "{1}"'.format(
+                        image_magick['convert'], files[i], crop)
                     subprocess.call(command, shell=True)
 
         except BaseException:
@@ -753,6 +756,7 @@ def clean_directory(directory):
 
 def is_color_frame(file, color_file):
     """Check a section from the middle, top and bottom of the viewport to see if it matches"""
+    global image_magick
     match = False
     if os.path.isfile(color_file):
         try:
@@ -773,9 +777,10 @@ def is_color_frame(file, color_file):
                 int(width / 2), int(height / 5),
                 int(width / 4), height - int(height / 5) - 50))
             for crop in crops:
-                command = ('convert "{0}" "(" "{1}" -crop {2} -resize 200x200! ")"'
-                           ' miff:- | compare -metric AE - -fuzz 10% null:'
-                          ).format(color_file, file, crop)
+                command = ('{0} "{1}" "(" "{2}" -crop {3} -resize 200x200! ")"'
+                           ' miff:- | {4} -metric AE - -fuzz 10% null:'
+                          ).format(image_magick['convert'], color_file, file, crop,
+                                   image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
                 out, err = compare.communicate()
                 if re.match('^[0-9]+$', err):
@@ -791,22 +796,26 @@ def is_color_frame(file, color_file):
 def is_white_frame(file, white_file):
     global client_viewport
     global options
+    global image_magick
     white = False
     if os.path.isfile(white_file):
         if options.viewport:
-            command = ('convert "{0}" "(" "{1}" -resize 200x200! ")" miff:- | '
-                       'compare -metric AE - -fuzz 10% null:').format(white_file, file)
+            command = ('{0} "{1}" "(" "{2}" -resize 200x200! ")" miff:- | '
+                       '{3} -metric AE - -fuzz 10% null:').format(
+                           image_magick['convert'], white_file, file, image_magick['compare'])
         else:
-            command = ('convert "{0}" "(" "{1}" -gravity Center -crop 50%x33%+0+0 -resize 200x200! ")" miff:- | '
-                       'compare -metric AE - -fuzz 10% null:').format(white_file, file)
+            command = ('{0} "{1}" "(" "{2}" -gravity Center -crop 50%x33%+0+0 -resize 200x200! ")" miff:- | '
+                       '{3} -metric AE - -fuzz 10% null:').format(
+                           image_magick['convert'], white_file, file, image_magick['compare'])
         if client_viewport is not None:
             crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(
                 client_viewport['width'],
                 client_viewport['height'],
                 client_viewport['x'],
                 client_viewport['y'])
-            command = ('convert "{0}" "(" "{1}" -crop {2} -resize 200x200! ")" miff:- | '
-                       'compare -metric AE - -fuzz 10% null:').format(white_file, file, crop)
+            command = ('{0} "{1}" "(" "{2}" -crop {3} -resize 200x200! ")" miff:- | '
+                       '{4} -metric AE - -fuzz 10% null:').format(
+                           image_magick['convert'], white_file, file, crop, image_magick['compare'])
         compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
         out, err = compare.communicate()
         if re.match('^[0-9]+$', err):
@@ -833,6 +842,7 @@ def colors_are_similar(a, b, threshold=15):
 
 def frames_match(image1, image2, fuzz_percent,
                  max_differences, crop_region, mask_rect):
+    global image_magick
     match = False
     fuzz = ''
     if fuzz_percent > 0:
@@ -848,8 +858,8 @@ def frames_match(image1, image2, fuzz_percent,
             image1, mask_rect['width'], mask_rect['height'], mask_rect['x'], mask_rect['y'])
         img2 = '( "{0}" -size {1}x{2} xc:white -geometry +{3}+{4} -compose over -composite )'.format(
             image2, mask_rect['width'], mask_rect['height'], mask_rect['x'], mask_rect['y'])
-    command = 'convert {0} {1} {2}miff:- | compare -metric AE - {3}null:'.format(
-        img1, img2, crop, fuzz)
+    command = '{0} {1} {2} {3}miff:- | {4} -metric AE - {5}null:'.format(
+        image_magick['convert'], img1, img2, crop, image_magick['compare'], fuzz)
     if platform.system() != 'Windows':
         command = command.replace('(', '\\(').replace(')', '\\)')
     compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
@@ -1105,13 +1115,14 @@ def calculate_image_histogram(file):
 
 
 def save_screenshot(directory, dest, quality):
+    global image_magick
     directory = os.path.realpath(directory)
     files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
     if files is not None and len(files) >= 1:
         src = files[-1]
         if dest[-4:] == '.jpg':
-            command = 'convert "{0}" -set colorspace sRGB -quality {1:d} "{2}"'.format(
-                src, quality, dest)
+            command = '{0} "{1}" -set colorspace sRGB -quality {2:d} "{3}"'.format(
+                image_magick['convert'], src, quality, dest)
             subprocess.call(command, shell=True)
         else:
             shutil.copy(src, dest)
@@ -1123,6 +1134,7 @@ def save_screenshot(directory, dest, quality):
 
 
 def convert_to_jpeg(directory, quality):
+    global image_magick
     directory = os.path.realpath(directory)
     files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
     match = re.compile(r'(?P<base>ms_[0-9]+\.)')
@@ -1132,8 +1144,8 @@ def convert_to_jpeg(directory, quality):
             dest = os.path.join(directory, m.groupdict().get('base') + 'jpg')
             if os.path.isfile(dest):
                 os.remove(dest)
-            command = 'convert "{0}" -set colorspace sRGB -quality {1:d} "{2}"'.format(
-                file, quality, dest)
+            command = '{0} "{1}" -set colorspace sRGB -quality {2:d} "{3}"'.format(
+                image_magick['convert'], file, quality, dest)
             subprocess.call(command, shell=True)
             if os.path.isfile(dest):
                 os.remove(file)
@@ -1433,6 +1445,7 @@ def calculate_perceptual_speed_index(progress, directory):
 
 
 def check_config():
+    global image_magick
     ok = True
 
     print 'ffmpeg:  ',
@@ -1443,14 +1456,14 @@ def check_config():
         ok = False
 
     print 'convert: ',
-    if check_process('convert -version', 'ImageMagick'):
+    if check_process('{0} -version'.format(image_magick['convert']), 'ImageMagick'):
         print 'OK'
     else:
         print 'FAIL'
         ok = False
 
     print 'compare: ',
-    if check_process('compare -version', 'ImageMagick'):
+    if check_process('{0} -version'.format(image_magick['compare']), 'ImageMagick'):
         print 'OK'
     else:
         print 'FAIL'
@@ -1497,6 +1510,7 @@ def check_process(command, output):
 def main():
     import argparse
     global options
+    global image_magick
 
     parser = argparse.ArgumentParser(
         description='Calculate visual performance metrics from a video.',
@@ -1625,6 +1639,30 @@ def main():
 
     if options.multiple:
         options.orange = True
+
+    if platform.system() == "Windows":
+        paths = [os.getenv('ProgramFiles'), os.getenv('ProgramFiles(x86)')]
+        for path in paths:
+            if path is not None and os.path.isdir(path):
+                dirs = sorted(os.listdir(path), reverse=True)
+                for subdir in dirs:
+                    if subdir.lower().startswith('imagemagick'):
+                        convert = os.path.join(path, subdir, 'convert.exe')
+                        compare = os.path.join(path, subdir, 'compare.exe')
+                        mogrify = os.path.join(path, subdir, 'mogrify.exe')
+                        if os.path.isfile(convert) and \
+                                os.path.isfile(compare) and \
+                                os.path.isfile(mogrify):
+                            if convert.find(' ') >= 0:
+                                convert = '"{0}"'.format(convert)
+                            if compare.find(' ') >= 0:
+                                compare = '"{0}"'.format(compare)
+                            if mogrify.find(' ') >= 0:
+                                mogrify = '"{0}"'.format(mogrify)
+                            image_magick['convert'] = convert
+                            image_magick['compare'] = compare
+                            image_magick['mogrify'] = mogrify
+                            break
 
     ok = False
     try:
