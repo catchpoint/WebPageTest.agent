@@ -99,7 +99,7 @@ class WebPageTest(object):
                 pass
         # If we are running in a git clone, grab the date of the last
         # commit as the version
-        self.version = None
+        self.version = '1'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
             out = subprocess.check_output('git log -1 --format=%cd --date=raw',
@@ -263,8 +263,7 @@ class WebPageTest(object):
                 url += "&ec2zone=" + urllib.quote_plus(self.zone)
             if self.options.android:
                 url += '&apk=1'
-            if self.version is not None:
-                url += '&version={0}'.format(self.version)
+            url += '&version={0}'.format(self.version)
             if self.screen_width is not None:
                 url += '&screenwidth={0:d}'.format(self.screen_width)
             if self.screen_height is not None:
@@ -282,7 +281,7 @@ class WebPageTest(object):
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
-                    job['agent_version'] = self.version if self.version is not None else 1
+                    job['agent_version'] = self.version
                     if 'imageQuality' not in job:
                         job['imageQuality'] = DEFAULT_JPEG_QUALITY
                     if 'pngScreenShot' not in job:
