@@ -1,10 +1,3 @@
-// Relay a message to the extension
-function wptagentCommand(message) {
-  browser.runtime.sendMessage({content: {msg: 'command', data: message}});
-}
-
-exportFunction(wptagentCommand, window, {defineAs:'wptagentCommand'});
-
 // Monitor for long-tasks (where RAF takes longer than 50ms)
 var longTasks = [];
 var startTime = performance.now();
@@ -27,8 +20,6 @@ function animationFrame() {
 window.requestAnimationFrame(animationFrame);
 
 function wptagentGetInteractivePeriods() {
-  console.log("wptagentGetInteractivePeriods");
-  console.log(longTasks);
   checkLongTask();
   // Flip it around and report the interactive periods
   var now = performance.now();

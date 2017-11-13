@@ -445,10 +445,13 @@ class WebPageTest(object):
                 if 'blockDomains' in job:
                     if 'host_rules' not in task:
                         task['host_rules'] = []
+                    if 'block_domains' not in task:
+                        task['block_domains'] = []
                     domains = re.split('[, ]', job['blockDomains'])
                     for domain in domains:
                         domain = domain.strip()
                         if len(domain) and domain.find('"') == -1:
+                            task['block_domains'].append(domain)
                             task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                 self.build_script(job, task)
                 task['width'] = job['width']
@@ -531,22 +534,28 @@ class WebPageTest(object):
                     elif command == 'blockdomains':
                         keep = False
                         if target is not None:
+                            if 'block_domains' not in task:
+                                task['block_domains'] = []
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
                             domains = re.split(', ', target)
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
+                                    task['block_domains'].append(domain)
                                     task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                     elif command == 'blockdomainsexcept':
                         keep = False
                         if target is not None:
+                            if 'block_domains_except' not in task:
+                                task['block_domains_except'] = []
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
                             domains = target.split()
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
+                                    task['block_domains_except'].append(domain)
                                     task['host_rules'].append(
                                         '"MAP * 127.0.0.1, EXCLUDE {0}"'.format(domain))
                     elif command == 'block':

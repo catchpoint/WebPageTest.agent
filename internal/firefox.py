@@ -103,6 +103,16 @@ class Firefox(DesktopBrowser):
                 shutil.rmtree(crash_dir)
             except Exception:
                 pass
+        # Prepare the config for the extension to query
+        if self.job['message_server'] is not None:
+            config = None
+            names = ['block', 'block_domains', 'block_domains_except', 'headers']
+            for name in names:
+                if name in task and task[name]:
+                    if config is None:
+                        config = {}
+                    config[name] = task[name]
+            self.job['message_server'].config = config
 
     def launch(self, job, task):
         """Launch the browser"""

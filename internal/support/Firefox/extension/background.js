@@ -2,6 +2,11 @@ var SERVER = "http://127.0.0.1:8888/";
 var messages = '';
 var message_timer = undefined;
 var last_send = undefined;
+var blockingWebRequest = false;
+var block = [];
+var block_domains = [];
+var block_domains_except = [];
+var headers = {};
 
 var send_messages = function() {
   message_timer = undefined;
@@ -33,14 +38,104 @@ var send_message = function(event, body = undefined) {
   }
 };
 
-// Incoming message handlers from the content script (relays messages from wptagent)
-function onWptagentMessage(msg) {
-  if (msg['msg'] == 'command' && msg['data'] != undefined) {
-    message = JSON.parse(msg['data']);
-  }
-}
-browser.runtime.onMessage.addListener(onWptagentMessage);
+var log = function(message) {
+  message_headers = new Headers({
+    "Content-Type": "application/json",
+    "Content-Length": message.length.toString()
+  });
+  fetch(SERVER + 'log',
+        {method: 'POST', headers: message_headers, body: message});
+};
 
+function get_domain(url) {
+  var domain;
+  if (url.indexOf("://") > -1) {
+    domain = url.split('/')[2];
+  } else {
+    domain = url.split('/')[0];
+  }
+  domain = domain.split(':')[0];
+  domain = domain.split('?')[0];
+  return domain;
+}
+
+function blockRequest(details) {
+  var ret = {cancel: false}
+  if (!details.url.startsWith(SERVER)) {
+    var domain = get_domain(details.url);
+    for (var i = 0; i < block.length; i++) {
+      if (details.url.indexOf(block[i]) !== -1) {
+        ret.cancel = true;
+        break;
+      }
+    }
+    if (!ret.cancel && block_domains.length > 0) {
+      for (var i = 0; i < block_domains.length; i++) {
+        if (domain == block_domains[i]) {
+          ret.cancel = true;
+          break;
+        }
+      }
+    }
+    if (!ret.cancel && block_domains_except.length > 0) {
+      for (var i = 0; i < block_domains_except.length; i++) {
+        if (domain != block_domains_except[i]) {
+          ret.cancel = true;
+          break;
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+function addHeaders(details) {
+  if (!details.url.startsWith(SERVER)) {
+    for (name in headers) {
+      for (var i = 0; i < details.requestHeaders.length; ++i) {
+        if (details.requestHeaders[i].name === name) {
+          details.requestHeaders.splice(i, 1);
+          break;
+        }
+      }
+      details.requestHeaders.push({'name': name, 'value': headers[name]})
+    }
+  }
+  return {requestHeaders: details.requestHeaders};
+}
+
+var installBlockingHandler = function() {
+  if (!blockingWebRequest) {
+    blockingWebRequest = true;
+    browser.webRequest.onBeforeRequest.addListener(blockRequest, {urls: ["<all_urls>"]}, ["blocking"]);
+    browser.webRequest.onBeforeSendHeaders.addListener(addHeaders, {urls: ["<all_urls>"]}, ["blocking", "requestHeaders"]);
+  }
+};
+
+// Get the config from wptagent
+fetch(SERVER + 'config').then(function(response) {
+  if (response.ok) {
+    response.json().then(function(data) {
+      if (data['block'] != undefined) {
+        block = data['block'];
+      }
+      if (data['block_domains'] != undefined) {
+        block_domains = data['block_domains'];
+      }
+      if (data['block_domains_except'] != undefined) {
+        block_domains_except = data['block_domains_except'];
+      }
+      if (data['headers'] != undefined) {
+        headers = data['headers'];
+      }
+      if (block.length || block_domains.length || block_domains_except.length || Object.keys(headers).length) {
+        installBlockingHandler();
+      }
+    });
+  }
+  // Let wptagent know we started
+  send_message('wptagent.started');
+});
 
 // Navigation handlers
 browser.webNavigation.onBeforeNavigate.addListener(evt => {
@@ -108,6 +203,3 @@ browser.webRequest.onErrorOccurred.addListener(details => {
   if (!details.url.startsWith(SERVER))
     send_message('webRequest.onErrorOccurred', details);
 }, {urls: ["<all_urls>"]});
-
-// Let wptagent know we started
-send_message('wptagent.started');

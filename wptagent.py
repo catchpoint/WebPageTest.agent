@@ -369,7 +369,8 @@ class WPTAgent(object):
 
 class HandleMessage(BaseHTTPRequestHandler):
     """Handle a single message from the extension"""
-    protocol_version = 'HTTP/1.1'
+    # 1.1 keep-alive is pretty buggy, leave this disabled for now
+    #protocol_version = 'HTTP/1.1'
 
     def __init__(self, server, *args):
         self.message_server = server
@@ -405,11 +406,22 @@ class HandleMessage(BaseHTTPRequestHandler):
     # pylint: disable=C0103
     def do_GET(self):
         """HTTP GET"""
+        import ujson as json
         logging.debug(self.path)
         if self.path == '/ping':
             response = 'pong'
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
+            self.send_header("Content-length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+        elif self.path == '/config':
+            response = '{}'
+            if self.message_server.config is not None:
+                response = json.dumps(self.message_server.config)
+            logging.debug(response)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
             self.send_header("Content-length", str(len(response)))
             self.end_headers()
             self.wfile.write(response)
@@ -429,17 +441,20 @@ class HandleMessage(BaseHTTPRequestHandler):
             if content_len > 0:
                 self.rfile._sock.settimeout(10)
                 messages = self.rfile.read(content_len)
-            self._set_headers()
             if messages is not None:
-                for line in messages.splitlines():
-                    line = line.strip()
-                    if len(line):
-                        message = json.loads(line)
-                        if 'body' not in message and self.path != '/etw':
-                            message['body'] = None
-                        self.message_server.handle_message(message)
+                if self.path == '/log':
+                    logging.debug(messages)
+                else:
+                    for line in messages.splitlines():
+                        line = line.strip()
+                        if len(line):
+                            message = json.loads(line)
+                            if 'body' not in message and self.path != '/etw':
+                                message['body'] = None
+                            self.message_server.handle_message(message)
         except Exception:
             pass
+        self._set_headers()
     # pylint: enable=C0103
 
 def handler_template(server):
@@ -453,6 +468,7 @@ class MessageServer(object):
         self.must_exit = False
         self.thread = None
         self.messages = Queue.Queue()
+        self.config = None
         self.__is_started = threading.Event()
 
     def get_message(self, timeout):
