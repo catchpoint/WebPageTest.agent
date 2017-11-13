@@ -33,6 +33,15 @@ var send_message = function(event, body = undefined) {
   }
 };
 
+// Incoming message handlers from the content script (relays messages from wptagent)
+function onWptagentMessage(msg) {
+  if (msg['msg'] == 'command' && msg['data'] != undefined) {
+    message = JSON.parse(msg['data']);
+  }
+}
+browser.runtime.onMessage.addListener(onWptagentMessage);
+
+
 // Navigation handlers
 browser.webNavigation.onBeforeNavigate.addListener(evt => {
   send_message('webNavigation.onBeforeNavigate', evt);

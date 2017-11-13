@@ -528,6 +528,12 @@ class Firefox(DesktopBrowser):
                 self.grab_screenshot(screen_shot, png=False, resize=600)
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
+        # Collect the interactive periods
+        interactive = self.execute_js('window.wrappedJSObject.wptagentGetInteractivePeriods();')
+        if interactive is not None and len(interactive):
+            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
+            with gzip.open(interactive_file, 'wb', 7) as f_out:
+                f_out.write(interactive)
         # Copy the log files
         if self.moz_log is not None:
             task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
