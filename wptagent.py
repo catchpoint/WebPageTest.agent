@@ -408,25 +408,36 @@ class HandleMessage(BaseHTTPRequestHandler):
         """HTTP GET"""
         import ujson as json
         logging.debug(self.path)
+        response = None
+        content_type = 'text/plain'
         if self.path == '/ping':
             response = 'pong'
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.send_header("Content-length", str(len(response)))
-            self.end_headers()
-            self.wfile.write(response)
         elif self.path == '/config':
+            # JSON config data
+            content_type = 'application/json'
             response = '{}'
             if self.message_server.config is not None:
                 response = json.dumps(self.message_server.config)
+        elif self.path == '/config.html':
+            # HTML page that can be queried from the extension for config data
+            content_type = 'text/html'
+            response = "<html><head>\n"
+            if self.message_server.config is not None:
+                import cgi
+                response += '<div id="wptagentConfig" style="display: none;">'
+                response += cgi.escape(json.dumps(self.message_server.config))
+                response += '</div>'
+            response += "</head><body></body></html>"
+
+        if response is None:
+            self._set_headers()
+        else:
             logging.debug(response)
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-type', content_type)
             self.send_header("Content-length", str(len(response)))
             self.end_headers()
             self.wfile.write(response)
-        else:
-            self._set_headers()
 
     def do_HEAD(self):
         """HTTP HEAD"""

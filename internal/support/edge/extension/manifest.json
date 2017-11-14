@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+  "author": "Patrick Meenan",
+  "name": "wptagent",
+  "version": "1.0",
+  "description": "Integrates with wptagent",
+  "icons": {
+    "48": "icon.png"
+  },
+  "permissions": [
+    "cookies",
+    "tabs",
+    "webNavigation",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "persistent": true,
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://127.0.0.1:8888/config.html"],
+      "js": ["content-script.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

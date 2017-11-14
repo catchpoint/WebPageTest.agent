@@ -70,11 +70,38 @@ class Edge(DesktopBrowser):
         if not task['cached']:
             self.clear_cache()
         DesktopBrowser.prepare(self, job, task)
-    
+        # Prepare the config for the extension to query
+        if self.job['message_server'] is not None:
+            config = None
+            names = ['block', 'block_domains', 'block_domains_except', 'headers', 'cookies']
+            for name in names:
+                if name in task and task[name]:
+                    if config is None:
+                        config = {}
+                    config[name] = task[name]
+            self.job['message_server'].config = config
+
     def get_driver(self):
         """Get the webdriver instance"""
         from selenium import webdriver
-        driver = webdriver.Edge(executable_path=self.path)
+        capabilities = webdriver.DesiredCapabilities.EDGE.copy()
+        extension_src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                     'support', 'edge', 'extension')
+        extension_dir = os.path.join(os.environ.get('LOCALAPPDATA'), 'Packages',
+                                     'Microsoft.MicrosoftEdge_8wekyb3d8bbwe',
+                                     'LocalState', 'wptagent')
+        if not os.path.isdir(extension_dir):
+            os.makedirs(extension_dir)
+        files = os.listdir(extension_src)
+        for file_name in files:
+            try:
+                src = os.path.join(extension_src, file_name)
+                if os.path.isfile(src):
+                    shutil.copy(src, extension_dir)
+            except Exception:
+                pass
+        capabilities['extensionPaths'] = [extension_dir]
+        driver = webdriver.Edge(executable_path=self.path, capabilities=capabilities)
         return driver
 
     def launch(self, _job, task):
@@ -87,7 +114,7 @@ class Edge(DesktopBrowser):
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
                 self.browser_version = self.driver.capabilities['browserVersion']
-            self.driver.get('about:blank')
+            self.driver.get('http://127.0.0.1:8888/config.html')
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
             self.driver.set_window_size(task['width'], task['height'])
@@ -151,7 +178,6 @@ class Edge(DesktopBrowser):
         appdata = os.environ.get('LOCALAPPDATA')
         edge_dir = os.path.join(appdata, 'Packages', 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe')
         temp_dir = os.path.join(edge_dir, 'AC')
-        app_dir = os.path.join(edge_dir, 'AppData')
         if os.path.exists(temp_dir):
             for directory in os.listdir(temp_dir):
                 if directory.startswith('#!'):
@@ -160,6 +186,13 @@ class Edge(DesktopBrowser):
                                       ignore_errors=True)
                     except Exception:
                         pass
+        cookie_dir = os.path.join(temp_dir, 'MicrosoftEdge', 'Cookies')
+        if os.path.exists(cookie_dir):
+            try:
+                shutil.rmtree(cookie_dir, ignore_errors=True)
+            except Exception:
+                pass
+        app_dir = os.path.join(edge_dir, 'AppData')
         if os.path.exists(app_dir):
             try:
                 shutil.rmtree(app_dir, ignore_errors=True)
