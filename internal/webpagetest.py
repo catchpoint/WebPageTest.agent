@@ -512,6 +512,22 @@ class WebPageTest(object):
                                 if 'headers' not in task:
                                     task['headers'] = {}
                                 task['headers'][name] = value
+                    elif command == 'setcookie' and target is not None and value is not None:
+                        url = target
+                        cookie = value
+                        pos = cookie.find(';')
+                        if pos > 0:
+                            cookie = cookie[:pos]
+                        pos = cookie.find('=')
+                        if pos > 0:
+                            cookie_name = cookie[:pos].strip()
+                            cookie_value = cookie[pos+1:].strip()
+                            if len(cookie_name) and len(cookie_value) and len(url):
+                                if 'cookies' not in task:
+                                    task['cookies'] = []
+                                task['cookies'].append({'url': url,
+                                                        'name': cookie_name,
+                                                        'value': cookie_value})
                     # commands that get pre-processed
                     elif command == 'setbrowsersize' or command == 'setviewportsize':
                         keep = False

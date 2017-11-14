@@ -106,7 +106,7 @@ class Firefox(DesktopBrowser):
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
             config = None
-            names = ['block', 'block_domains', 'block_domains_except', 'headers']
+            names = ['block', 'block_domains', 'block_domains_except', 'headers', 'cookies']
             for name in names:
                 if name in task and task[name]:
                     if config is None:
@@ -652,19 +652,6 @@ class Firefox(DesktopBrowser):
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
-        elif command['command'] == 'setcookie':
-            if 'target' in command and 'value' in command:
-                url = command['target'].strip()
-                cookie = command['value']
-                pos = cookie.find(';')
-                if pos > 0:
-                    cookie = cookie[:pos]
-                pos = cookie.find('=')
-                if pos > 0:
-                    name = cookie[:pos].strip()
-                    value = cookie[pos+1:].strip()
-                    if len(name) and len(value) and len(url):
-                        self.marionette.add_cookie({'url': url, 'name': name, 'value': value})
         elif command['command'] == 'firefoxpref':
             if 'target' in command and 'value' in command:
                 self.set_pref(command['target'], command['value'])

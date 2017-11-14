@@ -128,13 +128,21 @@ fetch(SERVER + 'config').then(function(response) {
       if (data['headers'] != undefined) {
         headers = data['headers'];
       }
+      if (data['cookies'] != undefined) {
+        for (var i = 0; i < data['cookies'].length; i++) {
+          try {
+            browser.cookies.set(data['cookies'][i]);
+          } catch(e) {
+          }
+        }
+      }
       if (block.length || block_domains.length || block_domains_except.length || Object.keys(headers).length) {
         installBlockingHandler();
       }
+      // Let wptagent know we started
+      send_message('wptagent.started');
     });
   }
-  // Let wptagent know we started
-  send_message('wptagent.started');
 });
 
 // Navigation handlers
