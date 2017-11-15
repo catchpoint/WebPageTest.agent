@@ -77,6 +77,9 @@ class WPTAgent(object):
         if not self.options.android and not self.options.iOS:
             message_server = MessageServer()
             message_server.start()
+            if not message_server.is_ok():
+                logging.error("Unable to start the local message server")
+                return
         while not self.must_exit:
             try:
                 if os.path.isfile(exit_file):
@@ -293,6 +296,13 @@ class WPTAgent(object):
                   "and make sure it is in the path."
             ret = False
 
+        try:
+            import tornado as _
+        except ImportError:
+            from internal.os_util import run_elevated
+            logging.debug('Trying to install tornado...')
+            run_elevated(sys.executable, '-m pip install tornado')
+
         if platform.system() == "Linux":
             try:
                 subprocess.check_output(['traceroute', '--version'])
@@ -365,7 +375,6 @@ class WPTAgent(object):
                 print "Error configuring adb. Make sure it is installed and in the path."
                 ret = False
         return ret
-
 
 class HandleMessage(BaseHTTPRequestHandler):
     """Handle a single message from the extension"""
@@ -480,7 +489,8 @@ class MessageServer(object):
         self.thread = None
         self.messages = Queue.Queue()
         self.config = None
-        self.__is_started = threading.Event()
+        self.is_started = threading.Event()
+        self.using_tornado = False
 
     def get_message(self, timeout):
         """Get a single message from the queue"""
@@ -503,17 +513,21 @@ class MessageServer(object):
 
     def start(self):
         """Start running the server in a background thread"""
-        self.__is_started.clear()
+        self.is_started.clear()
         self.thread = threading.Thread(target=self.run)
         self.thread.daemon = True
         self.thread.start()
-        self.__is_started.wait(timeout=30)
+        self.is_started.wait(timeout=30)
 
     def stop(self):
         """Stop running the server"""
         logging.debug("Shutting down extension server")
         self.must_exit = True
-        if self.server is not None:
+        if self.using_tornado:
+            from internal.tornado_responder import stop_tornado
+            stop_tornado()
+            self.thread.join()
+        elif self.server is not None:
             try:
                 self.server.shutdown()
             except Exception:
@@ -543,18 +557,22 @@ class MessageServer(object):
         handler = handler_template(self)
         logging.debug('Starting extension server on port 8888')
         try:
-            self.server = HTTPServer(('127.0.0.1', 8888), handler)
-            self.server.timeout = 10
-            self.__is_started.set()
-            self.server.serve_forever()
-        except Exception:
-            logging.exception("Message server main loop exception")
-            self.__is_started.set()
-        if self.server is not None:
+            from internal.tornado_responder import start_tornado
+            start_tornado(self)
+        except ImportError:
             try:
-                self.server.socket.close()
+                self.server = HTTPServer(('127.0.0.1', 8888), handler)
+                self.server.timeout = 10
+                self.is_started.set()
+                self.server.serve_forever()
             except Exception:
-                pass
+                logging.exception("Message server main loop exception")
+                self.is_started.set()
+            if self.server is not None:
+                try:
+                    self.server.socket.close()
+                except Exception:
+                    pass
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""

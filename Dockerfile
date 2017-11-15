@@ -55,6 +55,7 @@ RUN pip install \
     psutil \
     requests \
     ujson \
+    tornado \
     xvfbwrapper \
     marionette_driver
 
