@@ -50,6 +50,7 @@ class Edge(DesktopBrowser):
         self.start = None
         self.bodies_path = None
         self.pid = None
+        self.start_page = 'http://127.0.0.1:8888/config.html'
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -81,7 +82,7 @@ class Edge(DesktopBrowser):
                     config[name] = task[name]
             self.job['message_server'].config = config
 
-    def get_driver(self):
+    def get_driver(self, task):
         """Get the webdriver instance"""
         from selenium import webdriver
         capabilities = webdriver.DesiredCapabilities.EDGE.copy()
@@ -110,11 +111,11 @@ class Edge(DesktopBrowser):
             self.job['message_server'].flush_messages()
         try:
             logging.debug('Launching Edge : %s', self.path)
-            self.driver = self.get_driver()
+            self.driver = self.get_driver(task)
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
                 self.browser_version = self.driver.capabilities['browserVersion']
-            self.driver.get('http://127.0.0.1:8888/config.html')
+            self.driver.get(self.start_page)
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
             self.driver.set_window_size(task['width'], task['height'])

@@ -11,8 +11,9 @@ class InternetExplorer(Edge):
     """Microsoft Edge"""
     def __init__(self, path, options, job):
         Edge.__init__(self, path, options, job)
+        self.start_page = 'about:blank'
 
-    def get_driver(self):
+    def get_driver(self, task):
         """Get the webdriver instance"""
         from selenium import webdriver
         path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -26,6 +27,8 @@ class InternetExplorer(Edge):
             path = os.path.join(path, 'x86', 'IEDriverServer.exe')
         capabilities = webdriver.DesiredCapabilities.INTERNETEXPLORER.copy()
         capabilities['ie.enableFullPageScreenshot'] = False
+        if not task['cached']:
+            capabilities['ie.ensureCleanSession'] = True
         driver = webdriver.Ie(executable_path=path, capabilities=capabilities)
         return driver
 
@@ -40,4 +43,4 @@ class InternetExplorer(Edge):
 
     def clear_cache(self):
         """Clear the browser cache"""
-        run_elevated('RunDll32.exe', 'InetCpl.cpl,ClearMyTracksByProcess 6655')
+        pass
