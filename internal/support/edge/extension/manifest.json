@@ -24,6 +24,11 @@
       "matches": ["http://127.0.0.1:8888/config.html"],
       "js": ["config-script.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_start",
+      "js": ["long-tasks.js"]
     }
   ]
 }
