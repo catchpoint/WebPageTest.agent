@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "matches": ["http://127.0.0.1:8888/config.html"],
-      "js": ["content-script.js"],
+      "js": ["config-script.js"],
       "run_at": "document_end"
     }
   ]
