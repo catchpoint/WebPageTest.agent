@@ -97,6 +97,7 @@ class WPTAgent(object):
                         self.job['image_magick'] = self.image_magick
                         self.job['message_server'] = message_server
                         self.job['capture_display'] = self.capture_display
+                        self.job['shaper'] = self.shaper
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
                             start = monotonic.monotonic()
@@ -155,23 +156,19 @@ class WPTAgent(object):
         if browser is not None:
             browser.prepare(self.job, self.task)
             browser.launch(self.job, self.task)
-            if self.shaper.configure(self.job):
-                try:
-                    if self.task['running_lighthouse']:
-                        browser.run_lighthouse_test(self.task)
-                    else:
-                        browser.run_task(self.task)
-                except Exception as err:
-                    msg = ''
-                    if err is not None and err.__str__() is not None:
-                        msg = err.__str__()
-                    self.task['error'] = 'Unhandled exception in test run: '\
-                        '{0}'.format(msg)
-                    logging.exception("Unhandled exception in test run: %s", msg)
-                    traceback.print_exc(file=sys.stdout)
-            else:
-                self.task['error'] = "Error configuring traffic-shaping"
-            self.shaper.reset()
+            try:
+                if self.task['running_lighthouse']:
+                    browser.run_lighthouse_test(self.task)
+                else:
+                    browser.run_task(self.task)
+            except Exception as err:
+                msg = ''
+                if err is not None and err.__str__() is not None:
+                    msg = err.__str__()
+                self.task['error'] = 'Unhandled exception in test run: '\
+                    '{0}'.format(msg)
+                logging.exception("Unhandled exception in test run: %s", msg)
+                traceback.print_exc(file=sys.stdout)
             browser.stop(self.job, self.task)
             # Delete the browser profile if needed
             if self.task['cached'] or self.job['fvonly']:

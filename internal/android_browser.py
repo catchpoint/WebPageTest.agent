@@ -132,6 +132,8 @@ class AndroidBrowser(object):
             if version is not None:
                 task['page_data']['browserVersion'] = version
                 task['page_data']['browser_version'] = version
+            if not self.job['shaper'].configure(self.job):
+                self.task['error'] = "Error configuring traffic-shaping"
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled:
@@ -180,6 +182,7 @@ class AndroidBrowser(object):
                     args.append('--orange')
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args)
+        self.job['shaper'].reset()
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
