@@ -3,18 +3,15 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """WebPageTest cross-platform agent"""
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import atexit
 import logging
 import logging.handlers
 import os
 import platform
-import Queue
 import re
 import signal
 import subprocess
 import sys
-import threading
 import time
 import traceback
 
@@ -75,6 +72,7 @@ class WPTAgent(object):
         exit_file = os.path.join(self.root_path, 'exit')
         message_server = None
         if not self.options.android and not self.options.iOS:
+            from internal.message_server import MessageServer
             message_server = MessageServer()
             message_server.start()
             if not message_server.is_ok():
@@ -251,7 +249,6 @@ class WPTAgent(object):
             ret = True
         except ImportError:
             pass
-
         if not ret:
             from internal.os_util import run_elevated
             logging.debug('Trying to install {0}...'.format(module_name))
@@ -261,10 +258,8 @@ class WPTAgent(object):
                 ret = True
             except ImportError:
                 pass
-
         if not ret:
             print "Missing {0} module. Please run 'pip install {1}'".format(module, module_name)
-
         return ret
 
     def startup(self):
@@ -277,11 +272,11 @@ class WPTAgent(object):
         ret = self.requires('PIL', 'pillow') and ret
         ret = self.requires('psutil') and ret
         ret = self.requires('requests') and ret
-        ret = self.requires('tornado') and ret
+        if not self.options.android and not self.options.iOS:
+            ret = self.requires('tornado') and ret
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pypiwin32') and ret
-
 
         try:
             subprocess.check_output(['python', '--version'])
@@ -364,204 +359,6 @@ class WPTAgent(object):
                 print "Error configuring adb. Make sure it is installed and in the path."
                 ret = False
         return ret
-
-class HandleMessage(BaseHTTPRequestHandler):
-    """Handle a single message from the extension"""
-    # 1.1 keep-alive is pretty buggy, leave this disabled for now
-    #protocol_version = 'HTTP/1.1'
-
-    def __init__(self, server, *args):
-        self.message_server = server
-        try:
-            BaseHTTPRequestHandler.__init__(self, *args)
-            self.timeout = 10
-        except Exception:
-            pass
-
-    def setup(self):
-        BaseHTTPRequestHandler.setup(self)
-        self.request.settimeout(60)
-
-    def handle(self):
-        try:
-            BaseHTTPRequestHandler.handle(self)
-        except Exception:
-            pass
-
-    def log_message(self, _, *args):
-        return
-
-    def _set_headers(self):
-        """Basic response headers"""
-        try:
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header("Content-length", '0')
-            self.end_headers()
-        except Exception:
-            pass
-
-    # pylint: disable=C0103
-    def do_GET(self):
-        """HTTP GET"""
-        import ujson as json
-        logging.debug(self.path)
-        response = None
-        content_type = 'text/plain'
-        if self.path == '/ping':
-            response = 'pong'
-        elif self.path == '/config':
-            # JSON config data
-            content_type = 'application/json'
-            response = '{}'
-            if self.message_server.config is not None:
-                response = json.dumps(self.message_server.config)
-        elif self.path == '/config.html':
-            # HTML page that can be queried from the extension for config data
-            content_type = 'text/html'
-            response = "<html><head>\n"
-            if self.message_server.config is not None:
-                import cgi
-                response += '<div id="wptagentConfig" style="display: none;">'
-                response += cgi.escape(json.dumps(self.message_server.config))
-                response += '</div>'
-            response += "</head><body></body></html>"
-
-        if response is None:
-            self._set_headers()
-        else:
-            logging.debug(response)
-            self.send_response(200)
-            self.send_header('Content-type', content_type)
-            self.send_header("Content-length", str(len(response)))
-            self.end_headers()
-            self.wfile.write(response)
-
-    def do_HEAD(self):
-        """HTTP HEAD"""
-        self._set_headers()
-
-    def do_POST(self):
-        """HTTP POST"""
-        import ujson as json
-        try:
-            content_len = int(self.headers.getheader('content-length', 0))
-            messages = None
-            if content_len > 0:
-                self.rfile._sock.settimeout(10)
-                messages = self.rfile.read(content_len)
-            if messages is not None:
-                if self.path == '/log':
-                    logging.debug(messages)
-                else:
-                    for line in messages.splitlines():
-                        line = line.strip()
-                        if len(line):
-                            message = json.loads(line)
-                            if 'body' not in message and self.path != '/etw':
-                                message['body'] = None
-                            self.message_server.handle_message(message)
-        except Exception:
-            pass
-        self._set_headers()
-    # pylint: enable=C0103
-
-def handler_template(server):
-    """Stub that lets us pass parameters to BaseHTTPRequestHandler"""
-    return lambda *args: HandleMessage(server, *args)
-
-class MessageServer(object):
-    """Local HTTP server for interacting with the extension"""
-    def __init__(self):
-        self.server = None
-        self.must_exit = False
-        self.thread = None
-        self.messages = Queue.Queue()
-        self.config = None
-        self.is_started = threading.Event()
-        self.using_tornado = False
-
-    def get_message(self, timeout):
-        """Get a single message from the queue"""
-        message = self.messages.get(block=True, timeout=timeout)
-        self.messages.task_done()
-        return message
-
-    def flush_messages(self):
-        """Flush all of the pending messages"""
-        try:
-            while True:
-                self.messages.get_nowait()
-                self.messages.task_done()
-        except Exception:
-            pass
-
-    def handle_message(self, message):
-        """Add a received message to the queue"""
-        self.messages.put(message)
-
-    def start(self):
-        """Start running the server in a background thread"""
-        self.is_started.clear()
-        self.thread = threading.Thread(target=self.run)
-        self.thread.daemon = True
-        self.thread.start()
-        self.is_started.wait(timeout=30)
-
-    def stop(self):
-        """Stop running the server"""
-        logging.debug("Shutting down extension server")
-        self.must_exit = True
-        if self.using_tornado:
-            from internal.tornado_responder import stop_tornado
-            stop_tornado()
-            self.thread.join()
-        elif self.server is not None:
-            try:
-                self.server.shutdown()
-            except Exception:
-                logging.exception("Exception stopping extension server")
-        self.thread = None
-        logging.debug("Extension server stopped")
-
-    def is_ok(self):
-        """Check that the server is responding and restart it if necessary"""
-        import requests
-        import monotonic
-        end_time = monotonic.monotonic() + 30
-        server_ok = False
-        while not server_ok and monotonic.monotonic() < end_time:
-            try:
-                response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
-                if response.text == 'pong':
-                    server_ok = True
-            except Exception:
-                pass
-            if not server_ok:
-                time.sleep(5)
-        return server_ok
-
-    def run(self):
-        """Main server loop"""
-        handler = handler_template(self)
-        logging.debug('Starting extension server on port 8888')
-        try:
-            from internal.tornado_responder import start_tornado
-            start_tornado(self)
-        except ImportError:
-            try:
-                self.server = HTTPServer(('127.0.0.1', 8888), handler)
-                self.server.timeout = 10
-                self.is_started.set()
-                self.server.serve_forever()
-            except Exception:
-                logging.exception("Message server main loop exception")
-                self.is_started.set()
-            if self.server is not None:
-                try:
-                    self.server.socket.close()
-                except Exception:
-                    pass
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
