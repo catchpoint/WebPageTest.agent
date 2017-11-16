@@ -241,40 +241,47 @@ class WPTAgent(object):
             with open(self.options.alive, 'a'):
                 os.utime(self.options.alive, None)
 
+    def requires(self, module, module_name=None):
+        """Try importing a module and installing it if it isn't available"""
+        ret = False
+        if module_name is None:
+            module_name = module
+        try:
+            __import__(module)
+            ret = True
+        except ImportError:
+            pass
+
+        if not ret:
+            from internal.os_util import run_elevated
+            logging.debug('Trying to install {0}...'.format(module_name))
+            run_elevated(sys.executable, '-m pip install {0}'.format(module_name))
+            try:
+                __import__(module)
+                ret = True
+            except ImportError:
+                pass
+
+        if not ret:
+            print "Missing {0} module. Please run 'pip install {1}'".format(module, module_name)
+
+        return ret
+
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
         self.alive()
 
-        try:
-            import dns.resolver as _
-        except ImportError:
-            print "Missing dns module. Please run 'pip install dnspython'"
-            ret = False
+        ret = self.requires('dns', 'dnspython') and ret
+        ret = self.requires('monotonic') and ret
+        ret = self.requires('PIL', 'pillow') and ret
+        ret = self.requires('psutil') and ret
+        ret = self.requires('requests') and ret
+        ret = self.requires('tornado') and ret
+        # Windows-specific imports
+        if platform.system() == "Windows":
+            ret = self.requires('win32api', 'pypiwin32') and ret
 
-        try:
-            import monotonic as _
-        except ImportError:
-            print "Missing monotonic module. Please run 'pip install monotonic'"
-            ret = False
-
-        try:
-            from PIL import Image as _
-        except ImportError:
-            print "Missing PIL module. Please run 'pip install pillow'"
-            ret = False
-
-        try:
-            import psutil as _
-        except ImportError:
-            print "Missing psutil module. Please run 'pip install psutil'"
-            ret = False
-
-        try:
-            import requests as _
-        except ImportError:
-            print "Missing requests module. Please run 'pip install requests'"
-            ret = False
 
         try:
             subprocess.check_output(['python', '--version'])
@@ -296,13 +303,6 @@ class WPTAgent(object):
                   "and make sure it is in the path."
             ret = False
 
-        try:
-            import tornado as _
-        except ImportError:
-            from internal.os_util import run_elevated
-            logging.debug('Trying to install tornado...')
-            run_elevated(sys.executable, '-m pip install tornado')
-
         if platform.system() == "Linux":
             try:
                 subprocess.check_output(['traceroute', '--version'])
@@ -316,13 +316,11 @@ class WPTAgent(object):
             self.options.xvfb = True
 
         if self.options.xvfb:
-            try:
+            ret = self.requires('xvfbwrapper') and ret
+            if ret:
                 from xvfbwrapper import Xvfb
                 self.xvfb = Xvfb(width=1920, height=1200, colordepth=24)
                 self.xvfb.start()
-            except ImportError:
-                print "Missing xvfbwrapper module. Please run 'pip install xvfbwrapper'"
-                ret = False
 
         # Figure out which display to capture from
         if platform.system() == "Linux" and 'DISPLAY' in os.environ:
@@ -345,15 +343,6 @@ class WPTAgent(object):
                 subprocess.check_output('sudo cgset -h', shell=True)
             except Exception:
                 print "Missing cgroups, make sure cgroup-tools is installed."
-                ret = False
-
-        # Windows-specific imports
-        if platform.system() == "Windows":
-            try:
-                import win32api as _
-                import win32process as _
-            except ImportError:
-                print "Missing pywin32 module. Please run 'python -m pip install pypiwin32'"
                 ret = False
 
         # Check the iOS install
