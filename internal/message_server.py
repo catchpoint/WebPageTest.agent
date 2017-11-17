@@ -10,6 +10,32 @@ import tornado.web
 
 MESSAGE_SERVER = None
 
+BLANK_PAGE = """<html>
+<head>
+<title>Blank</title>
+<style type="text/css">body {background-color: #FFF;}</style>
+</head>
+<body>
+</body>
+</html>"""
+
+ORANGE_PAGE = """<html>
+<head>
+<title>Orange</title>
+<style>
+body {background-color: white; margin: 0;}
+#o {width:100%; height: 100%; background-color: #DE640D;}
+</style>
+<script>
+window.addEventListener('beforeunload', function() {
+  var o = document.getElementById('o')
+  o.parentNode.removeChild(o);
+});
+</script>
+</head>
+<body><div id='o'></div></body>
+</html>"""
+
 class TornadoRequestHandler(tornado.web.RequestHandler):
     """Request handler for when we are using tornado"""
     def get(self):
@@ -20,6 +46,12 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         content_type = 'text/plain'
         if self.request.uri == '/ping':
             response = 'pong'
+        elif self.request.uri == '/blank.html':
+            content_type = 'text/html'
+            response = BLANK_PAGE
+        elif self.request.uri == '/orange.html':
+            content_type = 'text/html'
+            response = ORANGE_PAGE
         elif self.request.uri == '/config':
             # JSON config data
             content_type = 'application/json'
