@@ -72,6 +72,22 @@
     "startupDelay": 15,
     "type": "blackbox"
   },
+  "Opera": {
+    "package": "com.opera.browser",
+    "activity": "com.opera.Opera",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
+  "Opera Beta": {
+    "package": "com.opera.browser.beta",
+    "activity": "com.opera.Opera",
+    "startupDelay": 10,
+    "startPage": "http://www.webpagetest.org/orange.html",
+    "directories": ["cache", "files", "app_chrome", "app_tabs", "app_textures"],
+    "type": "blackbox"
+  },
   "Opera Mini": {
     "package": "com.opera.mini.native",
     "activity": "com.opera.mini.android.Browser",
