@@ -75,11 +75,13 @@ run the agent in a docker container.
 ### Android testing options
 * **--android** : Run tests on an attached android device.
 * **--device** : Device ID (only needed if more than one android device attached).
-* **--rndis** : Enable reverse-tethering over rndis (Android < 6.0).  Valid options are:
+* **--vpntether** : Use vpn-reverse-tether for reverse-tethering. This is the recommended way to reverse-tether devices. You will need to manually approve the vpn once per mobile device. Valid options are:
+    * <interface>,<dns>: i.e. --vpntether eth0,8.8.8.8
+* **--rndis** : (deprecated) Enable reverse-tethering over rndis (Android < 6.0).  Valid options are:
     * <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  i.e. --rndis 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4
     * dhcp
-* **--simplert** : Use [SimpleRT](https://github.com/vvviperrr/SimpleRT) for reverse-tethering.  The APK should be installed manually (adb install simple-rt/simple-rt-1.1.apk) and tested once manually (./simple-rt -i eth0 then disconnect and re-connect phone) to dismiss any system dialogs.  The ethernet interface and DNS server should be passed as options:
-    * <interface>,<dns1>: i.e. --simplert eth0,192.168.0.1
+* **--simplert** : (deprecated) Use [SimpleRT](https://github.com/vvviperrr/SimpleRT) for reverse-tethering.  The APK should be installed manually (adb install simple-rt/simple-rt-1.1.apk) and tested once manually (./simple-rt -i eth0 then disconnect and re-connect phone) to dismiss any system dialogs.  The ethernet interface and DNS server should be passed as options:
+    * <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8
 
 ### Options for authenticating the agent with the server:
 * **--username** : User name if using HTTP Basic auth with WebPageTest server.

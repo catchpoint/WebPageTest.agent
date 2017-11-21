@@ -31,6 +31,7 @@ class Adb(object):
         self.simplert_path = None
         self.simplert = None
         self.no_network_count = 0
+        self.vpn_forwarder = None
         self.known_apps = {
             'com.motorola.ccc.ota': {},
             'com.google.android.apps.docs': {},
@@ -136,6 +137,11 @@ class Adb(object):
             logging.debug('Stopping simple-rt bridge process')
             subprocess.call(['sudo', 'killall', 'simple-rt'])
             self.simplert = None
+        if self.options.vpntether and platform.system() == "Linux":
+            if self.vpn_forwarder is not None:
+                subprocess.call(['sudo', 'killall', 'forwarder'])
+                self.vpn_forwarder = None
+            self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
 
     def kill_proc(self, procname, kill_signal='-SIGINT'):
         """Kill all processes with the given name"""
@@ -239,6 +245,17 @@ class Adb(object):
                 logging.debug('%s is unreachable', address)
             else:
                 logging.debug('%s rtt %0.3f ms', address, ret)
+        return ret
+
+    def is_installed(self, package):
+        """See if the given package is installed"""
+        ret = False
+        out = self.shell(['pm', 'list', 'packages'], silent=True)
+        if out is not None:
+            for line in out.splitlines():
+                if line.find(package) >= 0:
+                    ret = True
+                    break
         return ret
 
     def cleanup_device(self):
@@ -424,6 +441,54 @@ class Adb(object):
             logging.debug('simplert bridge not started')
         return is_ready
 
+    def sudo(self, args):
+        """Run the given sudo command and return"""
+        args.insert(0, 'sudo')
+        logging.debug(' '.join(args))
+        return subprocess.call(args)
+
+    def check_vpntether(self):
+        """Install and bring up the vpn-reverse-tether bridge if necessary"""
+        is_ready = False
+        if self.ping('172.31.0.1') is not None and self.is_tun_interface_available():
+            is_ready = True
+        elif platform.system() == "Linux":
+            interface, dns_server = self.options.vpntether.split(',', 1)
+            if self.vpn_forwarder is not None:
+                self.vpn_forwarder.write("\n")
+                self.vpn_forwarder.wait()
+                self.vpn_forwarder.close()
+                self.vpn_forwarder = None
+            self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
+            if not self.is_installed('com.google.android.vpntether'):
+                apk = os.path.join(self.root_path, 'vpn-reverse-tether', 'Android',
+                                   'VpnReverseTether.apk')
+                self.adb(['install', apk])
+            # Set up the host for forwarding
+            self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
+            self.sudo(['sysctl', '-w', 'net.ipv4.ip_forward=1'])
+            self.sudo(['iptables', '-t', 'nat', '-F'])
+            self.sudo(['iptables', '-t', 'nat', '-A', 'POSTROUTING', '-s', '172.31.0.0/24',
+                       '-o', interface, '-j', 'MASQUERADE'])
+            self.sudo(['iptables', '-P', 'FORWARD', 'ACCEPT'])
+            self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
+                       'mtu', '1500', 'up'])
+            self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
+            self.shell(['am', 'start', '-n',
+                        'com.google.android.vpntether/vpntether.StartActivity',
+                        '-e', 'SOCKNAME', 'vpntether'])
+            forwarder = os.path.join(self.root_path, 'vpn-reverse-tether')
+            if os.uname()[4].startswith('arm'):
+                forwarder = os.path.join(forwarder, 'arm')
+            elif platform.architecture()[0] == '64bit':
+                forwarder = os.path.join(forwarder, 'amd64')
+            forwarder = os.path.join(forwarder, 'forwarder')
+            command = 'sudo "{0}" tun0 7890 -m 1500 -a 172.31.0.2 32 -d {1} -r 0.0.0.0 0'\
+                      ' -n webpagetest'.format(forwarder, dns_server)
+            logging.debug(command)
+            self.vpn_forwarder = os.popen(command, 'w')
+        return is_ready
+
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
@@ -458,6 +523,8 @@ class Adb(object):
             if not is_ready:
                 self.no_network_count += 1
                 self.reset_simplert()
+        if self.options.vpntether is not None:
+            is_ready = self.check_vpntether()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready:
             net_ok = False

@@ -119,7 +119,7 @@ class AndroidBrowser(object):
                 package = all_browsers[name]['package']
                 self.adb.shell(['am', 'force-stop', package])
 
-    def execute_js(self, script):
+    def execute_js(self, _script):
         """Run javascipt (stub for overriding"""
         return None
 
