@@ -337,6 +337,11 @@ class WPTAgent(object):
                 print "Missing cgroups, make sure cgroup-tools is installed."
                 ret = False
 
+        # Fix Lighthouse install permissions
+        if platform.system() != "Windows":
+            from internal.os_util import run_elevated
+            run_elevated('chmod', '-R 777 ~/.config/configstore/')
+
         # Check the iOS install
         if self.ios is not None:
             ret = self.ios.check_install()
