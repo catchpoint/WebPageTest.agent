@@ -79,9 +79,9 @@ shutdown /r /f
 ```
 
 ## For lighthouse testing
-* NodeJS 7.x
+* NodeJS
     * Ubuntu/Debian:
-        * ```curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -```
+        * ```curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -```
         * ```sudo apt-get install -y nodejs```
 * The lighthouse npm module
     * ```sudo npm install -g lighthouse```
