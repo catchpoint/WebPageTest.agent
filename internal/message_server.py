@@ -1,0 +1,168 @@
+# Copyright 2017 Google Inc. All rights reserved.
+# Use of this source code is governed by the Apache 2.0 license that can be
+# found in the LICENSE file.
+import Queue
+import logging
+import threading
+import time
+import tornado.ioloop
+import tornado.web
+
+MESSAGE_SERVER = None
+
+BLANK_PAGE = """<html>
+<head>
+<title>Blank</title>
+<style type="text/css">body {background-color: #FFF;}</style>
+</head>
+<body>
+</body>
+</html>"""
+
+ORANGE_PAGE = """<html>
+<head>
+<title>Orange</title>
+<style>
+body {background-color: white; margin: 0;}
+#o {width:100%; height: 100%; background-color: #DE640D;}
+</style>
+<script>
+window.addEventListener('beforeunload', function() {
+  var o = document.getElementById('o')
+  o.parentNode.removeChild(o);
+});
+</script>
+</head>
+<body><div id='o'></div></body>
+</html>"""
+
+class TornadoRequestHandler(tornado.web.RequestHandler):
+    """Request handler for when we are using tornado"""
+    def get(self):
+        """Handle GET requests"""
+        import ujson as json
+        logging.debug(self.request.uri)
+        response = None
+        content_type = 'text/plain'
+        if self.request.uri == '/ping':
+            response = 'pong'
+        elif self.request.uri == '/blank.html':
+            content_type = 'text/html'
+            response = BLANK_PAGE
+        elif self.request.uri == '/orange.html':
+            content_type = 'text/html'
+            response = ORANGE_PAGE
+        elif self.request.uri == '/config':
+            # JSON config data
+            content_type = 'application/json'
+            response = '{}'
+            if MESSAGE_SERVER.config is not None:
+                response = json.dumps(MESSAGE_SERVER.config)
+        elif self.request.uri == '/config.html':
+            # HTML page that can be queried from the extension for config data
+            content_type = 'text/html'
+            response = "<html><head>\n"
+            if MESSAGE_SERVER.config is not None:
+                import cgi
+                response += '<div id="wptagentConfig" style="display: none;">'
+                response += cgi.escape(json.dumps(MESSAGE_SERVER.config))
+                response += '</div>'
+            response += "</head><body></body></html>"
+
+        if response is not None:
+            self.set_status(200)
+            self.set_header("Content-Type", content_type)
+            self.write(response)
+
+    def post(self):
+        """Handle POST messages"""
+        import ujson as json
+        try:
+            messages = self.request.body
+            if messages is not None and len(messages):
+                if self.request.uri == '/log':
+                    logging.debug(messages)
+                else:
+                    for line in messages.splitlines():
+                        line = line.strip()
+                        if len(line):
+                            message = json.loads(line)
+                            if 'body' not in message and self.request.uri != '/etw':
+                                message['body'] = None
+                            MESSAGE_SERVER.handle_message(message)
+        except Exception:
+            pass
+        self.set_status(200)
+
+class MessageServer(object):
+    """Local HTTP server for interacting with the extension"""
+    def __init__(self):
+        global MESSAGE_SERVER
+        MESSAGE_SERVER = self
+        self.thread = None
+        self.messages = Queue.Queue()
+        self.config = None
+        self.__is_started = threading.Event()
+
+    def get_message(self, timeout):
+        """Get a single message from the queue"""
+        message = self.messages.get(block=True, timeout=timeout)
+        self.messages.task_done()
+        return message
+
+    def flush_messages(self):
+        """Flush all of the pending messages"""
+        try:
+            while True:
+                self.messages.get_nowait()
+                self.messages.task_done()
+        except Exception:
+            pass
+
+    def handle_message(self, message):
+        """Add a received message to the queue"""
+        self.messages.put(message)
+
+    def start(self):
+        """Start running the server in a background thread"""
+        self.__is_started.clear()
+        self.thread = threading.Thread(target=self.run)
+        self.thread.daemon = True
+        self.thread.start()
+        self.__is_started.wait(timeout=30)
+
+    def stop(self):
+        """Stop running the server"""
+        logging.debug("Shutting down extension server")
+        self.must_exit = True
+        if self.thread is not None:
+            ioloop = tornado.ioloop.IOLoop.instance()
+            ioloop.add_callback(ioloop.stop)
+            self.thread.join()
+        self.thread = None
+        logging.debug("Extension server stopped")
+
+    def is_ok(self):
+        """Check that the server is responding and restart it if necessary"""
+        import requests
+        import monotonic
+        end_time = monotonic.monotonic() + 30
+        server_ok = False
+        while not server_ok and monotonic.monotonic() < end_time:
+            try:
+                response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
+                if response.text == 'pong':
+                    server_ok = True
+            except Exception:
+                pass
+            if not server_ok:
+                time.sleep(5)
+        return server_ok
+
+    def run(self):
+        """Main server loop"""
+        logging.debug('Starting extension server on port 8888')
+        application = tornado.web.Application([(r"/.*", TornadoRequestHandler)])
+        application.listen(8888, '127.0.0.1')
+        self.__is_started.set()
+        tornado.ioloop.IOLoop.instance().start()

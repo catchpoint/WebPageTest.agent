@@ -575,6 +575,9 @@ class Edge(DesktopBrowser):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        # Trigger a message to start writing the interactive periods asynchronously
+        self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
+        # Collect teh regular browser metrics
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
@@ -602,6 +605,18 @@ class Edge(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        # Wait for the interactive periods to be written
+        end_time = monotonic.monotonic() + 10
+        interactive = None
+        while interactive is None and monotonic.monotonic() < end_time:
+            interactive = self.execute_js(
+                'return document.getElementById("wptagentLongTasks").innerText;')
+            if interactive is None:
+                time.sleep(0.2)
+        if interactive is not None and len(interactive):
+            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
+            with gzip.open(interactive_file, 'wb', 7) as f_out:
+                f_out.write(interactive)
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""

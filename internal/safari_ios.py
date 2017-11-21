@@ -691,6 +691,8 @@ class iWptBrowser(object):
         self.send_command('Network.enable', {})
         self.send_command('Inspector.enable', {})
         if self.task['log_data']:
+            if not self.job['shaper'].configure(self.job):
+                self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
                 self.bodies_zip_file.close()
                 self.bodies_zip_file = None
@@ -752,6 +754,7 @@ class iWptBrowser(object):
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
             self.bodies_zip_file = None
+        self.job['shaper'].reset()
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""

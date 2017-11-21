@@ -17,35 +17,8 @@ import monotonic
 import ujson as json
 from .desktop_browser import DesktopBrowser
 
-""" Orange page that changes itself to white on navigation
-<html>
-<head>
-<style>
-body {background-color: white; margin: 0;}
-#o {width:100%; height: 100%; background-color: #DE640D;}
-</style>
-<script>
-window.addEventListener('beforeunload', function() {
-  var o = document.getElementById('o')
-  o.parentNode.removeChild(o);
-});
-</script>
-</head>
-<body><div id='o'></div></body>
-</html>
-"""
-START_PAGE = 'data:text/html,%3Chtml%3E%0D%0A%3Chead%3E%0D%0A%3Cstyle%3E%0D%0Abody%20%7B'\
-             'background-color%3A%20white%3B%20margin%3A%200%3B%7D%0D%0A%23o%20%7Bwidth'\
-             '%3A100%25%3B%20height%3A%20100%25%3B%20background-color%3A%20%23DE640D%3B'\
-             '%7D%0D%0A%3C%2Fstyle%3E%0D%0A%3Cscript%3E%0D%0Awindow.addEventListener%28%27'\
-             'beforeunload%27%2C%20function%28%29%20%7B%0D%0A%20%20var%20o%20%3D%20'\
-             'document.getElementById%28%27o%27%29%0D%0A%20%20o.parentNode.removeChild'\
-             '%28o%29%3B%0D%0A%7D%29%3B%0D%0A%3C%2Fscript%3E%0D%0A%3C%2Fhead%3E%0D%0A%3Cbody%3E%3C'\
-             'div%20id%3D%27o%27%3E%3C%2Fdiv%3E%3C%2Fbody%3E%0D%0A%3C%2Fhtml%3E'
-
 class Firefox(DesktopBrowser):
     """Firefox"""
-
     def __init__(self, path, options, job):
         DesktopBrowser.__init__(self, path, options, job)
         self.job = job
@@ -68,6 +41,7 @@ class Firefox(DesktopBrowser):
         self.requests = {}
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.start_page = 'http://127.0.0.1:8888/orange.html'
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -145,7 +119,7 @@ class Firefox(DesktopBrowser):
             self.marionette.set_window_size(height=task['height'], width=task['width'])
             if 'browserVersion' in self.marionette.session_capabilities:
                 self.browser_version = self.marionette.session_capabilities['browserVersion']
-            self.marionette.navigate(START_PAGE)
+            self.marionette.navigate(self.start_page)
             time.sleep(0.5)
             self.wait_for_extension()
             if self.connected:

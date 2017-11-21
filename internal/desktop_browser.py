@@ -216,6 +216,8 @@ class DesktopBrowser(object):
             except Exception:
                 pass
         if task['log_data']:
+            if not self.job['shaper'].configure(self.job):
+                self.task['error'] = "Error configuring traffic-shaping"
             self.cpu_start = psutil.cpu_times()
             self.recording = True
             ver = platform.uname()
@@ -363,6 +365,7 @@ class DesktopBrowser(object):
                 args.append('--full')
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args)
+        self.job['shaper'].reset()
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""

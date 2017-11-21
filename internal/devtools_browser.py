@@ -358,6 +358,7 @@ class DevtoolsBrowser(object):
         """Run a lighthouse test against the current browser session"""
         from threading import Timer
         if 'url' in self.job and self.job['url'] is not None:
+            self.job['shaper'].configure(self.job)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
@@ -393,6 +394,7 @@ class DevtoolsBrowser(object):
                     timer.cancel()
             from .os_util import kill_all
             kill_all('node', True)
+            self.job['shaper'].reset()
             # Rename and compress the trace file, delete the other assets
             if self.job['keep_lighthouse_trace']:
                 try:
