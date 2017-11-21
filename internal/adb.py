@@ -493,6 +493,8 @@ class Adb(object):
             elif platform.architecture()[0] == '64bit':
                 forwarder = os.path.join(forwarder, 'amd64')
             forwarder = os.path.join(forwarder, 'forwarder')
+            # Give the app time to start before trying to connect to it
+            time.sleep(5)
             command = 'sudo "{0}" tun0 7890 -m 1500 -a 172.31.0.2 32 -d {1} -r 0.0.0.0 0'\
                       ' -n webpagetest'.format(forwarder, dns_server)
             logging.debug(command)
