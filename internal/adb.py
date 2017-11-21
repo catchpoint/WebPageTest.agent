@@ -139,7 +139,13 @@ class Adb(object):
             self.simplert = None
         if self.options.vpntether and platform.system() == "Linux":
             if self.vpn_forwarder is not None:
-                subprocess.call(['sudo', 'killall', 'forwarder'])
+                try:
+                    self.vpn_forwarder.write("\n")
+                    time.sleep(0.5)
+                    subprocess.call(['sudo', 'killall', 'forwarder'])
+                    self.vpn_forwarder.close()
+                except Exception:
+                    pass
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
 
@@ -455,9 +461,13 @@ class Adb(object):
         elif platform.system() == "Linux":
             interface, dns_server = self.options.vpntether.split(',', 1)
             if self.vpn_forwarder is not None:
-                self.vpn_forwarder.write("\n")
-                self.vpn_forwarder.wait()
-                self.vpn_forwarder.close()
+                try:
+                    self.vpn_forwarder.write("\n")
+                    time.sleep(0.5)
+                    subprocess.call(['sudo', 'killall', 'forwarder'])
+                    self.vpn_forwarder.close()
+                except Exception:
+                    pass
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
             if not self.is_installed('com.google.android.vpntether'):
