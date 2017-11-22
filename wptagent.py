@@ -8,6 +8,7 @@ import logging
 import logging.handlers
 import os
 import platform
+import gzip
 import re
 import signal
 import subprocess
@@ -158,7 +159,16 @@ class WPTAgent(object):
             browser.launch(self.job, self.task)
             try:
                 if self.task['running_lighthouse']:
-                    browser.run_lighthouse_test(self.task)
+                    self.task['lighthouse_log'] = \
+                        'Lighthouse testing is not supported with this browser.'
+                    try:
+                        browser.run_lighthouse_test(self.task)
+                    except Exception:
+                        pass
+                    if self.task['lighthouse_log']:
+                        log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
+                        with gzip.open(log_file, 'wb', 7) as f_out:
+                            f_out.write(self.task['lighthouse_log'])
                 else:
                     browser.run_task(self.task)
             except Exception as err:

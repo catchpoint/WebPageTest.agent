@@ -205,6 +205,10 @@ class Firefox(DesktopBrowser):
                 except Exception:
                     pass
 
+    def run_lighthouse_test(self, task):
+        """Stub for lighthouse test"""
+        pass
+
     def run_task(self, task):
         """Run an individual test"""
         if self.marionette is not None and self.connected:

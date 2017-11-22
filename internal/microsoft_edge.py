@@ -200,6 +200,10 @@ class Edge(DesktopBrowser):
             except Exception:
                 pass
 
+    def run_lighthouse_test(self, task):
+        """Stub for lighthouse test"""
+        pass
+
     def run_task(self, task):
         """Run an individual test"""
         if self.driver is not None and self.extension_loaded:

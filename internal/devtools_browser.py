@@ -356,6 +356,7 @@ class DevtoolsBrowser(object):
 
     def run_lighthouse_test(self, task):
         """Run a lighthouse test against the current browser session"""
+        task['lighthouse_log'] = ''
         from threading import Timer
         if 'url' in self.job and self.job['url'] is not None:
             self.job['shaper'].configure(self.job)
@@ -382,14 +383,17 @@ class DevtoolsBrowser(object):
             cmd = ' '.join(command)
             logging.debug(cmd)
             # Give lighthouse up to 3x the time limit to run all of the audits
-            proc = subprocess.Popen(cmd, shell=True)
+            proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
             kill_proc = lambda p: p.kill()
             timer = Timer(time_limit * 3, kill_proc, [proc])
             try:
                 timer.start()
-                proc.communicate()
+                for line in iter(proc.stderr.readline, b''):
+                    logging.debug(line.rstrip())
+                    task['lighthouse_log'] += line
             except Exception:
                 logging.debug('Timeout running lighthouse test')
+                task['lighthouse_log'] += "Timeout running lighthouse test\n"
             finally:
                 if timer is not None:
                     timer.cancel()

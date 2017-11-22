@@ -184,6 +184,10 @@ class iWptBrowser(object):
             self.webinspector_proxy = None
         self.ios.stop_browser()
 
+    def run_lighthouse_test(self, task):
+        """Stub for lighthouse test"""
+        pass
+
     def run_task(self, task):
         """Run an individual test"""
         if self.connected:
