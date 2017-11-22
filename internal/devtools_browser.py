@@ -381,6 +381,7 @@ class DevtoolsBrowser(object):
                 command.append('--disable-device-emulation')
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
+            task['lighthouse_log'] = cmd + "\n"
             logging.debug(cmd)
             # Give lighthouse up to 3x the time limit to run all of the audits
             proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
