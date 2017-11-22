@@ -604,6 +604,13 @@ def main():
                         help="Run tests on an attached android device.")
     parser.add_argument('--device',
                         help="Device ID (only needed if more than one android device attached).")
+    parser.add_argument('--simplert',
+                        help="Use SimpleRT for reverse-tethering.  The APK should "\
+                        "be installed manually (adb install simple-rt/simple-rt-1.1.apk) and "\
+                        "tested once manually (./simple-rt -i eth0 then disconnect and re-connect"\
+                        " phone) to dismiss any system dialogs.  The ethernet interface and DNS "\
+                        "server should be passed as options:\n"\
+                        "    <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8")
     parser.add_argument('--vpntether',
                         help="Use vpn-reverse-tether for reverse-tethering. This is the "\
                         "recommended way to reverse-tether devices. You will need to manually "\
@@ -615,13 +622,6 @@ def main():
                         "    dhcp: Configure interface for DHCP\n"\
                         "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"\
                         "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
-    parser.add_argument('--simplert',
-                        help="(deprecated) Use SimpleRT for reverse-tethering.  The APK should "\
-                        "be installed manually (adb install simple-rt/simple-rt-1.1.apk) and "\
-                        "tested once manually (./simple-rt -i eth0 then disconnect and re-connect"\
-                        " phone) to dismiss any system dialogs.  The ethernet interface and DNS "\
-                        "server should be passed as options:\n"\
-                        "    <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8")
     # iOS options
     parser.add_argument('--iOS', action='store_true', default=False,
                         help="Run tests on an attached iOS device "\
