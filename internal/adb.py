@@ -528,14 +528,14 @@ class Adb(object):
             logging.info("Device not ready, high temperature: %0.1f degrees", battery['temp'])
             is_ready = False
         # Bring up the bridged interface if necessary
-        if self.rndis is not None:
+        if is_ready and self.rndis is not None:
             is_ready = self.check_rndis()
-        if self.options.simplert is not None:
+        if is_ready and self.options.simplert is not None:
             is_ready = self.check_simplert()
             if not is_ready:
                 self.no_network_count += 1
                 self.reset_simplert()
-        if self.options.vpntether is not None:
+        if is_ready and self.options.vpntether is not None:
             is_ready = self.check_vpntether()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready:
