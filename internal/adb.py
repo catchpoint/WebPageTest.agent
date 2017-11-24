@@ -266,6 +266,8 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
+        # Simulate pressing the home button to dismiss any UI
+        self.shell(['input', 'keyevent', '3'])
         # Clear notifications
         self.su('service call notification 1')
         # Close some known apps that pop-over
@@ -499,6 +501,8 @@ class Adb(object):
                       ' -n webpagetest'.format(forwarder, dns_server)
             logging.debug(command)
             self.vpn_forwarder = os.popen(command, 'w')
+            # Simulate pressing the home button to dismiss any UI
+            self.shell(['input', 'keyevent', '3'])
         return is_ready
 
     def is_device_ready(self):
@@ -585,9 +589,6 @@ class Adb(object):
             self.initialized = True
             # Disable emergency alert notifications
             self.su('pm disable com.android.cellbroadcastreceiver')
-        if is_ready:
-            # Simulate pressing the home button to dismiss any UI
-            self.shell(['input', 'keyevent', '3'])
         return is_ready
 
     def get_jiffies_time(self):
