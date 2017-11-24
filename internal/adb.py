@@ -585,6 +585,9 @@ class Adb(object):
             self.initialized = True
             # Disable emergency alert notifications
             self.su('pm disable com.android.cellbroadcastreceiver')
+        if is_ready:
+            # Simulate pressing the home button to dismiss any UI
+            self.shell(['input', 'keyevent', '3'])
         return is_ready
 
     def get_jiffies_time(self):
