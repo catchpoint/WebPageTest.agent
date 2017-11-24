@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import time
 import monotonic
 import ujson as json
@@ -27,6 +28,7 @@ class DevtoolsBrowser(object):
         self.browser_version = None
         self.device_pixel_ratio = None
         self.use_devtools_video = use_devtools_video
+        self.lighthouse_command = None
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -354,10 +356,20 @@ class DevtoolsBrowser(object):
             requests = self.devtools.get_requests()
         return requests
 
+    def lighthouse_thread(self):
+        """Run lighthouse in a thread so we can kill it if it times out"""
+        cmd = self.lighthouse_command
+        self.task['lighthouse_log'] = cmd + "\n"
+        logging.debug(cmd)
+        proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        for line in iter(proc.stderr.readline, b''):
+            logging.debug(line.rstrip())
+            self.task['lighthouse_log'] += line
+        proc.communicate()
+
     def run_lighthouse_test(self, task):
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
-        from threading import Timer
         if 'url' in self.job and self.job['url'] is not None:
             self.job['shaper'].configure(self.job)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
@@ -381,23 +393,14 @@ class DevtoolsBrowser(object):
                 command.append('--disable-device-emulation')
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
-            task['lighthouse_log'] = cmd + "\n"
-            logging.debug(cmd)
+            self.lighthouse_command = cmd
             # Give lighthouse up to 3x the time limit to run all of the audits
-            proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-            kill_proc = lambda p: p.kill()
-            timer = Timer(time_limit * 3, kill_proc, [proc])
             try:
-                timer.start()
-                for line in iter(proc.stderr.readline, b''):
-                    logging.debug(line.rstrip())
-                    task['lighthouse_log'] += line
+                lh_thread = threading.Thread(target=self.lighthouse_thread)
+                lh_thread.start()
+                lh_thread.join(time_limit * 3)
             except Exception:
-                logging.debug('Timeout running lighthouse test')
-                task['lighthouse_log'] += "Timeout running lighthouse test\n"
-            finally:
-                if timer is not None:
-                    timer.cancel()
+                pass
             from .os_util import kill_all
             kill_all('node', True)
             self.job['shaper'].reset()
