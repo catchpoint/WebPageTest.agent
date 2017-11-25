@@ -26,6 +26,8 @@ class TrafficShaper(object):
                     if_in = 'usb0'
                 elif options.simplert:
                     if_in = 'tun0'
+                elif options.vpntether:
+                    if_in = 'tun0'
                 self.shaper = NetEm(options=options, out_interface=if_out, in_interface=if_in)
             elif shaper_name[:6] == 'remote':
                 parts = shaper_name.split(',')
