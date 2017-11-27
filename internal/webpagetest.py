@@ -7,6 +7,7 @@ import gzip
 import logging
 import os
 import platform
+import psutil
 import re
 import shutil
 import socket
@@ -232,6 +233,29 @@ class WebPageTest(object):
             except Exception:
                 pass
 
+    def get_uptime_minutes(self):
+        """Get the system uptime in seconds"""
+        boot_time = None
+        try:
+            boot_time = psutil.boot_time()
+        except Exception:
+            pass
+        if boot_time is None:
+            try:
+                boot_time = psutil.get_boot_time()
+            except Exception:
+                pass
+        if boot_time is None:
+            try:
+                boot_time = psutil.BOOT_TIME
+            except Exception:
+                pass
+        uptime = None
+        if boot_time is not None and boot_time > 0:
+            uptime = int((time.time() - boot_time) / 60)
+        if uptime is not None and uptime < 0:
+            uptime = 0
+        return uptime
 
     def get_test(self):
         """Get a job from the server"""
@@ -270,6 +294,9 @@ class WebPageTest(object):
                 url += '&screenheight={0:d}'.format(self.screen_height)
             free_disk = get_free_disk_space()
             url += '&freedisk={0:0.3f}'.format(free_disk)
+            uptime = self.get_uptime_minutes()
+            if uptime is not None:
+                url += '&upminutes={0:d}'.format(uptime)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30)
