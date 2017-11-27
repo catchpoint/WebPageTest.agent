@@ -45,6 +45,23 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
         * ```sudo apt-get update```
         * ```sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq opera-stable opera-beta opera-developer```
 
+## For lighthouse testing
+* NodeJS
+    * Ubuntu/Debian:
+        * ```curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -```
+        * ```sudo apt-get install -y nodejs```
+* The lighthouse npm module
+    * ```sudo npm install -g lighthouse```
+
+## Remote traffic-shaping
+wptagent supports configuring an external FreeBSD network bridge for traffic-shaping.  This is particularly useful for mobile device testing where the devices can be connected to a WiFi access point and the access point is connected through a FreeBSD bridge to get to the network.
+
+i.e. mobile phone <--> WiFi <--> FreeBSD bridge <--> Internet
+
+In this configuration the mobile devices are given static IP addresses and the FreeBSD bridge is pre-configured with 2 dummynet pipes for each IP address (one for inbound and one for outbound traffic).  The root account needs to allow for cert-based ssh access from the test machine (with the cert installed in authorized_keys).
+
+Passing the agent a "--shaper external" command-line flag you give it the IP address of the FreeBSD bridge as well as the pipe numbers for inbound and outbound traffic for the device.  At test time the agent will ssh to the bridge and adjust the settings for the device as needed.
+
 ## OS Notes
 ### Linux
 * There are time when the default file handle limits are too small (particularly when testing Firefox).  Upping the limits in /etc/security/limits.conf (at the end of the file) can help:
@@ -78,22 +95,21 @@ python.exe C:\Users\WebPageTest\wptagent\wptagent.py -vvvv --server "http://www.
 shutdown /r /f
 ```
 
-## For lighthouse testing
-* NodeJS
-    * Ubuntu/Debian:
-        * ```curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -```
-        * ```sudo apt-get install -y nodejs```
-* The lighthouse npm module
-    * ```sudo npm install -g lighthouse```
-
-## Remote traffic-shaping
-wptagent supports configuring an external FreeBSD network bridge for traffic-shaping.  This is particularly useful for mobile device testing where the devices can be connected to a WiFi access point and the access point is connected through a FreeBSD bridge to get to the network.
-
-i.e. mobile phone <--> WiFi <--> FreeBSD bridge <--> Internet
-
-In this configuration the mobile devices are given static IP addresses and the FreeBSD bridge is pre-configured with 2 dummynet pipes for each IP address (one for inbound and one for outbound traffic).  The root account needs to allow for cert-based ssh access from the test machine (with the cert installed in authorized_keys).
-
-Passing the agent a "--shaper external" command-line flag you give it the IP address of the FreeBSD bridge as well as the pipe numbers for inbound and outbound traffic for the device.  At test time the agent will ssh to the bridge and adjust the settings for the device as needed.
+### Raspberry Pi
+The Raspberry Pi largely follows the Linux installation notes but there are a few additional config items that can be useful:
+1. Overclock the SD Card reader (increases performance for most modern SD cards)
+    * Add ```dtparam=sd_overclock=100``` to /boot/config.txt
+1. Trim the sd card periodically to keep performance from degrading.
+    * Add ```sudo fstrim -v /``` to the script that runs the agent or to crontab
+1. Enable the hardware watchdog to reboot the device in case of hangs.
+    * Add ```dtparam=watchdog=on``` to /boot/config.txt
+    * Install the watchdog service: ```sudo apt-get install watchdog```
+    * Modify /etc/watchdog.conf
+        * Uncomment ```watchdog-device = /dev/watchdog```
+        * Uncomment ```max-load-1 = 24```
+        * Add ```watchdog-timeout=15```
+    * Start the watchdog service in a startup script ```sudo service watchdog restart``` (or fix the init script so it can be installed)
+1. Install a [static build of ffmpeg](https://johnvansickle.com/ffmpeg/) to /usr/bin (use the armel build)
 
 ## iOS testing
 iOS testing requires an iOS device running [iWptBrowser](https://github.com/WPO-Foundation/iWptBrowser/blob/master/docs/walkthrough.md) (a Safari shell), the --iOS command-line flag and is supported on Mac as well as Linux hosts for controlling the device (a Raspberry Pi is recommended).
