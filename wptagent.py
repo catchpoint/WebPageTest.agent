@@ -358,6 +358,10 @@ class WPTAgent(object):
 
         if not self.options.android and not self.options.iOS:
             self.wait_for_idle(300)
+        if self.adb is not None:
+            if not self.adb.start():
+                print "Error configuring adb. Make sure it is installed and in the path."
+                ret = False
         self.shaper.remove()
         if not self.shaper.install():
             if platform.system() == "Windows":
@@ -365,11 +369,6 @@ class WPTAgent(object):
             else:
                 print "Error configuring traffic shaping, make sure it is installed."
             ret = False
-
-        if self.adb is not None:
-            if not self.adb.start():
-                print "Error configuring adb. Make sure it is installed and in the path."
-                ret = False
         return ret
 
 def parse_ini(ini):
