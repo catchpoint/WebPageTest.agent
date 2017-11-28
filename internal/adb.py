@@ -105,6 +105,9 @@ class Adb(object):
             for proc in psutil.process_iter():
                 if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
                     proc.cpu_affinity([0])
+            # install the tun0 device if necessary
+            if self.options.vpntether and platform.system() == "Linux":
+                self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
