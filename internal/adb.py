@@ -291,6 +291,8 @@ class Adb(object):
             self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
         if out.find('com.google.android.apps.gsa.staticplugins.opa.errorui.OpaErrorActivity') >= 0:
             self.shell(['am', 'force-stop', 'com.google.android.googlequicksearchbox'])
+        if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
+            self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
 
     def get_rndis_interface(self):
         """Return the name of the rndis interface, it's state and assigned address"""
@@ -421,7 +423,9 @@ class Adb(object):
         """Check and see if the VPN permission dialog is up and dismiss it"""
         if self.short_version < 5.0:
             out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
-            if out.find('com.android.vpndialogs') >= 0:
+            if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
+                self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
+            if out.find('com.android.vpndialogs/com.android.vpndialogs.ConfirmDialog') >= 0:
                 logging.warning('Dismissing VPN dialog')
                 self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
                 self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
@@ -486,6 +490,8 @@ class Adb(object):
             self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
                        'mtu', '1500', 'up'])
             self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
+            self.cleanup_device()
+            # Start the tether app
             self.shell(['am', 'start', '-n',
                         'com.google.android.vpntether/vpntether.StartActivity',
                         '-e', 'SOCKNAME', 'vpntether'])
@@ -497,6 +503,7 @@ class Adb(object):
             forwarder = os.path.join(forwarder, 'forwarder')
             # Give the app time to start before trying to connect to it
             time.sleep(5)
+            self.dismiss_vpn_dialog()
             command = 'sudo "{0}" tun0 7890 -m 1500 -a 172.31.0.2 32 -d {1} -r 0.0.0.0 0'\
                       ' -n webpagetest'.format(forwarder, dns_server)
             logging.debug(command)
