@@ -269,6 +269,7 @@ class Adb(object):
         # Simulate pressing the home button to dismiss any UI
         self.shell(['input', 'keyevent', '3'])
         # Clear notifications
+        self.shell(['settings', 'put', 'global', 'heads_up_notifications_enabled', '0'])
         self.su('service call notification 1')
         # Close some known apps that pop-over
         for app in self.known_apps:
@@ -421,15 +422,20 @@ class Adb(object):
 
     def dismiss_vpn_dialog(self):
         """Check and see if the VPN permission dialog is up and dismiss it"""
-        if self.short_version < 5.0:
-            out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
-            if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
-                self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
-            if out.find('com.android.vpndialogs/com.android.vpndialogs.ConfirmDialog') >= 0:
-                logging.warning('Dismissing VPN dialog')
+        out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
+        if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
+            self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
+        if out.find('com.android.vpndialogs/com.android.vpndialogs.ConfirmDialog') >= 0:
+            logging.warning('Dismissing VPN dialog')
+            if self.short_version < 5.0:
                 self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
                 self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
                 self.shell(['input', 'keyevent', 'KEYCODE_DPAD_RIGHT'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
+            else:
+                self.shell(['input', 'keyevent', 'KEYCODE_TAB'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_TAB'], silent=True)
+                self.shell(['input', 'keyevent', 'KEYCODE_TAB'], silent=True)
                 self.shell(['input', 'keyevent', 'KEYCODE_ENTER'], silent=True)
 
     def reset_simplert(self):
