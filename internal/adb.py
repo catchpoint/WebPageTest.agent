@@ -519,6 +519,9 @@ class Adb(object):
                 if match:
                     self.short_version = float(match.group(1))
                     logging.debug('%s (%0.2f)', self.version, self.short_version)
+        if self.version is None:
+            logging.debug('Device not detected')
+            return False
         if self.kernel is None:
             out = self.shell(['getprop', 'ro.com.google.clientidbase'], silent=True)
             if out is not None:
