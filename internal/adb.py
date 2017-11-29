@@ -284,7 +284,8 @@ class Adb(object):
         # Cleanup the downloads folders
         self.shell(['rm', '-rf', '/sdcard/Download/*', '/sdcard/Backucup', '/sdcard/UCDownloads',
                     '/data/local/tmp/tcpdump.cap', '/data/local/tmp/wpt_video.mp4'])
-        self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup /data/media/0/UCDownloads')
+        self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup '\
+                '/data/media/0/UCDownloads /data/data/com.UCMobile.intl/wa/sv/*')
         # See if there are any system dialogs that need dismissing
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
         if re.search(r'Window #[^\n]*Application Error\:', out) is not None or \
