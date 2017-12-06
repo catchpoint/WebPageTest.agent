@@ -495,6 +495,9 @@ class WebPageTest(object):
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 task['run_start_time'] = monotonic.monotonic()
+                # Keep the full resolution video frames if the browser window is smaller than 600px
+                if task['width'] < 600 or task['height'] < 600:
+                    job['fullSizeVideo'] = 1
                 self.test_run_count += 1
         if task is None and os.path.isdir(self.workdir):
             try:
