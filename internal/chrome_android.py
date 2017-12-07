@@ -32,7 +32,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-background-timer-throttling',
     '--safebrowsing-disable-auto-update',
     '--disable-external-intent-requests',
-    '--enable-remote-debugging'
+    '--enable-remote-debugging',
+    '--disable-browser-side-navigation'
 ]
 
 HOST_RULES = [
