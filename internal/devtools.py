@@ -722,6 +722,10 @@ class DevTools(object):
                 request['targetId'] = target_id
             ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
+                if self.is_navigating and self.main_frame is None and \
+                        'frameId' in msg['params']:
+                    self.is_navigating = False
+                    self.main_frame = msg['params']['frameId']
                 if 'request' not in request:
                     request['request'] = []
                 request['request'].append(msg['params'])
