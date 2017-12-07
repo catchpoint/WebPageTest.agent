@@ -778,7 +778,7 @@ class DevToolsParser(object):
             else:
                 page_data['responses_other'] += 1
         if page_data['responses_200'] == 0:
-            if 'responseCode' in requests[0]:
+            if len(requests) > 0 and 'responseCode' in requests[0]:
                 page_data['result'] = requests[0]['responseCode']
             else:
                 page_data['result'] = 12999
