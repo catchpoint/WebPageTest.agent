@@ -343,6 +343,8 @@ class DevtoolsBrowser(object):
             self.devtools.set_header(command['target'])
         elif command['command'] == 'resetheaders':
             self.devtools.reset_headers()
+        elif command['command'] == 'clearcache':
+            self.devtools.clear_cache()
 
     def navigate(self, url):
         """Navigate to the given URL"""

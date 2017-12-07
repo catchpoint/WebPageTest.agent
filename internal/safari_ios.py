@@ -939,6 +939,8 @@ class iWptBrowser(object):
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
             pass
+        elif command['command'] == 'clearcache':
+            self.ios.clear_cache()
 
     def navigate(self, url):
         """Navigate to the given URL"""

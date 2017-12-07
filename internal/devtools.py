@@ -648,6 +648,10 @@ class DevTools(object):
         self.send_command('Network.setExtraHTTPHeaders',
                           {'headers': self.headers}, wait=True)
 
+    def clear_cache(self):
+        """Clear the browser cache"""
+        self.send_command('Network.clearBrowserCache', {}, wait=True)
+
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
         if 'method' in msg and self.recording:
