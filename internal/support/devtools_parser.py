@@ -436,29 +436,41 @@ class DevToolsParser(object):
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
                     for line in raw_request['response']['requestHeadersText'].splitlines():
-                        line = line.strip()
+                        line = line.encode('utf-8').strip()
                         if len(line):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
                     for key in raw_request['response']['requestHeaders']:
                         for value in raw_request['response']['requestHeaders'][key].splitlines():
-                            request['headers']['request'].append(\
-                                '{0}: {1}'.format(key, value.strip()))
+                            try:
+                                request['headers']['request'].append(\
+                                    u'{0}: {1}'.format(key.encode('utf-8'),
+                                                       value.encode('utf-8').strip()))
+                            except Exception:
+                                pass
                 elif 'headers' in raw_request:
                     for key in raw_request['headers']:
                         for value in raw_request['headers'][key].splitlines():
-                            request['headers']['request'].append(\
-                                '{0}: {1}'.format(key, value.strip()))
+                            try:
+                                request['headers']['request'].append(\
+                                    u'{0}: {1}'.format(key.encode('utf-8'),
+                                                       value.encode('utf-8').strip()))
+                            except Exception:
+                                pass
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
-                        line = line.strip()
+                        line = line.encode('utf-8').strip()
                         if len(line):
                             request['headers']['response'].append(line)
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
                     for key in raw_request['response']['headers']:
                         for value in raw_request['response']['headers'][key].splitlines():
-                            request['headers']['response'].append(\
-                                '{0}: {1}'.format(key, value.strip()))
+                            try:
+                                request['headers']['response'].append(\
+                                    u'{0}: {1}'.format(key.encode('utf-8'),
+                                                       value.encode('utf-8').strip()))
+                            except Exception:
+                                pass
                 request['bytesOut'] = len("\r\n".join(request['headers']['request']))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
@@ -579,12 +591,15 @@ class DevToolsParser(object):
                                 entry['url'] == request['full_url']:
                             entry['claimed'] = True
                             for key in mapping:
-                                if key in entry:
-                                    if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
-                                        request[mapping[key]] = \
-                                                int(round(float(str(entry[key]).strip())))
-                                    else:
-                                        request[mapping[key]] = str(entry[key])
+                                try:
+                                    if key in entry:
+                                        if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
+                                            request[mapping[key]] = \
+                                                    int(round(float(str(entry[key]).strip())))
+                                        else:
+                                            request[mapping[key]] = str(entry[key])
+                                except Exception:
+                                    pass
                             if 'first_byte' in entry:
                                 request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                                entry['start']))
@@ -648,11 +663,14 @@ class DevToolsParser(object):
                     if 'main_frame' in page_data:
                         request['frame_id'] = page_data['main_frame']
                     for key in mapping:
-                        if key in entry:
-                            if re.match(r'\d+\.?(\d+)?', str(entry[key])):
-                                request[mapping[key]] = int(round(float(entry[key])))
-                            else:
-                                request[mapping[key]] = str(entry[key])
+                        try:
+                            if key in entry:
+                                if re.match(r'\d+\.?(\d+)?', str(entry[key])):
+                                    request[mapping[key]] = int(round(float(entry[key])))
+                                else:
+                                    request[mapping[key]] = str(entry[key])
+                        except Exception:
+                            pass
                     if 'first_byte' in entry:
                         request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                        entry['start']))
@@ -760,7 +778,7 @@ class DevToolsParser(object):
             else:
                 page_data['responses_other'] += 1
         if page_data['responses_200'] == 0:
-            if 'responseCode' in requests[0]:
+            if len(requests) > 0 and 'responseCode' in requests[0]:
                 page_data['result'] = requests[0]['responseCode']
             else:
                 page_data['result'] = 12999

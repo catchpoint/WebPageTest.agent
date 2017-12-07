@@ -485,14 +485,19 @@ class WebPageTest(object):
                 task['height'] = job['height']
                 if 'mobile' in job and job['mobile']:
                     if 'browser' in job and job['browser'] in self.margins:
-                        task['width'] = job['width'] + self.margins[job['browser']]['width']
-                        task['height'] = job['height'] + self.margins[job['browser']]['height']
+                        task['width'] = \
+                            job['width'] + max(self.margins[job['browser']]['width'], 0)
+                        task['height'] = \
+                            job['height'] + max(self.margins[job['browser']]['height'], 0)
                     else:
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
                 task['time_limit'] = job['timeout']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 task['run_start_time'] = monotonic.monotonic()
+                # Keep the full resolution video frames if the browser window is smaller than 600px
+                if task['width'] < 600 or task['height'] < 600:
+                    job['fullSizeVideo'] = 1
                 self.test_run_count += 1
         if task is None and os.path.isdir(self.workdir):
             try:
@@ -556,7 +561,9 @@ class WebPageTest(object):
                                                         'name': cookie_name,
                                                         'value': cookie_value})
                     # commands that get pre-processed
-                    elif command == 'setbrowsersize' or command == 'setviewportsize':
+                    elif command == 'setuseragent' and target is not None:
+                        job['uastring'] = target
+                    elif command == 'setbrowsersize':
                         keep = False
                         if target is not None and value is not None:
                             width = int(re.search(r'\d+', str(target)).group())
@@ -565,6 +572,21 @@ class WebPageTest(object):
                             if width > 0 and height > 0 and width < 10000 and height < 10000:
                                 job['width'] = int(float(width) / dpr)
                                 job['height'] = int(float(height) / dpr)
+                    elif command == 'setviewportsize':
+                        keep = False
+                        if target is not None and value is not None:
+                            width = int(re.search(r'\d+', str(target)).group())
+                            height = int(re.search(r'\d+', str(value)).group())
+                            if width > 0 and height > 0 and width < 10000 and height < 10000:
+                                job['width'] = width
+                                job['height'] = height
+                                # Adjust the viewport for non-mobile tests
+                                if 'mobile' not in job or not job['mobile']:
+                                    if 'browser' in job and job['browser'] in self.margins:
+                                        job['width'] += \
+                                            max(self.margins[job['browser']]['width'], 0)
+                                        job['height'] += \
+                                            max(self.margins[job['browser']]['height'], 0)
                     elif command == 'setdevicescalefactor' and target is not None:
                         keep = False
                         job['dpr'] = target
@@ -679,8 +701,8 @@ class WebPageTest(object):
         if 'actual_viewport' in task and 'width' in task and 'height' in task and \
                 self.job is not None and 'browser' in self.job:
             browser = self.job['browser']
-            width = task['width'] - task['actual_viewport']['width']
-            height = task['height'] - task['actual_viewport']['height']
+            width = max(task['width'] - task['actual_viewport']['width'], 0)
+            height = max(task['height'] - task['actual_viewport']['height'], 0)
             if browser not in self.margins or self.margins[browser]['width'] != width or \
                     self.margins[browser]['height'] != height:
                 self.margins[browser] = {"width": width, "height": height}
