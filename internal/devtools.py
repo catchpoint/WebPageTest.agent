@@ -29,6 +29,7 @@ class DevTools(object):
         self.workers = []
         self.page_loaded = None
         self.main_frame = None
+        self.response_started = False
         self.is_navigating = False
         self.last_activity = monotonic.monotonic()
         self.dev_tools_file = None
@@ -63,6 +64,7 @@ class DevTools(object):
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
+        self.response_started = False
         self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
@@ -83,6 +85,7 @@ class DevTools(object):
         """Indicate that we are about to start a known-navigation"""
         self.main_frame = None
         self.is_navigating = True
+        self.response_started = False
 
     def wait_for_available(self, timeout):
         """Wait for the dev tools interface to become available (but don't connect)"""
@@ -738,8 +741,10 @@ class DevTools(object):
                     request['priority'] = []
                 request['priority'].append(msg['params'])
             elif event == 'requestServedFromCache':
+                self.response_started = True
                 request['fromNet'] = False
             elif event == 'responseReceived':
+                self.response_started = True
                 if 'response' not in request:
                     request['response'] = []
                 request['response'].append(msg['params'])
@@ -754,15 +759,24 @@ class DevTools(object):
                             msg['params']['response']['mimeType'].startswith('video/'):
                         request['is_video'] = True
             elif event == 'dataReceived':
+                self.response_started = True
                 if 'data' not in request:
                     request['data'] = []
                 request['data'].append(msg['params'])
             elif event == 'loadingFinished':
+                self.response_started = True
                 request['finished'] = msg['params']
                 self.get_response_body(request_id)
             elif event == 'loadingFailed':
                 request['failed'] = msg['params']
-                if self.main_request is not None and \
+                if not self.response_started:
+                    if 'errorText' in msg['params']:
+                        self.nav_error = msg['params']['errorText']
+                    else:
+                        self.nav_error = 'Unknown navigation error'
+                    self.nav_error_code = 404
+                    logging.debug('Navigation error: %s', self.nav_error)
+                elif self.main_request is not None and \
                         request_id == self.main_request and \
                         'errorText' in msg['params'] and \
                         'canceled' in msg['params'] and \
