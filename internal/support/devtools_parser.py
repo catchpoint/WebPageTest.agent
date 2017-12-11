@@ -70,6 +70,7 @@ class DevToolsParser(object):
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
+        has_request_headers = False
         net_requests = []
         page_data = {'endTime': 0}
         _, ext = os.path.splitext(self.devtools_file)
@@ -179,6 +180,9 @@ class DevToolsParser(object):
                                 if 'encodedDataLength' in params:
                                     request['bytesInEncoded'] += params['encodedDataLength']
                             if method == 'Network.responseReceived' and 'response' in params:
+                                if not has_request_headers and \
+                                        'requestHeaders' in params['response']:
+                                    has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
                                 # the timing data for cached resources is completely bogus
@@ -192,10 +196,16 @@ class DevToolsParser(object):
                                         not params['response']['fromDiskCache'] and \
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
+                                # Chrome reports some phantom duplicate requests
+                                if has_request_headers and \
+                                        'requestHeaders' not in params['response']:
+                                    request['fromNet'] = False
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
+                                if 'encodedDataLength' in params:
+                                    request['bytesInEncoded'] = params['encodedDataLength']
                             if method == 'Network.loadingFailed' and 'response' not in request and \
                                     ('fromCache' not in request or not request['fromCache']):
                                 if 'blockedReason' not in params and \
@@ -385,6 +395,12 @@ class DevToolsParser(object):
                 request['socket'] = -1
                 if 'response' in raw_request and 'connectionId' in raw_request['response']:
                     request['socket'] = raw_request['response']['connectionId']
+                if 'response' in raw_request and 'remoteIPAddress' in raw_request['response']:
+                    request['ip_addr'] = raw_request['response']['remoteIPAddress']
+                if 'response' in raw_request and 'protocol' in raw_request['response']:
+                    request['protocol'] = raw_request['response']['protocol']
+                    if request['protocol'] == 'h2':
+                        request['protocol'] = 'HTTP/2'
                 request['dns_start'] = -1
                 request['dns_end'] = -1
                 request['connect_start'] = -1
@@ -930,7 +946,7 @@ def main():
            'optimization': options.optimization,
            'cached': options.cached,
            'out': options.out}
-    devtools = DevTools(opt)
+    devtools = DevToolsParser(opt)
     devtools.process()
     end = time.time()
     elapsed = end - start
