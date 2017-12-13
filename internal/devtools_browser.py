@@ -396,11 +396,11 @@ class DevtoolsBrowser(object):
             command.append('"{0}"'.format(self.job['url']))
             cmd = ' '.join(command)
             self.lighthouse_command = cmd
-            # Give lighthouse up to 3x the time limit to run all of the audits
+            # Give lighthouse up to 10 minutes to run all of the audits
             try:
                 lh_thread = threading.Thread(target=self.lighthouse_thread)
                 lh_thread.start()
-                lh_thread.join(time_limit * 3)
+                lh_thread.join(600)
             except Exception:
                 pass
             from .os_util import kill_all
