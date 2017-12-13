@@ -38,6 +38,7 @@ class OptimizationChecks(object):
         self.results = {}
         self.dns_lookup_queue = Queue.Queue()
         self.dns_result_queue = Queue.Queue()
+        # spell-checker: disable
         self.cdn_cnames = {
             'Advanced Hosters CDN': ['.pix-cdn.org'],
             'afxcdn.net': ['.afxcdn.net'],
@@ -225,6 +226,7 @@ class OptimizationChecks(object):
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}]
         }
+        # spell-checker: enable
 
     def start(self):
         """Start running the optimization checks"""
@@ -452,7 +454,7 @@ class OptimizationChecks(object):
                     domains[dns_result['domain']] = dns_result['provider']
             except Exception:
                 pass
-        # Final pass, populate the CDN infor for each request
+        # Final pass, populate the CDN info for each request
         for request_id in self.requests:
             check = {'score': -1, 'provider': ''}
             request = self.requests[request_id]
@@ -667,9 +669,11 @@ class OptimizationChecks(object):
                         if content_length < 1400:
                             check['score'] = 100
                         else:
+                            # spell-checker: disable
                             image_chunks = ["iCCP", "tIME", "gAMA", "PLTE", "acTL", "IHDR", "cHRM",
                                             "bKGD", "tRNS", "sBIT", "sRGB", "pHYs", "hIST", "vpAg",
                                             "oFFs", "fcTL", "fdAT", "IDAT"]
+                            # spell-checker: enable
                             body = request['response_body']
                             image_size = len(body)
                             valid = True
@@ -813,6 +817,7 @@ class OptimizationChecks(object):
         """Check the beginning of the file to see if it is a known image type"""
         content_type = None
         hex_bytes = binascii.hexlify(raw_bytes[:14]).lower()
+        # spell-checker: disable
         if hex_bytes[0:6] == 'ffd8ff':
             content_type = 'jpeg'
         elif hex_bytes[0:16] == '89504e470d0a1a0a':
@@ -823,9 +828,11 @@ class OptimizationChecks(object):
             content_type = 'webp'
         elif raw_bytes[:4] == 'wOF2':
             content_type = 'WOFF2'
+        # spell-checker: enable
         return content_type
 
     def sniff_file_content(self, image_file):
+        """Sniff the content type from a file"""
         content_type = None
         with open(image_file, 'rb') as f_in:
             raw = f_in.read(14)

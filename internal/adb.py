@@ -11,6 +11,8 @@ from threading import Timer
 import time
 import monotonic
 
+# cSpell:ignore vpndialogs, sysctl, iptables, ifconfig, dstaddr, clientidbase, nsecs
+
 class Adb(object):
     """ADB command-line interface"""
     def __init__(self, options, cache_dir):
@@ -94,6 +96,7 @@ class Adb(object):
         self.wait_for_process(proc, 120, silent)
         return bool(proc.returncode is not None and proc.returncode == 0)
 
+    # pylint: disable=E1101
     def start(self):
         """ Do some startup check to make sure adb is installed"""
         import psutil
@@ -132,6 +135,7 @@ class Adb(object):
                 self.simplert = subprocess.Popen(' '.join(command), shell=True,
                                                  cwd=self.simplert_path)
         return ret
+    # pylint: enable=E1101
 
     def stop(self):
         """Shut down anything necessary"""
@@ -469,6 +473,7 @@ class Adb(object):
         logging.debug(' '.join(args))
         return subprocess.call(args)
 
+    # pylint: disable=E1101
     def check_vpntether(self):
         """Install and bring up the vpn-reverse-tether bridge if necessary"""
         is_ready = False
@@ -521,6 +526,7 @@ class Adb(object):
             # Simulate pressing the home button to dismiss any UI
             self.shell(['input', 'keyevent', '3'])
         return is_ready
+    # pylint: enable=E1101
 
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""

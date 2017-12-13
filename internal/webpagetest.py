@@ -7,7 +7,6 @@ import gzip
 import logging
 import os
 import platform
-import psutil
 import re
 import shutil
 import socket
@@ -15,6 +14,7 @@ import subprocess
 import time
 import urllib
 import zipfile
+import psutil
 import monotonic
 import ujson as json
 
@@ -24,7 +24,6 @@ class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
     def __init__(self, options, workdir):
-        import psutil
         import requests
         self.job = None
         self.first_failure = None
@@ -200,9 +199,9 @@ class WebPageTest(object):
                     value = parts[1].strip()
                     logging.debug('Setting config option "%s" to "%s"', key, value)
                     if key == 'wpt_server':
-                        if re.search( r'^https?://', value ):
+                        if re.search(r'^https?://', value):
                             self.url = value
-                            if value.endswith( '/' ):
+                            if value.endswith('/'):
                                 self.url += 'work/'
                             else:
                                 self.url += '/work/'
@@ -233,6 +232,7 @@ class WebPageTest(object):
             except Exception:
                 pass
 
+    # pylint: disable=E1101
     def get_uptime_minutes(self):
         """Get the system uptime in seconds"""
         boot_time = None
@@ -256,6 +256,7 @@ class WebPageTest(object):
         if uptime is not None and uptime < 0:
             uptime = 0
         return uptime
+    # pylint: enable=E1101
 
     def get_test(self):
         """Get a job from the server"""
