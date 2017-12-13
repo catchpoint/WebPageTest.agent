@@ -570,7 +570,7 @@ class Edge(DesktopBrowser):
         if script is not None:
             try:
                 self.driver.set_script_timeout(30)
-                ret = self.driver.execute_script(script)
+                ret = self.driver.execute_script('return ' + script)
             except Exception:
                 pass
             if ret is not None:
