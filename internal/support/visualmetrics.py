@@ -1065,7 +1065,9 @@ def calculate_histograms(directory, histograms_file, force):
                         gc.collect()
                         if histogram is not None:
                             histograms.append(
-                                {'time': frame_time, 'histogram': histogram})
+                                {'time': frame_time,
+                                 'file': os.path.basename(frame),
+                                 'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
                 f = gzip.open(histograms_file, 'wb')
@@ -1287,11 +1289,19 @@ def sample_frames(frames, interval, start_ms, skip_frames):
 ##########################################################################
 
 
-def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs):
+def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, progress_file):
     metrics = None
     histograms = load_histograms(histograms_file, start, end)
     if histograms is not None and len(histograms) > 0:
         progress = calculate_visual_progress(histograms)
+        if progress and progress_file is not None:
+            file_name, ext = os.path.splitext(progress_file)
+            if ext.lower() == '.gz':
+                f = gzip.open(progress_file, 'wb', 7)
+            else:
+                f = open(progress_file, 'wb')
+            json.dump(progress, f)
+            f.close()
         if len(histograms) > 1:
             metrics = [
                 {'name': 'First Visual Change',
@@ -1352,6 +1362,7 @@ def calculate_visual_progress(histograms):
     for index, histogram in enumerate(histograms):
         p = calculate_frame_progress(histogram['histogram'], first, last)
         progress.append({'time': histogram['time'],
+                         'file': histogram['file'],
                          'progress': p})
         logging.debug(
             '{0:d}ms - {1:d}% Complete'.format(histogram['time'], int(p)))
@@ -1596,6 +1607,7 @@ def main():
                         help="Calculate perceptual Speed Index")
     parser.add_argument('-j', '--json', action='store_true', default=False,
                         help="Set output format to JSON")
+    parser.add_argument('--progress', help="Visual progress output file.")
 
     options = parser.parse_args()
 
@@ -1700,7 +1712,7 @@ def main():
                 # Calculate the histograms and visual metrics
                 calculate_histograms(directory, histogram_file, options.force)
                 metrics = calculate_visual_metrics(histogram_file, options.start, options.end,
-                                                   options.perceptual, directory)
+                                                   options.perceptual, directory, options.progress)
                 if options.screenshot is not None:
                     quality = 30
                     if options.quality is not None:

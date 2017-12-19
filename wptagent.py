@@ -356,7 +356,7 @@ class WPTAgent(object):
         if self.ios is not None:
             ret = self.ios.check_install()
 
-        if not self.options.android and not self.options.iOS:
+        if not self.options.android and not self.options.iOS and not self.options.noidle:
             self.wait_for_idle(300)
         if self.adb is not None:
             if not self.adb.start():
@@ -574,6 +574,8 @@ def main():
                         help="Watchdog file to update when successfully connected.")
     parser.add_argument('--log',
                         help="Log critical errors to the given file.")
+    parser.add_argument('--noidle', action='store_true', default=False,
+                        help="Do not wait for system idle at startup.")
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,

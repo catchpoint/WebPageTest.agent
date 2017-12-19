@@ -791,11 +791,14 @@ class iWptBrowser(object):
                                                                              task['cached'],
                                                                              task['current_step'])
                 histograms = os.path.join(task['dir'], filename)
+                progress_file = os.path.join(task['dir'], task['prefix']) + \
+                                '_visual_progress.json.gz'
                 visualmetrics = os.path.join(support_path, "visualmetrics.py")
                 args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
                         '-d', video_path, '--force', '--quality',
                         '{0:d}'.format(self.job['imageQuality']),
-                        '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms]
+                        '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms,
+                        '--progress', progress_file]
                 if 'renderVideo' in self.job and self.job['renderVideo']:
                     video_out = self.path_base + '_rendered_video.mp4'
                     args.extend(['--render', video_out])
