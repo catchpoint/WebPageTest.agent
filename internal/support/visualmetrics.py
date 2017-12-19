@@ -1361,8 +1361,9 @@ def calculate_visual_progress(histograms):
     last = histograms[-1]['histogram']
     for index, histogram in enumerate(histograms):
         p = calculate_frame_progress(histogram['histogram'], first, last)
+        file_name, ext = os.path.splitext(histogram['file'])
         progress.append({'time': histogram['time'],
-                         'file': histogram['file'],
+                         'file': file_name,
                          'progress': p})
         logging.debug(
             '{0:d}ms - {1:d}% Complete'.format(histogram['time'], int(p)))
