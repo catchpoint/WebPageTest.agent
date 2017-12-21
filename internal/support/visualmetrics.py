@@ -121,7 +121,8 @@ def extract_frames(video, directory, full_resolution, viewport):
         if viewport is not None:
             crop = 'crop={0}:{1}:{2}:{3},'.format(
                 viewport['width'], viewport['height'], viewport['x'], viewport['y'])
-        scale = 'scale=iw*min(400/iw\\,400/ih):ih*min(400/iw\\,400/ih),'
+        scale = 'scale=iw*min({0:d}/iw\\,{0:d}/ih):ih*min({0:d}/iw\\,{0:d}/ih),'.format(
+            options.thumbsize)
         if full_resolution:
             scale = ''
         command = ['ffmpeg', '-v', 'debug', '-i', video, '-vsync', '0',

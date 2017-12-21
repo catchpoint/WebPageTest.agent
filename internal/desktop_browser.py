@@ -365,6 +365,13 @@ class DesktopBrowser(object):
                 args.extend(['--render', video_out])
             if 'fullSizeVideo' in self.job and self.job['fullSizeVideo']:
                 args.append('--full')
+            if 'thumbsize' in self.job:
+                try:
+                    thumbsize = int(self.job['thumbsize'])
+                    if thumbsize > 0 and thumbsize <= 2000:
+                        args.extend(['--thumbsize', str(thumbsize)])
+                except Exception:
+                    pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args)
         self.job['shaper'].reset()
