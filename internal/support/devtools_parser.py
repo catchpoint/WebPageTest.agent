@@ -51,7 +51,31 @@ class DevToolsParser(object):
             logging.debug("Adding optimization results")
             self.process_optimization_results()
             logging.debug("Writing result")
+            self.make_utf8(self.result)
             self.write()
+
+    def make_utf8(self, data):
+        """Convert the given array to utf8"""
+        if isinstance(data, dict):
+            for key in data:
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.make_utf8(entry)
+                elif isinstance(entry, str):
+                    try:
+                        data[key] = unicode(entry)
+                    except Exception:
+                        pass
+        elif isinstance(data, list):
+            for key in xrange(len(data)):
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.make_utf8(entry)
+                elif isinstance(entry, str):
+                    try:
+                        data[key] = unicode(entry)
+                    except Exception:
+                        pass
 
     def write(self):
         """Write out the resulting json data"""
