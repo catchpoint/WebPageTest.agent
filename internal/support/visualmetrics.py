@@ -52,7 +52,6 @@ image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'
 def video_to_frames(video, directory, force, orange_file, white_file, gray_file, multiple,
                     find_viewport, viewport_time, full_resolution, timeline_file, trim_end):
     """ Extract the video frames"""
-    global options
     global client_viewport
     first_frame = os.path.join(directory, 'ms_000000')
     if (not os.path.isfile(first_frame + '.png')
@@ -307,7 +306,6 @@ def find_image_viewport(file):
 
 
 def find_video_viewport(video, directory, find_viewport, viewport_time):
-    global options
     viewport = None
     try:
         from PIL import Image
@@ -418,7 +416,6 @@ def adjust_frame_times(directory):
 
 
 def find_first_frame(directory, white_file):
-    global options
     try:
         if options.startwhite:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -484,7 +481,6 @@ def find_first_frame(directory, white_file):
 
 
 def find_last_frame(directory, white_file):
-    global options
     try:
         if options.endwhite:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -509,8 +505,6 @@ def find_last_frame(directory, white_file):
 
 
 def find_render_start(directory, orange_file, gray_file):
-    global options
-    global client_viewport
     try:
         if client_viewport is not None or options.viewport is not None or (
                 options.renderignore > 0 and options.renderignore <= 100):
@@ -577,7 +571,6 @@ def find_render_start(directory, orange_file, gray_file):
 
 
 def eliminate_duplicate_frames(directory):
-    global options
     global client_viewport
 
     try:
@@ -660,8 +653,6 @@ def eliminate_duplicate_frames(directory):
 
 
 def eliminate_similar_frames(directory):
-    global client_viewport
-    global options
     try:
         # only do this when decimate couldn't be used to eliminate similar
         # frames
@@ -687,8 +678,6 @@ def eliminate_similar_frames(directory):
 
 
 def blank_first_frame(directory):
-    global options
-    global image_magick
     try:
         if options.forceblank:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -705,8 +694,6 @@ def blank_first_frame(directory):
 
 
 def crop_viewport(directory):
-    global client_viewport
-    global image_magick
     if client_viewport is not None:
         try:
             files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
@@ -756,7 +743,6 @@ def clean_directory(directory):
 
 def is_color_frame(file, color_file):
     """Check a section from the middle, top and bottom of the viewport to see if it matches"""
-    global image_magick
     match = False
     if os.path.isfile(color_file):
         try:
@@ -794,9 +780,6 @@ def is_color_frame(file, color_file):
 
 
 def is_white_frame(file, white_file):
-    global client_viewport
-    global options
-    global image_magick
     white = False
     if os.path.isfile(white_file):
         if options.viewport:
@@ -842,7 +825,6 @@ def colors_are_similar(a, b, threshold=15):
 
 def frames_match(image1, image2, fuzz_percent,
                  max_differences, crop_region, mask_rect):
-    global image_magick
     match = False
     fuzz = ''
     if fuzz_percent > 0:
@@ -1117,7 +1099,6 @@ def calculate_image_histogram(file):
 
 
 def save_screenshot(directory, dest, quality):
-    global image_magick
     directory = os.path.realpath(directory)
     files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
     if files is not None and len(files) >= 1:
@@ -1136,7 +1117,6 @@ def save_screenshot(directory, dest, quality):
 
 
 def convert_to_jpeg(directory, quality):
-    global image_magick
     directory = os.path.realpath(directory)
     files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
     match = re.compile(r'(?P<base>ms_[0-9]+\.)')
@@ -1457,7 +1437,6 @@ def calculate_perceptual_speed_index(progress, directory):
 
 
 def check_config():
-    global image_magick
     ok = True
 
     print 'ffmpeg:  ',
@@ -1560,6 +1539,8 @@ def main():
                              "(if specified, frames will be converted to JPEG).")
     parser.add_argument('-l', '--full', action='store_true', default=False,
                         help="Keep full-resolution images instead of resizing to 400x400 pixels")
+    parser.add_argument('--thumbsize', type=int, default=400,
+                        help="Thumbnail size (defaults to 400).")
     parser.add_argument('-f', '--force', action='store_true', default=False,
                         help="Force processing of a video file (overwrite existing directory).")
     parser.add_argument('-o', '--orange', action='store_true', default=False,
