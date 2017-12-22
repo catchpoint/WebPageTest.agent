@@ -71,9 +71,17 @@ class VideoProcessing(object):
                         baseline = files[index]
             # Compress to the target quality and size
             for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
+                thumb_size = VIDEO_SIZE
+                if 'thumbsize' in self.job:
+                    try:
+                        size = int(self.job['thumbsize'])
+                        if size > 0 and size <= 2000:
+                            thumb_size = size
+                    except Exception:
+                        pass
                 command = '{0} -define jpeg:dct-method=fast -resize {1:d}x{1:d} '\
                     '-quality {2:d} "{3}"'.format(self.job['image_magick']['mogrify'],
-                                                  VIDEO_SIZE, self.job['imageQuality'], path)
+                                                  thumb_size, self.job['imageQuality'], path)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
             # Run visualmetrics against them
@@ -86,7 +94,8 @@ class VideoProcessing(object):
                                                                          self.task['cached'],
                                                                          self.task['current_step'])
             histograms = os.path.join(self.task['dir'], filename)
-            progress_file = os.path.join(task['dir'], task['prefix']) + '_visual_progress.json.gz'
+            progress_file = os.path.join(self.task['dir'], self.task['prefix']) + \
+                            '_visual_progress.json.gz'
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-d', self.video_path,
                     '--histogram', histograms, '-vvvv', '--progress', progress_file]
@@ -94,6 +103,15 @@ class VideoProcessing(object):
                 video_out = os.path.join(self.task['dir'], self.task['prefix']) + \
                         '_rendered_video.mp4'
                 args.extend(['--render', video_out])
+            if 'fullSizeVideo' in self.job and self.job['fullSizeVideo']:
+                args.append('--full')
+            if 'thumbsize' in self.job:
+                try:
+                    thumbsize = int(self.job['thumbsize'])
+                    if thumbsize > 0 and thumbsize <= 2000:
+                        args.extend(['--thumbsize', str(thumbsize)])
+                except Exception:
+                    pass
             subprocess.call(args)
 
     def frames_match(self, image1, image2, crop_region, fuzz_percent, max_differences):
