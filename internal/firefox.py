@@ -384,6 +384,13 @@ class Firefox(DesktopBrowser):
                 if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0 \
                         and 'committed' not in self.page:
                     self.page['committed'] = evt['timeStamp']
+                if 'injectScript' in self.job and self.marionette is not None:
+                    logging.debug("Injecting script: \n%s", self.job['injectScript'])
+                    try:
+                        self.marionette.execute_script(self.job['injectScript'],
+                                                       script_timeout=30)
+                    except Exception:
+                        pass
             elif message == 'onDOMContentLoaded':
                 if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0:
                     self.page['DOMContentLoaded'] = evt['timeStamp']

@@ -146,32 +146,37 @@ fetch(SERVER + 'config').then(function(response) {
 });
 
 // Navigation handlers
-browser.webNavigation.onBeforeNavigate.addListener(evt => {
-  send_message('webNavigation.onBeforeNavigate', evt);
+browser.webNavigation.onBeforeNavigate.addListener(details => {
+  if (!details.url.startsWith(SERVER))
+    send_message('webNavigation.onBeforeNavigate', details);
 }, {
   url: [{schemes: ["http", "https"]}]}
 );
 
-browser.webNavigation.onCommitted.addListener(evt => {
-  send_message('webNavigation.onCommitted', evt);
+browser.webNavigation.onCommitted.addListener(details => {
+  if (!details.url.startsWith(SERVER))
+    send_message('webNavigation.onCommitted', details);
 }, {
   url: [{schemes: ["http", "https"]}]}
 );
 
-browser.webNavigation.onDOMContentLoaded.addListener(evt => {
-  send_message('webNavigation.onDOMContentLoaded', evt);
+browser.webNavigation.onDOMContentLoaded.addListener(details => {
+  if (!details.url.startsWith(SERVER))
+    send_message('webNavigation.onDOMContentLoaded', details);
 }, {
   url: [{schemes: ["http", "https"]}]}
 );
 
-browser.webNavigation.onCompleted.addListener(evt => {
-  send_message('webNavigation.onCompleted', evt);
+browser.webNavigation.onCompleted.addListener(details => {
+  if (!details.url.startsWith(SERVER))
+    send_message('webNavigation.onCompleted', details);
 }, {
   url: [{schemes: ["http", "https"]}]}
 );
 
-browser.webNavigation.onErrorOccurred.addListener(evt => {
-  send_message('webNavigation.onErrorOccurred', evt);
+browser.webNavigation.onErrorOccurred.addListener(details => {
+  if (!details.url.startsWith(SERVER))
+    send_message('webNavigation.onErrorOccurred', details);
 }, {
   url: [{schemes: ["http", "https"]}]}
 );
