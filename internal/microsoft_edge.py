@@ -331,6 +331,12 @@ class Edge(DesktopBrowser):
         # Page Navigation events
         if 'start' in self.page and 'data' in message:
             elapsed = message['ts'] - self.page['start']
+            if message['Event'] == 'Mshtml_NotifyGoesInteractive/Start' and \
+                    'injectScript' in self.job and \
+                    'Markup' in message['data'] and \
+                    message['data']['Markup'] in self.CMarkup:
+                logging.debug("Injecting script: \n%s", self.job['injectScript'])
+                self.execute_js(self.job['injectScript'])
             if 'EventContextId' in message['data'] and \
                     message['data']['EventContextId'] in self.pageContexts:
                 if message['Event'] == 'Mshtml_WebOCEvents_DocumentComplete':
