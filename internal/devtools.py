@@ -692,6 +692,12 @@ class DevTools(object):
                 logging.debug("Navigating main frame")
                 self.last_activity = monotonic.monotonic()
                 self.page_loaded = None
+        elif event == 'frameNavigated' and 'params' in msg and \
+                'frame' in msg['params'] and 'id' in msg['params']['frame']:
+            if self.main_frame is not None and \
+                    self.main_frame == msg['params']['frame']['id'] and\
+                    'injectScript' in self.job:
+                self.execute_js(self.job['injectScript'])
         elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.main_frame is not None and \
                     not self.page_loaded and \
