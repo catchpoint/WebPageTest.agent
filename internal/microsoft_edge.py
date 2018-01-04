@@ -694,6 +694,7 @@ class Edge(DesktopBrowser):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
+            self.task['page_data']['URL'] = command['target']
             self.task['url'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)

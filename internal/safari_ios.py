@@ -910,6 +910,7 @@ class iWptBrowser(object):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
+            self.task['page_data']['URL'] = command['target']
             self.main_frame = None
             self.main_request = None
             self.is_navigating = True

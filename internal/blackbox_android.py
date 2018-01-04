@@ -114,6 +114,7 @@ class BlackBoxAndroid(AndroidBrowser):
         while len(task['script']) and monotonic.monotonic() < end_time:
             command = task['script'].pop(0)
             if command['command'] == 'navigate':
+                task['page_data']['URL'] = command['target']
                 activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
                 cmd = 'am start -n {0} -a android.intent.action.VIEW -d "{1}"'.format(activity, \
                         command['target'].replace('"', '%22'))

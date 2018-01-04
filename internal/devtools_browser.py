@@ -290,6 +290,7 @@ class DevtoolsBrowser(object):
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':
+            self.task['page_data']['URL'] = command['target']
             self.devtools.start_navigating()
             self.devtools.send_command('Page.navigate', {'url': command['target']})
         elif command['command'] == 'logdata':
