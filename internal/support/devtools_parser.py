@@ -778,6 +778,7 @@ class DevToolsParser(object):
                         page_data['final_base_page_request'] = index
                         page_data['final_base_page_request_id'] = request['id']
                         page_data['final_url'] = request['full_url']
+                        page_data['URL'] = request['full_url']
                         self.get_base_page_info(page_data)
                         break
                 index += 1

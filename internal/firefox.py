@@ -956,6 +956,8 @@ class Firefox(DesktopBrowser):
                 page['final_base_page_request'] = index
                 page['final_base_page_request_id'] = main_request
                 page['final_url'] = request['full_url']
+                if 'URL' not in self.task['page_data']:
+                    self.task['page_data']['URL'] = page['final_url']
                 if request['ttfb_ms'] >= 0:
                     page['TTFB'] = request['load_start'] + request['ttfb_ms']
                 if request['ssl_end'] >= request['ssl_start'] and \
