@@ -36,6 +36,7 @@ class DevToolsParser(object):
         self.cached = options['cached'] if 'cached' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
+        self.request_ids = {}
 
     def process(self):
         """Main entry point for processing"""
@@ -223,6 +224,10 @@ class DevToolsParser(object):
                                 # Chrome reports some phantom duplicate requests
                                 if has_request_headers and \
                                         'requestHeaders' not in params['response']:
+                                    url = request['url']
+                                    if url not in self.request_ids:
+                                        self.request_ids[url] = []
+                                    self.request_ids[url].append(request_id)
                                     request['fromNet'] = False
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
@@ -700,6 +705,11 @@ class DevToolsParser(object):
                     request['connect_end'] = -1
                     request['ssl_start'] = -1
                     request['ssl_end'] = -1
+                    # See if we have a request ID for the phantom request
+                    url = request['full_url']
+                    if url in self.request_ids:
+                        if len(self.request_ids[url]):
+                            request['id'] = self.request_ids[url].pop(0)
                     if 'main_frame' in page_data:
                         request['frame_id'] = page_data['main_frame']
                     for key in mapping:
