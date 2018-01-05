@@ -41,7 +41,6 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
     def get(self):
         """Handle GET requests"""
         import ujson as json
-        logging.debug(self.request.uri)
         response = None
         content_type = 'text/plain'
         if self.request.uri == '/ping':
