@@ -420,6 +420,10 @@ def find_browsers():
             if os.path.isfile(canary_path):
                 browsers['Canary'] = {'exe': canary_path}
                 browsers['Chrome Canary'] = {'exe': canary_path}
+        # Fall back to Chrome dev for Canary if Canary isn't available but dev is
+        if 'Chrome Dev' in browsers and 'Canary' not in browsers:
+            browsers['Chrome Canary'] = dict(browsers['Chrome Dev'])
+            browsers['Canary'] = dict(browsers['Chrome Dev'])
         # Opera (same engine as Chrome)
         paths = [program_files, program_files_x86]
         channels = ['Opera', 'Opera beta', 'Opera developer']
