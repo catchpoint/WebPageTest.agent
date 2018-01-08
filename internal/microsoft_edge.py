@@ -50,6 +50,7 @@ class Edge(DesktopBrowser):
         self.start = None
         self.bodies_path = None
         self.pid = None
+        self.supports_interactive = True
         self.start_page = 'http://127.0.0.1:8888/config.html'
 
     def reset(self):
@@ -115,6 +116,8 @@ class Edge(DesktopBrowser):
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
                 self.browser_version = self.driver.capabilities['browserVersion']
+            elif 'version' in self.driver.capabilities:
+                self.browser_version = self.driver.capabilities['version']
             self.driver.get(self.start_page)
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
@@ -325,6 +328,7 @@ class Edge(DesktopBrowser):
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
                 if 'start' not in self.page:
+                    logging.debug("Navigation started")
                     self.page['start'] = message['ts']
                 if 'data' in message and 'URL' in message['data'] and 'url' not in self.page:
                     self.page['url'] = message['data']['URL']
@@ -343,6 +347,7 @@ class Edge(DesktopBrowser):
                     if 'CMarkup' in message['data'] and message['data']['CMarkup'] in self.CMarkup:
                         if 'loadEventStart' not in self.page:
                             self.page['loadEventStart'] = elapsed
+                        logging.debug("Page Loaded")
                         self.page_loaded = monotonic.monotonic()
                 if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
                     self.page['domContentLoadedEventStart'] = elapsed
@@ -352,6 +357,7 @@ class Edge(DesktopBrowser):
                     self.page['loadEventStart'] = elapsed
                 elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
                     self.page['loadEventEnd'] = elapsed
+                    logging.debug("Page loadEventEnd")
                     self.page_loaded = monotonic.monotonic()
 
     def process_wininet_message(self, message):
@@ -586,7 +592,8 @@ class Edge(DesktopBrowser):
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
         # Trigger a message to start writing the interactive periods asynchronously
-        self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
+        if self.supports_interactive:
+            self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
         # Collect teh regular browser metrics
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
@@ -616,17 +623,19 @@ class Edge(DesktopBrowser):
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         # Wait for the interactive periods to be written
-        end_time = monotonic.monotonic() + 10
-        interactive = None
-        while interactive is None and monotonic.monotonic() < end_time:
-            interactive = self.execute_js(
-                'return document.getElementById("wptagentLongTasks").innerText;')
-            if interactive is None:
-                time.sleep(0.2)
-        if interactive is not None and len(interactive):
-            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
-            with gzip.open(interactive_file, 'wb', 7) as f_out:
-                f_out.write(interactive)
+        if self.supports_interactive:
+            end_time = monotonic.monotonic() + 10
+            interactive = None
+            while interactive is None and monotonic.monotonic() < end_time:
+                interactive = self.execute_js(
+                    'return document.getElementById("wptagentLongTasks").innerText;')
+                if interactive is None:
+                    time.sleep(0.2)
+            if interactive is not None and len(interactive):
+                interactive_file = os.path.join(task['dir'],
+                                                task['prefix'] + '_interactive.json.gz')
+                with gzip.open(interactive_file, 'wb', 7) as f_out:
+                    f_out.write(interactive)
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
