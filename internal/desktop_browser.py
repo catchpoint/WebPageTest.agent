@@ -294,7 +294,7 @@ class DesktopBrowser(object):
             if self.job['capture_display'] is not None:
                 if task['navigated'] or self.need_orange:
                     self.execute_js(SET_ORANGE)
-                    time.sleep(0.5)
+                    time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Darwin':
                     width = int(math.ceil(task['width'] * self.device_pixel_ratio))
