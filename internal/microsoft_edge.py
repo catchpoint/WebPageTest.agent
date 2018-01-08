@@ -110,7 +110,7 @@ class Edge(DesktopBrowser):
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         try:
-            logging.debug('Launching Edge : %s', self.path)
+            logging.debug('Launching browser : %s', self.path)
             self.driver = self.get_driver(task)
             self.driver.set_page_load_timeout(task['time_limit'])
             if 'browserVersion' in self.driver.capabilities:
@@ -137,7 +137,7 @@ class Edge(DesktopBrowser):
             else:
                 task['error'] = 'Error waiting for wpt-etw to start. Make sure .net is installed'
         except Exception as err:
-            task['error'] = 'Error starting Microsoft Edge: {0}'.format(err.__str__())
+            task['error'] = 'Error starting browser: {0}'.format(err.__str__())
 
     def stop(self, job, task):
         """Kill the browser"""

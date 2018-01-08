@@ -64,6 +64,8 @@ class DesktopBrowser(object):
         """Prepare the profile/OS for the browser"""
         self.task = task
         self.find_default_interface()
+        if platform.system() == 'Windows':
+            self.prepare_windows()
         if self.tcpdump_enabled:
             os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
         else:
@@ -86,6 +88,56 @@ class DesktopBrowser(object):
                     os.makedirs(task['profile'])
         except Exception as err:
             logging.exception("Exception preparing Browser: %s", err.__str__())
+
+    # pylint: disable=E0611,E0401,E1101
+    def close_top_window(self, hwnd, _):
+        """Close all top-level windows"""
+        try:
+            import win32api
+            import win32con
+            import win32event
+            import win32gui
+            import win32process
+            if win32gui.IsWindowVisible(hwnd):
+                window_title = win32gui.GetWindowText(hwnd)
+                window_class = win32gui.GetClassName(hwnd)
+                if len(window_title) and \
+                        window_class != 'ConsoleWindowClass' and\
+                        window_class != 'Progman':
+                    placement = win32gui.GetWindowPlacement(hwnd)
+                    left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+                    width = abs(right - left)
+                    height = abs(bottom - top)
+                    if width > 0 and height > 0 and \
+                            placement[1] != win32con.SW_SHOWMINIMIZED and \
+                            placement[1] != win32con.SW_MINIMIZE and \
+                            placement[1] != win32con.SW_FORCEMINIMIZE:
+                        logging.debug("Closing Window: %s (%s) - %dx%d : %d",
+                                      window_title, window_class, width, height, placement[1])
+                        _, proccess_id = win32process.GetWindowThreadProcessId(hwnd)
+                        handle = win32api.OpenProcess(
+                            win32con.PROCESS_TERMINATE | win32con.SYNCHRONIZE, 0, proccess_id)
+                        win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                        if handle:
+                            result = win32event.WaitForSingleObject(handle, 10000)
+                            if result == win32event.WAIT_TIMEOUT:
+                                logging.debug("Terminating process for: %s (%s)",
+                                              window_title, window_class)
+                                win32api.TerminateProcess(handle, 0)
+                            win32api.CloseHandle(handle)
+        except Exception:
+            pass
+
+    def prepare_windows(self):
+        """Do Windows-specific cleanup and prep"""
+        try:
+            from .os_util import kill_all
+            import win32gui
+            kill_all("WerFault.exe", True)
+            win32gui.EnumWindows(self.close_top_window, None)
+        except Exception:
+            pass
+    # pylint: enable=E0611,E0401,E1101
 
     def find_default_interface(self):
         """Look through the list of interfaces for the non-loopback interface"""
