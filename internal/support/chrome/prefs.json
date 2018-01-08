@@ -5,6 +5,8 @@
   "browser": {
     "check_default_browser": false
   },
+  "credentials_enable_autosignin": false,
+  "credentials_enable_service": false,
   "distribution": {
     "import_bookmarks": false,
     "import_history": false,
