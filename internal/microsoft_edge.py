@@ -212,7 +212,7 @@ class Edge(DesktopBrowser):
         if self.driver is not None and self.extension_loaded:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['time_limit']
+            end_time = monotonic.monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \

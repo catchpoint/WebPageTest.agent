@@ -101,7 +101,7 @@ class BlackBoxAndroid(AndroidBrowser):
     def run_task(self, task):
         """Skip anything that isn't a navigate command"""
         logging.debug("Running test")
-        end_time = monotonic.monotonic() + task['time_limit']
+        end_time = monotonic.monotonic() + task['test_time_limit']
         task['log_data'] = True
         task['current_step'] = 1
         task['prefix'] = task['task_prefix']

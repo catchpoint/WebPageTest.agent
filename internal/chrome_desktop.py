@@ -136,7 +136,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             shutil.copy(src, os.path.join(dest_dir, 'Preferences'))
         except Exception:
             pass
-        
+
     def install_policy(self):
         """Install the required policy list (Linux only right now)"""
         if platform.system() == "Linux":

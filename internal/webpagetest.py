@@ -415,7 +415,8 @@ class WebPageTest(object):
                         'video_directories': [],
                         'page_data': {},
                         'navigated': False,
-                        'page_result': None}
+                        'page_result': None,
+                        'script_step_count': 1}
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
@@ -494,6 +495,7 @@ class WebPageTest(object):
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
                 task['time_limit'] = job['timeout']
+                task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 task['run_start_time'] = monotonic.monotonic()
                 # Keep the full resolution video frames if the browser window is smaller than 600px
@@ -515,6 +517,7 @@ class WebPageTest(object):
     def build_script(self, job, task):
         """Build the actual script that will be used for testing"""
         task['script'] = []
+        record_count = 0
         # Add script commands for any static options that need them
         if 'script' in job:
             lines = job['script'].splitlines()
@@ -687,6 +690,8 @@ class WebPageTest(object):
                                 target = script
                                 value = None
                     if keep:
+                        if record:
+                            record_count += 1
                         task['script'].append({'command': command,
                                                'target': target,
                                                'value': value,
@@ -694,6 +699,7 @@ class WebPageTest(object):
         elif 'url' in job:
             if job['url'][:4] != 'http':
                 job['url'] = 'http://' + job['url']
+            record_count += 1
             task['script'].append({'command': 'navigate', 'target': job['url'], 'record': True})
         # Remove any spurious commands from the end of the script
         pos = len(task['script']) - 1
@@ -702,6 +708,7 @@ class WebPageTest(object):
                 break
             task['script'].pop(pos)
             pos -= 1
+        task['script_step_count'] = max(record_count, 1)
         logging.debug(task['script'])
 
     def update_browser_viewport(self, task):
