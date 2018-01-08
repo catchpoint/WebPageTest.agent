@@ -695,6 +695,13 @@ class WebPageTest(object):
             if job['url'][:4] != 'http':
                 job['url'] = 'http://' + job['url']
             task['script'].append({'command': 'navigate', 'target': job['url'], 'record': True})
+        # Remove any spurious commands from the end of the script
+        pos = len(task['script']) - 1
+        while pos > 0:
+            if task['script'][pos]['record']:
+                break
+            task['script'].pop(pos)
+            pos -= 1
         logging.debug(task['script'])
 
     def update_browser_viewport(self, task):
