@@ -323,14 +323,18 @@ class Edge(DesktopBrowser):
             self.navigating = True
             self.page_loaded = None
         if self.navigating and message['Event'] == 'Mshtml_CDoc_Navigation' and 'data' in message:
-            if 'EventContextId' in message['data'] and 'CMarkup' in message['data']:
+            if 'EventContextId' in message['data'] and \
+                    'CMarkup' in message['data'] and \
+                    'URL' in message['data'] and \
+                    message['data']['URL'].startswith('http') and \
+                    not message['data']['URL'].startswith('http://127.0.0.1:8888'):
                 self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
                 if 'start' not in self.page:
                     logging.debug("Navigation started")
                     self.page['start'] = message['ts']
-                if 'data' in message and 'URL' in message['data'] and 'url' not in self.page:
+                if 'url' not in self.page:
                     self.page['url'] = message['data']['URL']
         # Page Navigation events
         if 'start' in self.page and 'data' in message:
