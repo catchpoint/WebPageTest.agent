@@ -765,7 +765,7 @@ def is_color_frame(file, color_file):
                 int(width / 4), height - int(height / 5) - 50))
             for crop in crops:
                 command = ('{0} "{1}" "(" "{2}" -crop {3} -resize 200x200! ")"'
-                           ' miff:- | {4} -metric AE - -fuzz 10% null:'
+                           ' miff:- | {4} -metric AE - -fuzz 15% null:'
                           ).format(image_magick['convert'], color_file, file, crop,
                                    image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
