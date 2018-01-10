@@ -92,32 +92,41 @@ class DesktopBrowser(object):
     # pylint: disable=E0611,E0401,E1101
     def close_top_window(self, hwnd, _):
         """Close all top-level windows"""
+        keep_titles = ['Start']
+        keep_classes = ['ConsoleWindowClass', 'Windows.UI.Core.CoreWindow']
+        keep_exes = ['explorer.exe', 'cmd.exe']
         try:
             import win32api
             import win32con
             import win32event
             import win32gui
             import win32process
+            import psutil
             if win32gui.IsWindowVisible(hwnd):
                 window_title = win32gui.GetWindowText(hwnd)
                 window_class = win32gui.GetClassName(hwnd)
+                _, proccess_id = win32process.GetWindowThreadProcessId(hwnd)
+                exe = os.path.basename(psutil.Process(proccess_id).exe()).lower()
                 if len(window_title) and \
-                        window_class != 'ConsoleWindowClass' and\
-                        window_class != 'Progman' and\
-                        window_class != 'Button':
+                        window_title not in keep_titles and \
+                        window_class not in keep_classes and \
+                        exe not in keep_exes:
                     placement = win32gui.GetWindowPlacement(hwnd)
                     left, top, right, bottom = win32gui.GetWindowRect(hwnd)
                     width = abs(right - left)
                     height = abs(bottom - top)
                     if width > 0 and height > 0 and \
+                            top >= 0 and left >= 0 and \
                             placement[1] != win32con.SW_SHOWMINIMIZED and \
                             placement[1] != win32con.SW_MINIMIZE and \
                             placement[1] != win32con.SW_FORCEMINIMIZE:
-                        logging.debug("Closing Window: %s (%s) - %dx%d : %d",
-                                      window_title, window_class, width, height, placement[1])
-                        _, proccess_id = win32process.GetWindowThreadProcessId(hwnd)
+                        logging.debug("Closing Window: %s (%s) : %d,%d %dx%d : %d - %s",
+                                      window_title, window_class, left, top, width, height,
+                                      placement[1], exe)
                         handle = win32api.OpenProcess(
-                            win32con.PROCESS_TERMINATE | win32con.SYNCHRONIZE, 0, proccess_id)
+                            win32con.PROCESS_TERMINATE | win32con.SYNCHRONIZE | \
+                            win32con.PROCESS_QUERY_INFORMATION,
+                            0, proccess_id)
                         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
                         if handle:
                             result = win32event.WaitForSingleObject(handle, 10000)
@@ -126,8 +135,8 @@ class DesktopBrowser(object):
                                               window_title, window_class)
                                 win32api.TerminateProcess(handle, 0)
                             win32api.CloseHandle(handle)
-        except Exception:
-            pass
+        except Exception as err:
+            logging.exception("Exception closing window: %s", err.__str__())
 
     def prepare_windows(self):
         """Do Windows-specific cleanup and prep"""
