@@ -103,7 +103,8 @@ class DesktopBrowser(object):
                 window_class = win32gui.GetClassName(hwnd)
                 if len(window_title) and \
                         window_class != 'ConsoleWindowClass' and\
-                        window_class != 'Progman':
+                        window_class != 'Progman' and\
+                        window_class != 'Button':
                     placement = win32gui.GetWindowPlacement(hwnd)
                     left, top, right, bottom = win32gui.GetWindowRect(hwnd)
                     width = abs(right - left)
