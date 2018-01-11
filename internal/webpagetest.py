@@ -118,6 +118,9 @@ class WebPageTest(object):
         if os.path.isfile(margins_file):
             with open(margins_file, 'rb') as f_in:
                 self.margins = json.load(f_in)
+        # Override the public webpagetest server automatically
+        if self.url.find('www.webpagetest.org'):
+            self.url = 'http://agent.webpagetest.org/work/'
     # pylint: enable=E0611
 
     def benchmark_cpu(self):
