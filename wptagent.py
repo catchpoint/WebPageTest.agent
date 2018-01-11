@@ -272,6 +272,10 @@ class WPTAgent(object):
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
+
+        # default /tmp/wptagent as an alive file on Linux
+        if self.options.alive is None and platform.system() == "Linux":
+            self.options.alive = '/tmp/wptagent'
         self.alive()
 
         ret = self.requires('dns', 'dnspython') and ret
