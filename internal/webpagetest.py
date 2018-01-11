@@ -216,6 +216,12 @@ class WebPageTest(object):
                         if value is not None:
                             self.test_locations = value.split(',')
                             self.location = str(self.test_locations[0])
+                            if key == 'wpt_location':
+                                append = []
+                                for loc in self.test_locations:
+                                    append.append('{0}_wptdriver'.format(loc))
+                                if len(append):
+                                    self.test_locations.extend(append)
                     elif key == 'wpt_key':
                         self.key = value
                     elif key == 'wpt_timeout':
