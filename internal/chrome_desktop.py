@@ -42,6 +42,11 @@ HOST_RULES = [
 
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
+
+    """Constants"""
+    NET_LOG_FILE_NAME = "_netlog.json"
+
+    """ Initializer"""
     def __init__(self, path, options, job):
         self.options = options
         DesktopBrowser.__init__(self, path, options, job)
@@ -64,7 +69,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
         if 'netlog' in job and job['netlog']:
-            netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
+            netlog_file = os.path.join(task['dir'], task['prefix']) + NET_LOG_FILE_NAME
             args.append('--log-net-log="{0}"'.format(netlog_file))
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
@@ -116,7 +121,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         # Make SURE the chrome processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'chrome'])
-        netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
+        netlog_file = os.path.join(task['dir'], task['prefix']) + NET_LOG_FILE_NAME
         if os.path.isfile(netlog_file):
             netlog_gzip = netlog_file + '.gz'
             with open(netlog_file, 'rb') as f_in:
