@@ -12,7 +12,7 @@ class InternetExplorer(Edge):
     def __init__(self, path, options, job):
         Edge.__init__(self, path, options, job)
         self.supports_interactive = False
-        self.start_page = 'http://127.0.0.1:8888/blank.html'
+        self.start_page = 'http://127.0.0.1:8888/orange.html'
 
     def get_driver(self, task):
         """Get the webdriver instance"""

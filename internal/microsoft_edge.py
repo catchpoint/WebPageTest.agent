@@ -31,7 +31,6 @@ class Edge(DesktopBrowser):
         self.page_loaded = None
         self.recording = False
         self.browser_version = None
-        self.need_orange = True
         self.extension_loaded = False
         self.navigating = False
         self.page = {}
@@ -711,6 +710,7 @@ class Edge(DesktopBrowser):
             self.task['url'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
+            script = self.prepare_script_for_record(script)
             self.driver.set_script_timeout(30)
             self.driver.execute_script(script)
             self.page_loaded = None
@@ -728,8 +728,11 @@ class Edge(DesktopBrowser):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
+            script = command['target']
+            if command['record']:
+                script = self.prepare_script_for_record(script)
             self.driver.set_script_timeout(30)
-            self.driver.execute_script(command['target'])
+            self.driver.execute_script(script)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:

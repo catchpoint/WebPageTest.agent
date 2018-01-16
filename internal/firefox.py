@@ -608,6 +608,7 @@ class Firefox(DesktopBrowser):
             self.task['page_data']['URL'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
+            script = self.prepare_script_for_record(script)
             self.marionette.execute_script(script)
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
@@ -623,7 +624,10 @@ class Firefox(DesktopBrowser):
         elif command['command'] == 'seteventname':
             self.event_name = command['target']
         elif command['command'] == 'exec':
-            self.marionette.execute_script(command['target'])
+            script = command['target']
+            if command['record']:
+                script = self.prepare_script_for_record(script)
+            self.marionette.execute_script(script)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:

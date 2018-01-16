@@ -24,16 +24,10 @@ ORANGE_PAGE = """<html>
 <title>Orange</title>
 <style>
 body {background-color: white; margin: 0;}
-#o {width:100%; height: 100%; background-color: #DE640D;}
+#wptorange {width:100%; height: 100%; background-color: #DE640D;}
 </style>
-<script>
-window.addEventListener('beforeunload', function() {
-  var o = document.getElementById('o')
-  o.parentNode.removeChild(o);
-});
-</script>
 </head>
-<body><div id='o'></div></body>
+<body><div id='wptorange'></div></body>
 </html>"""
 
 class TornadoRequestHandler(tornado.web.RequestHandler):
@@ -58,15 +52,20 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
             if MESSAGE_SERVER.config is not None:
                 response = json.dumps(MESSAGE_SERVER.config)
         elif self.request.uri == '/config.html':
-            # HTML page that can be queried from the extension for config data
+            # Orange HTML page that can be queried from the extension for config data
             content_type = 'text/html'
             response = "<html><head>\n"
+            response += "<style>\n"
+            response += "body {background-color: white; margin: 0;}\n"
+            response += "#wptorange {width:100%; height: 100%; background-color: #DE640D;}\n"
+            response += "</style>\n"
+            response += "</head><body><div id='wptorange'></div>\n"
             if MESSAGE_SERVER.config is not None:
                 import cgi
                 response += '<div id="wptagentConfig" style="display: none;">'
                 response += cgi.escape(json.dumps(MESSAGE_SERVER.config))
                 response += '</div>'
-            response += "</head><body></body></html>"
+            response += "</body></html>"
 
         if response is not None:
             self.set_status(200)

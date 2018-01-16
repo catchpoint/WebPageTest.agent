@@ -17,7 +17,9 @@ import monotonic
 import ujson as json
 
 SET_ORANGE = "(function() {" \
-             "var wptDiv = document.createElement('div');" \
+             "var wptDiv = document.getElementById('wptorange');" \
+             "if (!wptDiv) {" \
+             "wptDiv = document.createElement('div');" \
              "wptDiv.id = 'wptorange';" \
              "wptDiv.style.position = 'absolute';" \
              "wptDiv.style.top = '0';" \
@@ -27,12 +29,7 @@ SET_ORANGE = "(function() {" \
              "wptDiv.style.zIndex = '2147483647';" \
              "wptDiv.style.backgroundColor = '#DE640D';" \
              "document.body.appendChild(wptDiv);" \
-             "})();"
-
-REMOVE_ORANGE = "(function() {" \
-                "var wptDiv = document.getElementById('wptorange');" \
-                "wptDiv.parentNode.removeChild(wptDiv);" \
-                "})();"
+             "}})();"
 
 class DesktopBrowser(object):
     """Desktop Browser base"""
@@ -57,7 +54,6 @@ class DesktopBrowser(object):
         self.cpu_start = None
         self.throttling_cpu = False
         self.device_pixel_ratio = None
-        self.need_orange = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, job, task):
@@ -266,6 +262,14 @@ class DesktopBrowser(object):
         """Run javascipt (stub for overriding"""
         return None
 
+    def prepare_script_for_record(self, script):
+        """Convert a script command into one that first removes the orange frame"""
+        return "(function() {" \
+               "var wptDiv = document.getElementById('wptorange');" \
+               "if(wptDiv) {wptDiv.parentNode.removeChild(wptDiv);}" \
+               "window.requestAnimationFrame(function(){" + script + "});"\
+               "})();"
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         import psutil
@@ -302,7 +306,7 @@ class DesktopBrowser(object):
 
             # Start video capture
             if self.job['capture_display'] is not None:
-                if task['navigated'] or self.need_orange:
+                if task['navigated']:
                     self.execute_js(SET_ORANGE)
                     time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
@@ -344,8 +348,6 @@ class DesktopBrowser(object):
                             time.sleep(0.1)
                 except Exception:
                     pass
-                if task['navigated'] or self.need_orange:
-                    self.execute_js(REMOVE_ORANGE)
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = Queue.Queue()

@@ -25,12 +25,6 @@ SET_ORANGE = "(function() {" \
              "document.body.appendChild(wptDiv);" \
              "})();"
 
-REMOVE_ORANGE = "(function() {" \
-                "var wptDiv = document.getElementById('wptorange');" \
-                "wptDiv.parentNode.removeChild(wptDiv);" \
-                "})();"
-
-
 class AndroidBrowser(object):
     """Android Browser base"""
     def __init__(self, adb, options, job, config):
@@ -123,6 +117,14 @@ class AndroidBrowser(object):
         """Run javascipt (stub for overriding"""
         return None
 
+    def prepare_script_for_record(self, script):
+        """Convert a script command into one that first removes the orange frame"""
+        return "(function() {" \
+               "var wptDiv = document.getElementById('wptorange');" \
+               "if(wptDiv) {wptDiv.parentNode.removeChild(wptDiv);}" \
+               "window.requestAnimationFrame(function(){" + script + "});"\
+               "})();"
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if task['log_data']:
@@ -143,8 +145,6 @@ class AndroidBrowser(object):
                 self.adb.start_screenrecord()
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(0.5)
-            if self.video_enabled and task['navigated']:
-                self.execute_js(REMOVE_ORANGE)
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
