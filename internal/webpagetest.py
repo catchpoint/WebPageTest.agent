@@ -49,6 +49,8 @@ class WebPageTest(object):
         hostname = platform.uname()[1]
         interfaces = psutil.net_if_addrs()
         if interfaces is not None:
+            logging.debug('Interfaces:')
+            logging.debug(interfaces)
             for interface in interfaces:
                 iface = interfaces[interface]
                 for addr in iface:
