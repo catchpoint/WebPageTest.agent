@@ -54,7 +54,8 @@ class WebPageTest(object):
             for interface in interfaces:
                 iface = interfaces[interface]
                 for addr in iface:
-                    match = re.search(r'^00:50:56:00:([\da-fA-F]+):([\da-fA-F]+)$', addr.address)
+                    match = re.search(r'^00[\-:]50[\-:]56[\-:]00[\-:]'\
+                                      r'([\da-fA-F]+)[\-:]([\da-fA-F]+)$', addr.address)
                     if match:
                         server = match.group(1).strip('0')
                         machine = match.group(2)
