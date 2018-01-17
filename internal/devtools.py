@@ -349,10 +349,6 @@ class DevTools(object):
                     is_text = False
                     if content_type is not None:
                         content_type = content_type.lower()
-                        if content_type.startswith('text/') or \
-                                content_type.find('javascript') >= 0 or \
-                                content_type.find('json') >= 0:
-                            is_text = True
                         # Ignore video files over 10MB
                         if content_type[:6] == 'video/' and content_length > 10000000:
                             need_body = False
@@ -383,10 +379,9 @@ class DevTools(object):
                                 body = base64.b64decode(response['result']['body'])
                                 # Run a sanity check to make sure it isn't binary
                                 if self.bodies_zip_file is not None and is_text:
-                                    textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | \
-                                                set(range(0x20, 0x100)) - {0x7f})
-                                    is_binary = lambda data: bool(data.translate(None, textchars))
-                                    if is_binary(body):
+                                    try:
+                                        json.loads('"' + body + '"')
+                                    except Exception:
                                         is_text = False
                             else:
                                 body = response['result']['body'].encode('utf-8')
