@@ -381,6 +381,13 @@ class DevTools(object):
                             if 'base64Encoded' in response['result'] and \
                                     response['result']['base64Encoded']:
                                 body = base64.b64decode(response['result']['body'])
+                                # Run a sanity check to make sure it isn't binary
+                                if self.bodies_zip_file is not None and is_text:
+                                    textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | \
+                                                set(range(0x20, 0x100)) - {0x7f})
+                                    is_binary = lambda data: bool(data.translate(None, textchars))
+                                    if is_binary(body):
+                                        is_text = False
                             else:
                                 body = response['result']['body'].encode('utf-8')
                                 is_text = True
