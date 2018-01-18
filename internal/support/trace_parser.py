@@ -74,6 +74,7 @@ class Trace():
             logging.critical("Error writing to " + out_file)
 
     def WriteUserTiming(self, out_file):
+        self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
         self.write_json(out_file, self.user_timing)
 
     def WriteCPUSlices(self, out_file):
@@ -178,6 +179,7 @@ class Trace():
                 cat.find('blink.feature_usage') >= 0 or \
                 cat.find('blink.user_timing') >= 0 or \
                 cat.find('loading') >= 0 or \
+                cat.find('navigation') >= 0 or \
                 cat.find('rail') >= 0 or \
                 cat.find('netlog') >= 0 or \
                 cat.find('v8') >= 0:
@@ -204,9 +206,8 @@ class Trace():
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
         if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
-                cat.find('loading') >= 0:
-            if 'args' in trace_event and 'frame' in trace_event['args']:
-                self.user_timing.append(trace_event)
+                cat.find('loading') >= 0 or cat.find('navigation') >= 0:
+            self.user_timing.append(trace_event)
         if cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
