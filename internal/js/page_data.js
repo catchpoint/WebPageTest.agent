@@ -19,14 +19,30 @@ addTime("domContentLoadedEventEnd");
 addTime("loadEventStart");
 addTime("loadEventEnd");
 pageData["firstPaint"] = 0;
+// Try the standardized paint timing api
 try {
-  if (window.performance.timing["timeToNonBlankPaint"] > 0) {
-    pageData["firstPaint"] = Math.max(0, Math.round(
-      window.performance.timing["timeToNonBlankPaint"] -
-      window.performance.timing["navigationStart"]));
+  var entries = performance.getEntriesByType('paint');
+  var navStart = performance.getEntriesByType("navigation")[0].startTime;
+  for (var i = 0; i < entries.length; i++) {
+    var entryTime = entries[i].startTime - navStart;
+    pageData["PerformancePaintTiming." + entries[i]['name']] = entryTime;
+    if (entries[i]['name'] == 'first-paint') {
+      pageData["firstPaint"] = entryTime;
+    }
   }
-} catch(e) {}
-if (window["chrome"] !== undefined &&
+} catch(e) {
+}
+if (!pageData["firstPaint"]) {
+  try {
+    if (window.performance.timing["timeToNonBlankPaint"] > 0) {
+      pageData["firstPaint"] = Math.max(0, Math.round(
+        window.performance.timing["timeToNonBlankPaint"] -
+        window.performance.timing["navigationStart"]));
+    }
+  } catch(e) {}
+}
+if (!pageData["firstPaint"] &&
+    window["chrome"] !== undefined &&
     window.chrome["loadTimes"] !== undefined) {
  var chromeTimes = window.chrome.loadTimes();
  if (chromeTimes["firstPaintTime"] !== undefined &&
