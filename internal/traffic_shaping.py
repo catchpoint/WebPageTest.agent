@@ -40,7 +40,7 @@ class TrafficShaper(object):
             plat = platform.system()
             if plat == "Windows":
                 winver = float(".".join(platform.version().split('.')[:2]))
-                if winver >= 8.1:
+                if winver >= 6.3:
                     self.shaper = WinShaper()
                 else:
                     self.shaper = Dummynet()
