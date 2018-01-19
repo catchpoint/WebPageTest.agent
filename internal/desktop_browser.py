@@ -404,6 +404,11 @@ class DesktopBrowser(object):
                 self.ffmpeg.terminate()
             self.ffmpeg.communicate()
             self.ffmpeg = None
+        if platform.system() == 'Windows':
+            from .os_util import kill_all
+            kill_all('ffmpeg.exe', True)
+        else:
+            subprocess.call(['killall', '-9', 'ffmpeg'])
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
             video_path = os.path.join(task['dir'], task['video_subdirectory'])
