@@ -42,6 +42,7 @@ class DesktopBrowser(object):
         self.recording = False
         self.usage_queue = None
         self.thread = None
+        self.cleanup_thread = None
         self.options = options
         self.interfaces = None
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
@@ -54,10 +55,12 @@ class DesktopBrowser(object):
         self.cpu_start = None
         self.throttling_cpu = False
         self.device_pixel_ratio = None
+        self.stopping = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
+        self.stopping = False
         self.task = task
         self.find_default_interface()
         if platform.system() == 'Windows':
@@ -82,6 +85,9 @@ class DesktopBrowser(object):
                     shutil.rmtree(task['profile'])
                 if not os.path.isdir(task['profile']):
                     os.makedirs(task['profile'])
+            self.cleanup_thread = threading.Thread(target=self.background_cleanup)
+            self.cleanup_thread.daemon = True
+            self.cleanup_thread.start()
         except Exception as err:
             logging.exception("Exception preparing Browser: %s", err.__str__())
 
@@ -133,6 +139,36 @@ class DesktopBrowser(object):
                             win32api.CloseHandle(handle)
         except Exception as err:
             logging.exception("Exception closing window: %s", err.__str__())
+
+    def close_top_dialog(self, hwnd, _):
+        """Close all top-level dialogs"""
+        close_classes = ["#32770", "Notepad", "Internet Explorer_Server"]
+        try:
+            import win32gui
+            import win32con
+            if win32gui.IsWindowVisible(hwnd):
+                window_title = win32gui.GetWindowText(hwnd)
+                window_class = win32gui.GetClassName(hwnd)
+                if window_class in close_classes:
+                    logging.debug("Closing Window/Dialog: %s (%s)", window_title, window_class)
+                    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+        except Exception as err:
+            logging.exception("Exception closing window: %s", err.__str__())
+
+    def close_dialogs(self):
+        """Send a close message to any top-level dialogs"""
+        try:
+            import win32gui
+            win32gui.EnumWindows(self.close_top_dialog, None)
+        except Exception:
+            pass
+
+    def background_cleanup(self):
+        """Background thread to do cleanup while the test is running"""
+        if platform.system() == 'Windows':
+            while not self.stopping:
+                self.close_dialogs()
+                time.sleep(0.5)
 
     def prepare_windows(self):
         """Do Windows-specific cleanup and prep"""
@@ -197,6 +233,7 @@ class DesktopBrowser(object):
 
     def stop(self, job, _task):
         """Terminate the browser (gently at first but forced if needed)"""
+        self.stopping = True
         from .os_util import kill_all
         logging.debug("Stopping browser")
         if self.proc:
@@ -222,6 +259,9 @@ class DesktopBrowser(object):
                     os.makedirs(downloads)
                 except Exception:
                     pass
+        if self.cleanup_thread is not None:
+            self.cleanup_thread.join()
+            self.cleanup_thread = None
 
     def wait_for_idle(self):
         """Wait for no more than 50% of a single core used for 500ms"""
