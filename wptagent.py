@@ -713,3 +713,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # Force a hard exit so unclean threads can't hang the agent
+    os._exit(0)
