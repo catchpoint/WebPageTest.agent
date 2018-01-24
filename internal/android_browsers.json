@@ -95,7 +95,18 @@
                     "--forceblank"],
     "directories": ["cache", "databases", "files", "app_opera", "app_webview"],
     "startupDelay": 10,
-    "type": "blackbox"
+    "type": "blackbox",
+    "settings": "Opera Mini"
+  },
+  "Opera Mini Beta": {
+    "package": "com.opera.mini.native.beta",
+    "activity": "com.opera.mini.android.Browser",
+    "videoFlags": ["--findstart", "75", "--notification", "--renderignore", "40",
+                    "--forceblank"],
+    "directories": ["cache", "databases", "files", "app_opera", "app_webview"],
+    "startupDelay": 10,
+    "type": "blackbox",
+    "settings": "Opera Mini"
   },
   "Samsung Browser": {
     "package": "com.sec.android.app.sbrowser",

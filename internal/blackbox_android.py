@@ -4,6 +4,7 @@
 """Chrome browser on Android"""
 import logging
 import os
+import re
 import subprocess
 import time
 import monotonic
@@ -62,6 +63,8 @@ class BlackBoxAndroid(AndroidBrowser):
         AndroidBrowser.prepare(self, job, task)
         if not task['cached']:
             self.clear_profile(task)
+        if 'settings' in self.config and self.config['settings'] == "Opera Mini":
+            self.prepare_opera_mini_settings()
 
     def launch(self, job, task):
         """Launch the browser"""
@@ -180,6 +183,41 @@ class BlackBoxAndroid(AndroidBrowser):
                 remove += ' "/data/data/{0}/{1}"'.format(self.config['package'], directory)
             if len(remove):
                 self.adb.su('rm -r' + remove)
+
+    def ensure_xml_setting(self, settings, key, value):
+        """Make sure the provided setting exists in the setting string"""
+        if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
+            modified = True
+            settings = re.sub(r'name=\"{0}\" value=\"[^\"]\"'.format(key),
+                              'name="{0}" value="{1}"'.format(key, value), settings)
+            if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
+                settings = settings.replace('\n</map>', \
+                        '\n    <int name="{0}" value="{1}" />\n</map>'.format(key, value))
+        return settings
+
+    def prepare_opera_mini_settings(self):
+        """Configure the data saver settings"""
+        compression = "1"
+        if "mode" in self.config:
+            if self.config["mode"].find("high") >= 0:
+                compression = "0"
+        settings_file = \
+                "/data/data/{0}/shared_prefs/user_settings.xml".format(self.config['package'])
+        settings = self.adb.su('cat ' + settings_file).replace("\r", "")
+        original_settings = str(settings)
+        # make sure ad blocking and compression are at least enabled
+        settings = self.ensure_xml_setting(settings, "obml_ad_blocking", "1")
+        settings = self.ensure_xml_setting(settings, "compression_enabled", "1")
+        settings = self.ensure_xml_setting(settings, "compression", compression)
+        if settings != original_settings:
+            local_settings = os.path.join(self.task['dir'], 'user_settings.xml')
+            remote_temp = '/data/local/tmp/user_settings.xml'
+            with open(local_settings, 'wb') as f_out:
+                f_out.write(settings)
+            if self.adb.adb(['push', local_settings, remote_temp]):
+                self.adb.su('chmod 666 /data/local/tmp/user_settings.xml')
+                self.adb.su('cp /data/local/tmp/user_settings.xml ' + settings_file)
+            os.remove(local_settings)
 
     def wait_for_network_idle(self):
         """Wait for 5 one-second intervals that receive less than 1KB"""

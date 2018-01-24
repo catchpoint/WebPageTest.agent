@@ -48,9 +48,18 @@ class Browsers(object):
             separator = name.rfind('-')
             if separator >= 0:
                 name = name[separator + 1:].strip()
+            mode = None
+            separator = name.find('(')
+            if separator >= 0:
+                end = name.find(")", separator)
+                if end >= 0:
+                    mode = name[separator + 1:end].strip()
+                name = name[:separator].strip()
             if name in self.android_browsers:
                 config = self.android_browsers[name]
                 config['all'] = self.android_browsers
+                if mode is not None:
+                    config['mode'] = mode
                 if config['type'] == 'chrome':
                     from .chrome_android import ChromeAndroid
                     browser = ChromeAndroid(self.adb, config, self.options, job)
