@@ -65,6 +65,9 @@ class DesktopBrowser(object):
         self.find_default_interface()
         if platform.system() == 'Windows':
             self.prepare_windows()
+            self.cleanup_thread = threading.Thread(target=self.background_cleanup)
+            self.cleanup_thread.daemon = True
+            self.cleanup_thread.start()
         if self.tcpdump_enabled:
             os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
         else:
@@ -85,9 +88,6 @@ class DesktopBrowser(object):
                     shutil.rmtree(task['profile'])
                 if not os.path.isdir(task['profile']):
                     os.makedirs(task['profile'])
-            self.cleanup_thread = threading.Thread(target=self.background_cleanup)
-            self.cleanup_thread.daemon = True
-            self.cleanup_thread.start()
         except Exception as err:
             logging.exception("Exception preparing Browser: %s", err.__str__())
 
@@ -165,10 +165,9 @@ class DesktopBrowser(object):
 
     def background_cleanup(self):
         """Background thread to do cleanup while the test is running"""
-        if platform.system() == 'Windows':
-            while not self.stopping:
-                self.close_dialogs()
-                time.sleep(0.5)
+        while not self.stopping:
+            self.close_dialogs()
+            time.sleep(0.5)
 
     def prepare_windows(self):
         """Do Windows-specific cleanup and prep"""
@@ -234,6 +233,7 @@ class DesktopBrowser(object):
     def stop(self, job, _task):
         """Terminate the browser (gently at first but forced if needed)"""
         self.stopping = True
+        self.recording = False
         from .os_util import kill_all
         logging.debug("Stopping browser")
         if self.proc:
@@ -260,8 +260,11 @@ class DesktopBrowser(object):
                 except Exception:
                     pass
         if self.cleanup_thread is not None:
-            self.cleanup_thread.join()
+            self.cleanup_thread.join(10)
             self.cleanup_thread = None
+        if self.thread is not None:
+            self.thread.join(10)
+            self.thread = None
 
     def wait_for_idle(self):
         """Wait for no more than 50% of a single core used for 500ms"""
@@ -298,7 +301,7 @@ class DesktopBrowser(object):
                 else:
                     break
 
-    def execute_js(self, script):
+    def execute_js(self, _):
         """Run javascipt (stub for overriding"""
         return None
 
@@ -411,7 +414,7 @@ class DesktopBrowser(object):
             self.cpu_start = None
         self.recording = False
         if self.thread is not None:
-            self.thread.join()
+            self.thread.join(10)
             self.thread = None
         # record the CPU/Bandwidth/memory info
         if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
