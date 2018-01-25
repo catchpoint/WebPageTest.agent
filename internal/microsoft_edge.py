@@ -352,16 +352,16 @@ class Edge(DesktopBrowser):
                             self.page['loadEventStart'] = elapsed
                         logging.debug("Page Loaded")
                         self.page_loaded = monotonic.monotonic()
-                if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
-                    self.page['domContentLoadedEventStart'] = elapsed
-                elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
-                    self.page['domContentLoadedEventEnd'] = elapsed
-                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Start/Start':
-                    self.page['loadEventStart'] = elapsed
-                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
-                    self.page['loadEventEnd'] = elapsed
-                    logging.debug("Page loadEventEnd")
-                    self.page_loaded = monotonic.monotonic()
+            if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
+                self.page['domContentLoadedEventStart'] = elapsed
+            elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
+                self.page['domContentLoadedEventEnd'] = elapsed
+            elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Start/Start':
+                self.page['loadEventStart'] = elapsed
+            elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
+                self.page['loadEventEnd'] = elapsed
+                logging.debug("Page loadEventEnd")
+                self.page_loaded = monotonic.monotonic()
 
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
