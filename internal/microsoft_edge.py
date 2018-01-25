@@ -313,6 +313,11 @@ class Edge(DesktopBrowser):
                     elif message['Provider'] == 'Microsoft-Windows-WinINet' and \
                             message['pid'] == self.pid:
                         self.process_wininet_message(message)
+                    elif message['Provider'] == 'Microsoft-IEFRAME':
+                        if self.pid is None:
+                            self.pid = message['pid']
+                        if message['pid'] == self.pid:
+                            self.process_ieframe_message(message)
             except Exception:
                 pass
 
@@ -322,12 +327,12 @@ class Edge(DesktopBrowser):
             self.navigating = True
             self.page_loaded = None
         if self.navigating and message['Event'] == 'Mshtml_CDoc_Navigation' and 'data' in message:
-            if 'EventContextId' in message['data'] and \
-                    'CMarkup' in message['data'] and \
-                    'URL' in message['data'] and \
+            if 'URL' in message['data'] and \
+                    message['data']['URL'].startswith('http') and \
                     message['data']['URL'].startswith('http') and \
                     not message['data']['URL'].startswith('http://127.0.0.1:8888'):
-                self.pageContexts.append(message['data']['EventContextId'])
+                if 'EventContextId' in message['data']:
+                    self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
                 if 'start' not in self.page:
@@ -352,16 +357,26 @@ class Edge(DesktopBrowser):
                             self.page['loadEventStart'] = elapsed
                         logging.debug("Page Loaded")
                         self.page_loaded = monotonic.monotonic()
-            if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
-                self.page['domContentLoadedEventStart'] = elapsed
-            elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
-                self.page['domContentLoadedEventEnd'] = elapsed
-            elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Start/Start':
+                if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
+                    self.page['domContentLoadedEventStart'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
+                    self.page['domContentLoadedEventEnd'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Start/Start':
+                    self.page['loadEventStart'] = elapsed
+                elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
+                    self.page['loadEventEnd'] = elapsed
+                    logging.debug("Page loadEventEnd")
+                    self.page_loaded = monotonic.monotonic()
+
+    def process_ieframe_message(self, message):
+        """Handle IEFRAME trace events"""
+        if 'start' in self.page and not self.pageContexts:
+            elapsed = message['ts'] - self.page['start']
+            if message['Event'] == 'Shdocvw_BaseBrowser_DocumentComplete':
                 self.page['loadEventStart'] = elapsed
-            elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
                 self.page['loadEventEnd'] = elapsed
-                logging.debug("Page loadEventEnd")
                 self.page_loaded = monotonic.monotonic()
+                logging.debug("Page loaded (Document Complete)")
 
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
