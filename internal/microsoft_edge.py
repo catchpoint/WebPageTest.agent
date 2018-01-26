@@ -301,7 +301,6 @@ class Edge(DesktopBrowser):
         """Process a message from the extension"""
         logging.debug(message)
         if self.recording:
-            self.last_activity = monotonic.monotonic()
             try:
                 if 'Provider' in message and 'Event' in message and \
                         'ts' in message and 'pid' in message:
@@ -335,6 +334,7 @@ class Edge(DesktopBrowser):
                     self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
+                self.last_activity = monotonic.monotonic()
                 if 'start' not in self.page:
                     logging.debug("Navigation started")
                     self.page['start'] = message['ts']
@@ -381,6 +381,7 @@ class Edge(DesktopBrowser):
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
         if 'Activity' in message:
+            self.last_activity = monotonic.monotonic()
             self.process_dns_message(message)
             self.process_socket_message(message)
             self.process_request_message(message)
