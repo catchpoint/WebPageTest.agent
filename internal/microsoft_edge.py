@@ -85,6 +85,12 @@ class Edge(DesktopBrowser):
     def get_driver(self, task):
         """Get the webdriver instance"""
         from selenium import webdriver
+        from .os_util import run_elevated
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'support', 'edge')
+        reg_file = os.path.join(path, 'keys.reg')
+        if os.path.isfile(reg_file):
+            run_elevated('reg', 'IMPORT "{0}"'.format(reg_file))
         capabilities = webdriver.DesiredCapabilities.EDGE.copy()
         extension_src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                      'support', 'edge', 'extension')
