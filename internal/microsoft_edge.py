@@ -307,7 +307,6 @@ class Edge(DesktopBrowser):
         """Process a message from the extension"""
         logging.debug(message)
         if self.recording:
-            self.last_activity = monotonic.monotonic()
             try:
                 if 'Provider' in message and 'Event' in message and \
                         'ts' in message and 'pid' in message:
@@ -319,6 +318,11 @@ class Edge(DesktopBrowser):
                     elif message['Provider'] == 'Microsoft-Windows-WinINet' and \
                             message['pid'] == self.pid:
                         self.process_wininet_message(message)
+                    elif message['Provider'] == 'Microsoft-IEFRAME':
+                        if self.pid is None:
+                            self.pid = message['pid']
+                        if message['pid'] == self.pid:
+                            self.process_ieframe_message(message)
             except Exception:
                 pass
 
@@ -328,14 +332,15 @@ class Edge(DesktopBrowser):
             self.navigating = True
             self.page_loaded = None
         if self.navigating and message['Event'] == 'Mshtml_CDoc_Navigation' and 'data' in message:
-            if 'EventContextId' in message['data'] and \
-                    'CMarkup' in message['data'] and \
-                    'URL' in message['data'] and \
+            if 'URL' in message['data'] and \
+                    message['data']['URL'].startswith('http') and \
                     message['data']['URL'].startswith('http') and \
                     not message['data']['URL'].startswith('http://127.0.0.1:8888'):
-                self.pageContexts.append(message['data']['EventContextId'])
+                if 'EventContextId' in message['data']:
+                    self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
+                self.last_activity = monotonic.monotonic()
                 if 'start' not in self.page:
                     logging.debug("Navigation started")
                     self.page['start'] = message['ts']
@@ -369,9 +374,20 @@ class Edge(DesktopBrowser):
                     logging.debug("Page loadEventEnd")
                     self.page_loaded = monotonic.monotonic()
 
+    def process_ieframe_message(self, message):
+        """Handle IEFRAME trace events"""
+        if 'start' in self.page and not self.pageContexts:
+            elapsed = message['ts'] - self.page['start']
+            if message['Event'] == 'Shdocvw_BaseBrowser_DocumentComplete':
+                self.page['loadEventStart'] = elapsed
+                self.page['loadEventEnd'] = elapsed
+                self.page_loaded = monotonic.monotonic()
+                logging.debug("Page loaded (Document Complete)")
+
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
         if 'Activity' in message:
+            self.last_activity = monotonic.monotonic()
             self.process_dns_message(message)
             self.process_socket_message(message)
             self.process_request_message(message)
