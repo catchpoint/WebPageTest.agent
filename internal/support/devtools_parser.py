@@ -130,6 +130,7 @@ class DevToolsParser(object):
                         else:
                             continue
                     request_id = None
+                    original_id = None
                     if 'requestId' in params:
                         request_id = params['requestId']
                         original_id = request_id
@@ -155,6 +156,7 @@ class DevToolsParser(object):
                                 'url' in params['request'] and \
                                 params['request']['url'][:4] == 'http':
                             request = params['request']
+                            request['raw_id'] = original_id
                             request['startTime'] = timestamp
                             if 'frameId' in params:
                                 request['frame_id'] = params['frameId']
@@ -358,6 +360,8 @@ class DevToolsParser(object):
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
                 request['url'] = parts.path
+                if 'raw_id' in raw_request:
+                    request['raw_id'] = raw_request['raw_id']
                 if 'frame_id' in raw_request:
                     request['frame_id'] = raw_request['frame_id']
                 if len(parts.query):
