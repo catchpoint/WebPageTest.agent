@@ -143,7 +143,7 @@ class DesktopBrowser(object):
     def close_top_dialog(self, hwnd, _):
         """Close all top-level dialogs"""
         close_classes = ["#32770", "Notepad", "Internet Explorer_Server"]
-        keep_titles = ['Delete Browsing History']
+        keep_titles = ['Delete Browsing History', 'Shut Down Windows']
         try:
             import win32gui
             import win32con
