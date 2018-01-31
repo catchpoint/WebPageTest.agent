@@ -223,6 +223,7 @@ class WebPageTest(object):
 
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
+        logging.debug("User Data: %s", user_data)
         options = user_data.split()
         for option in options:
             try:
