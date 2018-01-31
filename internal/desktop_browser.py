@@ -143,13 +143,14 @@ class DesktopBrowser(object):
     def close_top_dialog(self, hwnd, _):
         """Close all top-level dialogs"""
         close_classes = ["#32770", "Notepad", "Internet Explorer_Server"]
+        keep_titles = ['Delete Browsing History']
         try:
             import win32gui
             import win32con
             if win32gui.IsWindowVisible(hwnd):
                 window_title = win32gui.GetWindowText(hwnd)
                 window_class = win32gui.GetClassName(hwnd)
-                if window_class in close_classes:
+                if window_class in close_classes and window_title not in keep_titles:
                     logging.debug("Closing Window/Dialog: %s (%s)", window_title, window_class)
                     win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         except Exception as err:
