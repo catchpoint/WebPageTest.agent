@@ -151,48 +151,75 @@ class WebPageTest(object):
     def load_from_ec2(self):
         """Load config settings from EC2 user data"""
         import requests
-        try:
-            response = requests.get('http://169.254.169.254/latest/user-data', timeout=30)
-            if len(response.text):
-                self.parse_user_data(response.text)
-        except Exception:
-            pass
-        try:
-            response = requests.get('http://169.254.169.254/latest/meta-data/instance-id',
-                                    timeout=30)
-            if len(response.text):
-                self.instance_id = response.text.strip()
-        except Exception:
-            pass
-        try:
-            response = requests.get(
-                'http://169.254.169.254/latest/meta-data/placement/availability-zone',
-                timeout=30)
-            if len(response.text):
-                self.zone = response.text.strip()
-        except Exception:
-            pass
+        session = requests.Session()
+        ok = False
+        while not ok:
+            try:
+                response = session.get('http://169.254.169.254/latest/user-data', timeout=30)
+                if len(response.text):
+                    self.parse_user_data(response.text)
+                    ok = True
+            except Exception:
+                pass
+            if not ok:
+                time.sleep(10)
+        ok = False
+        while not ok:
+            try:
+                response = session.get('http://169.254.169.254/latest/meta-data/instance-id',
+                                       timeout=30)
+                if len(response.text):
+                    self.instance_id = response.text.strip()
+                    ok = True
+            except Exception:
+                pass
+            if not ok:
+                time.sleep(10)
+        ok = False
+        while not ok:
+            try:
+                response = session.get(
+                    'http://169.254.169.254/latest/meta-data/placement/availability-zone',
+                    timeout=30)
+                if len(response.text):
+                    self.zone = response.text.strip()
+                    ok = True
+            except Exception:
+                pass
+            if not ok:
+                time.sleep(10)
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
         import requests
-        try:
-            response = requests.get(
-                'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
-                headers={'Metadata-Flavor':'Google'},
-                timeout=30)
-            if len(response.text):
-                self.parse_user_data(response.text)
-        except Exception:
-            pass
-        try:
-            response = requests.get('http://169.254.169.254/computeMetadata/v1/instance/id',
-                                    headers={'Metadata-Flavor':'Google'},
-                                    timeout=30)
-            if len(response.text):
-                self.instance_id = response.text.strip()
-        except Exception:
-            pass
+        session = requests.Session()
+        ok = False
+        while not ok:
+            try:
+                response = session.get(
+                    'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
+                    headers={'Metadata-Flavor':'Google'},
+                    timeout=30)
+                if len(response.text):
+                    self.parse_user_data(response.text)
+                    ok = True
+            except Exception:
+                pass
+            if not ok:
+                time.sleep(10)
+        ok = False
+        while not ok:
+            try:
+                response = session.get('http://169.254.169.254/computeMetadata/v1/instance/id',
+                                       headers={'Metadata-Flavor':'Google'},
+                                       timeout=30)
+                if len(response.text):
+                    self.instance_id = response.text.strip()
+                    ok = True
+            except Exception:
+                pass
+            if not ok:
+                time.sleep(10)
 
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
