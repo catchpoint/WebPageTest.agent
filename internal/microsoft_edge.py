@@ -149,6 +149,7 @@ class Edge(DesktopBrowser):
 
     def stop(self, job, task):
         """Kill the browser"""
+        logging.debug("Stopping the browser...")
         if self.driver is not None:
             try:
                 self.driver.quit()

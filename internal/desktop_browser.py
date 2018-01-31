@@ -513,6 +513,7 @@ class DesktopBrowser(object):
             logging.debug('Waiting for video processing to finish')
             self.video_processing.communicate()
             self.video_processing = None
+            logging.debug('Video processing complete')
             if not self.job['keepvideo']:
                 try:
                     os.remove(task['video_file'])
