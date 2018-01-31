@@ -152,6 +152,13 @@ class WebPageTest(object):
         """Load config settings from EC2 user data"""
         import requests
         session = requests.Session()
+        # The Windows AMI's use static routes which are not copied across regions.
+        # This sets them up before we attempt to access the metadata
+        if platform.system() == "Windows":
+            from .os_util import run_elevated
+            directory = os.path.abspath(os.path.dirname(__file__))
+            ec2_script = os.path.join(directory, 'support', 'ec2', 'win_routes.ps1')
+            run_elevated('powershell.exe', ec2_script)
         ok = False
         while not ok:
             try:
