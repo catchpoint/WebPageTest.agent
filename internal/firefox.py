@@ -135,6 +135,20 @@ class Firefox(DesktopBrowser):
                 if modified:
                     logging.debug(ua_string)
                     self.marionette.set_pref('general.useragent.override', ua_string)
+                # Figure out the native viewport size
+                size = self.execute_js("[window.innerWidth, window.innerHeight]")
+                logging.debug(size)
+                if size is not None and len(size) == 2:
+                    task['actual_viewport'] = {"width": size[0], "height": size[1]}
+                    if 'adjust_viewport' in job and job['adjust_viewport']:
+                        delta_x = max(task['width'] - size[0], 0)
+                        delta_y = max(task['height'] - size[1], 0)
+                        if delta_x or delta_y:
+                            width = task['width'] + delta_x
+                            height = task['height'] + delta_y
+                            logging.debug('Resizing browser to %dx%d', width, height)
+                            self.marionette.set_window_position(x=0, y=0)
+                            self.marionette.set_window_size(height=height, width=width)
                 # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:

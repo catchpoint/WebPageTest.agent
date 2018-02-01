@@ -638,6 +638,8 @@ class WebPageTest(object):
                                             max(self.margins[job['browser']]['width'], 0)
                                         job['height'] += \
                                             max(self.margins[job['browser']]['height'], 0)
+                                    else:
+                                        job['adjust_viewport'] = True
                     elif command == 'setdevicescalefactor' and target is not None:
                         keep = False
                         job['dpr'] = target

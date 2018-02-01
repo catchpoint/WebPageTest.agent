@@ -111,7 +111,7 @@ class Edge(DesktopBrowser):
         driver = webdriver.Edge(executable_path=self.path, capabilities=capabilities)
         return driver
 
-    def launch(self, _job, task):
+    def launch(self, job, task):
         """Launch the browser"""
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
@@ -141,6 +141,18 @@ class Edge(DesktopBrowser):
                                              wait=False)
             self.wait_for_extension()
             if self.extension_loaded:
+                # Figure out the native viewport size
+                size = self.execute_js("return [window.innerWidth, window.innerHeight];")
+                if size is not None and len(size) == 2:
+                    task['actual_viewport'] = {"width": size[0], "height": size[1]}
+                    if 'adjust_viewport' in job and job['adjust_viewport']:
+                        delta_x = max(task['width'] - size[0], 0)
+                        delta_y = max(task['height'] - size[1], 0)
+                        if delta_x or delta_y:
+                            width = task['width'] + delta_x
+                            height = task['height'] + delta_y
+                            logging.debug('Resizing browser to %dx%d', width, height)
+                            self.driver.set_window_size(width, height)
                 DesktopBrowser.wait_for_idle(self)
             else:
                 task['error'] = 'Error waiting for wpt-etw to start. Make sure .net is installed'
