@@ -993,6 +993,7 @@ class Edge(DesktopBrowser):
                         request['method'] = req['verb']
                     if 'status' in req:
                         request['responseCode'] = req['status']
+                        request['status'] = req['status']
                     if 'protocol' in req:
                         request['protocol'] = req['protocol']
                     if 'created' in req:
@@ -1034,6 +1035,18 @@ class Edge(DesktopBrowser):
                         for header in req['outHeaders'].splitlines():
                             if len(header):
                                 request['headers']['request'].append(header)
+                        # key: value format for the optimization checks
+                        request['request_headers'] = {}
+                        for header in request['headers']['request']:
+                            split_pos = header.find(":", 1)
+                            if split_pos > 1:
+                                name = header[:split_pos].strip()
+                                value = header[split_pos + 1:].strip()
+                                if len(name) and len(value):
+                                    if name in request['request_headers']:
+                                        request['request_headers'][name] += "\r\n" + value
+                                    else:
+                                        request['request_headers'][name] = value
                     if 'inHeaders' in req:
                         for header in req['inHeaders'].splitlines():
                             if len(header):
@@ -1088,7 +1101,6 @@ class Edge(DesktopBrowser):
                             request['body_id'] = request['id']
                             logging.debug('%s: Stored body in zip for (%s)',
                                           request['id'], request['url'])
-
                     requests.append(request)
             except Exception:
                 pass
@@ -1112,6 +1124,8 @@ class Edge(DesktopBrowser):
         for request in requests:
             if 'response_headers' in request:
                 del request['response_headers']
+            if 'request_headers' in request:
+                del request['request_headers']
             if 'body' in request:
                 del request['body']
             if 'response_body' in request:

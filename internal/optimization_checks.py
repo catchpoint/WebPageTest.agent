@@ -14,6 +14,7 @@ import subprocess
 import threading
 import time
 import monotonic
+import requests
 import ujson as json
 
 class OptimizationChecks(object):
@@ -38,6 +39,8 @@ class OptimizationChecks(object):
         self.results = {}
         self.dns_lookup_queue = Queue.Queue()
         self.dns_result_queue = Queue.Queue()
+        self.fetch_queue = Queue.Queue()
+        self.fetch_result_queue = Queue.Queue()
         # spell-checker: disable
         self.cdn_cnames = {
             'Advanced Hosters CDN': ['.pix-cdn.org'],
@@ -237,6 +240,8 @@ class OptimizationChecks(object):
         """Start running the optimization checks"""
         optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
         if self.requests is not None and not optimization_checks_disabled:
+            # Fill in any response bodies we failed to get from the browser
+            self.get_bodies()
             self.running_checks = True
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
@@ -303,6 +308,97 @@ class OptimizationChecks(object):
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
         return self.results
+
+    def body_fetch_thread(self):
+        """background thread to fetch bodies"""
+        try:
+            session = requests.session()
+            while True:
+                task = self.fetch_queue.get_nowait()
+                try:
+                    url = task['url']
+                    dest = task['file']
+                    headers = {}
+                    if isinstance(task['headers'], list):
+                        for header in task['headers']:
+                            separator = header.find(':', 2)
+                            if separator >= 0:
+                                header_name = header[:separator].strip()
+                                value = header[separator + 1:].strip()
+                                if header_name.lower() not in ["accept-encoding"] and\
+                                        not header_name.startswith(':'):
+                                    headers[header_name] = value
+                    elif isinstance(task['headers'], dict):
+                        for header_name in task['headers']:
+                            value = task['headers'][header_name]
+                            if header_name.lower() not in ["accept-encoding"] and \
+                                    not header_name.startswith(':'):
+                                headers[header_name] = value
+                    logging.debug('Downloading %s to %s', url, dest)
+                    response = session.get(url, headers=headers, stream=True, timeout=30)
+                    if response.status_code == 200:
+                        with open(dest, 'wb') as f_out:
+                            for chunk in response.iter_content(chunk_size=4096):
+                                f_out.write(chunk)
+                        self.fetch_result_queue.put(task)
+                except Exception:
+                    pass
+                self.fetch_queue.task_done()
+        except Exception:
+            pass
+
+    def get_bodies(self):
+        """Fetch any response bodies that are not already available"""
+        try:
+            count = 0
+            path = os.path.join(self.task['dir'], 'bodies')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            for request_id in self.requests:
+                # Build a list of requests we need to fetch
+                try:
+                    request = self.requests[request_id]
+                    if 'status' in request and request['status'] == 200 and 'body' not in request:
+                        body_id = request['raw_id'] if 'raw_id' in request else request['id']
+                        body_file_path = os.path.join(path, str(body_id))
+                        if os.path.exists(body_file_path):
+                            request['body'] = body_file_path
+                        elif 'url' in request and 'request_headers' in request:
+                            content_type = self.get_header_value(request['response_headers'],
+                                                                 'Content-Type')
+                            if content_type is None or content_type.find('video') == -1:
+                                url = request['full_url'] if 'full_url' in request \
+                                        else request['url']
+                                headers = request['request_headers']
+                                count += 1
+                                self.fetch_queue.put({'request_id': request_id,
+                                                      'url': url,
+                                                      'file': body_file_path,
+                                                      'headers': headers})
+                except Exception:
+                    pass
+            # Spawn threads to do the actual fetching
+            if count:
+                logging.debug("Fetching bodies for %d requests", count)
+                threads = []
+                thread_count = min(count, 10)
+                for _ in xrange(thread_count):
+                    thread = threading.Thread(target=self.body_fetch_thread)
+                    thread.start()
+                    threads.append(thread)
+                for thread in threads:
+                    thread.join()
+        except Exception:
+            pass
+
+        try:
+            while True:
+                task = self.fetch_result_queue.get_nowait()
+                if os.path.isfile(task['file']):
+                    self.requests[task['request_id']]['body'] = task['file']
+                self.fetch_result_queue.task_done()
+        except Exception:
+            pass
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""

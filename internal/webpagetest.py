@@ -7,10 +7,12 @@ import gzip
 import logging
 import os
 import platform
+import Queue
 import re
 import shutil
 import socket
 import subprocess
+import threading
 import time
 import urllib
 import zipfile
@@ -25,6 +27,8 @@ class WebPageTest(object):
     # pylint: disable=E0611
     def __init__(self, options, workdir):
         import requests
+        self.fetch_queue = Queue.Queue()
+        self.fetch_result_queue = Queue.Queue()
         self.job = None
         self.first_failure = None
         self.session = requests.Session()
@@ -776,11 +780,139 @@ class WebPageTest(object):
                 with open(margins_file, 'wb') as f_out:
                     json.dump(self.margins, f_out)
 
+    def body_fetch_thread(self):
+        """background thread to fetch bodies"""
+        import requests
+        try:
+            session = requests.session()
+            while True:
+                task = self.fetch_queue.get_nowait()
+                try:
+                    url = task['url']
+                    dest = task['file']
+                    headers = {}
+                    if isinstance(task['headers'], list):
+                        for header in task['headers']:
+                            separator = header.find(':', 2)
+                            if separator >= 0:
+                                header_name = header[:separator].strip()
+                                value = header[separator + 1:].strip()
+                                if header_name.lower() not in ["accept-encoding"] and \
+                                        not header_name.startswith(':'):
+                                    headers[header_name] = value
+                    elif isinstance(task['headers'], dict):
+                        for header_name in task['headers']:
+                            value = task['headers'][header_name]
+                            if header_name.lower() not in ["accept-encoding"] and \
+                                    not header_name.startswith(':'):
+                                headers[header_name] = value
+                    logging.debug('Downloading %s to %s', url, dest)
+                    response = session.get(url, headers=headers, stream=True, timeout=30)
+                    if response.status_code == 200:
+                        with open(dest, 'wb') as f_out:
+                            for chunk in response.iter_content(chunk_size=4096):
+                                f_out.write(chunk)
+                        self.fetch_result_queue.put(task)
+                except Exception:
+                    pass
+                self.fetch_queue.task_done()
+        except Exception:
+            pass
+
+    def get_bodies(self, task):
+        """Fetch any bodies that are missing if response bodies were requested"""
+        if 'bodies' not in self.job or not self.job['bodies']:
+            return
+        try:
+            path_base = os.path.join(task['dir'], task['prefix'])
+            path = os.path.join(task['dir'], 'bodies')
+            requests = []
+            devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+            with gzip.open(devtools_file, 'rb') as f_in:
+                requests = json.load(f_in)
+            count = 0
+            bodies_zip = path_base + '_bodies.zip'
+            if requests and 'requests' in requests:
+                # See what bodies are already in the zip file
+                body_index = 0
+                bodies = []
+                try:
+                    with zipfile.ZipFile(bodies_zip, 'r') as zip_file:
+                        files = zip_file.namelist()
+                    for filename in files:
+                        matches = re.match(r'^(\d\d\d)-(.*)-body.txt$', filename)
+                        if matches:
+                            index = int(matches.group(1))
+                            request_id = str(matches.group(2))
+                            if index > body_index:
+                                body_index = index
+                            bodies.append(request_id)
+                except Exception:
+                    pass
+                for request in requests['requests']:
+                    if 'full_url' in request and \
+                            'responseCode' in request \
+                            and request['responseCode'] == 200 and \
+                            'contentType' in request:
+                        content_type = request['contentType'].lower()
+                        if content_type.startswith('text/') or \
+                                content_type.find('javascript') >= 0 or \
+                                content_type.find('json') >= 0:
+                            body_id = str(request['id'])
+                            if 'raw_id' in request:
+                                body_id = str(request['raw_id'])
+                            if body_id not in bodies:
+                                count += 1
+                                body_file_path = os.path.join(path, str(body_id))
+                                headers = None
+                                if 'headers' in request and 'request' in request['headers']:
+                                    headers = request['headers']['request']
+                                task = {'url': request['full_url'],
+                                        'file': body_file_path,
+                                        'id': body_id,
+                                        'headers': headers}
+                                if os.path.isfile(body_file_path):
+                                    self.fetch_result_queue.put(task)
+                                else:
+                                    self.fetch_queue.put(task)
+            if count:
+                if not os.path.isdir(path):
+                    os.makedirs(path)
+                logging.debug("Fetching bodies for %d requests", count)
+                threads = []
+                thread_count = min(count, 10)
+                for _ in xrange(thread_count):
+                    thread = threading.Thread(target=self.body_fetch_thread)
+                    thread.start()
+                    threads.append(thread)
+                for thread in threads:
+                    thread.join()
+                # Build a list of files to add to the zip archive
+                bodies = []
+                try:
+                    while True:
+                        task = self.fetch_result_queue.get_nowait()
+                        if os.path.isfile(task['file']):
+                            body_index += 1
+                            file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
+                            bodies.append({'name': file_name, 'file': task['file']})
+                        self.fetch_result_queue.task_done()
+                except Exception:
+                    pass
+                # Add the files
+                if bodies:
+                    with zipfile.ZipFile(bodies_zip, 'a', zipfile.ZIP_DEFLATED) as zip_file:
+                        for body in bodies:
+                            zip_file.write(body['file'], body['name'])
+        except Exception:
+            pass
+
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
         cpu_pct = None
         self.update_browser_viewport(task)
+        self.get_bodies(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:

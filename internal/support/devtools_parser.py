@@ -634,6 +634,8 @@ class DevToolsParser(object):
             netlog = json.load(f_in)
             f_in.close()
             for request in requests:
+                if 'request_id' not in request and 'id' in request:
+                    request['request_id'] = request['id']
                 if 'full_url' in request:
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
@@ -761,6 +763,8 @@ class DevToolsParser(object):
                         request['bytesIn'] = int(entry['bytes_in'])
                         request['objectSize'] = int(entry['bytes_in'])
                     request['bytesOut'] = 0
+                    request['request_id'] = request['id']
+                    request['raw_id'] = request['id']
                     requests.append(request)
         if len(requests):
             requests.sort(key=lambda x: x['load_start'])
