@@ -784,7 +784,6 @@ class WebPageTest(object):
         """background thread to fetch bodies"""
         import requests
         try:
-            session = requests.session()
             while True:
                 task = self.fetch_queue.get_nowait()
                 try:
@@ -807,7 +806,7 @@ class WebPageTest(object):
                                     not header_name.startswith(':'):
                                 headers[header_name] = value
                     logging.debug('Downloading %s to %s', url, dest)
-                    response = session.get(url, headers=headers, stream=True, timeout=30)
+                    response = requests.get(url, headers=headers, stream=True, timeout=30)
                     if response.status_code == 200:
                         with open(dest, 'wb') as f_out:
                             for chunk in response.iter_content(chunk_size=4096):
