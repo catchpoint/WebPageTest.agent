@@ -883,10 +883,11 @@ class WebPageTest(object):
                 thread_count = min(count, 10)
                 for _ in xrange(thread_count):
                     thread = threading.Thread(target=self.body_fetch_thread)
+                    thread.daemon = True
                     thread.start()
                     threads.append(thread)
                 for thread in threads:
-                    thread.join()
+                    thread.join(timeout=300)
                 # Build a list of files to add to the zip archive
                 bodies = []
                 try:
