@@ -852,9 +852,12 @@ class WebPageTest(object):
                     if 'full_url' in request and \
                             'responseCode' in request \
                             and request['responseCode'] == 200 and \
+                            request['full_url'].find('ocsp') == -1 and\
+                            request['full_url'].find('.woff') == -1 and\
+                            request['full_url'].find('.ttf') == -1 and\
                             'contentType' in request:
                         content_type = request['contentType'].lower()
-                        if content_type.startswith('text/') or \
+                        if content_type.startswith('text/html') or \
                                 content_type.find('javascript') >= 0 or \
                                 content_type.find('json') >= 0:
                             body_id = str(request['id'])
@@ -893,9 +896,17 @@ class WebPageTest(object):
                     while True:
                         task = self.fetch_result_queue.get_nowait()
                         if os.path.isfile(task['file']):
-                            body_index += 1
-                            file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
-                            bodies.append({'name': file_name, 'file': task['file']})
+                            # check to see if it is text or utf-8 data
+                            try:
+                                data = ''
+                                with open(task['file'], 'rb') as f_in:
+                                    data = f_in.read()
+                                json.loads('"' + data.replace('"', '\\"') + '"')
+                                body_index += 1
+                                file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
+                                bodies.append({'name': file_name, 'file': task['file']})
+                            except Exception:
+                                pass
                         self.fetch_result_queue.task_done()
                 except Exception:
                     pass
