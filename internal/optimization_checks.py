@@ -241,7 +241,7 @@ class OptimizationChecks(object):
         optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
         if self.requests is not None and not optimization_checks_disabled:
             # Fill in any response bodies we failed to get from the browser
-            self.get_bodies()
+            #self.get_bodies()
             self.running_checks = True
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
