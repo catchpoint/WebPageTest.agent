@@ -806,7 +806,7 @@ class WebPageTest(object):
                                     not header_name.startswith(':'):
                                 headers[header_name] = value
                     logging.debug('Downloading %s to %s', url, dest)
-                    response = requests.get(url, headers=headers, stream=True, timeout=10)
+                    response = requests.get(url, headers=headers, stream=True, timeout=30)
                     if response.status_code == 200:
                         with open(dest, 'wb') as f_out:
                             for chunk in response.iter_content(chunk_size=4096):
@@ -889,7 +889,7 @@ class WebPageTest(object):
                     thread.start()
                     threads.append(thread)
                 for thread in threads:
-                    thread.join(timeout=60)
+                    thread.join(timeout=120)
                 # Build a list of files to add to the zip archive
                 bodies = []
                 try:
