@@ -204,7 +204,7 @@ class DevToolsParser(object):
                                     request['bytesInData'] += params['dataLength']
                                 if 'bytesInEncoded' not in request:
                                     request['bytesInEncoded'] = 0
-                                if 'encodedDataLength' in params:
+                                if 'encodedDataLength' in params and 'bytesFinished' not in request:
                                     request['bytesInEncoded'] += params['encodedDataLength']
                             if method == 'Network.responseReceived' and 'response' in params:
                                 if not has_request_headers and \
@@ -237,6 +237,7 @@ class DevToolsParser(object):
                                     request['firstByteTime'] = timestamp
                                 if 'encodedDataLength' in params:
                                     request['bytesInEncoded'] = params['encodedDataLength']
+                                    request['bytesFinished'] = True
                             if method == 'Network.loadingFailed' and 'response' not in request and \
                                     ('fromCache' not in request or not request['fromCache']):
                                 if 'blockedReason' not in params and \
@@ -392,15 +393,11 @@ class DevToolsParser(object):
                 if 'bytesInEncoded' in raw_request and raw_request['bytesInEncoded'] > 0:
                     request['objectSize'] = str(int(round(raw_request['bytesInEncoded'])))
                     request['bytesIn'] = int(round(raw_request['bytesInEncoded']))
-                    if 'response' in raw_request and 'headersText' in raw_request['response']:
-                        request['bytesIn'] += len(raw_request['response']['headersText'])
                 if 'bytesInData' in raw_request:
                     if request['objectSize'] == '':
                         request['objectSize'] = str(int(round(raw_request['bytesInData'])))
                     if request['bytesIn'] == 0:
                         request['bytesIn'] = int(round(raw_request['bytesInData']))
-                        if 'response' in raw_request and 'headersText' in raw_request['response']:
-                            request['bytesIn'] += len(raw_request['response']['headersText'])
                     request['objectSizeUncompressed'] = int(round(raw_request['bytesInData']))
                 # if we didn't get explicit bytes, fall back to any responses that
                 # had content-length headers
