@@ -311,7 +311,9 @@ class DesktopBrowser(object):
         return "(function() {" \
                "var wptDiv = document.getElementById('wptorange');" \
                "if(wptDiv) {wptDiv.parentNode.removeChild(wptDiv);}" \
+               "window.requestAnimationFrame(function(){" \
                "window.requestAnimationFrame(function(){" + script + "});"\
+               "});" \
                "})();"
 
     def on_start_recording(self, task):
