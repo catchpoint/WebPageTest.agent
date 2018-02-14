@@ -239,6 +239,8 @@ class DevTools(object):
             else:
                 self.job['keep_netlog'] = False
                 trace = "-*"
+            if 'netlog' in self.job and self.job['netlog']:
+                self.job['keep_netlog'] = True
             if 'timeline' in self.job and self.job['timeline']:
                 trace += ",blink.console,devtools.timeline"
             if self.use_devtools_video and self.job['video']:

@@ -472,6 +472,9 @@ class DevToolsParser(object):
                             if 'sslEnd' in timing and timing['sslEnd'] >= 0:
                                 request['ssl_end'] = int(round(timing['sslEnd'] -
                                                                raw_page_data['startTime']))
+                            if 'securityDetails' in raw_request['response']:
+                                request['securityDetails'] = \
+                                    raw_request['response']['securityDetails']
                 request['initiator'] = ''
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
@@ -651,6 +654,8 @@ class DevToolsParser(object):
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
                                     pass
+                            if 'certificates' in entry:
+                                request['certificates'] = entry['certificates']
                             if 'first_byte' in entry:
                                 request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                                entry['start']))
@@ -762,6 +767,8 @@ class DevToolsParser(object):
                     if 'bytes_in' in entry:
                         request['bytesIn'] = int(entry['bytes_in'])
                         request['objectSize'] = int(entry['bytes_in'])
+                    if 'certificates' in entry:
+                        request['certificates'] = entry['certificates']
                     request['bytesOut'] = 0
                     request['request_id'] = request['id']
                     request['raw_id'] = request['id']

@@ -555,7 +555,8 @@ class Trace():
         if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event and \
                 'source_type' in trace_event['args']:
             try:
-                trace_event['id'] = int(trace_event['id'], 16)
+                if isinstance(trace_event['id'], str):
+                    trace_event['id'] = int(trace_event['id'], 16)
                 event_type = trace_event['args']['source_type']
                 if event_type == 'CONNECT_JOB' or \
                         event_type == 'SSL_CONNECT_JOB' or \
@@ -636,6 +637,8 @@ class Trace():
                                     request['ssl_start'] = socket['ssl_start']
                                 if 'ssl_end' in socket:
                                     request['ssl_end'] = socket['ssl_end']
+                                if 'certificates' in socket:
+                                    request['certificates'] = socket['certificates']
                 # Assign the DNS lookup to the first request that connected to the DocumentSetDomain
                 if 'dns' in self.netlog:
                     # Build a mapping of the DNS lookups for each domain
