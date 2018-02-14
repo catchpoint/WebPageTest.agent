@@ -478,12 +478,16 @@ class DevToolsParser(object):
                 request['initiator'] = ''
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
+                request['initiator_type'] = ''
                 if 'initiator' in raw_request and 'url' in raw_request['initiator']:
                     request['initiator'] = raw_request['initiator']['url']
                     if 'lineNumber' in raw_request['initiator']:
                         request['initiator_line'] = raw_request['initiator']['lineNumber']
+                    if 'type' in raw_request['initiator']:
+                        request['initiator_type'] = raw_request['initiator']['type']
                 if 'initialPriority' in raw_request:
                     request['priority'] = raw_request['initialPriority']
+                    request['initial_priority'] = raw_request['initialPriority']
                 request['server_rtt'] = None
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
