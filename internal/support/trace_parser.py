@@ -555,7 +555,7 @@ class Trace():
         if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event and \
                 'source_type' in trace_event['args']:
             try:
-                if isinstance(trace_event['id'], str):
+                if isinstance(trace_event['id'], (str, unicode)):
                     trace_event['id'] = int(trace_event['id'], 16)
                 event_type = trace_event['args']['source_type']
                 if event_type == 'CONNECT_JOB' or \
