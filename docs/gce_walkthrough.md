@@ -57,7 +57,7 @@ done
 while :
 do
     echo "Updating OS"
-    until sudo timeout 20m apt-get update
+    until sudo apt-get update
     do
         sleep 1
     done
@@ -67,10 +67,9 @@ do
     done
     sudo apt-get -y autoremove
     sudo npm i -g lighthouse
-    sudo npm -g outdated --parseable=true | cut -d : -f 4 | xargs -n 1 sudo npm -g install
     for i in `seq 1 24`
     do
-        timeout 10m git pull origin master
+        git pull origin master
         python wptagent.py -vvvv --gce --xvfb --fps 30 --throttle --exit 60 --alive /tmp/wptagent
         echo "Exited, restarting"
         sleep 1

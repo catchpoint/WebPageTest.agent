@@ -176,6 +176,8 @@ class OptimizationChecks(object):
             'WordPress': ['.wp.com',
                           '.wordpress.com',
                           '.gravatar.com'],
+            'XLabs Security': ['.xlabs.com.br',
+                               '.armor.zone'],
             'Yahoo': ['.ay1.b.yahoo.com',
                       '.yimg.',
                       '.yahooapis.com'],
@@ -231,6 +233,7 @@ class OptimizationChecks(object):
             'Surge': [{'Server': 'SurgeCDN'}],
             'Twitter': [{'Server': 'tsa_b'}],
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
+            'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}]
         }

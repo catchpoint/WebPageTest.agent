@@ -136,9 +136,6 @@ class DevToolsParser(object):
                         original_id = request_id
                         if request_id in id_map:
                             request_id += '-' + str(id_map[request_id])
-                    if 'timestamp' in params and \
-                            (end_timestamp is None or params['timestamp'] >= end_timestamp):
-                        end_timestamp = params['timestamp']
                     if method == 'Page.frameNavigated' and 'frame' in params and \
                             'id' in params['frame'] and 'parentId' not in params['frame']:
                         page_data['main_frame'] = params['frame']['id']
@@ -258,14 +255,11 @@ class DevToolsParser(object):
                         page_data['domContentLoadedEventEnd'] = params['timestamp']
             # go through and error-out any requests that started but never got
             # a response or error
-            if end_timestamp is not None:
-                for request_id in raw_requests:
-                    request = raw_requests[request_id]
-                    if 'endTime' not in request:
-                        request['endTime'] = end_timestamp
-                        request['firstByteTime'] = end_timestamp
-                        request['fromNet'] = True
-                        request['errorCode'] = 12999
+            for request_id in raw_requests:
+                request = raw_requests[request_id]
+                if 'endTime' not in request:
+                    request['fromNet'] = True
+                    request['errorCode'] = 12999
             # pull out just the requests that were served on the wire
             for request_id in raw_requests:
                 request = raw_requests[request_id]
@@ -376,6 +370,8 @@ class DevToolsParser(object):
                         'sendStart' in raw_request['response']['timing'] and \
                         raw_request['response']['timing']['sendStart'] >= 0:
                     start_time = raw_request['response']['timing']['sendStart']
+                    if 'fullyLoaded' not in page_data or start_time > page_data['fullyLoaded']:
+                        page_data['fullyLoaded'] = int(round(start_time))
                 if 'endTime' in raw_request:
                     end_time = raw_request['endTime'] - raw_page_data['startTime']
                     request['load_ms'] = int(round(end_time - start_time))
