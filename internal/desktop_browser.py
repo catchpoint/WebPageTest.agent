@@ -138,7 +138,7 @@ class DesktopBrowser(object):
                                 win32api.TerminateProcess(handle, 0)
                             win32api.CloseHandle(handle)
         except Exception as err:
-            logging.exception("Exception closing window: %s", err.__str__())
+            pass
 
     def close_top_dialog(self, hwnd, _):
         """Close all top-level dialogs"""
@@ -338,15 +338,22 @@ class DesktopBrowser(object):
             # Spawn tcpdump
             if self.tcpdump_enabled:
                 self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'
+                interface = 'any' if self.job['interface'] is None else self.job['interface']
                 if platform.system() == 'Windows':
-                    tcpdump = os.path.join(self.support_path, 'tcpdump.exe')
-                    args = [tcpdump, 'start', self.pcap_file]
+                    tcpdump = os.path.join(self.support_path, 'windows', 'WinDump.exe')
+                    if interface == 'any':
+                        args = [tcpdump, '-p', '-s', '0', '-w', self.pcap_file]
+                    else:
+                        args = [tcpdump, '-p', '-i', interface, '-s', '0',
+                                '-w', self.pcap_file]
+                    logging.debug(' '.join(args))
+                    self.tcpdump = subprocess.Popen(args, \
+                            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
                 else:
-                    interface = 'any' if self.job['interface'] is None else self.job['interface']
                     args = ['sudo', 'tcpdump', '-p', '-i', interface, '-s', '0',
                             '-w', self.pcap_file]
-                logging.debug(' '.join(args))
-                self.tcpdump = subprocess.Popen(args)
+                    logging.debug(' '.join(args))
+                    self.tcpdump = subprocess.Popen(args)
                 # give it time to actually start capturing
                 time.sleep(0.5)
 
@@ -432,16 +439,17 @@ class DesktopBrowser(object):
                 gzfile.close()
         if self.tcpdump is not None:
             logging.debug('Stopping tcpdump')
-            if platform.system() == 'Windows':
-                tcpdump = os.path.join(self.support_path, 'tcpdump.exe')
-                subprocess.call([tcpdump, 'stop'])
-            else:
-                subprocess.call(['sudo', 'killall', 'tcpdump'])
-            self.tcpdump = None
             from .os_util import kill_all
             from .os_util import wait_for_all
-            kill_all('tcpdump', False)
-            wait_for_all('tcpdump')
+            if platform.system() == 'Windows':
+                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT)
+                kill_all('WinDump', False)
+                wait_for_all('WinDump')
+            else:
+                subprocess.call(['sudo', 'killall', 'tcpdump'])
+                kill_all('tcpdump', False)
+                wait_for_all('tcpdump')
+            self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Stopping video capture')
             if platform.system() == 'Windows':
