@@ -309,6 +309,12 @@ class WebPageTest(object):
         return uptime
     # pylint: enable=E1101
 
+    def reboot(self):
+        if platform.system() == 'Windows':
+            subprocess.call(['shutdown', '/r', '/f'])
+        else:
+            subprocess.call(['sudo', 'reboot'])
+
     def get_test(self):
         """Get a job from the server"""
         import requests
@@ -328,7 +334,7 @@ class WebPageTest(object):
         while count < 3 and retry:
             retry = False
             count += 1
-            url = self.url + "getwork.php?f=json&shards=1"
+            url = self.url + "getwork.php?f=json&shards=1&reboot=1"
             url += "&location=" + urllib.quote_plus(location)
             url += "&pc=" + urllib.quote_plus(self.pc_name)
             if self.key is not None:
@@ -357,6 +363,9 @@ class WebPageTest(object):
                         os.utime(self.options.alive, None)
                 self.first_failure = None
                 if len(response.text):
+                    if response.text == 'Reboot':
+                        self.reboot()
+                        return None
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
@@ -410,10 +419,9 @@ class WebPageTest(object):
                 if self.first_failure is None:
                     self.first_failure = now
                 # Reboot if we haven't been able to reach the server for 30 minutes
-                if platform.system() == 'Linux':
-                    elapsed = now - self.first_failure
-                    if elapsed > 1800:
-                        subprocess.call(['sudo', 'reboot'])
+                elapsed = now - self.first_failure
+                if elapsed > 1800:
+                    self.reboot()
                 time.sleep(0.1)
             except Exception:
                 pass
