@@ -75,10 +75,14 @@ Passing the agent a "--shaper external" command-line flag you give it the IP add
     * ```net.ipv6.conf.lo.disable_ipv6 = 1```
 
 ### Windows
-* Make sure to install the 64-bit Python, otherwise it may not find 64-bit browser installs.
+* Make sure to install the [64-bit Python](https://www.python.org/ftp/python/2.7.14/python-2.7.14.amd64.msi) on 64-bit Windows, otherwise it may not find 64-bit browser installs.
+    * To install some of the python dependencies you may need [Visual C++ for python](http://aka.ms/vcpython27) to be installed.
+* ImageMagick includes ffmpeg in the path automatically but not the latest version.  It is usually easiest to just copy the [static ffmpeg build](https://ffmpeg.zeranoe.com/builds/) over the one installed by ImageMagick.
 * Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
 * Disable UAC so it doesn't prompt when admin commands need to be run
-* Make sure all of the security zones in IE have the same setting for the "protected mode" checkbox (all enabled or all disabled)
+* Install [NPCap](https://nmap.org/npcap/) and configure it to start automatically as a service with the winpcap compatible interface and not restricted to administrators
+    * Works best if there is only one active network interface available on the machine, otherwise packet capture may latch on to the wrong interface.
+* Make sure all of the security zones in IE have the same setting for the "protected mode" checkbox (all disabled is recommended)
 * Consider using [browser-install](https://github.com/WPO-Foundation/browser-install) to keep the browsers up to date
 * Running the agent from a batch file configured to start at user login (task scheduler) is a good way to run a headless agent.  Here is the batch file the public instance uses (reboots the system daily):
 ```bat
