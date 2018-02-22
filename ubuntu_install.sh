@@ -2,7 +2,7 @@
 sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common python-software-properties psmisc
 sudo dbus-uuidgen --ensure
 sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver
-curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
 sudo apt-get install -y nodejs
 sudo npm install -g lighthouse
 sudo npm update -g

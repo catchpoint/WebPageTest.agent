@@ -24,7 +24,7 @@ RUN apt-get update && \
     software-properties-common \
     python-software-properties
 
-RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+RUN curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash - && \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
   wget -qO- https://deb.opera.com/archive.key | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
