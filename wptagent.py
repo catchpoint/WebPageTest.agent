@@ -523,6 +523,9 @@ def find_browsers():
         opera_path = '/usr/lib/x86_64-linux-gnu/opera/opera'
         if 'Opera' not in browsers and os.path.isfile(opera_path):
             browsers['Opera'] = {'exe': opera_path}
+        opera_path = '/usr/lib64/opera/opera'
+        if 'Opera' not in browsers and os.path.isfile(opera_path):
+            browsers['Opera'] = {'exe': opera_path}
         beta_path = '/usr/lib/x86_64-linux-gnu/opera-beta/opera-beta'
         if 'Opera beta' not in browsers and os.path.isfile(beta_path):
             browsers['Opera beta'] = {'exe': beta_path}
