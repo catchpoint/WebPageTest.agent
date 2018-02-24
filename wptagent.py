@@ -529,7 +529,13 @@ def find_browsers():
         beta_path = '/usr/lib/x86_64-linux-gnu/opera-beta/opera-beta'
         if 'Opera beta' not in browsers and os.path.isfile(beta_path):
             browsers['Opera beta'] = {'exe': beta_path}
+        beta_path = '/usr/lib64/opera-beta/opera-beta'
+        if 'Opera beta' not in browsers and os.path.isfile(beta_path):
+            browsers['Opera beta'] = {'exe': beta_path}
         dev_path = '/usr/lib/x86_64-linux-gnu/opera-developer/opera-developer'
+        if 'Opera developer' not in browsers and os.path.isfile(dev_path):
+            browsers['Opera developer'] = {'exe': dev_path}
+        dev_path = '/usr/lib64/opera-developer/opera-developer'
         if 'Opera developer' not in browsers and os.path.isfile(dev_path):
             browsers['Opera developer'] = {'exe': dev_path}
         # Firefox browsers
@@ -540,6 +546,9 @@ def find_browsers():
         if 'Firefox' not in browsers and os.path.isfile(firefox_path):
             browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
         nightly_path = '/usr/lib/firefox-trunk/firefox-trunk'
+        if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
+            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
+        nightly_path = '/usr/bin/firefox-trunk'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
     elif plat == "Darwin":
