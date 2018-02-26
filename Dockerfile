@@ -53,8 +53,7 @@ RUN fontlist=$(apt-cache --names-only search ^fonts-* | awk '{ print $1 }' | gre
     sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $ttflist && \
     sudo fc-cache -f -v
 
-RUN audo apt-get clean
-
+RUN sudo apt-get clean
 
 RUN npm install -g lighthouse
 

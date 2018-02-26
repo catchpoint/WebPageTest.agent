@@ -21,7 +21,7 @@ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select tr
 ttflist=$(apt-cache --names-only search ^ttf-* | awk '{ print $1 }' | grep -v mathematica-fonts | grep -v ttf-mathematica4.1)
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $ttflist
 sudo fc-cache -f -v
-audo apt-get clean
+sudo apt-get clean
 echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
 echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
 echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf
