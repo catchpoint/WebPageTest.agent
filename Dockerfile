@@ -46,6 +46,16 @@ RUN apt-get update && \
     opera-developer \
     nodejs
 
+RUN fontlist=$(apt-cache --names-only search ^fonts-* | awk '{ print $1 }' | grep -v fonts-roboto-unhinted) && \
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $fontlist && \
+    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
+    ttflist=$(apt-cache --names-only search ^ttf-* | awk '{ print $1 }' | grep -v mathematica-fonts | grep -v ttf-mathematica4.1) && \
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $ttflist && \
+    sudo fc-cache -f -v
+
+RUN audo apt-get clean
+
+
 RUN npm install -g lighthouse
 
 RUN pip install \
