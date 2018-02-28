@@ -381,6 +381,10 @@ class DesktopBrowser(object):
                             '-draw_mouse', '0', '-i', str(self.job['capture_display']),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
+                if platform.system() in ['Linux', 'Darwin']:
+                    args.insert(0, 'nice')
+                    args.insert(1, '-n')
+                    args.insert(2, '10')
                 logging.debug(' '.join(args))
                 try:
                     if platform.system() == 'Windows':
