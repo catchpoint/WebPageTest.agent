@@ -125,9 +125,12 @@ def extract_frames(video, directory, full_resolution, viewport):
             options.thumbsize)
         if full_resolution:
             scale = ''
+        # escape directory name 
+        # see https://en.wikibooks.org/wiki/FFMPEG_An_Intermediate_Guide/image_sequence#Percent_in_filename
+        dir_escaped = directory.replace("%", "%%")
         command = ['ffmpeg', '-v', 'debug', '-i', video, '-vsync', '0',
                    '-vf', crop + scale + decimate + '=0:64:640:0.001',
-                   os.path.join(directory, 'img-%d.png')]
+                   os.path.join(dir_escaped, 'img-%d.png')]
         logging.debug(' '.join(command))
         lines = []
         proc = subprocess.Popen(command, stderr=subprocess.PIPE)
