@@ -15,11 +15,8 @@ sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-fre
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk opera-stable opera-beta opera-developer
-fontlist=$(apt-cache --names-only search ^fonts-* | awk '{ print $1 }' | grep -v fonts-roboto-unhinted)
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $fontlist
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
-ttflist=$(apt-cache --names-only search ^ttf-* | awk '{ print $1 }' | grep -v mathematica-fonts | grep -v ttf-mathematica4.1)
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install $ttflist
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install ttf-mscorefonts-installer fonts-noto*
 sudo fc-cache -f -v
 sudo apt-get clean
 echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
