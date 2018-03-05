@@ -70,6 +70,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         if response is not None:
             self.set_status(200)
             self.set_header("Content-Type", content_type)
+            self.set_header("Referrer-Policy", "no-referrer")
             self.write(response)
 
     def post(self):
