@@ -444,17 +444,13 @@ class NetEm(object):
     def configure_interface(self, interface, bps, latency, plr):
         """Configure traffic-shaping for a single interface"""
         ret = False
-        args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root', 'handle',
-                '1:0', 'netem', 'delay', '{0:d}ms'.format(latency)]
+        args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root',
+                'netem', 'limit', '150000', 'delay', '{0:d}ms'.format(latency)]
+        if bps > 0:
+            kbps = int(bps / 1000)
+            args.extend(['rate', '{0:d}kbit'.format(kbps)])
         if plr > 0:
             args.extend(['loss', '{0:.2f}%'.format(plr)])
         logging.debug(' '.join(args))
         ret = subprocess.call(args) == 0
-        if ret and bps > 0:
-            kbps = int(bps / 1000)
-            args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'parent', '1:1',
-                    'handle', '10:', 'tbf', 'rate', '{0:d}kbit'.format(kbps),
-                    'buffer', '150000', 'limit', '150000']
-            logging.debug(' '.join(args))
-            ret = subprocess.call(args) == 0
         return ret
