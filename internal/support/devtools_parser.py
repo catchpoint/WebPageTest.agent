@@ -472,12 +472,25 @@ class DevToolsParser(object):
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
                 request['initiator_type'] = ''
-                if 'initiator' in raw_request and 'url' in raw_request['initiator']:
-                    request['initiator'] = raw_request['initiator']['url']
-                    if 'lineNumber' in raw_request['initiator']:
-                        request['initiator_line'] = raw_request['initiator']['lineNumber']
+                if 'initiator' in raw_request:
                     if 'type' in raw_request['initiator']:
                         request['initiator_type'] = raw_request['initiator']['type']
+                    if 'url' in raw_request['initiator']:
+                        request['initiator'] = raw_request['initiator']['url']
+                        if 'lineNumber' in raw_request['initiator']:
+                            request['initiator_line'] = raw_request['initiator']['lineNumber']
+                    elif 'stack' in raw_request['initiator'] and \
+                            'callFrames' in raw_request['initiator']['stack'] and \
+                            raw_request['initiator']['stack']['callFrames']:
+                        frame = raw_request['initiator']['stack']['callFrames'][0]
+                        if 'url' in frame and frame['url']:
+                            request['initiator'] = frame['url']
+                            if 'lineNumber' in frame:
+                                request['initiator_line'] = frame['lineNumber']
+                            if 'columnNumber' in frame:
+                                request['initiator_column'] = frame['columnNumber']
+                            if 'functionName' in frame and frame['functionName']:
+                                request['initiator_function'] = frame['functionName']
                 if 'initialPriority' in raw_request:
                     request['priority'] = raw_request['initialPriority']
                     request['initial_priority'] = raw_request['initialPriority']
