@@ -49,5 +49,6 @@ echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
 echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf
 echo '# wptagent end' | sudo tee -a /etc/security/limits.conf
 echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/sysctl.d/50-wptagent.conf
+sudo fc-cache -f -v
 sudo sysctl -p
 echo 'Reboot is recommended before starting testing'
