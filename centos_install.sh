@@ -17,7 +17,7 @@ until sudo yum groupinstall -y development
 do
     sleep 1
 done
-until sudo yum install -y python27 python-pip ImageMagick ffmpeg Xvfb dbus-x11 libcgroup libcgroup-tools traceroute tcpdump psmisc python-devel
+until sudo yum install -y python27 python-pip ImageMagick ffmpeg Xvfb dbus-x11 libcgroup libcgroup-tools traceroute tcpdump psmisc python-devel google-noto*
 do
     sleep 1
 done
