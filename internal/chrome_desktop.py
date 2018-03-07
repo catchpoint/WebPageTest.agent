@@ -174,4 +174,5 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
+        DevtoolsBrowser.wait_for_processing(self, task)
         DesktopBrowser.wait_for_processing(self, task)

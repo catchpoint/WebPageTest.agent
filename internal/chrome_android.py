@@ -192,6 +192,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
+        DevtoolsBrowser.wait_for_processing(self, task)
         AndroidBrowser.wait_for_processing(self, task)
 
     def clear_profile(self, task):

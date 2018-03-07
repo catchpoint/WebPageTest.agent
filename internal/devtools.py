@@ -35,6 +35,7 @@ class DevTools(object):
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_enabled = False
+        self.collecting_trace = None
         self.requests = {}
         self.response_bodies = {}
         self.body_fail_count = 0
@@ -256,6 +257,7 @@ class DevTools(object):
             if trace.find(',disabled-by-default-blink.feature_usage') == -1:
                 trace += ',disabled-by-default-blink.feature_usage'
             self.trace_enabled = True
+            self.collecting_trace = None
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'},
                               wait=True)
@@ -298,7 +300,14 @@ class DevTools(object):
                                                   self.options, self.job, self.task,
                                                   self.start_timestamp)
             self.send_command('Tracing.end', {})
-            start = monotonic.monotonic()
+            self.collecting_trace = monotonic.monotonic()
+            self.recording_video = False
+    
+    def wait_for_trace(self):
+        """Wait for the trace collection to finish"""
+        if self.collecting_trace is not None:
+            start = self.collecting_trace
+            self.collecting_trace = None
             # Keep pumping messages until we get tracingComplete or
             # we get a gap of 30 seconds between messages
             if self.websocket:
@@ -320,7 +329,6 @@ class DevTools(object):
             self.websocket.stop_processing_trace()
             elapsed = monotonic.monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
-            self.recording_video = False
 
     def get_response_body(self, request_id):
         """Retrieve and store the given response body (if necessary)"""
@@ -1000,7 +1008,9 @@ class DevToolsClient(WebSocketClient):
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
         self.path_base = None
-        logging.debug(self.trace_event_counts)
+        logging.debug("Trace event counts:")
+        for cat in self.trace_event_counts:
+            logging.debug('    %s: %s', cat, self.trace_event_counts[cat])
         self.trace_event_counts = {}
 
     def process_trace_event(self, msg):
@@ -1021,9 +1031,6 @@ class DevToolsClient(WebSocketClient):
                     process_event = True
                     if self.video_prefix is not None and 'cat' in trace_event and \
                             'name' in trace_event and 'ts' in trace_event:
-                        if trace_event['cat'] not in self.trace_event_counts:
-                            self.trace_event_counts[trace_event['cat']] = 0
-                        self.trace_event_counts[trace_event['cat']] += 1
                         if self.trace_ts_start is None and \
                                 (trace_event['name'] == 'navigationStart' or \
                                  trace_event['name'] == 'fetchStart') and \
@@ -1041,11 +1048,14 @@ class DevToolsClient(WebSocketClient):
                             keep_event = False
                             process_event = False
                             self.process_screenshot(trace_event)
-                    if not self.job['keep_netlog'] and 'cat' in trace_event and \
-                            trace_event['cat'] == 'netlog':
-                        keep_event = False
-                    if process_event and self.trace_parser is not None:
-                        self.trace_parser.ProcessTraceEvent(trace_event)
+                    if 'cat' in trace_event:
+                        if trace_event['cat'] not in self.trace_event_counts:
+                            self.trace_event_counts[trace_event['cat']] = 0
+                        self.trace_event_counts[trace_event['cat']] += 1
+                        if not self.job['keep_netlog'] and trace_event['cat'] == 'netlog':
+                            keep_event = False
+                        if process_event and self.trace_parser is not None:
+                            self.trace_parser.ProcessTraceEvent(trace_event)
                     if keep_event:
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
