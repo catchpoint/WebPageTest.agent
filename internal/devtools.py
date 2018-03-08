@@ -35,7 +35,6 @@ class DevTools(object):
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_enabled = False
-        self.collecting_trace = None
         self.requests = {}
         self.response_bodies = {}
         self.body_fail_count = 0
@@ -257,7 +256,6 @@ class DevTools(object):
             if trace.find(',disabled-by-default-blink.feature_usage') == -1:
                 trace += ',disabled-by-default-blink.feature_usage'
             self.trace_enabled = True
-            self.collecting_trace = None
             self.send_command('Tracing.start',
                               {'categories': trace, 'options': 'record-as-much-as-possible'},
                               wait=True)
@@ -300,14 +298,7 @@ class DevTools(object):
                                                   self.options, self.job, self.task,
                                                   self.start_timestamp)
             self.send_command('Tracing.end', {})
-            self.collecting_trace = monotonic.monotonic()
-            self.recording_video = False
-    
-    def wait_for_trace(self):
-        """Wait for the trace collection to finish"""
-        if self.collecting_trace is not None:
-            start = self.collecting_trace
-            self.collecting_trace = None
+            start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
             # we get a gap of 30 seconds between messages
             if self.websocket:
@@ -329,7 +320,8 @@ class DevTools(object):
             self.websocket.stop_processing_trace()
             elapsed = monotonic.monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
-
+            self.recording_video = False
+    
     def get_response_body(self, request_id):
         """Retrieve and store the given response body (if necessary)"""
         if request_id not in self.response_bodies and self.body_fail_count < 3:

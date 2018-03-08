@@ -203,8 +203,8 @@ class DevtoolsBrowser(object):
             optimization.join()
 
     def wait_for_processing(self, task):
-        """Wait for the background processing of traces to finish"""
-        self.devtools.wait_for_trace()
+        """Wait for the background processing (if any)"""
+        pass
 
     def execute_js(self, script):
         """Run javascipt"""
