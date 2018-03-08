@@ -47,6 +47,7 @@ class AndroidBrowser(object):
         self.task = task
         self.adb.cleanup_device()
         self.stop_all_browsers()
+        proxies = {"http": None, "https": None}
         # Download and install the APK if necessary
         if 'apk_url' in self.config and 'md5' in self.config:
             if not os.path.isdir(job['persistent_dir']):
@@ -71,7 +72,7 @@ class AndroidBrowser(object):
                     logging.debug('Downloading browser update: %s to %s',
                                   self.config['apk_url'], tmp_file)
                     import requests
-                    request = requests.get(self.config['apk_url'], stream=True)
+                    request = requests.get(self.config['apk_url'], stream=True, proxies=proxies)
                     if request.status_code == 200:
                         with open(tmp_file, 'wb') as f_out:
                             for chunk in request.iter_content(chunk_size=4096):

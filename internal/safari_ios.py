@@ -127,11 +127,12 @@ class iWptBrowser(object):
     def connect(self, timeout=30):
         """Connect to the dev tools interface"""
         import requests
+        proxies = {"http": None, "https": None}
         ret = False
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
-                response = requests.get("http://localhost:9222/json", timeout=timeout)
+                response = requests.get("http://localhost:9222/json", timeout=timeout, proxies=proxies)
                 if response.text:
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))

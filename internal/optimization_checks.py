@@ -314,6 +314,8 @@ class OptimizationChecks(object):
 
     def body_fetch_thread(self):
         """background thread to fetch bodies"""
+        session = requests.session()
+        proxies = {"http": None, "https": None}
         try:
             while True:
                 task = self.fetch_queue.get_nowait()
@@ -337,7 +339,8 @@ class OptimizationChecks(object):
                                     not header_name.startswith(':'):
                                 headers[header_name] = value
                     logging.debug('Downloading %s to %s', url, dest)
-                    response = requests.get(url, headers=headers, stream=True, timeout=10)
+                    response = session.get(url, headers=headers, stream=True,
+                                           timeout=10, proxies=proxies)
                     if response.status_code == 200:
                         with open(dest, 'wb') as f_out:
                             for chunk in response.iter_content(chunk_size=4096):

@@ -156,6 +156,7 @@ class WebPageTest(object):
         """Load config settings from EC2 user data"""
         import requests
         session = requests.Session()
+        proxies = {"http": None, "https": None}
         # The Windows AMI's use static routes which are not copied across regions.
         # This sets them up before we attempt to access the metadata
         if platform.system() == "Windows":
@@ -166,7 +167,8 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/user-data', timeout=30)
+                response = session.get('http://169.254.169.254/latest/user-data',
+                                        timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -178,7 +180,7 @@ class WebPageTest(object):
         while not ok:
             try:
                 response = session.get('http://169.254.169.254/latest/meta-data/instance-id',
-                                       timeout=30)
+                                       timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
                     ok = True
@@ -191,7 +193,7 @@ class WebPageTest(object):
             try:
                 response = session.get(
                     'http://169.254.169.254/latest/meta-data/placement/availability-zone',
-                    timeout=30)
+                    timeout=30, proxies=proxies)
                 if len(response.text):
                     self.zone = response.text.strip()
                     ok = True
@@ -204,13 +206,14 @@ class WebPageTest(object):
         """Load config settings from GCE user data"""
         import requests
         session = requests.Session()
+        proxies = {"http": None, "https": None}
         ok = False
         while not ok:
             try:
                 response = session.get(
                     'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
                     headers={'Metadata-Flavor':'Google'},
-                    timeout=30)
+                    timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -223,7 +226,7 @@ class WebPageTest(object):
             try:
                 response = session.get('http://169.254.169.254/computeMetadata/v1/instance/id',
                                        headers={'Metadata-Flavor':'Google'},
-                                       timeout=30)
+                                       timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
                     ok = True
@@ -318,6 +321,7 @@ class WebPageTest(object):
     def get_test(self):
         """Get a job from the server"""
         import requests
+        proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
@@ -357,7 +361,7 @@ class WebPageTest(object):
                 url += '&upminutes={0:d}'.format(uptime)
             logging.info("Checking for work: %s", url)
             try:
-                response = self.session.get(url, timeout=30)
+                response = self.session.get(url, timeout=30, proxies=proxies)
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
@@ -791,6 +795,8 @@ class WebPageTest(object):
     def body_fetch_thread(self):
         """background thread to fetch bodies"""
         import requests
+        session = requests.session()
+        proxies = {"http": None, "https": None}
         try:
             while True:
                 task = self.fetch_queue.get_nowait()
@@ -814,7 +820,8 @@ class WebPageTest(object):
                                     not header_name.startswith(':'):
                                 headers[header_name] = value
                     logging.debug('Downloading %s to %s', url, dest)
-                    response = requests.get(url, headers=headers, stream=True, timeout=30)
+                    response = session.get(url, headers=headers, stream=True,
+                                           timeout=30, proxies=proxies)
                     if response.status_code == 200:
                         with open(dest, 'wb') as f_out:
                             for chunk in response.iter_content(chunk_size=4096):

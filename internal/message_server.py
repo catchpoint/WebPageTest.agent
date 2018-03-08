@@ -147,9 +147,10 @@ class MessageServer(object):
         import monotonic
         end_time = monotonic.monotonic() + 30
         server_ok = False
+        proxies = {"http": None, "https": None}
         while not server_ok and monotonic.monotonic() < end_time:
             try:
-                response = requests.get('http://127.0.0.1:8888/ping', timeout=10)
+                response = requests.get('http://127.0.0.1:8888/ping', timeout=10, proxies=proxies)
                 if response.text == 'pong':
                     server_ok = True
             except Exception:

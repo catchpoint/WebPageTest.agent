@@ -90,11 +90,12 @@ class DevTools(object):
     def wait_for_available(self, timeout):
         """Wait for the dev tools interface to become available (but don't connect)"""
         import requests
+        proxies = {"http": None, "https": None}
         ret = False
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
-                response = requests.get(self.url, timeout=timeout)
+                response = requests.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
@@ -114,11 +115,13 @@ class DevTools(object):
     def connect(self, timeout):
         """Connect to the browser"""
         import requests
+        session = requests.session()
+        proxies = {"http": None, "https": None}
         ret = False
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
-                response = requests.get(self.url, timeout=timeout)
+                response = session.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
@@ -135,7 +138,8 @@ class DevTools(object):
                                 else:
                                     # Close extra tabs
                                     try:
-                                        requests.get(self.url + '/close/' + tabs[index]['id'])
+                                        session.get(self.url + '/close/' + tabs[index]['id'],
+                                                    proxies=proxies)
                                     except Exception:
                                         pass
                         if websocket_url is not None:
@@ -187,8 +191,9 @@ class DevTools(object):
             self.websocket = None
         if close_tab and self.tab_id is not None:
             import requests
+            proxies = {"http": None, "https": None}
             try:
-                requests.get(self.url + '/close/' + self.tab_id)
+                requests.get(self.url + '/close/' + self.tab_id, proxies=proxies)
             except Exception:
                 pass
         self.tab_id = None
