@@ -80,6 +80,13 @@ Passing the agent a "--shaper external" command-line flag you give it the IP add
 * ImageMagick includes ffmpeg in the path automatically but not the latest version.  It is usually easiest to just copy the [static ffmpeg build](https://ffmpeg.zeranoe.com/builds/) over the one installed by ImageMagick.
 * Disable secure boot in the bios if enabled, otherwise traffic-shaping will not be available.
 * Disable UAC so it doesn't prompt when admin commands need to be run
+* For pre-Windows 8.1 (or server 2012 R2) test agents, Install the DUMMYNET ipfw driver
+    * If you are installing on 64-bit Windows, right-click on  "testmode.cmd" in the internal\support\dummynet\x64 folder and select "Run as Administrator".  Reboot the system to enable testmode.  If you do not run this then traffic shaping will not work after a reboot.
+    * Pull up the properties for the Network Adapter that is used to access the Internet
+    * Click "Install"
+    * Select "Service" and click "Add"
+    * Click "Have Disk" and navigate to internal\support\dummynet\x64 (or x86 for 32-bit Windows)
+    * Select the ipfw+dummynet service (and click through any warnings about the driver being unsigned)
 * Install [NPCap](https://nmap.org/npcap/) and configure it to start automatically as a service with the winpcap compatible interface, not restricted to administrators and not supporting loopback (all of the defaults except uncheck loopback support)
     * Works best if there is only one active network interface available on the machine, otherwise packet capture may latch on to the wrong interface.
 * Make sure all of the security zones in IE have the same setting for the "protected mode" checkbox (all disabled is recommended)
@@ -88,7 +95,7 @@ Passing the agent a "--shaper external" command-line flag you give it the IP add
 ```bat
 @echo off
 cd C:\Users\WebPageTest\browser-install
-git pull origin master
+git pull origin release
 python.exe C:\Users\WebPageTest\browser-install\browser_install.py -vvvv --all
 cd C:\Users\WebPageTest\wptagent
 call npm i -g lighthouse
