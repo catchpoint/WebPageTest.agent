@@ -505,6 +505,10 @@ class DesktopBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        # If the testing is done, kill the browser to save CPU
+        if not len(task['script']):
+            self.stop(self.job, task)
+        # Process the tcpdump
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
             if os.path.isfile(self.pcap_file):

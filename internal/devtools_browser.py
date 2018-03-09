@@ -52,6 +52,10 @@ class DevtoolsBrowser(object):
     def disconnect(self):
         """Disconnect from dev tools"""
         if self.devtools is not None:
+            # Always navigate to about:blank after finishing in case the tab is
+            # remembered across sessions
+            if self.task['error'] is None:
+                self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.devtools.close()
             self.devtools = None
 
@@ -185,10 +189,6 @@ class DevtoolsBrowser(object):
                             task['current_step'] += 1
                             self.event_name = None
                     task['navigated'] = True
-            # Always navigate to about:blank after finishing in case the tab is
-            # remembered across sessions
-            if task['error'] is None:
-                self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.task = None
 
     def on_start_processing(self, task):
