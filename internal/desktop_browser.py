@@ -539,6 +539,59 @@ class DesktopBrowser(object):
             self.pcap_thread = None
         self.pcap_file = None
 
+    def update_page_data(self, page_data):
+        """Find the reverse-ip info for the base page"""
+        page_data['base_page_ip_ptr'] = ''
+        page_data['base_page_cname'] = ''
+        page_data['base_page_dns_server'] = ''
+        if "document_hostname" in page_data:
+            try:
+                from dns import resolver, reversename
+                dns_resolver = resolver.Resolver()
+                dns_resolver.timeout = 30
+                domain = str(page_data["document_hostname"])
+                # reverse-lookup the edge server
+                try:
+                    addresses = dns_resolver.query(domain)
+                    if addresses:
+                        addr = str(addresses[0])
+                        addr_name = reversename.from_address(addr)
+                        if addr_name:
+                            name = str(dns_resolver.query(addr_name, "PTR")[0])
+                            if name:
+                                page_data['base_page_ip_ptr'] = name.strip('. ')
+                except Exception:
+                    pass
+                # get the CNAME for the address
+                try:
+                    answers = dns_resolver.query(domain, 'CNAME')
+                    if answers and len(answers):
+                        for rdata in answers:
+                            name = '.'.join(rdata.target).strip(' .')
+                            if name != domain:
+                                page_data['base_page_cname'] = name
+                                break
+                except Exception:
+                    pass
+                # get the name server for the domain
+                done = False
+                while domain is not None and not done:
+                    try:
+                        dns_servers = dns_resolver.query(domain, "NS")
+                        dns = str(dns_servers[0].target).strip('. ')
+                        if dns:
+                            page_data['base_page_dns_server'] = dns
+                            done = True
+                    except Exception:
+                        pass
+                    pos = domain.find('.')
+                    if pos > 0:
+                        domain = domain[pos + 1:]
+                    else:
+                        domain = None
+            except Exception:
+                pass
+
     def step_complete(self, task):
         """All of the processing for the current test step is complete"""
         # Write out the accumulated page_data
@@ -550,6 +603,7 @@ class DesktopBrowser(object):
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
                         int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+            self.update_page_data(task['page_data'])
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
