@@ -1121,20 +1121,22 @@ def save_screenshot(directory, dest, quality):
 
 
 def convert_to_jpeg(directory, quality):
+    logging.debug("Converting video frames to JPEG")
     directory = os.path.realpath(directory)
-    files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
+    pattern = os.path.join(directory, 'ms_*.png')
+    command = '{0} -format jpg -set colorspace sRGB -quality {1:d} "{2}"'.format(
+        image_magick['mogrify'], quality, pattern)
+    logging.debug(command)
+    subprocess.call(command, shell=True)
+    files = sorted(glob.glob(pattern))
     match = re.compile(r'(?P<base>ms_[0-9]+\.)')
     for file in files:
         m = re.search(match, file)
         if m is not None:
             dest = os.path.join(directory, m.groupdict().get('base') + 'jpg')
             if os.path.isfile(dest):
-                os.remove(dest)
-            command = '{0} "{1}" -set colorspace sRGB -quality {2:d} "{3}"'.format(
-                image_magick['convert'], file, quality, dest)
-            subprocess.call(command, shell=True)
-            if os.path.isfile(dest):
                 os.remove(file)
+    logging.debug("Done Converting video frames to JPEG")
 
 
 ##########################################################################
