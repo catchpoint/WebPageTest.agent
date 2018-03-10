@@ -54,7 +54,7 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            if self.task['error'] is None:
+            if self.task is not None and self.task['error'] is None:
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.devtools.close()
             self.devtools = None
