@@ -1,1 +1,1 @@
-call python.exe %cd%/alive.py --file %CD%/wptagent.alive --reboot
+call python.exe %~dp0alive.py --file %~dp0wptagent.alive --reboot
