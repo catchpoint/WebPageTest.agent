@@ -274,8 +274,11 @@ class WPTAgent(object):
         ret = True
 
         # default /tmp/wptagent as an alive file on Linux
-        if self.options.alive is None and platform.system() == "Linux":
-            self.options.alive = '/tmp/wptagent'
+        if self.options.alive is None:
+            if platform.system() == "Linux":
+                self.options.alive = '/tmp/wptagent'
+            else:
+                self.options.alive = os.path.join(os.path.dirname(__file__), 'wptagent.alive')
         self.alive()
 
         ret = self.requires('dns', 'dnspython') and ret

@@ -4,7 +4,10 @@
 # found in the LICENSE file.
 """Watchdog helper"""
 import os
+import platform
+import subprocess
 import time
+import psutil
 
 def main():
     """Startup and initialization"""
@@ -12,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser(description='wptagent watchdog helper.', prog='alive.py')
     parser.add_argument('--file', help="File to check for modifications within the last hour.")
     parser.add_argument('--ping', help="Address to ping as a last resort.")
+    parser.add_argument('--reboot', action='store_true', default=False,
+                        help="Reboot if the watchdog fails.")
     options, _ = parser.parse_known_args()
 
     # If the system has been up for less than an hour, it is OK (avoid boot loops).
@@ -21,6 +26,11 @@ def main():
             if uptime_seconds < 3600:
                 print 'OK: Freshly booted ({0:d} seconds)'.format(uptime_seconds)
                 exit(0)
+    elif platform.system() == "Windows":
+        uptime_seconds = int(time.time()) - int(psutil.boot_time())
+        if uptime_seconds < 3600:
+            print 'OK: Freshly booted ({0:d} seconds)'.format(uptime_seconds)
+            exit(0)
 
     # Check if the watchdog file has been updated in the last hour.
     if options.file and os.path.isfile(options.file):
@@ -30,7 +40,7 @@ def main():
             exit(0)
 
     # Ping the provided address if requested.
-    if options.ping:
+    if options.ping and platform.system() != "Windows":
         response = os.system('ping -c 2 -i 0.2 -n -W 1 {0} > /dev/null 2>&1'.format(options.ping))
         if response == 0:
             print 'OK: ping succeeded'
@@ -41,6 +51,11 @@ def main():
             exit(0)
 
     print 'FAIL: No checks passed'
+    if options.reboot:
+        if platform.system() == 'Windows':
+            subprocess.call(['shutdown', '/r', '/f'])
+        else:
+            subprocess.call(['sudo', 'reboot'])
     exit(1)
 
 if __name__ == '__main__':
