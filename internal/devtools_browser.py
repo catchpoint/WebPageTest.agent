@@ -57,7 +57,6 @@ class DevtoolsBrowser(object):
             if self.task['error'] is None:
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             self.devtools.close()
-            self.devtools = None
 
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
