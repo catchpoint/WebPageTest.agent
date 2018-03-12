@@ -43,7 +43,7 @@ import tempfile
 options = None
 client_viewport = None
 image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
-
+frame_cache = {}
 
 # #################################################################################################
 # Frame Extraction and de-duplication
@@ -241,6 +241,7 @@ def remove_orange_frames(directory, orange_file):
                 break
 
 def find_image_viewport(file):
+    logging.debug("Finding the viewport for %s", file)
     try:
         from PIL import Image
         im = Image.open(file)
@@ -310,6 +311,7 @@ def find_image_viewport(file):
 
 
 def find_video_viewport(video, directory, find_viewport, viewport_time):
+    logging.debug("Finding Video Viewport...")
     viewport = None
     try:
         from PIL import Image
@@ -420,6 +422,7 @@ def adjust_frame_times(directory):
 
 
 def find_first_frame(directory, white_file):
+    logging.debug("Finding First Frame...")
     try:
         if options.startwhite:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -485,6 +488,7 @@ def find_first_frame(directory, white_file):
 
 
 def find_last_frame(directory, white_file):
+    logging.debug("Finding Last Frame...")
     try:
         if options.endwhite:
             files = sorted(glob.glob(os.path.join(directory, 'video-*.png')))
@@ -509,6 +513,7 @@ def find_last_frame(directory, white_file):
 
 
 def find_render_start(directory, orange_file, gray_file):
+    logging.debug("Finding Render Start...")
     try:
         if client_viewport is not None or options.viewport is not None or (
                 options.renderignore > 0 and options.renderignore <= 100):
@@ -575,8 +580,8 @@ def find_render_start(directory, orange_file, gray_file):
 
 
 def eliminate_duplicate_frames(directory):
+    logging.debug("Eliminating Duplicate Frames...")
     global client_viewport
-
     try:
         files = sorted(glob.glob(os.path.join(directory, 'ms_*.png')))
         if len(files) > 1:
@@ -657,6 +662,7 @@ def eliminate_duplicate_frames(directory):
 
 
 def eliminate_similar_frames(directory):
+    logging.debug("Removing Similar Frames...")
     try:
         # only do this when decimate couldn't be used to eliminate similar
         # frames
@@ -747,6 +753,9 @@ def clean_directory(directory):
 
 def is_color_frame(file, color_file):
     """Check a section from the middle, top and bottom of the viewport to see if it matches"""
+    global frame_cache
+    if file in frame_cache and color_file in frame_cache[file]:
+        return bool(frame_cache[file][color_file])
     match = False
     if os.path.isfile(color_file):
         try:
@@ -780,6 +789,9 @@ def is_color_frame(file, color_file):
                         break
         except Exception:
             pass
+    if file not in frame_cache:
+        frame_cache[file] = {}
+    frame_cache[file][color_file] = bool(match)
     return match
 
 
@@ -1025,6 +1037,7 @@ def get_timeline_event_navigate_time(timeline_event):
 
 
 def calculate_histograms(directory, histograms_file, force):
+    logging.debug("Calculating image histograms")
     if not os.path.isfile(histograms_file) or force:
         try:
             extension = None
@@ -1066,32 +1079,32 @@ def calculate_histograms(directory, histograms_file, force):
     else:
         logging.debug(
             'Histograms file {0} already exists'.format(histograms_file))
-
+    logging.debug("Done calculating histograms")
 
 def calculate_image_histogram(file):
     logging.debug('Calculating histogram for ' + file)
     try:
         from PIL import Image
-
         im = Image.open(file)
         width, height = im.size
-        pixels = im.load()
+        colors = im.getcolors(width * height)
         histogram = {'r': [0 for i in xrange(256)],
                      'g': [0 for i in xrange(256)],
                      'b': [0 for i in xrange(256)]}
-        for y in xrange(height):
-            for x in xrange(width):
-                try:
-                    pixel = pixels[x, y]
-                    # Don't include White pixels (with a tiny bit of slop for
-                    # compression artifacts)
-                    if pixel[0] < 250 or pixel[1] < 250 or pixel[2] < 250:
-                        histogram['r'][pixel[0]] += 1
-                        histogram['g'][pixel[1]] += 1
-                        histogram['b'][pixel[2]] += 1
-                except BaseException:
-                    pass
-    except BaseException:
+        for entry in colors:
+            try:
+                count = entry[0]
+                pixel = entry[1]
+                # Don't include White pixels (with a tiny bit of slop for
+                # compression artifacts)
+                if pixel[0] < 250 or pixel[1] < 250 or pixel[2] < 250:
+                    histogram['r'][pixel[0]] += count
+                    histogram['g'][pixel[1]] += count
+                    histogram['b'][pixel[2]] += count
+            except Exception:
+                pass
+        colors = None
+    except Exception:
         histogram = None
         logging.exception('Error calculating histogram for ' + file)
     return histogram
