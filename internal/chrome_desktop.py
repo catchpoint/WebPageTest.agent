@@ -32,7 +32,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
     '--disable-background-timer-throttling',
-    '--disable-browser-side-navigation'
+    '--disable-browser-side-navigation',
+    '--net-log-capture-mode=IncludeCookiesAndCredentials'
 ]
 
 HOST_RULES = [
