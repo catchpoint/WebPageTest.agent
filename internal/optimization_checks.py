@@ -25,14 +25,17 @@ class OptimizationChecks(object):
         self.running_checks = False
         self.requests = requests
         self.cdn_thread = None
+        self.hosting_thread = None
         self.gzip_thread = None
         self.image_thread = None
         self.progressive_thread = None
         self.cdn_time = None
+        self.hosting_time = None
         self.gzip_time = None
         self.image_time = None
         self.progressive_time = None
         self.cdn_results = {}
+        self.hosting_results = {}
         self.gzip_results = {}
         self.image_results = {}
         self.progressive_results = {}
@@ -249,6 +252,8 @@ class OptimizationChecks(object):
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
             self.cdn_thread.start()
+            self.hosting_thread = threading.Thread(target=self.check_hosting)
+            self.hosting_thread.start()
             self.gzip_thread = threading.Thread(target=self.check_gzip)
             self.gzip_thread.start()
             self.image_thread = threading.Thread(target=self.check_images)
@@ -286,6 +291,12 @@ class OptimizationChecks(object):
                 self.cdn_thread = None
             if self.cdn_time is not None:
                 logging.debug("CDN check took %0.3f seconds", self.cdn_time)
+            logging.debug('Waiting for CDN check to complete')
+            if self.hosting_thread is not None:
+                self.hosting_thread.join()
+                self.hosting_thread = None
+            if self.hosting_time is not None:
+                logging.debug("Hosting check took %0.3f seconds", self.hosting_time)
             # Merge the results together
             for request_id in self.cdn_results:
                 if request_id not in self.results:
@@ -303,6 +314,9 @@ class OptimizationChecks(object):
                 if request_id not in self.results:
                     self.results[request_id] = {}
                 self.results[request_id]['progressive'] = self.progressive_results[request_id]
+            if self.task is not None and 'page_data' in self.task:
+                for name in self.hosting_results:
+                    self.task['page_data'][name] = self.hosting_results[name]
             # Save the results
             if self.results:
                 path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
@@ -517,7 +531,64 @@ class OptimizationChecks(object):
             except Exception:
                 pass
 
-
+    def check_hosting(self):
+        """Pull the data needed to determine the hosting"""
+        start = monotonic.monotonic()
+        self.hosting_results['base_page_ip_ptr'] = ''
+        self.hosting_results['base_page_cname'] = ''
+        self.hosting_results['base_page_dns_server'] = ''
+        domain = None
+        if self.task is not None and 'page_data' in self.task and \
+                'document_hostname' in self.task['page_data']:
+            domain = self.task['page_data']['document_hostname']
+        if domain is not None:
+            try:
+                from dns import resolver, reversename
+                dns_resolver = resolver.Resolver()
+                dns_resolver.timeout = 30
+                # reverse-lookup the edge server
+                try:
+                    addresses = dns_resolver.query(domain)
+                    if addresses:
+                        addr = str(addresses[0])
+                        addr_name = reversename.from_address(addr)
+                        if addr_name:
+                            name = str(dns_resolver.query(addr_name, "PTR")[0])
+                            if name:
+                                self.hosting_results['base_page_ip_ptr'] = name.strip('. ')
+                except Exception:
+                    pass
+                # get the CNAME for the address
+                try:
+                    answers = dns_resolver.query(domain, 'CNAME')
+                    if answers and len(answers):
+                        for rdata in answers:
+                            name = '.'.join(rdata.target).strip(' .')
+                            if name != domain:
+                                self.hosting_results['base_page_cname'] = name
+                                break
+                except Exception:
+                    pass
+                # get the name server for the domain
+                done = False
+                while domain is not None and not done:
+                    try:
+                        dns_servers = dns_resolver.query(domain, "NS")
+                        dns_name = str(dns_servers[0].target).strip('. ')
+                        if dns_name:
+                            self.hosting_results['base_page_dns_server'] = dns_name
+                            done = True
+                    except Exception:
+                        pass
+                    pos = domain.find('.')
+                    if pos > 0:
+                        domain = domain[pos + 1:]
+                    else:
+                        domain = None
+            except Exception:
+                pass
+        self.hosting_time = monotonic.monotonic() - start
+        
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
         from urlparse import urlparse
