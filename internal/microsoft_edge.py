@@ -794,7 +794,21 @@ class Edge(DesktopBrowser):
                     name = cookie[:pos].strip()
                     value = cookie[pos+1:].strip()
                     if len(name) and len(value) and len(url):
-                        self.driver.add_cookie({'url': url, 'name': name, 'value': value})
+                        try:
+                            self.driver.add_cookie({'url': url, 'name': name, 'value': value})
+                        except Exception:
+                            pass
+                        try:
+                            import win32inet
+                            cookie_string = cookie
+                            if cookie.find('xpires') == -1:
+                                expires = datetime.utcnow() + timedelta(days=30)
+                                expires_string = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
+                                cookie_string += '; expires={0}'.format(expires_string)
+                            logging.debug("Setting cookie: %s", cookie_string)
+                            win32inet.InternetSetCookie(url, None, cookie_string)
+                        except Exception as err:
+                            logging.exception("Error setting cookie: %s", str(err))
 
     def navigate(self, url):
         """Navigate to the given URL"""
