@@ -18,8 +18,8 @@ SET_ORANGE = "(function() {" \
              "wptDiv.style.position = 'absolute';" \
              "wptDiv.style.top = '0';" \
              "wptDiv.style.left = '0';" \
-             "wptDiv.style.right = '0';" \
-             "wptDiv.style.bottom = '0';" \
+             "wptDiv.style.width = document.body.clientWidth + 'px';" \
+             "wptDiv.style.height = document.body.clientHeight + 'px';" \
              "wptDiv.style.zIndex = '2147483647';" \
              "wptDiv.style.backgroundColor = '#DE640D';" \
              "document.body.appendChild(wptDiv);" \
