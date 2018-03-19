@@ -231,7 +231,7 @@ class DevTools(object):
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})
-            if 'timeline' in self.job and self.job['timeline']:
+            if 'coverage' in self.job and self.job['coverage']:
                 self.send_command('DOM.enable', {})
                 self.send_command('CSS.enable', {})
                 self.send_command('CSS.startRuleUsageTracking', {})
@@ -291,7 +291,7 @@ class DevTools(object):
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         if self.task['log_data']:
-            if 'timeline' in self.job and self.job['timeline']:
+            if 'coverage' in self.job and self.job['coverage']:
                 try:
                     coverage = {}
                     # process the JS coverage
