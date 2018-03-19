@@ -876,15 +876,22 @@ class DevTools(object):
                     request['response'] = []
                 request['response'].append(msg['params'])
                 if 'response' in msg['params']:
-                    if 'fromDiskCache' in msg['params']['response'] and \
-                            msg['params']['response']['fromDiskCache']:
+                    response = msg['params']['response']
+                    if 'fromDiskCache' in response and response['fromDiskCache']:
                         request['fromNet'] = False
-                    if 'fromServiceWorker' in msg['params']['response'] and \
-                            msg['params']['response']['fromServiceWorker']:
+                    if 'fromServiceWorker' in response and response['fromServiceWorker']:
                         request['fromNet'] = False
-                    if 'mimeType' in msg['params']['response'] and \
-                            msg['params']['response']['mimeType'].startswith('video/'):
+                    if 'mimeType' in response and response['mimeType'].startswith('video/'):
                         request['is_video'] = True
+                    if self.main_request is not None and \
+                            request_id == self.main_request and \
+                            'status' in response and response['status'] >= 400:
+                        self.nav_error_code = response['status']
+                        if 'statusText' in response and response['statusText']:
+                            self.nav_error = response['statusText']
+                        else:
+                            self.nav_error = '{0:d} Navigation error'.format(self.nav_error_code)
+                        logging.debug('Main resource Navigation error: %s', self.nav_error)
             elif event == 'dataReceived':
                 self.response_started = True
                 if 'data' not in request:
