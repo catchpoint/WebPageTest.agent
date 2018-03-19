@@ -54,6 +54,7 @@ class DevTools(object):
         self.use_devtools_video = use_devtools_video
         self.recording_video = False
         self.main_thread_blocked = False
+        self.stylesheets = {}
         self.headers = {}
         self.prepare()
 
@@ -230,6 +231,13 @@ class DevTools(object):
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})
+            if 'timeline' in self.job and self.job['timeline']:
+                self.send_command('DOM.enable', {})
+                self.send_command('CSS.enable', {})
+                self.send_command('CSS.startRuleUsageTracking', {})
+                self.send_command('Profiler.enable', {})
+                self.send_command('Profiler.setSamplingInterval', {'interval': 100})
+                self.send_command('Profiler.start', {})
             if 'trace' in self.job and self.job['trace']:
                 if 'traceCategories' in self.job:
                     trace = self.job['traceCategories']
@@ -280,9 +288,81 @@ class DevTools(object):
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
-        self.recording = False
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        if self.task['log_data']:
+            if 'timeline' in self.job and self.job['timeline']:
+                try:
+                    coverage = {}
+                    # process the JS coverage
+                    self.send_command('Profiler.stop', {})
+                    response = self.send_command('Profiler.getBestEffortCoverage',
+                                                 {}, wait=True, timeout=30)
+                    if 'result' in response and 'result' in response['result']:
+                        for script in response['result']['result']:
+                            if 'url' in script and script['url'] and 'functions' in script:
+                                if script['url'] not in coverage:
+                                    coverage[script['url']] = {}
+                                if 'JS' not in coverage[script['url']]:
+                                    coverage[script['url']]['JS'] = []
+                                for function in script['functions']:
+                                    if 'ranges' in function:
+                                        for chunk in function['ranges']:
+                                            coverage[script['url']]['JS'].append({
+                                                'startOffset': chunk['startOffset'],
+                                                'endOffset': chunk['endOffset'],
+                                                'count': chunk['count'],
+                                                'used': True if chunk['count'] else False
+                                            })
+                    self.send_command('Profiler.disable', {})
+                    # Process the css coverage
+                    response = self.send_command('CSS.stopRuleUsageTracking',
+                                                 {}, wait=True, timeout=30)
+                    if 'result' in response and 'ruleUsage' in response['result']:
+                        rule_usage = response['result']['ruleUsage']
+                        for rule in rule_usage:
+                            if 'styleSheetId' in rule and rule['styleSheetId'] in self.stylesheets:
+                                sheet_id = rule['styleSheetId']
+                                url = self.stylesheets[sheet_id]
+                                if url not in coverage:
+                                    coverage[url] = {}
+                                if 'CSS' not in coverage[url]:
+                                    coverage[url]['CSS'] = []
+                                coverage[url]['CSS'].append({
+                                    'startOffset': rule['startOffset'],
+                                    'endOffset': rule['endOffset'],
+                                    'used': rule['used']
+                                })
+                    if coverage:
+                        summary = {}
+                        categories = ['JS', 'CSS']
+                        for url in coverage:
+                            for category in categories:
+                                if category in coverage[url]:
+                                    total_bytes = 0
+                                    used_bytes = 0
+                                    for chunk in coverage[url][category]:
+                                        range_bytes = chunk['endOffset'] - chunk['startOffset']
+                                        if range_bytes > 0:
+                                            total_bytes += range_bytes
+                                            if chunk['used']:
+                                                used_bytes += range_bytes
+                                    used_pct = 100.0
+                                    if total_bytes > 0:
+                                        used_pct = float((used_bytes * 10000) / total_bytes) / 100.0
+                                        if url not in summary:
+                                            summary[url] = {}
+                                        summary[url]['{0}_bytes'.format(category)] = total_bytes
+                                        summary[url]['{0}_bytes_used'.format(category)] = used_bytes
+                                        summary[url]['{0}_percent_used'.format(category)] = used_pct
+                        path = self.path_base + '_coverage.json.gz'
+                        with gzip.open(path, 'wb', 7) as f_out:
+                            json.dump(summary, f_out)
+                    self.send_command('CSS.disable', {})
+                    self.send_command('DOM.disable', {})
+                except Exception as err:
+                    logging.exception(err)
+        self.recording = False
         self.collect_trace()
         self.flush_pending_messages()
         if self.task['log_data']:
@@ -691,6 +771,8 @@ class DevTools(object):
                     self.process_network_event(event, msg, target_id)
                 elif category == 'Inspector':
                     self.process_inspector_event(event)
+                elif category == 'CSS':
+                    self.process_css_event(event, msg)
                 elif category == 'Target':
                     self.process_target_event(event, msg)
                 else:
@@ -741,6 +823,16 @@ class DevTools(object):
             logging.debug("Page opened a modal interstitial")
             self.nav_error = "Page opened a modal interstitial"
             self.nav_error_code = 405
+
+    def process_css_event(self, event, msg):
+        """Handle CSS.* events"""
+        if event == 'styleSheetAdded':
+            if 'params' in msg and 'header' in msg['params']:
+                entry = msg['params']['header']
+                if 'styleSheetId' in entry and \
+                        entry['styleSheetId'] not in self.stylesheets and \
+                        'sourceURL' in entry and entry['sourceURL']:
+                    self.stylesheets[entry['styleSheetId']] = entry['sourceURL']
 
     def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""

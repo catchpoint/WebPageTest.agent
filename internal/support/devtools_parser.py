@@ -33,6 +33,7 @@ class DevToolsParser(object):
         self.devtools_file = options['devtools']
         self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
         self.optimization = options['optimization'] if 'optimization' in options else None
+        self.coverage = options['coverage'] if 'coverage' in options else None
         self.cached = options['cached'] if 'cached' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
@@ -51,6 +52,8 @@ class DevToolsParser(object):
             self.process_page_data()
             logging.debug("Adding optimization results")
             self.process_optimization_results()
+            logging.debug("Adding code coverage results")
+            self.process_code_coverage()
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
@@ -942,6 +945,52 @@ class DevToolsParser(object):
                 page_data['score_progressive_jpeg'] = int(round(progressive_bytes * 100 /
                                                                 progressive_total_bytes))
 
+    def process_code_coverage(self):
+        """Merge the data from the code coverage file"""
+        try:
+            page_data = self.result['pageData']
+            requests = self.result['requests']
+            if self.coverage is not None and os.path.isfile(self.coverage):
+                _, ext = os.path.splitext(self.coverage)
+                if ext.lower() == '.gz':
+                    f_in = gzip.open(self.coverage, 'rb')
+                else:
+                    f_in = open(self.coverage, 'r')
+                coverage = json.load(f_in)
+                f_in.close()
+                if coverage:
+                    categories = ['JS', 'CSS']
+                    page_coverage = {}
+                    for category in categories:
+                        page_coverage['{0}_bytes'.format(category)] = 0
+                        page_coverage['{0}_bytes_used'.format(category)] = 0
+                        page_coverage['{0}_percent_used'.format(category)] = 100.0
+                    valid = False
+                    for url in coverage:
+                        for category in categories:
+                            total = '{0}_bytes'.format(category)
+                            used = '{0}_bytes_used'.format(category)
+                            if total in coverage[url]:
+                                page_coverage[total] += coverage[url][total]
+                                valid = True
+                            if used in coverage[url]:
+                                page_coverage[used] += coverage[url][used]
+                                valid = True
+                        for request in requests:
+                            if 'full_url' in request and request['full_url'] == url:
+                                request['code_coverage'] = dict(coverage[url])
+                    if valid:
+                        for category in categories:
+                            total = '{0}_bytes'.format(category)
+                            used = '{0}_bytes_used'.format(category)
+                            pct = '{0}_percent_used'.format(category)
+                            if page_coverage[total] > 0:
+                                page_coverage[pct] = float((page_coverage[used] * 10000) \
+                                        / page_coverage[total]) / 100.0
+                        page_data['code_coverage'] = dict(page_coverage)
+        except Exception:
+            pass
+
 def main():
     """Main entry point"""
     import argparse
@@ -953,6 +1002,7 @@ def main():
     parser.add_argument('-d', '--devtools', help="Input devtools file.")
     parser.add_argument('-n', '--netlog', help="Input netlog requests file (optional).")
     parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
+    parser.add_argument('--coverage', help="Input code coverage file (optional).")
     parser.add_argument('-c', '--cached', action='store_true', default=False,
                         help="Test was of a cached page.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
@@ -978,6 +1028,7 @@ def main():
     opt = {'devtools': options.devtools,
            'netlog': options.netlog,
            'optimization': options.optimization,
+           'coverage': options.coverage,
            'cached': options.cached,
            'out': options.out}
     devtools = DevToolsParser(opt)
