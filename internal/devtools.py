@@ -247,7 +247,14 @@ class DevTools(object):
             if 'netlog' in self.job and self.job['netlog']:
                 self.job['keep_netlog'] = True
             if 'timeline' in self.job and self.job['timeline']:
-                trace += ",blink.console,devtools.timeline"
+                trace += ',' + ','.join([
+                    'blink.console',
+                    'v8.execute',
+                    'devtools.timeline',
+                    'disabled-by-default-devtools.timeline',
+                    'disabled-by-default-devtools.timeline.frame',
+                    'disabled-by-default-devtools.timeline.stack'
+                ])
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
@@ -262,7 +269,8 @@ class DevTools(object):
                 trace += ',disabled-by-default-blink.feature_usage'
             self.trace_enabled = True
             self.send_command('Tracing.start',
-                              {'categories': trace, 'options': 'record-as-much-as-possible'},
+                              {'categories': trace,
+                               'options': 'record-as-much-as-possible,sampling-frequency=10000'},
                               wait=True)
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
