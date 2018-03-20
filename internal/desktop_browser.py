@@ -653,6 +653,8 @@ class DesktopBrowser(object):
 
     def start_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
+        if self.options.throttle and 'throttle_cpu' in self.job:
+            self.task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
         if self.throttling_cpu:
             self.task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
             try:

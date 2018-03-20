@@ -140,9 +140,10 @@ class DevtoolsBrowser(object):
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
-        if not self.options.throttle and 'throttle_cpu' in self.job and \
-                self.job['throttle_cpu'] > 1:
-            task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
+        if not self.options.throttle and 'throttle_cpu' in self.job:
+            task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
+            if self.job['throttle_cpu'] > 1:
+                task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
         if self.devtools is not None:
             self.devtools.start_recording()
 

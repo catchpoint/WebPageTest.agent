@@ -412,6 +412,7 @@ class WebPageTest(object):
                     if 'throttle_cpu' in job:
                         throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
                         throttle *= self.cpu_scale_multiplier
+                        job['throttle_cpu_requested'] = job['throttle_cpu']
                         job['throttle_cpu'] = throttle
                 if job is None and len(locations) > 0:
                     location = str(locations.pop(0))
