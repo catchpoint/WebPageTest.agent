@@ -257,10 +257,13 @@ class DevTools(object):
             if 'timeline' in self.job and self.job['timeline']:
                 trace += ',' + ','.join([
                     'blink.console',
-                    'devtools.timeline',
-                    'disabled-by-default-devtools.timeline',
-                    'disabled-by-default-devtools.timeline.frame'
+                    'devtools.timeline'
                 ])
+                if 'timeline_fps' in self.job and self.job['timeline_fps']:
+                    trace += ',' + ','.join([
+                        'disabled-by-default-devtools.timeline',
+                        'disabled-by-default-devtools.timeline.frame'
+                    ])
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
