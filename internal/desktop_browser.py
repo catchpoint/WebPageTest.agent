@@ -654,6 +654,7 @@ class DesktopBrowser(object):
     def start_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
         if self.throttling_cpu:
+            self.task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
             try:
                 # Leave the quota at 1000 and vary the period to get to the correct multiplier
                 period = int(round(1000.0 * self.job['throttle_cpu']))
