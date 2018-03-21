@@ -202,7 +202,7 @@ class DevtoolsBrowser(object):
             optimization = OptimizationChecks(self.job, task, self.get_requests())
             optimization.start()
             # Run the video post-processing
-            if self.use_devtools_video and  self.job['video']:
+            if self.use_devtools_video and self.job['video']:
                 self.process_video()
             optimization.join()
 

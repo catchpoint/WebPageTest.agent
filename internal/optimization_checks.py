@@ -830,6 +830,7 @@ class OptimizationChecks(object):
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
+        from PIL import Image
         start = monotonic.monotonic()
         for request_id in self.requests:
             try:
@@ -837,48 +838,53 @@ class OptimizationChecks(object):
                 if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type == 'jpeg':
-                        if 'response_body' not in request:
-                            request['response_body'] = ''
-                            with open(request['body'], 'rb') as f_in:
-                                request['response_body'] = f_in.read()
-                        body = request['response_body']
-                        content_length = len(request['response_body'])
-                        check = {'size': content_length, 'scan_count': 0}
-                        pos = 0
-                        try:
-                            while pos < content_length:
-                                block = struct.unpack('B', body[pos])[0]
-                                pos += 1
-                                if block != 0xff:
-                                    break
-                                block = struct.unpack('B', body[pos])[0]
-                                pos += 1
-                                while block == 0xff:
+                        check = {'size': os.path.getsize(request['body']), 'scan_count': 1}
+                        image = Image.open(request['body'])
+                        info = dict(image.info)
+                        image.close()
+                        if 'progression' in info and info['progression']:
+                            check['scan_count'] = 0
+                            if 'response_body' not in request:
+                                request['response_body'] = ''
+                                with open(request['body'], 'rb') as f_in:
+                                    request['response_body'] = f_in.read()
+                            body = request['response_body']
+                            content_length = len(request['response_body'])
+                            pos = 0
+                            try:
+                                while pos < content_length:
                                     block = struct.unpack('B', body[pos])[0]
                                     pos += 1
-                                if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
-                                    continue
-                                elif block == 0xda: # Image data
-                                    check['scan_count'] += 1
-                                    # Seek to the next non-padded 0xff to find the next marker
-                                    found = False
-                                    while not found and pos < content_length:
-                                        value = struct.unpack('B', body[pos])[0]
+                                    if block != 0xff:
+                                        break
+                                    block = struct.unpack('B', body[pos])[0]
+                                    pos += 1
+                                    while block == 0xff:
+                                        block = struct.unpack('B', body[pos])[0]
                                         pos += 1
-                                        if value == 0xff:
+                                    if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
+                                        continue
+                                    elif block == 0xda: # Image data
+                                        check['scan_count'] += 1
+                                        # Seek to the next non-padded 0xff to find the next marker
+                                        found = False
+                                        while not found and pos < content_length:
                                             value = struct.unpack('B', body[pos])[0]
                                             pos += 1
-                                            if value != 0x00:
-                                                found = True
-                                                pos -= 2
-                                else:
-                                    chunk = body[pos:pos+2]
-                                    block_size = struct.unpack('2B', chunk)
-                                    pos += 2
-                                    block_size = block_size[0] * 256 + block_size[1] - 2
-                                    pos += block_size
-                        except Exception:
-                            pass
+                                            if value == 0xff:
+                                                value = struct.unpack('B', body[pos])[0]
+                                                pos += 1
+                                                if value != 0x00:
+                                                    found = True
+                                                    pos -= 2
+                                    else:
+                                        chunk = body[pos:pos+2]
+                                        block_size = struct.unpack('2B', chunk)
+                                        pos += 2
+                                        block_size = block_size[0] * 256 + block_size[1] - 2
+                                        pos += block_size
+                            except Exception:
+                                pass
                         self.progressive_results[request_id] = check
             except Exception:
                 pass
