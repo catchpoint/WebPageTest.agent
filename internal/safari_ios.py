@@ -795,7 +795,7 @@ class iWptBrowser(object):
                 progress_file = os.path.join(task['dir'], task['prefix']) + \
                                 '_visual_progress.json.gz'
                 visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                args = ['python', visualmetrics, '-vvvv', '-i', task['video_file'],
+                args = ['python', visualmetrics, '-i', task['video_file'],
                         '-d', video_path, '--force', '--quality',
                         '{0:d}'.format(self.job['imageQuality']),
                         '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms,

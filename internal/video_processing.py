@@ -98,7 +98,7 @@ class VideoProcessing(object):
                             '_visual_progress.json.gz'
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-d', self.video_path,
-                    '--histogram', histograms, '-vvvv', '--progress', progress_file]
+                    '--histogram', histograms, '--progress', progress_file]
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(self.task['dir'], self.task['prefix']) + \
                         '_rendered_video.mp4'
