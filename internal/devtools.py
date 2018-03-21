@@ -257,12 +257,13 @@ class DevTools(object):
             if 'timeline' in self.job and self.job['timeline']:
                 trace += ',' + ','.join([
                     'blink.console',
-                    'v8.execute',
-                    'devtools.timeline',
-                    'disabled-by-default-devtools.timeline',
-                    'disabled-by-default-devtools.timeline.frame',
-                    'disabled-by-default-devtools.timeline.stack'
+                    'devtools.timeline'
                 ])
+                if 'timeline_fps' in self.job and self.job['timeline_fps']:
+                    trace += ',' + ','.join([
+                        'disabled-by-default-devtools.timeline',
+                        'disabled-by-default-devtools.timeline.frame'
+                    ])
             if self.use_devtools_video and self.job['video']:
                 trace += ",disabled-by-default-devtools.screenshot"
                 self.recording_video = True
@@ -278,7 +279,7 @@ class DevTools(object):
             self.trace_enabled = True
             self.send_command('Tracing.start',
                               {'categories': trace,
-                               'options': 'record-as-much-as-possible,sampling-frequency=10000'},
+                               'options': 'record-as-much-as-possible'},
                               wait=True)
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
