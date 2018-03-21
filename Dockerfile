@@ -62,6 +62,7 @@ RUN apt-get update && \
     requests \
     ujson \
     tornado \
+    wsaccel \
     xvfbwrapper \
     marionette_driver
 

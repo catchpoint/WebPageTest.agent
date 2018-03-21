@@ -292,6 +292,14 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pypiwin32') and ret
 
+        # Try patching ws4py with a faster lib
+        try:
+            self.requires('wsaccel')
+            import wsaccel
+            wsaccel.patch_ws4py()
+        except Exception:
+            pass
+
         try:
             subprocess.check_output(['python', '--version'])
         except Exception:
