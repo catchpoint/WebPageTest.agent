@@ -1139,6 +1139,7 @@ class DevToolsClient(WebSocketClient):
             # devtools screenshots as separate files.
             if self.trace_file is not None:
                 trace_events = msg['params']['value']
+                out = ''
                 for _, trace_event in enumerate(trace_events):
                     self.processed_event_count += 1
                     keep_event = True
@@ -1171,9 +1172,9 @@ class DevToolsClient(WebSocketClient):
                         if process_event and self.trace_parser is not None:
                             self.trace_parser.ProcessTraceEvent(trace_event)
                     if keep_event:
-                        # Write it to the trace file and pass it to the trace parser
-                        self.trace_file.write(",\n")
-                        self.trace_file.write(json.dumps(trace_event))
+                        out += ",\n" + json.dumps(trace_event)
+                if len(out):
+                    self.trace_file.write(out)
 
     def process_screenshot(self, trace_event):
         """Process an individual screenshot event"""
