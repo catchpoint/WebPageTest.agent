@@ -1020,6 +1020,8 @@ class DevToolsClient(WebSocketClient):
         self.path_base = None
         self.trace_parser = None
         self.trace_event_counts = {}
+        self.processed_event_count = 0
+        self.last_data = None
 
     def opened(self):
         """Websocket interface - connection opened"""
@@ -1037,18 +1039,24 @@ class DevToolsClient(WebSocketClient):
             if raw.is_text:
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
                 compare = message[:50]
-                is_trace_data = False
                 if self.path_base is not None and compare.find('"Tracing.dataCollected') > -1:
-                    is_trace_data = True
+                    now = monotonic.monotonic()
                     msg = json.loads(message)
-                    self.messages.put('{"method":"got_message"}')
+                    message = None
                     if msg is not None:
                         self.process_trace_event(msg)
+                    if self.last_data is None or now - self.last_data >= 1.0:
+                        self.last_data = now
+                        self.messages.put('{"method":"got_message"}')
+                        logging.debug('Processed %d trace events', self.processed_event_count)
+                        self.processed_event_count = 0
                 elif self.trace_file is not None and compare.find('"Tracing.tracingComplete') > -1:
+                    if self.processed_event_count:
+                        logging.debug('Processed %d trace events', self.processed_event_count)
                     self.trace_file.write("\n]}")
                     self.trace_file.close()
                     self.trace_file = None
-                if not is_trace_data:
+                if message is not None:
                     self.messages.put(message)
         except Exception:
             pass
@@ -1132,6 +1140,7 @@ class DevToolsClient(WebSocketClient):
             if self.trace_file is not None:
                 trace_events = msg['params']['value']
                 for _, trace_event in enumerate(trace_events):
+                    self.processed_event_count += 1
                     keep_event = True
                     process_event = True
                     if self.video_prefix is not None and 'cat' in trace_event and \
@@ -1165,7 +1174,6 @@ class DevToolsClient(WebSocketClient):
                         # Write it to the trace file and pass it to the trace parser
                         self.trace_file.write(",\n")
                         self.trace_file.write(json.dumps(trace_event))
-                logging.debug("Processed %d trace events", len(msg['params']['value']))
 
     def process_screenshot(self, trace_event):
         """Process an individual screenshot event"""
