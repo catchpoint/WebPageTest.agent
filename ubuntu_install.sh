@@ -8,7 +8,7 @@ do
     sleep 1
 done
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper marionette_driver
 do
     sleep 1
 done
