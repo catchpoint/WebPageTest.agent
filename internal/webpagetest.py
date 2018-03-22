@@ -836,7 +836,13 @@ class WebPageTest(object):
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
-        if 'bodies' not in self.job or not self.job['bodies']:
+        all_bodies = False
+        html_body = False
+        if 'bodies' in self.job and self.job['bodies']:
+            all_bodies = True
+        if 'htmlbody' in self.job and self.job['htmlbody']:
+            html_body = True
+        if not all_bodies and not html_body:
             return
         try:
             path_base = os.path.join(task['dir'], task['prefix'])
@@ -873,9 +879,16 @@ class WebPageTest(object):
                             request['full_url'].find('.ttf') == -1 and\
                             'contentType' in request:
                         content_type = request['contentType'].lower()
-                        if content_type.startswith('text/html') or \
-                                content_type.find('javascript') >= 0 or \
-                                content_type.find('json') >= 0:
+                        need_body = False
+                        if all_bodies:
+                            if content_type.startswith('text/html') or \
+                                    content_type.find('javascript') >= 0 or \
+                                    content_type.find('json') >= 0:
+                                need_body = True
+                        elif html_body and content_type.startswith('text/html'):
+                            need_body = True
+                            html_body = False
+                        if need_body:
                             body_id = str(request['id'])
                             if 'raw_id' in request:
                                 body_id = str(request['raw_id'])

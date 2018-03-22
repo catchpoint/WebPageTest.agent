@@ -57,6 +57,8 @@ class DevTools(object):
         self.stylesheets = {}
         self.headers = {}
         self.prepare()
+        self.html_body = False
+        self.all_bodies = False
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -78,7 +80,13 @@ class DevTools(object):
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
             self.bodies_zip_file = None
+        self.html_body = False
+        self.all_bodies = False
         if 'bodies' in self.job and self.job['bodies']:
+            self.all_bodies = True
+        if 'htmlbody' in self.job and self.job['htmlbody']:
+            self.html_body = True
+        if self.html_body or self.all_bodies:
             self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
                                                    zipfile.ZIP_DEFLATED)
 
@@ -490,11 +498,14 @@ class DevTools(object):
                                 body = response['result']['body'].encode('utf-8')
                                 is_text = True
                             # Add text bodies to the zip archive
-                            if self.bodies_zip_file is not None and is_text:
-                                self.body_index += 1
-                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                                self.bodies_zip_file.writestr(name, body)
-                                logging.debug('%s: Stored body in zip', request_id)
+                            store_body = self.all_bodies
+                            if self.html_body and request_id == self.main_request:
+                                store_body = True
+                            if store_body and self.bodies_zip_file is not None and is_text:
+                                    self.body_index += 1
+                                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                    self.bodies_zip_file.writestr(name, body)
+                                    logging.debug('%s: Stored body in zip', request_id)
                             logging.debug('%s: Body length: %d', request_id, len(body))
                             self.response_bodies[request_id] = body
                             with open(body_file_path, 'wb') as body_file:
