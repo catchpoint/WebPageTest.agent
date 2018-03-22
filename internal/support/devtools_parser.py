@@ -110,7 +110,7 @@ class DevToolsParser(object):
         # sort all of the events by timestamp
         if len(raw_events):
             raw_events.sort(key=lambda x: x['params']['timestamp'] if \
-                ('params' in x and 'timestamp' in x['params']) else 0)
+                ('params' in x and 'timestamp' in x['params']) else 9999999)
         f_in.close()
         if raw_events is not None and len(raw_events):
             end_timestamp = None
@@ -121,6 +121,21 @@ class DevToolsParser(object):
                 if 'method' in raw_event and 'params' in raw_event:
                     method = raw_event['method']
                     params = raw_event['params']
+                    request_id = None
+                    original_id = None
+                    if 'requestId' in params:
+                        request_id = params['requestId']
+                        original_id = request_id
+                        if request_id in id_map:
+                            request_id += '-' + str(id_map[request_id])
+                    # Handle the events without timestamps (which will be sorted to the end)
+                    if method == 'Page.frameNavigated' and 'frame' in params and \
+                            'id' in params['frame'] and 'parentId' not in params['frame']:
+                        page_data['main_frame'] = params['frame']['id']
+                    if method == 'Network.requestServedFromCache' and 'requestId' in params and \
+                            request_id is not None and request_id in raw_requests:
+                        raw_requests[request_id]['fromNet'] = False
+                        raw_requests[request_id]['fromCache'] = True
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
@@ -132,24 +147,10 @@ class DevToolsParser(object):
                             params['timestamp'] *= 1000.0
                         else:
                             continue
-                    request_id = None
-                    original_id = None
-                    if 'requestId' in params:
-                        request_id = params['requestId']
-                        original_id = request_id
-                        if request_id in id_map:
-                            request_id += '-' + str(id_map[request_id])
-                    if method == 'Page.frameNavigated' and 'frame' in params and \
-                            'id' in params['frame'] and 'parentId' not in params['frame']:
-                        page_data['main_frame'] = params['frame']['id']
                     if method == 'Page.loadEventFired' and 'timestamp' in params and \
                             ('onload' not in page_data or
                              params['timestamp'] > page_data['onload']):
                         page_data['onload'] = params['timestamp']
-                    if method == 'Network.requestServedFromCache' and 'requestId' in params and \
-                            request_id is not None and request_id in raw_requests:
-                        raw_requests[request_id]['fromNet'] = False
-                        raw_requests[request_id]['fromCache'] = True
                     if 'timestamp' in params and request_id is not None:
                         timestamp = params['timestamp']
                         if method == 'Network.requestWillBeSent' and 'request' in params and \
@@ -442,6 +443,8 @@ class DevToolsParser(object):
                             timing['receiveHeadersEnd'] >= timing['sendStart']:
                         request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] -
                                                        timing['sendStart']))
+                        if request['load_ms'] >= 0:
+                            request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
                     if request['socket'] != -1 and request['socket'] not in connections:
                         connections[request['socket']] = timing
@@ -558,27 +561,22 @@ class DevToolsParser(object):
                 request['cache_time'] = None
                 request['cdn_provider'] = None
                 request['server_count'] = None
-                valid = True
-                if 'load_ms' in request and 'ttfb_ms' in request and \
-                        request['load_ms'] < request['ttfb_ms']:
-                    valid = False
-                if valid:
-                    if 'URL' not in page_data and len(request['full_url']):
-                        page_data['URL'] = request['full_url']
-                    if 'startTime' in raw_request:
-                        start_offset = int(round(raw_request['startTime'] - \
-                                                 raw_page_data['startTime']))
-                        if 'fullyLoaded' not in page_data or \
-                                start_offset > page_data['fullyLoaded']:
-                            page_data['fullyLoaded'] = start_offset
-                    if 'endTime' in raw_request:
-                        end_offset = int(round(raw_request['endTime'] - \
-                                               raw_page_data['startTime']))
-                        if 'fullyLoaded' not in page_data or \
-                                end_offset > page_data['fullyLoaded']:
-                            page_data['fullyLoaded'] = end_offset
-                    if request['load_start'] > 0:
-                        requests.append(dict(request))
+                if 'URL' not in page_data and len(request['full_url']):
+                    page_data['URL'] = request['full_url']
+                if 'startTime' in raw_request:
+                    start_offset = int(round(raw_request['startTime'] - \
+                                             raw_page_data['startTime']))
+                    if 'fullyLoaded' not in page_data or \
+                            start_offset > page_data['fullyLoaded']:
+                        page_data['fullyLoaded'] = start_offset
+                if 'endTime' in raw_request:
+                    end_offset = int(round(raw_request['endTime'] - \
+                                           raw_page_data['startTime']))
+                    if 'fullyLoaded' not in page_data or \
+                            end_offset > page_data['fullyLoaded']:
+                        page_data['fullyLoaded'] = end_offset
+                if request['load_start'] >= 0:
+                    requests.append(dict(request))
         page_data['connections'] = len(connections)
         if len(requests):
             requests.sort(key=lambda x: x['load_start'])
