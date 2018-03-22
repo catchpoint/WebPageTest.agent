@@ -251,6 +251,8 @@ class DevtoolsBrowser(object):
             options['netlog'] = netlog if os.path.isfile(netlog) else None
             optimization = path_base + '_optimization.json.gz'
             options['optimization'] = optimization if os.path.isfile(optimization) else None
+            user_timing = path_base + '_user_timing.json.gz'
+            options['user'] = user_timing if os.path.isfile(user_timing) else None
             coverage = path_base + '_coverage.json.gz'
             options['coverage'] = coverage if os.path.isfile(coverage) else None
             parser = DevToolsParser(options)

@@ -33,6 +33,7 @@ class DevToolsParser(object):
         self.devtools_file = options['devtools']
         self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
         self.optimization = options['optimization'] if 'optimization' in options else None
+        self.user_timing_file = options['user'] if 'user' in options else None
         self.coverage = options['coverage'] if 'coverage' in options else None
         self.cached = options['cached'] if 'cached' in options else False
         self.out_file = options['out']
@@ -48,6 +49,8 @@ class DevToolsParser(object):
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
             self.process_netlog_requests()
+            logging.debug("Updating page-level stats from user timing")
+            self.process_user_timing()
             logging.debug("Calculating page-level stats")
             self.process_page_data()
             logging.debug("Adding optimization results")
@@ -834,6 +837,53 @@ class DevToolsParser(object):
             else:
                 page_data['result'] = 12999
 
+    def process_user_timing(self):
+        """Walk through the sorted requests and generate the page-level stats"""
+        page_data = self.result['pageData']
+        if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
+            _, ext = os.path.splitext(self.user_timing_file)
+            if ext.lower() == '.gz':
+                f_in = gzip.open(self.user_timing_file, 'rb')
+            else:
+                f_in = open(self.user_timing_file, 'r')
+            user_timing_events = json.load(f_in)
+            f_in.close()
+            if user_timing_events:
+                user_timing_events.sort(key=lambda x: x['ts'] if 'ts' in x else 0)
+            main_frame = None
+            navigation_start = None
+            names = [
+                'firstLayout',
+                'firstPaint',
+                'firstContentfulPaint',
+                'firstTextPaint',
+                'firstImagePaint',
+                'firstMeaningfulPaint',
+                'domInteractive',
+                'domContentLoadedEventStart',
+                'domContentLoadedEventEnd',
+                'loadEventStart',
+                'loadEventEnd'
+            ]
+            for event in user_timing_events:
+                if 'args' in event and 'frame' in event['args'] and \
+                        'name' in event and 'ts' in event:
+                    if main_frame is None:
+                        if event['name'] in ['navigationStart', 'fetchStart']:
+                            main_frame = event['args']['frame']
+                    if main_frame is not None and event['args']['frame'] == main_frame:
+                        if navigation_start is None:
+                            if event['name'] in ['navigationStart', 'fetchStart']:
+                                navigation_start = event['ts']
+                        else:
+                            elapsed = int(round(float(event['ts'] - navigation_start) / 1000.0))
+                            for name in names:
+                                if event['name'] == name:
+                                    page_data[name] = elapsed
+                                    if name == 'loadEventStart':
+                                        page_data['loadTime'] = elapsed
+                                        page_data['docTime'] = elapsed
+
     def process_optimization_results(self):
         """Merge the data from the optimization checks file"""
         page_data = self.result['pageData']
@@ -1000,6 +1050,7 @@ def main():
     parser.add_argument('-d', '--devtools', help="Input devtools file.")
     parser.add_argument('-n', '--netlog', help="Input netlog requests file (optional).")
     parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
+    parser.add_argument('-u', '--user', help="Input user timing file (optional).")
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
     parser.add_argument('-c', '--cached', action='store_true', default=False,
                         help="Test was of a cached page.")
@@ -1026,6 +1077,7 @@ def main():
     opt = {'devtools': options.devtools,
            'netlog': options.netlog,
            'optimization': options.optimization,
+           'user': options.user,
            'coverage': options.coverage,
            'cached': options.cached,
            'out': options.out}
