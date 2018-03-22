@@ -211,14 +211,14 @@ class Trace():
             if 'name' in trace_event and trace_event['name'].find('navigationStart') >= 0:
                 if self.start_time is None or trace_event['ts'] < self.start_time:
                     self.start_time = trace_event['ts']
-        if cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
+        if cat == 'netlog' or cat.find('netlog') >= 0:
+            self.ProcessNetlogEvent(trace_event)
+        elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
         elif cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
-        elif cat.find('netlog') >= 0:
-            self.ProcessNetlogEvent(trace_event)
 
     ##########################################################################
     #   Timeline
@@ -227,13 +227,12 @@ class Trace():
         thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
 
         # Keep track of the main thread
-        if 'args' in trace_event and \
-                'data' in trace_event['args']:
+        if 'args' in trace_event and 'data' in trace_event['args'] and \
+                thread not in self.ignore_threads:
             if 'url' in trace_event['args']['data'] and \
-                    trace_event['args']['data']['url'][:21] == 'http://127.0.0.1:8888':
+                    trace_event['args']['data']['url'].startswith('http://127.0.0.1:8888'):
                 self.ignore_threads[thread] = True
-            if thread not in self.ignore_threads and \
-                    self.cpu['main_thread'] is None:
+            if self.cpu['main_thread'] is None:
                 if ('isMainFrame' in trace_event['args']['data'] and \
                      trace_event['args']['data']['isMainFrame']) or \
                    (trace_event['name'] == 'ResourceSendRequest' and \
@@ -273,8 +272,9 @@ class Trace():
                         e['e'] = trace_event['ts']
             else:
                 e = {'t': thread, 'n': self.event_names[trace_event['name']], 's': trace_event['ts']}
-                if (trace_event['name'] == 'EvaluateScript' or trace_event['name'] == 'v8.compile' or trace_event['name'] == 'v8.parseOnBackground')\
-                        and 'args' in trace_event and 'data' in trace_event['args'] and 'url' in trace_event['args']['data'] and\
+                if trace_event['name'] in ['EvaluateScript', 'v8.compile', 'v8.parseOnBackground'] and \
+                        'args' in trace_event and 'data' in trace_event['args'] and \
+                        'url' in trace_event['args']['data'] and \
                         trace_event['args']['data']['url'].startswith('http'):
                     e['js'] = trace_event['args']['data']['url']
                 if trace_event['name'] == 'FunctionCall' and 'args' in trace_event and 'data' in trace_event['args']:

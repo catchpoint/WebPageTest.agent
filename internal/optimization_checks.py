@@ -244,28 +244,31 @@ class OptimizationChecks(object):
 
     def start(self):
         """Start running the optimization checks"""
+        logging.debug('Starting optimization checks...')
         optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
         if self.requests is not None and not optimization_checks_disabled:
-            # Fill in any response bodies we failed to get from the browser
-            #self.get_bodies()
             self.running_checks = True
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
-            self.cdn_thread.start()
             self.hosting_thread = threading.Thread(target=self.check_hosting)
-            self.hosting_thread.start()
             self.gzip_thread = threading.Thread(target=self.check_gzip)
-            self.gzip_thread.start()
             self.image_thread = threading.Thread(target=self.check_images)
-            self.image_thread.start()
             self.progressive_thread = threading.Thread(target=self.check_progressive)
+            self.cdn_thread.start()
+            self.hosting_thread.start()
+            self.gzip_thread.start()
+            self.image_thread.start()
             self.progressive_thread.start()
             # collect the miscellaneous results directly
+            logging.debug('Checking keep-alive.')
             self.check_keep_alive()
+            logging.debug('Checking caching.')
             self.check_cache_static()
+        logging.debug('Optimization checks started.')
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
+        logging.debug('Waiting for optimization checks to complete')
         if self.running_checks:
             logging.debug('Waiting for progressive JPEG check to complete')
             if self.progressive_thread is not None:
@@ -324,124 +327,32 @@ class OptimizationChecks(object):
                 if gz_file:
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
+        logging.debug('Optimization checks complete')
         return self.results
-
-    def body_fetch_thread(self):
-        """background thread to fetch bodies"""
-        session = requests.session()
-        proxies = {"http": None, "https": None}
-        try:
-            while True:
-                task = self.fetch_queue.get_nowait()
-                try:
-                    url = task['url']
-                    dest = task['file']
-                    headers = {}
-                    if isinstance(task['headers'], list):
-                        for header in task['headers']:
-                            separator = header.find(':', 2)
-                            if separator >= 0:
-                                header_name = header[:separator].strip()
-                                value = header[separator + 1:].strip()
-                                if header_name.lower() not in ["accept-encoding"] and\
-                                        not header_name.startswith(':'):
-                                    headers[header_name] = value
-                    elif isinstance(task['headers'], dict):
-                        for header_name in task['headers']:
-                            value = task['headers'][header_name]
-                            if header_name.lower() not in ["accept-encoding"] and \
-                                    not header_name.startswith(':'):
-                                headers[header_name] = value
-                    logging.debug('Downloading %s to %s', url, dest)
-                    response = session.get(url, headers=headers, stream=True,
-                                           timeout=10, proxies=proxies)
-                    if response.status_code == 200:
-                        with open(dest, 'wb') as f_out:
-                            for chunk in response.iter_content(chunk_size=4096):
-                                f_out.write(chunk)
-                        self.fetch_result_queue.put(task)
-                except Exception:
-                    pass
-                self.fetch_queue.task_done()
-        except Exception:
-            pass
-
-    def get_bodies(self):
-        """Fetch any response bodies that are not already available"""
-        try:
-            count = 0
-            path = os.path.join(self.task['dir'], 'bodies')
-            if not os.path.isdir(path):
-                os.makedirs(path)
-            for request_id in self.requests:
-                # Build a list of requests we need to fetch
-                try:
-                    request = self.requests[request_id]
-                    if 'status' in request and request['status'] == 200 and 'body' not in request:
-                        body_id = request['raw_id'] if 'raw_id' in request else request['id']
-                        body_file_path = os.path.join(path, str(body_id))
-                        if os.path.exists(body_file_path):
-                            request['body'] = body_file_path
-                        elif 'url' in request and 'request_headers' in request:
-                            content_type = self.get_header_value(request['response_headers'],
-                                                                 'Content-Type')
-                            if content_type is None or content_type.find('video') == -1:
-                                url = request['full_url'] if 'full_url' in request \
-                                        else request['url']
-                                headers = request['request_headers']
-                                count += 1
-                                self.fetch_queue.put({'request_id': request_id,
-                                                      'url': url,
-                                                      'file': body_file_path,
-                                                      'headers': headers})
-                except Exception:
-                    pass
-            # Spawn threads to do the actual fetching
-            if count:
-                logging.debug("Fetching bodies for %d requests", count)
-                threads = []
-                thread_count = min(count, 10)
-                for _ in xrange(thread_count):
-                    thread = threading.Thread(target=self.body_fetch_thread)
-                    thread.daemon = True
-                    thread.start()
-                    threads.append(thread)
-                for thread in threads:
-                    thread.join(timeout=60)
-        except Exception:
-            pass
-
-        try:
-            while True:
-                task = self.fetch_result_queue.get_nowait()
-                if os.path.isfile(task['file']):
-                    self.requests[task['request_id']]['body'] = task['file']
-                self.fetch_result_queue.task_done()
-        except Exception:
-            pass
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
-        from urlparse import urlparse
+        from urlparse import urlsplit
+        # build a list of origins and how many requests were issued to each
+        origins = {}
+        for request_id in self.requests:
+            request = self.requests[request_id]
+            if 'url' in request:
+                url = request['full_url'] if 'full_url' in request else request['url']
+                parsed = urlsplit(url)
+                origin = parsed.scheme + '://' + parsed.netloc
+                if origin not in origins:
+                    origins[origin] = 0
+                origins[origin] += 1
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
                 if 'url' in request:
                     check = {'score': 100}
                     url = request['full_url'] if 'full_url' in request else request['url']
-                    domain = urlparse(url).hostname
-                    # See if there are any other requests on the same domain
-                    other_requests = False
-                    for r_id in self.requests:
-                        if r_id != request_id:
-                            if 'url' in self.requests[r_id]:
-                                url = self.requests[r_id]['full_url'] if 'full_url' in \
-                                        self.requests[r_id] else self.requests[r_id]['url']
-                                other_domain = urlparse(url).hostname
-                                if other_domain == domain:
-                                    other_requests = True
-                                    break
-                    if other_requests:
+                    parsed = urlsplit(url)
+                    origin = parsed.scheme + '://' + parsed.netloc
+                    if origins[origin] > 1:
                         check['score'] = 100
                         keep_alive = self.get_header_value(request['response_headers'],
                                                            'Connection')
@@ -588,7 +499,7 @@ class OptimizationChecks(object):
             except Exception:
                 pass
         self.hosting_time = monotonic.monotonic() - start
-        
+
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
         from urlparse import urlparse
@@ -659,7 +570,6 @@ class OptimizationChecks(object):
         dns_resolver = resolver.Resolver()
         dns_resolver.timeout = 1
         provider = self.check_cdn_name(domain)
-        logging.debug("Looking up %s", domain)
         # First do a CNAME check
         if provider is None:
             try:
@@ -667,7 +577,6 @@ class OptimizationChecks(object):
                 if answers and len(answers):
                     for rdata in answers:
                         name = '.'.join(rdata.target).strip(' .')
-                        logging.debug("%s -> %s", domain, name)
                         if name != domain:
                             provider = self.check_cdn_name(name)
                             if provider is None and depth < 10:
@@ -686,7 +595,6 @@ class OptimizationChecks(object):
                     if addr_name:
                         name = str(dns_resolver.query(addr_name, "PTR")[0])
                         if name:
-                            logging.debug("%s -> %s -> %s", domain, addr, name)
                             provider = self.check_cdn_name(name)
             except Exception:
                 pass
@@ -922,6 +830,7 @@ class OptimizationChecks(object):
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
+        from PIL import Image
         start = monotonic.monotonic()
         for request_id in self.requests:
             try:
@@ -929,48 +838,53 @@ class OptimizationChecks(object):
                 if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type == 'jpeg':
-                        if 'response_body' not in request:
-                            request['response_body'] = ''
-                            with open(request['body'], 'rb') as f_in:
-                                request['response_body'] = f_in.read()
-                        body = request['response_body']
-                        content_length = len(request['response_body'])
-                        check = {'size': content_length, 'scan_count': 0}
-                        pos = 0
-                        try:
-                            while pos < content_length:
-                                block = struct.unpack('B', body[pos])[0]
-                                pos += 1
-                                if block != 0xff:
-                                    break
-                                block = struct.unpack('B', body[pos])[0]
-                                pos += 1
-                                while block == 0xff:
+                        check = {'size': os.path.getsize(request['body']), 'scan_count': 1}
+                        image = Image.open(request['body'])
+                        info = dict(image.info)
+                        image.close()
+                        if 'progression' in info and info['progression']:
+                            check['scan_count'] = 0
+                            if 'response_body' not in request:
+                                request['response_body'] = ''
+                                with open(request['body'], 'rb') as f_in:
+                                    request['response_body'] = f_in.read()
+                            body = request['response_body']
+                            content_length = len(request['response_body'])
+                            pos = 0
+                            try:
+                                while pos < content_length:
                                     block = struct.unpack('B', body[pos])[0]
                                     pos += 1
-                                if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
-                                    continue
-                                elif block == 0xda: # Image data
-                                    check['scan_count'] += 1
-                                    # Seek to the next non-padded 0xff to find the next marker
-                                    found = False
-                                    while not found and pos < content_length:
-                                        value = struct.unpack('B', body[pos])[0]
+                                    if block != 0xff:
+                                        break
+                                    block = struct.unpack('B', body[pos])[0]
+                                    pos += 1
+                                    while block == 0xff:
+                                        block = struct.unpack('B', body[pos])[0]
                                         pos += 1
-                                        if value == 0xff:
+                                    if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
+                                        continue
+                                    elif block == 0xda: # Image data
+                                        check['scan_count'] += 1
+                                        # Seek to the next non-padded 0xff to find the next marker
+                                        found = False
+                                        while not found and pos < content_length:
                                             value = struct.unpack('B', body[pos])[0]
                                             pos += 1
-                                            if value != 0x00:
-                                                found = True
-                                                pos -= 2
-                                else:
-                                    chunk = body[pos:pos+2]
-                                    block_size = struct.unpack('2B', chunk)
-                                    pos += 2
-                                    block_size = block_size[0] * 256 + block_size[1] - 2
-                                    pos += block_size
-                        except Exception:
-                            pass
+                                            if value == 0xff:
+                                                value = struct.unpack('B', body[pos])[0]
+                                                pos += 1
+                                                if value != 0x00:
+                                                    found = True
+                                                    pos -= 2
+                                    else:
+                                        chunk = body[pos:pos+2]
+                                        block_size = struct.unpack('2B', chunk)
+                                        pos += 2
+                                        block_size = block_size[0] * 256 + block_size[1] - 2
+                                        pos += block_size
+                            except Exception:
+                                pass
                         self.progressive_results[request_id] = check
             except Exception:
                 pass
