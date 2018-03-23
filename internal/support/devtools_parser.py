@@ -246,14 +246,22 @@ class DevToolsParser(object):
                                     ('fromCache' not in request or not request['fromCache']):
                                 if 'blockedReason' not in params and \
                                         ('canceled' not in params or not params['canceled']):
-                                    request['fromNet'] = True
-                                    request['errorCode'] = 12999
-                                    if 'firstByteTime' not in request:
-                                        request['firstByteTime'] = timestamp
-                                    if 'errorText' in params:
-                                        request['error'] = params['errorText']
-                                    if 'error' in params:
-                                        request['errorCode'] = params['error']
+                                    # Special case ERR_CONNECTION_REFUSED.
+                                    # Request blocking is done by mapping domains to localhost
+                                    # which can cause ERR_CONNECTION_REFUSED errors.
+                                    # Real failures will still be in the netlog.
+                                    if 'errorText' in params and \
+                                            params['errorText'].find('ERR_CONNECTION_REFUSED'):
+                                        request['fromNet'] = False
+                                    else:
+                                        request['fromNet'] = True
+                                        request['errorCode'] = 12999
+                                        if 'firstByteTime' not in request:
+                                            request['firstByteTime'] = timestamp
+                                        if 'errorText' in params:
+                                            request['error'] = params['errorText']
+                                        if 'error' in params:
+                                            request['errorCode'] = params['error']
                                 else:
                                     request['fromNet'] = False
                     if method == 'Page.domContentEventFired' and 'timestamp' in params and \
@@ -625,10 +633,12 @@ class DevToolsParser(object):
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
             f_in.close()
+            keep_requests = []
             for request in requests:
                 if 'request_id' not in request and 'id' in request:
                     request['request_id'] = request['id']
                 if 'full_url' in request:
+                    matched = False
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
                                 entry['url'] == request['full_url']:
@@ -662,7 +672,12 @@ class DevToolsParser(object):
                                 parts = entry['client_address'].rsplit(':', 1)
                                 if len(parts) == 2:
                                     request['client_port'] = parts[1]
+                            keep_requests.append(request)
                             break
+            # Just keep the requests that had matching entries in the netlog
+            self.result['requests'] = keep_requests
+            requests = self.result['requests']
+
             # Add any requests we didn't know about
             index = 0
             for entry in netlog:
