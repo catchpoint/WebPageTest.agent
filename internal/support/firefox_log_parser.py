@@ -145,7 +145,11 @@ class FirefoxLogParser(object):
                 if msg['timestamp'] >= 0:
                     offset = line.find(']: ', 32)
                     if offset >= 0:
-                        msg['thread'] = line[34:offset]
+                        thread = line[34:offset]
+                        separator = thread.find(':')
+                        if separator >= 0:
+                            thread = thread[separator + 1:]
+                        msg['thread'] = thread
                         msg['level'] = line[offset + 3:offset + 4]
                         msg_start = line.find(' ', offset + 5)
                         if msg_start >= 0:
