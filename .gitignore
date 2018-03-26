@@ -17,3 +17,4 @@ agent.sh
 ios.sh
 throttle.sh
 internal/support/edge/wpt-etw/.vs/wpt-etw/v15/.suo
+wptagent.alive

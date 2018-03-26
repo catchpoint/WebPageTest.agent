@@ -15,6 +15,7 @@ import threading
 import time
 import monotonic
 import ujson as json
+from .base_browser import BaseBrowser
 
 SET_ORANGE = "(function() {" \
              "var wptDiv = document.getElementById('wptorange');" \
@@ -31,11 +32,12 @@ SET_ORANGE = "(function() {" \
              "document.body.appendChild(wptDiv);" \
              "}})();"
 
-class DesktopBrowser(object):
+class DesktopBrowser(BaseBrowser):
     """Desktop Browser base"""
     START_BROWSER_TIME_LIMIT = 30
 
     def __init__(self, path, options, job):
+        BaseBrowser.__init__(self)
         self.path = path
         self.proc = None
         self.job = job

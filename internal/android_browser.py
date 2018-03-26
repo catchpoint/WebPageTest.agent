@@ -11,6 +11,7 @@ import subprocess
 import time
 import monotonic
 import ujson as json
+from .base_browser import BaseBrowser
 
 SET_ORANGE = "(function() {" \
              "var wptDiv = document.createElement('div');" \
@@ -25,9 +26,10 @@ SET_ORANGE = "(function() {" \
              "document.body.appendChild(wptDiv);" \
              "})();"
 
-class AndroidBrowser(object):
+class AndroidBrowser(BaseBrowser):
     """Android Browser base"""
     def __init__(self, adb, options, job, config):
+        BaseBrowser.__init__(self)
         self.adb = adb
         self.job = job
         self.options = options

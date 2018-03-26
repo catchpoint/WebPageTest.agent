@@ -43,6 +43,7 @@ class DevTools(object):
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
+        self.main_request_headers = None
         self.start_timestamp = None
         self.path_base = None
         self.support_path = None
@@ -67,6 +68,7 @@ class DevTools(object):
         self.nav_error = None
         self.nav_error_code = None
         self.main_request = None
+        self.main_request_headers = None
         self.response_started = False
         self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
@@ -502,10 +504,10 @@ class DevTools(object):
                             if self.html_body and request_id == self.main_request:
                                 store_body = True
                             if store_body and self.bodies_zip_file is not None and is_text:
-                                    self.body_index += 1
-                                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                                    self.bodies_zip_file.writestr(name, body)
-                                    logging.debug('%s: Stored body in zip', request_id)
+                                self.body_index += 1
+                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                self.bodies_zip_file.writestr(name, body)
+                                logging.debug('%s: Stored body in zip', request_id)
                             logging.debug('%s: Body length: %d', request_id, len(body))
                             self.response_bodies[request_id] = body
                             with open(body_file_path, 'wb') as body_file:
@@ -898,6 +900,10 @@ class DevTools(object):
                         request['fromNet'] = False
                     if 'mimeType' in response and response['mimeType'].startswith('video/'):
                         request['is_video'] = True
+                    if self.main_request is not None and \
+                            request_id == self.main_request and \
+                            'headers' in response:
+                        self.main_request_headers = response['headers']
                     if self.main_request is not None and \
                             request_id == self.main_request and \
                             'status' in response and response['status'] >= 400:

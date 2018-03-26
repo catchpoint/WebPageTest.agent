@@ -18,11 +18,13 @@ import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
 from .optimization_checks import OptimizationChecks
+from .base_browser import BaseBrowser
 
-class iWptBrowser(object):
+class iWptBrowser(BaseBrowser):
     """iOS"""
 
     def __init__(self, ios_device, options, job):
+        BaseBrowser.__init__(self)
         self.job = job
         self.task = None
         self.options = options
