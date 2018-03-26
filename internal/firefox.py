@@ -430,23 +430,25 @@ class Firefox(DesktopBrowser):
                 self.requests[evt['requestId']] = {'id': evt['requestId'],
                                                    'from_net': True}
             request = self.requests[evt['requestId']]
-            if 'url' in evt and 'url' not in request:
+            if 'url' in evt and evt['url'] is not None and 'url' not in request:
                 request['url'] = evt['url']
-            if 'method' in evt and 'method' not in request:
+            if 'method' in evt and evt['method'] is not None and 'method' not in request:
                 request['method'] = evt['method']
-            if 'type' in evt and 'type' not in request:
+            if 'type' in evt and evt['type'] is not None and 'type' not in request:
                 request['type'] = evt['type']
-            if 'ip' in evt and 'ip' not in request:
+            if 'ip' in evt and evt['ip'] is not None and 'ip' not in request:
                 request['ip'] = evt['ip']
             if 'fromCache' in evt and evt['fromCache']:
                 request['from_net'] = False
-            if 'statusLine' in evt:
+            if 'statusLine' in evt and evt['statusLine'] is not None:
                 request['status_line'] = evt['statusLine']
-            if 'statusCode' in evt:
+            if 'statusCode' in evt and evt['statusCode'] is not None:
                 request['status'] = evt['statusCode']
-            if 'requestHeaders' in evt and 'request_headers' not in request:
+            if 'requestHeaders' in evt and evt['requestHeaders'] is not None and \
+                    'request_headers' not in request:
                 request['request_headers'] = list(evt['requestHeaders'])
-            if 'responseHeaders' in evt and 'response_headers' not in request:
+            if 'responseHeaders' in evt and evt['responseHeaders'] is not None and \
+                    'response_headers' not in request:
                 request['response_headers'] = list(evt['responseHeaders'])
 
             if message == 'onBeforeRequest':
