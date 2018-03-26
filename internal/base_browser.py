@@ -3,12 +3,37 @@
 # found in the LICENSE file.
 """Base class support for browsers"""
 import os
+import time
+import monotonic
 import ujson as json
 
 class BaseBrowser(object):
     """Browser base"""
     def __init__(self):
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+
+    def execute_js(self, script):
+        """Stub to be overridden"""
+        return None
+
+    def wappalyzer_detect(self, task, request_headers):
+        """Run the wappalyzer detection"""
+        # Run the Wappalyzer detection (give it 30 seconds at most)
+        try:
+            detect_script = self.wappalyzer_script(request_headers)
+            result_script = self.wappalyzer_result_script()
+            result = self.execute_js(detect_script)
+            if result:
+                end_time = monotonic.monotonic() + 30
+                result = None
+                while result is None and monotonic.monotonic() < end_time:
+                    time.sleep(0.5)
+                    result = self.execute_js(result_script)
+                if result is not None:
+                    detected = json.loads(result)
+                    task['page_data']['detected'] = dict(detected)
+        except Exception:
+            pass
 
     def wappalyzer_script(self, response_headers):
         """Build the wappalyzer script to run in-browser"""

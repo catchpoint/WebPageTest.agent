@@ -204,22 +204,7 @@ class DevtoolsBrowser(object):
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
-            # Run the Wappalyzer detection (give it 30 seconds at most)
-            try:
-                detect_script = self.wappalyzer_script(self.devtools.main_request_headers)
-                result_script = self.wappalyzer_result_script()
-                result = self.execute_js(detect_script)
-                if result:
-                    end_time = monotonic.monotonic() + 30
-                    result = None
-                    while result is None and monotonic.monotonic() < end_time:
-                        time.sleep(0.5)
-                        result = self.execute_js(result_script)
-                    if result is not None:
-                        detected = json.loads(result)
-                        task['page_data']['detected'] = dict(detected)
-            except Exception:
-                pass
+            self.wappalyzer_detect(task, self.devtools.main_request_headers)
             # wait for the background optimization checks
             optimization.join()
 

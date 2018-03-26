@@ -36,6 +36,7 @@ class Firefox(DesktopBrowser):
         self.connected = False
         self.start_offset = None
         self.browser_version = None
+        self.main_request_headers = None
         self.log_pos = {}
         self.page = {}
         self.requests = {}
@@ -49,6 +50,7 @@ class Firefox(DesktopBrowser):
         self.log_pos = {}
         self.page = {}
         self.requests = {}
+        self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
         os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:5,nsSocketTransport:5'\
                                 'nsHostResolver:5,pipnss:5'
@@ -450,6 +452,8 @@ class Firefox(DesktopBrowser):
             if 'responseHeaders' in evt and evt['responseHeaders'] is not None and \
                     'response_headers' not in request:
                 request['response_headers'] = list(evt['responseHeaders'])
+                if self.main_request_headers is None:
+                    self.main_request_headers = list(evt['responseHeaders'])
 
             if message == 'onBeforeRequest':
                 request['created'] = evt['timeStamp']
@@ -575,6 +579,7 @@ class Firefox(DesktopBrowser):
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         DesktopBrowser.on_start_processing(self, task)
+        self.wappalyzer_detect(task, self.main_request_headers)
         # Parse the moz log for the accurate request timings
         request_timings = []
         if 'moz_log' in task:
