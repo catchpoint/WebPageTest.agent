@@ -56,13 +56,13 @@
           if (apps[app] === undefined) {
             apps[app] = '';
           }
-          var app_name = app;
+          var app_name = app.trim();
           if (version && version.length) {
-            app_name += ' ' + version;
+            app_name += ' ' + version.trim();
             if (apps[app].length) {
               apps[app] += ',';
             }
-            apps[app] += version;
+            apps[app] += version.trim();
           }
           if (categories[category].length) {
             categories[category] += ',';
