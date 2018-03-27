@@ -37,7 +37,8 @@
   }
 
   wappalyzer.driver.displayApps = detected => {
-    var categories = {}
+    var categories = {};
+    var apps = {};
     if ( detected != null && Object.keys(detected).length ) {
       for (var app in detected) {
         if ( !hasOwn.call(detected, app) ) {
@@ -50,11 +51,18 @@
           }
           var category = wappalyzer.categories[wappalyzer.apps[app].cats[i]].name;
           if (categories[category] === undefined) {
-            categories[category] = ''
+            categories[category] = '';
+          }
+          if (apps[app] === undefined) {
+            apps[app] = '';
           }
           var app_name = app;
           if (version && version.length) {
             app_name += ' ' + version;
+            if (apps[app].length) {
+              apps[app] += ',';
+            }
+            apps[app] += version;
           }
           if (categories[category].length) {
             categories[category] += ',';
@@ -72,7 +80,10 @@
     }
     if (e) {
       e.innerHTML = '';
-      e.appendChild(document.createTextNode(JSON.stringify(categories)));
+      e.appendChild(document.createTextNode(JSON.stringify({
+        categories: categories,
+        apps: apps
+      })));
     }
   },
 

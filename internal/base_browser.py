@@ -31,7 +31,10 @@ class BaseBrowser(object):
                     result = self.execute_js(result_script)
                 if result is not None:
                     detected = json.loads(result)
-                    task['page_data']['detected'] = dict(detected)
+                    if 'categories' in detected:
+                        task['page_data']['detected'] = dict(detected['categories'])
+                    if 'apps' in detected:
+                        task['page_data']['detected_apps'] = dict(detected['apps'])
         except Exception:
             pass
 
