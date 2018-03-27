@@ -70,6 +70,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
             self.setup_prefs(task['profile'])
+        if 'overrideHosts' in task and task['overrideHosts']:
+            args.append('--enable-features=NetworkService')
         if self.options.xvfb:
             args.append('--disable-gpu')
         if self.options.dockerized:

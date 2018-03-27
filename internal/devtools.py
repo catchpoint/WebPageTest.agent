@@ -11,6 +11,7 @@ import re
 import subprocess
 import time
 import zipfile
+from urlparse import urlsplit
 import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
@@ -238,6 +239,12 @@ class DevTools(object):
             for block in self.task['block']:
                 self.send_command('Network.addBlockedURL', {'url': block})
             self.send_command('Network.setBlockedURLs', {'urls': self.task['block']})
+        if 'overrideHosts' in self.task and self.task['overrideHosts']:
+            patterns = []
+            for host in self.task['overrideHosts']:
+                patterns.append({'urlPattern': 'http://{0}*'.format(host)})
+                patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+            self.send_command('Network.setRequestInterception', {'patterns': patterns})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})
@@ -853,7 +860,19 @@ class DevTools(object):
 
     def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""
-        if 'requestId' in msg['params']:
+        if event == 'requestIntercepted':
+            params = {'interceptionId': msg['params']['interceptionId']}
+            if 'overrideHosts' in self.task:
+                url = msg['params']['request']['url']
+                parts = urlsplit(url).netloc.split(':')
+                host = parts[0]
+                if host in self.task['overrideHosts']:
+                    headers = msg['params']['request']['headers']
+                    headers['Host'] = self.task['overrideHosts'][host]
+                    headers['x-Host'] = host
+                    params['headers'] = headers
+                self.send_command('Network.continueInterceptedRequest', params)
+        elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
                 self.requests[request_id] = {'id': request_id}
