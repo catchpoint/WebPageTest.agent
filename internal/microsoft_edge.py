@@ -74,7 +74,12 @@ class Edge(DesktopBrowser):
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
             config = None
-            names = ['block', 'block_domains', 'block_domains_except', 'headers', 'cookies']
+            names = ['block',
+                     'block_domains',
+                     'block_domains_except',
+                     'headers',
+                     'cookies',
+                     'overrideHosts']
             for name in names:
                 if name in task and task[name]:
                     if config is None:

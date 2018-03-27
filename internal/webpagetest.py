@@ -608,10 +608,15 @@ class WebPageTest(object):
                             separator = target.find(':')
                             if separator > 0:
                                 name = target[:separator].strip()
-                                value = target[separator + 1:].strip()
+                                header_value = target[separator + 1:].strip()
                                 if 'headers' not in task:
                                     task['headers'] = {}
-                                task['headers'][name] = value
+                                task['headers'][name] = header_value
+                    elif command == 'overridehost':
+                        if target and value:
+                            if 'overrideHosts' not in task:
+                                task['overrideHosts'] = {}
+                            task['overrideHosts'][target] = value
                     elif command == 'setcookie' and target is not None and value is not None:
                         url = target
                         cookie = value

@@ -4,6 +4,7 @@ var block = [];
 var block_domains = [];
 var block_domains_except = [];
 var headers = {};
+var overrideHosts = {};
 
 function get_domain(url) {
   var domain;
@@ -58,6 +59,19 @@ function addHeaders(details) {
       }
       details.requestHeaders.push({'name': name, 'value': headers[name]})
     }
+    var url = new URL(details.url);
+    for (host in overrideHosts) {
+      if (host == url.hostname) {
+        for (var i = 0; i < details.requestHeaders.length; ++i) {
+          if (details.requestHeaders[i].name === 'Host') {
+            details.requestHeaders.splice(i, 1);
+            break;
+          }
+        }
+        details.requestHeaders.push({'name': 'Host', 'value': overrideHosts[host]})
+        details.requestHeaders.push({'name': 'x-Host', 'value': host})
+      }
+    }
   }
   return {requestHeaders: details.requestHeaders};
 }
@@ -84,6 +98,9 @@ browser.runtime.onMessage.addListener(function(data, sender, sendResponse) {
   if (data['headers'] != undefined) {
     headers = data['headers'];
   }
+  if (data['overrideHosts'] != undefined) {
+    overrideHosts = data['overrideHosts'];
+  }
   if (data['cookies'] != undefined) {
     for (var i = 0; i < data['cookies'].length; i++) {
       try {
@@ -94,7 +111,11 @@ browser.runtime.onMessage.addListener(function(data, sender, sendResponse) {
       }
     }
   }
-  if (block.length || block_domains.length || block_domains_except.length || Object.keys(headers).length) {
+  if (block.length ||
+      block_domains.length ||
+      block_domains_except.length ||
+      Object.keys(headers).length ||
+      Object.keys(overrideHosts).length) {
     installBlockingHandler();
   }
 });
