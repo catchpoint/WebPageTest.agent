@@ -1,0 +1,10 @@
+﻿{
+  // example custom provider configuration
+  /*
+  "Microsoft.Web.Platform": {
+    "Verbosity": 5,
+    "Filter": 70368744177664,
+    "EventNames": [ "PageAvailable" ],
+    "EventIDs": [ 10322, 10485, 11121 ]
+  }*/
+}
