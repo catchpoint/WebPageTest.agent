@@ -33,6 +33,6 @@ Build the image first (from project root), load ifb and start it the container:
       -e SERVER_URL="http://my-wpt-server.org/work/" \
       -e LOCATION="docker-location" \
       -e NAME="Docker Test" \
-      --cap-add=NET_ADMIN
+      --cap-add=NET_ADMIN \
       wptagent
 
