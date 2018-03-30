@@ -196,6 +196,9 @@ class WebPageTest(object):
                     timeout=30, proxies=proxies)
                 if len(response.text):
                     self.zone = response.text.strip()
+                    if not len(self.test_locations):
+                        self.location = self.zone[:-1]
+                        self.test_locations = [self.location]
                     ok = True
             except Exception:
                 pass
@@ -234,6 +237,22 @@ class WebPageTest(object):
                 pass
             if not ok:
                 time.sleep(10)
+        if not len(self.test_locations):
+            ok = False
+            while not ok:
+                try:
+                    response = session.get('http://metadata.google.internal/computeMetadata/v1/instance/zone',
+                                           headers={'Metadata-Flavor':'Google'},
+                                           timeout=30, proxies=proxies)
+                    if len(response.text):
+                        self.zone = response.text.strip()
+                        self.location = self.zone[:-2]
+                        self.test_locations = [self.location]
+                        ok = True
+                except Exception:
+                    pass
+                if not ok:
+                    time.sleep(10)
 
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
