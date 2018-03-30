@@ -6,14 +6,15 @@ Since GCE images are not publicly shareable it is necessary to configure a new i
 * Keep track of the server hostname, location ID and location key for the configured test location
 * Configure it with the following browser list in locations.ini: 
     * ```browser=Chrome,Chrome Beta,Chrome Canary,Firefox,Firefox Nightly```
+    * There is a [sample locations.ini](https://github.com/WPO-Foundation/webpagetest/blob/master/www/settings/locations.ini.GCE-sample) pre-configured with all of the GCE regions as part of the project in github.
 
-## Launch a base instance
+## Launch a base Ubuntu 16.04 instance
 * Start at the Google Compute Engine console for the project you are creating the image for:
     * [https://console.cloud.google.com/compute/instances](https://console.cloud.google.com/compute/instances)
 * Create an instance
     * Name it something that you will recognize in the list (name doesn't matter)
     * Select a region near you.  Once created the image can be deployed globally but selecting a region near you for configuration makes setup easier.
-    * Select a 1 vCPU machine (the default - n1-standard-1)
+    * Select a 2 vCPU machine (n1-standard-2)
         * The image can be deployed to any instance size after being configured though the shared CPU instances will have inconsistent performance and are not recommended.
     * Change the boot disk to "Ubuntu 16.04 LTS" from the "OS Images" list.
         * Leave the boot disk type as "standard persistent disk" and size at 10GB
@@ -34,65 +35,15 @@ Since GCE images are not publicly shareable it is necessary to configure a new i
 ## Install the software
 * SSH into the newly-created instance as the user "ubuntu" with the SSH key you provided (using the "External IP" for the instance)
     * ```sss ubuntu@1.2.3.4```
-* Clone the wptagent code
-    * ```git clone https://github.com/WPO-Foundation/wptagent.git```
-* Run the Ubuntu install script
-    * ```wptagent/ubuntu_install.sh```
-    * This will install all of the dependencies (including Lighthouse), Chrome and Firefox
-* Install any OS updates
-    * ```sudo apt-get update && sudo apt-get -y dist-upgrade && sudo apt-get -y autoremove```
-* Create a shell script to run the agent
-    * This script installs all OS and browser updates at startup (before running the agent) and every 24 hours after that.  It also updates the agent code from Github hourly (modify it if you don't want to auto-update):
-    * ```nano ~/agent.sh```
-    * Paste the following script (ctrl-O to save, ctrl-X to exit after you're done):
-```sh
-#!/bin/sh
-cd ~/wptagent
-echo "Waiting for 30 second startup delay"
-sleep 30
-echo "Waiting for apt to become available"
-while fuser /var/lib/dpkg/lock >/dev/null 2>&1 ; do
-    sleep 1
-done
-while :
-do
-    echo "Updating OS"
-    until sudo apt-get update
-    do
-        sleep 1
-    done
-    until sudo DEBIAN_FRONTEND=noninteractive apt-get -yq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
-    do
-        sleep 1
-    done
-    sudo apt-get -y autoremove
-    sudo npm i -g lighthouse
-    for i in `seq 1 24`
-    do
-        git pull origin master
-        python wptagent.py -vvvv --gce --xvfb --fps 30 --throttle --exit 60 --alive /tmp/wptagent
-        echo "Exited, restarting"
-        sleep 1
-    done
-done
+* Run the [GCE install script](https://github.com/WPO-Foundation/wptagent-install#on-google-cloud)
+```bash
+wget https://raw.githubusercontent.com/WPO-Foundation/wptagent-install/master/gce_ubuntu.sh && \
+chmod +x gce_ubuntu.sh && \
+./gce_ubuntu.sh
 ```
-* Create a shell script to launch the agent in a detached screen (makes it easy to ssh into an agent and ```screen -r``` to watch the agent activity as it runs
-    * ```nano ~/startup.sh```
-    * Paste the following script:
-```sh
-#!/bin/sh
-PATH=/home/ubuntu/bin:/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-screen -dmS agent ~/agent.sh
-```
-* Make the scripts executable
-    * ```chmod +x ~/*.sh```
-* Configure the startup script to run at boot time
-    * ```crontab -e```
-    * Add the following to the end of the cron file:
-        * ```@reboot /home/ubuntu/startup.sh```
+The script will install all of the necessary software and reboot the instance when it is complete.
 
 ## Test the agent
-* Reboot the vm ```sudo reboot```
 * Submit some tests to the web UI for the test location and make sure tests run as expected (if not, ssh into the VM and connect to the screen session to see what it is doing)
 
 ## Create the image
