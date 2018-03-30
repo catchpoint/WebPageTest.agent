@@ -815,6 +815,7 @@ class DevToolsParser(object):
         page_data['responses_200'] = 0
         page_data['responses_404'] = 0
         page_data['responses_other'] = 0
+        page_data['fullyLoaded'] = 0
         for request in requests:
             if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
                     request['ttfb_ms'] >= 0 and 'responseCode' in request and \
@@ -846,6 +847,9 @@ class DevToolsParser(object):
                 page_data['result'] = 99999
             else:
                 page_data['responses_other'] += 1
+            end_time = request['load_start'] + request['load_ms']
+            if end_time > page_data['fullyLoaded']:
+                page_data['fullyLoaded'] = end_time
         if page_data['responses_200'] == 0:
             if len(requests) > 0 and 'responseCode' in requests[0]:
                 page_data['result'] = requests[0]['responseCode']
