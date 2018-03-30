@@ -30,6 +30,7 @@ class Firefox(DesktopBrowser):
         self.marionette = None
         self.addons = None
         self.extension_id = None
+        self.possible_navigation_error = None
         self.nav_error = None
         self.page_loaded = None
         self.recording = False
@@ -296,6 +297,12 @@ class Firefox(DesktopBrowser):
                     pass
                 now = monotonic.monotonic()
                 elapsed_test = now - start_time
+                # Allow up to 5 seconds after a navigation for a re-navigation to happen
+                # (bizarre sequence Firefox seems to do)
+                if self.possible_navigation_error is not None:
+                    elapsed_error = now - self.possible_navigation_error['time']
+                    if elapsed_error > 5:
+                        self.nav_error = self.possible_navigation_error['error']
                 if self.nav_error is not None:
                     logging.debug('Navigation error')
                     done = True
@@ -404,6 +411,7 @@ class Firefox(DesktopBrowser):
             if message == 'onBeforeNavigate':
                 if 'frameId' in evt and evt['frameId'] == 0:
                     self.page_loaded = None
+                    self.possible_navigation_error = None
                     logging.debug("Starting navigation")
                     if 'timeStamp' in evt and 'start' not in self.page:
                         self.page['start'] = evt['timeStamp']
@@ -429,11 +437,12 @@ class Firefox(DesktopBrowser):
                         self.page['loaded'] = evt['timeStamp']
             elif message == 'onErrorOccurred':
                 if 'frameId' in evt and evt['frameId'] == 0:
-                    logging.debug("Page load failed")
-                    if 'error' in evt:
-                        self.nav_error = evt['error']
-                    else:
-                        self.nav_error = 'Navigation failed'
+                    logging.debug("Possible navigation error")
+                    err_msg = evt['error'] if 'error' in evt else 'Navigation failed'
+                    self.possible_navigation_error = {
+                        'time': monotonic.monotonic(),
+                        'error': err_msg
+                    }
 
     def process_web_request(self, message, evt):
         """Handle webNavigation.*"""
