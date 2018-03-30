@@ -245,7 +245,11 @@ class WebPageTest(object):
                                            headers={'Metadata-Flavor':'Google'},
                                            timeout=30, proxies=proxies)
                     if len(response.text):
-                        self.zone = response.text.strip()
+                        zone = response.text.strip()
+                        position = zone.rfind('/')
+                        if position > -1:
+                            zone = zone[position + 1:]
+                        self.zone = zone
                         self.location = self.zone[:-2]
                         self.test_locations = [self.location]
                         ok = True
