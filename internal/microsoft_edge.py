@@ -303,6 +303,7 @@ class Edge(DesktopBrowser):
                     done = True
                     if self.page_loaded is None:
                         self.task['error'] = self.nav_error
+                        self.task['page_data']['result'] = 12999
                     logging.debug("Page load navigation error: %s", self.nav_error)
                 elif now >= end_time:
                     done = True
@@ -310,6 +311,7 @@ class Edge(DesktopBrowser):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['page_data']['result'] = 99998
                 elif self.last_activity is not None and \
                         ('time' not in self.job or elapsed_test > self.job['time']):
                     elapsed_activity = now - self.last_activity

@@ -689,6 +689,8 @@ class DevTools(object):
                         self.task['error'] = self.nav_error
                         if self.nav_error_code is not None:
                             self.task['page_data']['result'] = self.nav_error_code
+                        else:
+                            self.task['page_data']['result'] = 12999
                 elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event
@@ -834,6 +836,8 @@ class DevTools(object):
                     logging.debug("Page load failed: %s", self.nav_error)
                     if self.nav_error_code is not None:
                         self.task['page_data']['result'] = self.nav_error_code
+                    else:
+                        self.task['page_data']['result'] = 12999
                 self.page_loaded = monotonic.monotonic()
         elif event == 'javascriptDialogOpening':
             result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
@@ -967,8 +971,10 @@ class DevTools(object):
         """Process Inspector.* dev tools events"""
         if event == 'detached':
             self.task['error'] = 'Inspector detached, possibly crashed.'
+            self.task['page_data']['result'] = 12999
         elif event == 'targetCrashed':
             self.task['error'] = 'Browser crashed.'
+            self.task['page_data']['result'] = 12999
 
     def process_target_event(self, event, msg):
         """Process Target.* dev tools events"""

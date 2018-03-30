@@ -244,6 +244,8 @@ class iWptBrowser(BaseBrowser):
                         self.task['error'] = self.nav_error
                         if self.nav_error_code is not None:
                             self.task['page_data']['result'] = self.nav_error_code
+                        else:
+                            self.task['page_data']['result'] = 12999
                 elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event

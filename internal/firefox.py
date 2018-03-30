@@ -297,14 +297,20 @@ class Firefox(DesktopBrowser):
                 now = monotonic.monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
+                    logging.debug('Navigation error')
                     done = True
                     if self.page_loaded is None:
+                        logging.debug('Page not loaded')
                         self.task['error'] = self.nav_error
+                        self.task['page_data']['result'] = 12999
+                    else:
+                        logging.debug('Page loaded')
                 elif now >= end_time:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['page_data']['result'] = 99998
                 elif 'time' not in self.job or elapsed_test > self.job['time']:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -423,7 +429,6 @@ class Firefox(DesktopBrowser):
                         self.page['loaded'] = evt['timeStamp']
             elif message == 'onErrorOccurred':
                 if 'frameId' in evt and evt['frameId'] == 0:
-                    self.page_loaded = monotonic.monotonic()
                     logging.debug("Page load failed")
                     if 'error' in evt:
                         self.nav_error = evt['error']
