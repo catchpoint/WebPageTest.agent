@@ -198,6 +198,8 @@ class WebPageTest(object):
                     self.zone = response.text.strip()
                     if not len(self.test_locations):
                         self.location = self.zone[:-1]
+                        if platform.system() == "Linux":
+                            self.location += '-linux'
                         self.test_locations = [self.location]
                     ok = True
             except Exception:
@@ -250,7 +252,9 @@ class WebPageTest(object):
                         if position > -1:
                             zone = zone[position + 1:]
                         self.zone = zone
-                        self.location = self.zone[:-2]
+                        self.location = 'gce-' + self.zone[:-2]
+                        if platform.system() == "Linux":
+                            self.location += '-linux'
                         self.test_locations = [self.location]
                         ok = True
                 except Exception:
