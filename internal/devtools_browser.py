@@ -257,6 +257,8 @@ class DevtoolsBrowser(object):
             options['user'] = user_timing if os.path.isfile(user_timing) else None
             coverage = path_base + '_coverage.json.gz'
             options['coverage'] = coverage if os.path.isfile(coverage) else None
+            cpu = path_base + '_timeline_cpu.json.gz'
+            options['cpu'] = cpu if os.path.isfile(cpu) else None
             parser = DevToolsParser(options)
             parser.process()
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:

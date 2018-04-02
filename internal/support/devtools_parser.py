@@ -35,6 +35,7 @@ class DevToolsParser(object):
         self.optimization = options['optimization'] if 'optimization' in options else None
         self.user_timing_file = options['user'] if 'user' in options else None
         self.coverage = options['coverage'] if 'coverage' in options else None
+        self.cpu_times = options['cpu'] if 'cpu' in options else None
         self.cached = options['cached'] if 'cached' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
@@ -57,6 +58,8 @@ class DevToolsParser(object):
             self.process_optimization_results()
             logging.debug("Adding code coverage results")
             self.process_code_coverage()
+            logging.debug("Calculating cpu times")
+            self.process_cpu_times()
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
@@ -1061,6 +1064,56 @@ class DevToolsParser(object):
         except Exception:
             pass
 
+    def process_cpu_times(self):
+        """Calculate the main thread CPU times from the time slices file"""
+        try:
+            import math
+            page_data = self.result['pageData']
+            if 'fullyLoaded' in page_data and page_data['fullyLoaded']:
+                end = page_data['fullyLoaded']
+            doc = page_data['docTime'] if 'docTime' in page_data else 0
+            if end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times):
+                _, ext = os.path.splitext(self.cpu_times)
+                if ext.lower() == '.gz':
+                    f_in = gzip.open(self.cpu_times, 'rb')
+                else:
+                    f_in = open(self.cpu_times, 'r')
+                cpu = json.load(f_in)
+                f_in.close()
+                if cpu and 'main_thread' in cpu and 'slices' in cpu and \
+                        cpu['main_thread'] in cpu['slices'] and 'slice_usecs' in cpu:
+                    busy = 0
+                    busy_doc = 0
+                    usecs = cpu['slice_usecs']
+                    page_data['cpuTimes'] = {}
+                    page_data['cpuTimesDoc'] = {}
+                    all_slices = cpu['slices'][cpu['main_thread']]
+                    for name in all_slices:
+                        page_data['cpuTimes'][name] = 0
+                        page_data['cpuTimesDoc'][name] = 0
+                        slices = all_slices[name]
+                        last_slice = min(int(math.ceil((end * 1000) / usecs)), len(slices))
+                        for index in xrange(last_slice):
+                            slice_time = float(slices[index]) / 1000.0
+                            page_data['cpuTimes'][name] += slice_time
+                            busy += slice_time
+                            if index * usecs < doc * 1000:
+                                page_data['cpuTimesDoc'][name] += slice_time
+                                busy_doc += slice_time
+                    page_data['cpuTimes'][u'Idle'] = max(end - busy, 0)
+                    page_data['cpuTimesDoc'][u'Idle'] = max(doc - busy_doc, 0)
+                    # round everything to the closest int
+                    for category in ['cpuTimes', 'cpuTimesDoc']:
+                        for name in page_data[category]:
+                            page_data[category][name] = int(round(page_data[category][name]))
+                    # Create top-level cpu entries as well
+                    for name in page_data['cpuTimes']:
+                        entry = u'cpu.{0}'.format(name)
+                        page_data[entry] = page_data['cpuTimes'][name]
+                    pass
+        except Exception:
+            pass
+
 def main():
     """Main entry point"""
     import argparse
@@ -1074,6 +1127,7 @@ def main():
     parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
     parser.add_argument('-u', '--user', help="Input user timing file (optional).")
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
+    parser.add_argument('--cpu', help="Input cpu time slices file (optional).")
     parser.add_argument('-c', '--cached', action='store_true', default=False,
                         help="Test was of a cached page.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
@@ -1101,6 +1155,7 @@ def main():
            'optimization': options.optimization,
            'user': options.user,
            'coverage': options.coverage,
+           'cpu': options.cpu,
            'cached': options.cached,
            'out': options.out}
     devtools = DevToolsParser(opt)

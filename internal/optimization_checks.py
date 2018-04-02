@@ -294,7 +294,7 @@ class OptimizationChecks(object):
                 self.cdn_thread = None
             if self.cdn_time is not None:
                 logging.debug("CDN check took %0.3f seconds", self.cdn_time)
-            logging.debug('Waiting for CDN check to complete')
+            logging.debug('Waiting for Hosting check to complete')
             if self.hosting_thread is not None:
                 self.hosting_thread.join()
                 self.hosting_thread = None
