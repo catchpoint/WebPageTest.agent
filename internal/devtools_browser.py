@@ -468,6 +468,33 @@ class DevtoolsBrowser(object):
                     os.remove(json_file)
                 except Exception:
                     pass
+                # Extract the audit scores
+                if lh_report is not None:
+                    audits = {}
+                    if 'aggregations' in lh_report:
+                        for entry in lh_report['aggregations']:
+                            if 'name' in entry and 'total' in entry and \
+                                    'scored' in entry and entry['scored']:
+                                name = entry['name'].replace(' ', '')
+                                audits[name] = entry['total']
+                    elif 'reportCategories' in lh_report:
+                        for category in lh_report['reportCategories']:
+                            if 'name' in category and 'score' in category:
+                                category_name = category['name'].replace(' ', '')
+                                score = float(category['score']) / 100.0
+                                audits[category_name] = score
+                                if category['name'] == 'Performance' and 'audits' in category:
+                                    for audit in category['audits']:
+                                        if 'id' in audit and 'group' in audit and \
+                                                audit['group'] == 'perf-metric' and \
+                                                'result' in audit and \
+                                                'rawValue' in audit['result']:
+                                            name = category_name + '.' + \
+                                                    audit['id'].replace(' ', '')
+                                            audits[name] = audit['result']['rawValue']
+                    audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
+                    with gzip.open(audits_gzip, 'wb', 7) as f_out:
+                        json.dump(audits, f_out)
             if os.path.isfile(html_file):
                 # Remove the raw screenshots if they were stored with the file
                 with open(html_file, 'rb') as f_in:
