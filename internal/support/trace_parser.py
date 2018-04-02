@@ -207,7 +207,14 @@ class Trace():
         cat = trace_event['cat']
         if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
                 cat.find('loading') >= 0 or cat.find('navigation') >= 0:
-            self.user_timing.append(trace_event)
+            keep = False
+            if 'args' in trace_event and 'frame' in trace_event['args']:
+                keep = True
+            elif 'name' in trace_event and trace_event['name'] in [
+                    'navigationStart', 'unloadEventStart', 'redirectStart', 'domLoading']:
+                keep = True
+            if keep:
+                self.user_timing.append(trace_event)
             if 'name' in trace_event and trace_event['name'].find('navigationStart') >= 0:
                 if self.start_time is None or trace_event['ts'] < self.start_time:
                     self.start_time = trace_event['ts']

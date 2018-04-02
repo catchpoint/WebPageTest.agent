@@ -261,6 +261,16 @@ class DevtoolsBrowser(object):
             options['cpu'] = cpu if os.path.isfile(cpu) else None
             parser = DevToolsParser(options)
             parser.process()
+            # Cleanup intermediate files that are not needed
+            if 'debug' not in self.job or not self.job['debug']:
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(optimization):
+                    os.remove(optimization)
+                if os.path.isfile(coverage):
+                    os.remove(coverage)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
 
