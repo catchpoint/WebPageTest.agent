@@ -721,7 +721,7 @@ class iWptBrowser(BaseBrowser):
                 self.trace_parser.threads['0'] = {}
                 self.send_command('Timeline.start', {})
             self.ios.show_orange()
-            if self.path_base is not None:
+            if self.path_base is not None and not self.job['disable_video']:
                 task['video_file'] = self.path_base + '_video.mp4'
                 self.ios.start_video()
             if self.ios_version:

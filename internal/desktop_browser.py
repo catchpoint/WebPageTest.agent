@@ -360,7 +360,7 @@ class DesktopBrowser(BaseBrowser):
                 time.sleep(0.5)
 
             # Start video capture
-            if self.job['capture_display'] is not None:
+            if self.job['capture_display'] is not None and not self.job['disable_video']:
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
                     time.sleep(1)
