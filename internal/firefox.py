@@ -369,6 +369,19 @@ class Firefox(DesktopBrowser):
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
             task['page_data'].update(page_data)
+        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            if 'heroElements' in self.job:
+                logging.debug('Injecting custom hero element selectors')
+                script = '(function() {' + \
+                         'window.__wptHeroElements = ' + json.dumps(self.job['heroElements']) + \
+                         '})()'
+                self.devtools.execute_js(script)
+            logging.debug('Collecting hero element positions')
+            hero_elements = self.run_js_file('hero_elements.js')
+            if hero_elements is not None:
+                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
+                with gzip.open(path, 'wb', 7) as outfile:
+                    outfile.write(json.dumps(hero_elements))
         if 'customMetrics' in self.job:
             custom_metrics = {}
             for name in self.job['customMetrics']:
