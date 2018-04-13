@@ -98,7 +98,7 @@ class DesktopBrowser(BaseBrowser):
         """Close all top-level windows"""
         keep_titles = ['Start']
         keep_classes = ['ConsoleWindowClass', 'Windows.UI.Core.CoreWindow']
-        keep_exes = ['explorer.exe', 'cmd.exe']
+        keep_exes = ['explorer.exe', 'cmd.exe', 'teamviewer.exe']
         try:
             import win32api
             import win32con
@@ -145,7 +145,7 @@ class DesktopBrowser(BaseBrowser):
     def close_top_dialog(self, hwnd, _):
         """Close all top-level dialogs"""
         close_classes = ["#32770", "Notepad", "Internet Explorer_Server"]
-        keep_titles = ['Delete Browsing History', 'Shut Down Windows']
+        keep_titles = ['Delete Browsing History', 'Shut Down Windows', 'TeamViewer']
         try:
             import win32gui
             import win32con
