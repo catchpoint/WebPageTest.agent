@@ -144,7 +144,7 @@ class AndroidBrowser(BaseBrowser):
                 task['page_data']['result'] = 12999
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
-            if self.video_enabled:
+            if self.video_enabled and not self.job['disable_video']:
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
                     time.sleep(0.5)
@@ -157,7 +157,7 @@ class AndroidBrowser(BaseBrowser):
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
-        if self.video_enabled:
+        if self.video_enabled and not self.job['disable_video']:
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
             # kick off the video processing (async)
