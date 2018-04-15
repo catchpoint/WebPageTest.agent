@@ -403,7 +403,10 @@ class OptimizationChecks(object):
                                 if matches:
                                     time_remaining = int(matches.groupdict().get('maxage'))
                                     age = self.get_header_value(request['response_headers'], 'Age')
-                                    if age is not None:
+                                    if time_remaining == 0:
+                                        is_static = False
+                                        time_remaining = -1
+                                    elif age is not None:
                                         time_remaining -= int(re.search(r'\d+',
                                                                         str(age).strip()).group())
                             elif expires is not None:
@@ -426,15 +429,16 @@ class OptimizationChecks(object):
             try:
                 request = self.requests[request_id]
                 check = {'score': -1, 'time': 0}
-                is_static, time_remaining = self.get_time_remaining(request)
-                if is_static:
-                    check['time'] = time_remaining
-                    if time_remaining > 604800: # 7 days
-                        check['score'] = 100
-                    elif time_remaining > 3600: # 1 hour
-                        check['score'] = 50
-                    else:
-                        check['score'] = 0
+                if 'status' in request and request['status'] == 200:
+                    is_static, time_remaining = self.get_time_remaining(request)
+                    if is_static:
+                        check['time'] = time_remaining
+                        if time_remaining > 604800: # 7 days
+                            check['score'] = 100
+                        elif time_remaining > 3600: # 1 hour
+                            check['score'] = 50
+                        else:
+                            check['score'] = 0
                 if check['score'] >= 0:
                     if request_id not in self.results:
                         self.results[request_id] = {}
