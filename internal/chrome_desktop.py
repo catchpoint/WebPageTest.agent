@@ -103,7 +103,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 # do any one-time startup initialization
                 if count == 1:
                     logging.debug('Launching browser with no options for configuration')
-                    DesktopBrowser.launch_browser(self, self.path)
+                    relaunch = '"{0}"'.format(self.path) + ' --disable-gpu ' + \
+                               ' '.join(CHROME_COMMAND_LINE_OPTIONS) + ' about:blank'
+                    DesktopBrowser.launch_browser(self, relaunch)
                     time.sleep(30)
                     DesktopBrowser.stop(self, job, task)
                 time.sleep(10)
