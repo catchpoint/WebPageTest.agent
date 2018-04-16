@@ -43,8 +43,9 @@ HOST_RULES = [
 
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
-    def __init__(self, path, options, job):
+    def __init__(self, path, browser_info, options, job):
         self.options = options
+        self.browser_info = browser_info
         DesktopBrowser.__init__(self, path, options, job)
         use_devtools_video = True if self.job['capture_display'] is None else False
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=use_devtools_video)
@@ -96,6 +97,14 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 DesktopBrowser.stop(self, job, task)
                 if 'error' in task and task['error'] is not None:
                     task['error'] = None
+                if 'package' in self.browser_info and 'reinstalled' not in self.browser_info:
+                    # try removing and re-installing the browser (only works on Ubuntu)
+                    self.browser_info['reinstalled'] = True
+                    subprocess.call(['sudo', 'apt-get', '-y', 'purge',
+                                     self.browser_info['package']])
+                    subprocess.call(['sudo', 'apt-get', '-y', 'autoremove'])
+                    subprocess.call(['sudo', 'apt-get', '-yq', 'install',
+                                     self.browser_info['package']])
                 time.sleep(10)
         if connected:
             self.connected = True

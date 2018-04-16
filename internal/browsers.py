@@ -85,5 +85,6 @@ class Browsers(object):
                 browser = InternetExplorer(self.browsers[name]['exe'], self.options, job)
             else:
                 from .chrome_desktop import ChromeDesktop
-                browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)
+                browser = ChromeDesktop(self.browsers[name]['exe'], self.browsers[name],
+                                        self.options, job)
         return browser
