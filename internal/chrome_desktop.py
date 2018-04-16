@@ -76,6 +76,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--disable-gpu')
         if self.options.dockerized:
             args.append('--no-sandbox')
+        if platform.system() == "Linux":
+            args.append('--disable-setuid-sandbox')
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
