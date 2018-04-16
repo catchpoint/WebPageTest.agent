@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Logic for controlling a desktop Chrome browser"""
 import gzip
+import logging
 import os
 import platform
 import subprocess
@@ -98,6 +99,13 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 DesktopBrowser.stop(self, job, task)
                 if 'error' in task and task['error'] is not None:
                     task['error'] = None
+                # try launching the browser with no command-line options to
+                # do any one-time startup initialization
+                if count == 1:
+                    logging.debug('Launching browser with no options for configuration')
+                    DesktopBrowser.launch_browser(self, self.path)
+                    time.sleep(30)
+                    DesktopBrowser.stop(self, job, task)
                 time.sleep(10)
         if connected:
             self.connected = True
