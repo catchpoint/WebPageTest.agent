@@ -366,6 +366,11 @@ class WPTAgent(object):
         if platform.system() != "Windows":
             from internal.os_util import run_elevated
             run_elevated('chmod', '-R 777 ~/.config/configstore/')
+            try:
+                import getpass
+                run_elevated('chown', '-R {0}:{0} ~/.config'.format(getpass.getuser()))
+            except Exception:
+                pass
 
         # Check the iOS install
         if self.ios is not None:
