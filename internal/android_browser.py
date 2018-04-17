@@ -150,7 +150,7 @@ class AndroidBrowser(BaseBrowser):
                     time.sleep(0.5)
                 self.adb.start_screenrecord()
             if self.tcpdump_enabled or self.video_enabled:
-                time.sleep(0.5)
+                time.sleep(2)
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
