@@ -29,7 +29,7 @@
       .filter(s => s.src)
       .map(s => s.src);
     wappalyzer.analyze(url, {
-      html: document.documentElement.innerHTML,
+      html: document.documentElement.outerHTML,
       headers: responseHeaders,
       env: env,
       scripts: scripts
