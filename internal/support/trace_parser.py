@@ -1079,7 +1079,7 @@ def main():
 
 
 ##########################################################################
-#   Blink feature names from https://cs.chromium.org/chromium/src/third_party/WebKit/public/platform/web_feature.mojom
+#   Blink feature names from https://cs.chromium.org/chromium/src/third_party/blink/public/platform/web_feature.mojom
 ##########################################################################
 BLINK_FEATURES = {
     "0": "PageDestruction",
@@ -3087,11 +3087,78 @@ BLINK_FEATURES = {
     "2360": "CertificateTransparencyNonCompliantResourceInSubframe",
     "2361": "V8AbortController_Constructor",
     "2362": "ReplaceCharsetInXHRIgnoringCase",
-    "2363": "HTMLIFrameElementGestureMedia"
+    "2363": "HTMLIFrameElementGestureMedia",
+    "2364": "WorkletAddModule",
+    "2365": "AnimationWorkletRegisterAnimator",
+    "2366": "WorkletAnimationConstructor",
+    "2367": "ScrollTimelineConstructor",
+    "2368": "V8Document_CreateTouchList_Method",
+    "2369": "AsyncClipboardAPIRead",
+    "2370": "AsyncClipboardAPIWrite",
+    "2371": "AsyncClipboardAPIReadText",
+    "2372": "AsyncClipboardAPIWriteText",
+    "2373": "OpenerNavigationWithoutGesture",
+    "2374": "GetComputedStyleWebkitAppearance",
+    "2375": "V8LockManager_Request_Method",
+    "2376": "V8LockManager_Query_Method",
+    "2377": "UserMediaEnableExperimentalHardwareEchoCancellation",
+    "2378": "V8RTCDTMFSender_Track_AttributeGetter",
+    "2379": "V8RTCDTMFSender_Duration_AttributeGetter",
+    "2380": "V8RTCDTMFSender_InterToneGap_AttributeGetter",
+    "2381": "V8RTCRtpSender_Dtmf_AttributeGetter",
+    "2382": "RTCConstraintEnableDtlsSrtpTrue",
+    "2383": "RTCConstraintEnableDtlsSrtpFalse",
+    "2384": "RtcPeerConnectionId",
+    "2385": "V8PaintWorkletGlobalScope_RegisterPaint_Method",
+    "2386": "V8PaintWorkletGlobalScope_DevicePixelRatio_AttributeGetter",
+    "2387": "CSSSelectorPseudoFocus",
+    "2388": "CSSSelectorPseudoFocusVisible",
+    "2389": "DistrustedLegacySymantecSubresource",
+    "2390": "VRDisplayGetFrameData",
+    "2391": "XMLHttpRequestResponseXML",
+    "2392": "MessagePortTransferClosedPort",
+    "2393": "RTCLocalSdpModification",
+    "2394": "KeyboardApiLock",
+    "2395": "KeyboardApiUnlock",
+    "2396": "PPAPIURLRequestStreamToFile",
+    "2397": "PaymentHandler",
+    "2398": "PaymentRequestShowWithoutGesture",
+    "2399": "ReadableStreamConstructor",
+    "2400": "WritableStreamConstructor",
+    "2401": "TransformStreamConstructor",
+    "2402": "NegativeBackgroundSize",
+    "2403": "NegativeMaskSize",
+    "2404": "ClientHintsRtt",
+    "2405": "ClientHintsDownlink",
+    "2406": "ClientHintsEct",
+    "2407": "CrossOriginHTMLIFrameElementContentDocument",
+    "2408": "CrossOriginHTMLIFrameElementGetSVGDocument",
+    "2409": "CrossOriginHTMLEmbedElementGetSVGDocument",
+    "2410": "CrossOriginHTMLFrameElementContentDocument",
+    "2411": "CrossOriginHTMLObjectElementContentDocument",
+    "2412": "CrossOriginHTMLObjectElementGetSVGDocument",
+    "2413": "NavigatorXR",
+    "2414": "XRRequestDevice",
+    "2415": "XRRequestSession",
+    "2416": "XRSupportsSession",
+    "2417": "XRSessionGetInputSources",
+    "2418": "CSSResizeAuto",
+    "2419": "PrefixedCursorGrab",
+    "2420": "PrefixedCursorGrabbing",
+    "2421": "CredentialManagerCreatePublicKeyCredential",
+    "2422": "CredentialManagerGetPublicKeyCredential",
+    "2423": "CredentialManagerMakePublicKeyCredentialSuccess",
+    "2424": "CredentialManagerGetPublicKeyCredentialSuccess",
+    "2425": "ShapeOutsideContentBox",
+    "2426": "ShapeOutsidePaddingBox",
+    "2427": "ShapeOutsideBorderBox",
+    "2428": "ShapeOutsideMarginBox",
+    "2429": "PerformanceTimeline",
+    "2430": "UserTiming"    
   }
 
 ##########################################################################
-#   CSS feature names from https://cs.chromium.org/chromium/src/third_party/WebKit/Source/core/frame/UseCounter.cpp
+#   CSS feature names from https://cs.chromium.org/chromium/src/third_party/blink/renderer/core/frame/use_counter.cc
 ##########################################################################
 CSS_FEATURES = {
     "2": "CSSPropertyColor",
