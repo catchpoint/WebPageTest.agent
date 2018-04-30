@@ -3,10 +3,12 @@ until sudo apt-get update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common python-software-properties psmisc
+until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc
 do
     sleep 1
 done
+# Unavailable on Ubuntu 18.04 but needed on earlier releases
+sudo apt-get install -y python-software-properties
 sudo dbus-uuidgen --ensure
 until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper marionette_driver
 do
