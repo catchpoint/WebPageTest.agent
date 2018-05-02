@@ -708,7 +708,7 @@ class WebPageTest(object):
                                 task['block_domains'] = []
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
-                            domains = re.split(', ', target)
+                            domains = re.split('[, ]', target)
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
