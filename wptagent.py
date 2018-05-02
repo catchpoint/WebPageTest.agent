@@ -491,7 +491,9 @@ def find_browsers():
             edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
                                     'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
             if not os.path.isfile(edge_exe):
-                if build >= 16000:
+                if build >= 17000:
+                    edge_version = 17
+                elif build >= 16000:
                     edge_version = 16
                 elif build >= 15000:
                     edge_version = 15
