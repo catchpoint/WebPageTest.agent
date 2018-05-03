@@ -21,8 +21,7 @@ RUN apt-get update && \
     tcpdump \
     traceroute \
     bind9utils \
-    software-properties-common \
-    python-software-properties && \
+    software-properties-common && \
 # Node setup
   curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash - && \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
