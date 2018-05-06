@@ -795,7 +795,7 @@ class DevTools(object):
                 elif category == 'Network':
                     self.log_dev_tools_event(msg)
                     self.process_network_event(event, msg, target_id)
-                elif category == 'Inspector':
+                elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
                 elif category == 'CSS':
                     self.process_css_event(event, msg)
