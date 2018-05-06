@@ -88,10 +88,6 @@ class Wappalyzer {
       if ( data.headers ) {
         promises.push(this.analyzeHeaders(app, data.headers));
       }
-
-      if ( data.env ) {
-        promises.push(this.analyzeEnv(app, data.env));
-      }
     });
 
     if ( data.js ) {
@@ -470,7 +466,6 @@ class Wappalyzer {
     const patterns = this.parsePatterns(app.props.meta);
     const promises = [];
 
-    var content = '';
     var matches = [];
 
     while ( patterns && ( matches = regex.exec(html) ) ) {
@@ -478,7 +473,7 @@ class Wappalyzer {
         const r = new RegExp('(?:name|property)=["\']' + meta + '["\']', 'i');
 
         if ( r.test(matches[0]) ) {
-          content = matches[0].match(/content=("|')([^"']+)("|')/i);
+          let content = matches[0].match(/content=("|')([^"']+)("|')/i);
 
           promises.push(this.asyncForEach(patterns[meta], pattern => {
             if ( content && content.length === 4 && pattern.regex.test(content[2]) ) {
@@ -496,22 +491,28 @@ class Wappalyzer {
    * Analyze response headers
    */
   analyzeHeaders(app, headers) {
-    const patterns = this.parsePatterns(app.props.headers);
     const promises = [];
+    try {
+      const patterns = this.parsePatterns(app.props.headers);
 
-    Object.keys(patterns).forEach(headerName => {
-      promises.push(this.asyncForEach(patterns[headerName], pattern => {
-        headerName = headerName.toLowerCase();
+      Object.keys(patterns).forEach(headerName => {
+        promises.push(this.asyncForEach(patterns[headerName], pattern => {
+          try {
+            headerName = headerName.toLowerCase();
 
-        if ( headerName in headers ) {
-          headers[headerName].forEach(headerValue => {
-            if ( pattern.regex.test(headerValue) ) {
-              this.addDetected(app, pattern, 'headers', headerValue, headerName);
+            if ( headerName in headers ) {
+              headers[headerName].forEach(headerValue => {
+                if ( pattern.regex.test(headerValue) ) {
+                  this.addDetected(app, pattern, 'headers', headerValue, headerName);
+                }
+              });
             }
-          });
-        }
-      }));
-    });
+          } catch(e) {
+          }
+        }));
+      });
+    } catch(e) {
+    }
 
     return promises ? Promise.all(promises) : Promise.resolve();
   }
@@ -520,41 +521,28 @@ class Wappalyzer {
    * Analyze cookies
    */
   analyzeCookies(app, cookies) {
-    const patterns = this.parsePatterns(app.props.cookies);
     const promises = [];
+    try {
+      const patterns = this.parsePatterns(app.props.cookies);
 
-    Object.keys(patterns).forEach(cookieName => {
-      cookieName = cookieName.toLowerCase();
+      Object.keys(patterns).forEach(cookieName => {
+        cookieName = cookieName.toLowerCase();
 
-      promises.push(this.asyncForEach(patterns[cookieName], pattern => {
-        const cookie = cookies.find(cookie => cookie.name.toLowerCase() === cookieName);
+        promises.push(this.asyncForEach(patterns[cookieName], pattern => {
+          try {
+            const cookie = cookies.find(cookie => cookie.name.toLowerCase() === cookieName);
 
-        if ( cookie && pattern.regex.test(cookie.value) ) {
-          this.addDetected(app, pattern, 'cookies', cookie.value, cookieName);
-        }
-      }));
-    });
-
-    return promises ? Promise.all(promises) : Promise.resolve();
-  }
-
-  /**
-   * Analyze environment variables
-   */
-  analyzeEnv(app, envs) {
-    var patterns = this.parsePatterns(app.props.env);
-
-    if ( patterns.length ) {
-      return Promise.resolve();
+            if ( cookie && pattern.regex.test(cookie.value) ) {
+              this.addDetected(app, pattern, 'cookies', cookie.value, cookieName);
+            }
+          } catch(e) {
+          }
+        }));
+      });
+    } catch(e) {
     }
 
-    return this.asyncForEach(patterns, pattern => {
-      Object.keys(envs).forEach(env => {
-        if ( pattern.regex.test(envs[env]) ) {
-          this.addDetected(app, pattern, 'env', envs[env]);
-        }
-      })
-    });
+    return promises ? Promise.all(promises) : Promise.resolve();
   }
 
   /**
@@ -563,16 +551,22 @@ class Wappalyzer {
   analyzeJs(app, results) {
     const promises = [];
 
-    Object.keys(results).forEach(string => {
-      promises.push(this.asyncForEach(Object.keys(results[string]), index => {
-        const pattern = this.jsPatterns[app.name][string][index];
-        const value = results[string][index];
+    try {
+      Object.keys(results).forEach(string => {
+        promises.push(this.asyncForEach(Object.keys(results[string]), index => {
+          try {
+            const pattern = this.jsPatterns[app.name][string][index];
+            const value = results[string][index];
 
-        if ( pattern && pattern.regex.test(value) ) {
-          this.addDetected(app, pattern, 'js', value);
-        }
-      }));
-    });
+            if ( pattern && pattern.regex.test(value) ) {
+              this.addDetected(app, pattern, 'js', value);
+            }
+          } catch(e) {
+          }
+        }));
+      });
+    } catch(e) {
+    }
 
     return promises ? Promise.all(promises) : Promise.resolve();
   }

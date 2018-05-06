@@ -1,5 +1,5 @@
 (function() {
-  %WAPPALYZER%
+  %WAPPALYZER%;
   const json = %JSON%;
   var responseHeaders = %RESPONSE_HEADERS%;
   const wappalyzer = new Wappalyzer();
