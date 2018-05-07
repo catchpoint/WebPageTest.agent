@@ -15,23 +15,61 @@
   wappalyzer.driver.log = (message, source, type) => {
   };
 
+  function detectJs(chain) {
+    const properties = chain.split('.');
+    var value = properties.length ? window : null;
+    for ( let i = 0; i < properties.length; i ++ ) {
+      var property = properties[i];
+      if ( value && value.hasOwnProperty(property) ) {
+        value = value[property];
+      } else {
+        value = null;
+        break;
+      }
+    }
+    return typeof value === 'string' || typeof value === 'number' ? value : !!value;
+  }
+  
   function getPageContent() {
     var e = document.getElementById('wptagentWappalyzer');
     if (e) {
       e.parentNode.removeChild(e);
     }
+    // Get the environment variables
     var env = [];
     for ( let i in window ) {
       env.push(i);
     }
+    // Get the script src URLs
     var scripts = Array.prototype.slice
       .apply(document.scripts)
       .filter(s => s.src)
       .map(s => s.src);
+    // Find the JS variables
+    const patterns = wappalyzer.jsPatterns || {};
+    const js = {};
+    for ( let appName in patterns ) {
+      if ( patterns.hasOwnProperty(appName) ) {
+        js[appName] = {};
+        for ( let chain in patterns[appName] ) {
+          if ( patterns[appName].hasOwnProperty(chain) ) {
+            js[appName][chain] = {};
+            for ( let index in patterns[appName][chain] ) {
+              const value = detectJs(chain);
+              if ( value && patterns[appName][chain].hasOwnProperty(index) ) {
+                js[appName][chain][index] = value;
+              }
+            }
+          }
+        }
+      }
+    }
+    // Run the analysis        
     wappalyzer.analyze(url, {
       html: new XMLSerializer().serializeToString(document),
       headers: responseHeaders,
       env: env,
+      js: js,
       scripts: scripts
     });
   }
