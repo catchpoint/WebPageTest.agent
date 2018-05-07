@@ -753,8 +753,11 @@ class Edge(DesktopBrowser):
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
             script = self.prepare_script_for_record(script)
-            self.driver.set_script_timeout(30)
-            self.driver.execute_script(script)
+            try:
+                self.driver.set_script_timeout(30)
+                self.driver.execute_script(script)
+            except Exception:
+                pass
             self.page_loaded = None
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
@@ -773,8 +776,11 @@ class Edge(DesktopBrowser):
             script = command['target']
             if command['record']:
                 script = self.prepare_script_for_record(script)
-            self.driver.set_script_timeout(30)
-            self.driver.execute_script(script)
+            try:
+                self.driver.set_script_timeout(30)
+                self.driver.execute_script(script)
+            except Exception:
+                pass
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
