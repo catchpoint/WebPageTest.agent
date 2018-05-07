@@ -513,22 +513,21 @@ class iWptBrowser(BaseBrowser):
                             self.last_connection_id += 1
                             self.connections[identifier] = self.last_connection_id
                             request['connection'] = self.last_connection_id
-                if 'requestHeaderBytesSent' in msg['params']:
-                    request['bytesOut'] = msg['params']['requestHeaderBytesSent']
-                    if 'requestBodyBytesSent' in msg['params']:
-                        request['bytesOut'] += msg['params']['requestBodyBytesSent']
-                if 'responseBodyBytesReceived' in msg['params'] and \
-                        msg['params']['responseBodyBytesReceived'] >= 0:
-                    request['bytesIn'] = msg['params']['responseBodyBytesReceived']
-                    request['objectSize'] = msg['params']['responseBodyBytesReceived']
-                    request['transfer_size'] = msg['params']['responseBodyBytesReceived']
-                    if 'responseHeaderBytesReceived' in msg['params'] and \
-                            msg['params']['responseHeaderBytesReceived'] >= 0:
-                        request['bytesIn'] += msg['params']['responseHeaderBytesReceived']
-                    if 'responseBodyDecodedSize' in msg['params'] and \
-                            msg['params']['responseBodyDecodedSize'] >= 0:
-                        request['objectSizeUncompressed'] = \
-                                msg['params']['responseBodyDecodedSize']
+                    if 'requestHeaderBytesSent' in metrics:
+                        request['bytesOut'] = metrics['requestHeaderBytesSent']
+                        if 'requestBodyBytesSent' in metrics:
+                            request['bytesOut'] += metrics['requestBodyBytesSent']
+                    if 'responseBodyBytesReceived' in metrics:
+                        request['bytesIn'] = metrics['responseBodyBytesReceived']
+                        request['objectSize'] = metrics['responseBodyBytesReceived']
+                        request['transfer_size'] = metrics['responseBodyBytesReceived']
+                        if 'responseHeaderBytesReceived' in metrics and \
+                                metrics['responseHeaderBytesReceived'] >= 0:
+                            request['bytesIn'] += metrics['responseHeaderBytesReceived']
+                        if 'responseBodyDecodedSize' in metrics and \
+                                metrics['responseBodyDecodedSize'] >= 0:
+                            request['objectSizeUncompressed'] = \
+                                    metrics['responseBodyDecodedSize']
                 if request['fromNet']:
                     self.get_response_body(request_id, original_request_id)
             elif event == 'loadingFailed':
