@@ -65,6 +65,7 @@
       }
     }
     // Run the analysis        
+    const url = wappalyzer.parseUrl(top.location.href);
     wappalyzer.analyze(url, {
       html: new XMLSerializer().serializeToString(document),
       headers: responseHeaders,

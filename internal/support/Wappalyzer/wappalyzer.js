@@ -92,7 +92,9 @@ class Wappalyzer {
 
     if ( data.js ) {
       Object.keys(data.js).forEach(appName => {
-        promises.push(this.analyzeJs(apps[appName], data.js[appName]));
+        if (typeof data.js[appName] != 'function') {
+          promises.push(this.analyzeJs(apps[appName], data.js[appName]));
+        }
       });
     }
 
@@ -296,7 +298,7 @@ class Wappalyzer {
 
     // Remove excluded applications
     Object.keys(apps).forEach(appName => {
-      if ( excludes.indexOf(appName) !== -1 ) {
+      if ( excludes.indexOf(appName) > -1 ) {
         delete apps[appName];
       }
     })
@@ -491,28 +493,24 @@ class Wappalyzer {
    * Analyze response headers
    */
   analyzeHeaders(app, headers) {
+    const patterns = this.parsePatterns(app.props.headers);
     const promises = [];
-    try {
-      const patterns = this.parsePatterns(app.props.headers);
 
-      Object.keys(patterns).forEach(headerName => {
+    Object.keys(patterns).forEach(headerName => {
+      if (typeof patterns[headerName] != 'function') {
         promises.push(this.asyncForEach(patterns[headerName], pattern => {
-          try {
-            headerName = headerName.toLowerCase();
+          headerName = headerName.toLowerCase();
 
-            if ( headerName in headers ) {
-              headers[headerName].forEach(headerValue => {
-                if ( pattern.regex.test(headerValue) ) {
-                  this.addDetected(app, pattern, 'headers', headerValue, headerName);
-                }
-              });
-            }
-          } catch(e) {
+          if ( headerName in headers ) {
+            headers[headerName].forEach(headerValue => {
+              if ( pattern.regex.test(headerValue) ) {
+                this.addDetected(app, pattern, 'headers', headerValue, headerName);
+              }
+            });
           }
         }));
-      });
-    } catch(e) {
-    }
+      }
+    });
 
     return promises ? Promise.all(promises) : Promise.resolve();
   }
@@ -521,26 +519,22 @@ class Wappalyzer {
    * Analyze cookies
    */
   analyzeCookies(app, cookies) {
+    const patterns = this.parsePatterns(app.props.cookies);
     const promises = [];
-    try {
-      const patterns = this.parsePatterns(app.props.cookies);
 
-      Object.keys(patterns).forEach(cookieName => {
+    Object.keys(patterns).forEach(cookieName => {
+      if (typeof patterns[cookieName] != 'function') {
         cookieName = cookieName.toLowerCase();
 
         promises.push(this.asyncForEach(patterns[cookieName], pattern => {
-          try {
-            const cookie = cookies.find(cookie => cookie.name.toLowerCase() === cookieName);
+          const cookie = cookies.find(cookie => cookie.name.toLowerCase() === cookieName);
 
-            if ( cookie && pattern.regex.test(cookie.value) ) {
-              this.addDetected(app, pattern, 'cookies', cookie.value, cookieName);
-            }
-          } catch(e) {
+          if ( cookie && pattern.regex.test(cookie.value) ) {
+            this.addDetected(app, pattern, 'cookies', cookie.value, cookieName);
           }
         }));
-      });
-    } catch(e) {
-    }
+      }
+    });
 
     return promises ? Promise.all(promises) : Promise.resolve();
   }
@@ -551,22 +545,18 @@ class Wappalyzer {
   analyzeJs(app, results) {
     const promises = [];
 
-    try {
-      Object.keys(results).forEach(string => {
+    Object.keys(results).forEach(string => {
+      if (typeof results[string] != 'function') {
         promises.push(this.asyncForEach(Object.keys(results[string]), index => {
-          try {
-            const pattern = this.jsPatterns[app.name][string][index];
-            const value = results[string][index];
+          const pattern = this.jsPatterns[app.name][string][index];
+          const value = results[string][index];
 
-            if ( pattern && pattern.regex.test(value) ) {
-              this.addDetected(app, pattern, 'js', value);
-            }
-          } catch(e) {
+          if ( pattern && pattern.regex.test(value) ) {
+            this.addDetected(app, pattern, 'js', value);
           }
         }));
-      });
-    } catch(e) {
-    }
+      }
+    });
 
     return promises ? Promise.all(promises) : Promise.resolve();
   }
