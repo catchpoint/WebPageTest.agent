@@ -1276,6 +1276,7 @@ class Edge(DesktopBrowser):
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
                 'optimization_checked': 0,
+                'connections': 0,
                 'start_epoch': int((self.task['start_time'] - \
                                     datetime.utcfromtimestamp(0)).total_seconds())
                }
@@ -1293,9 +1294,12 @@ class Edge(DesktopBrowser):
             if 'domContentLoadedEventEnd' in self.page:
                 page['domContentLoadedEventEnd'] = int(round(self.page['domContentLoadedEventEnd']))
 
+        connections = {}
         main_request = None
         index = 0
         for request in requests:
+            if 'socket' in request and request['socket'] not in connections:
+                connections[request['socket']] = request['id']
             if request['load_ms'] >= 0:
                 end_time = request['load_start'] + request['load_ms']
                 if end_time > page['fullyLoaded']:
@@ -1338,5 +1342,6 @@ class Edge(DesktopBrowser):
                 page['result'] = requests[0]['responseCode']
             else:
                 page['result'] = 12999
+        page['connections'] = len(connections)
         self.task['page_result'] = page['result']
         return page
