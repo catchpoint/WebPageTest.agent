@@ -19,6 +19,7 @@ function addTime(name) {
 addTime("domInteractive");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
+addTime("domComplete");  
 addTime("loadEventStart");
 addTime("loadEventEnd");
 pageData["firstPaint"] = 0;
