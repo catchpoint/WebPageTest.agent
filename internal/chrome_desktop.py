@@ -102,9 +102,13 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 # try launching the browser with no command-line options to
                 # do any one-time startup initialization
                 if count == 1:
+                    bare_options = ['--disable-gpu']
+                    if self.options.dockerized:
+                        bare_options.append('--no-sandbox')
+                    if platform.system() == "Linux":
+                        bare_options.append('--disable-setuid-sandbox')
                     logging.debug('Launching browser with no options for configuration')
-                    relaunch = '"{0}"'.format(self.path) + ' --disable-gpu ' + \
-                               ' '.join(CHROME_COMMAND_LINE_OPTIONS) + ' about:blank'
+                    relaunch = '"{0}"'.format(self.path) + ' ' + ' '.join(bare_options)
                     DesktopBrowser.launch_browser(self, relaunch)
                     time.sleep(30)
                     DesktopBrowser.stop(self, job, task)
