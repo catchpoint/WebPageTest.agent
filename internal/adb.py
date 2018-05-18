@@ -46,6 +46,13 @@ class Adb(object):
                 if platform.machine().endswith('64'):
                     self.gnirehtet_exe = os.path.join(self.root_path, 'gnirehtet',
                                                       'win64', 'gnirehtet.exe')
+            elif platform.system() == "Linux":
+                if os.uname()[4].startswith('arm'):
+                    self.gnirehtet_exe = os.path.join(self.root_path, 'gnirehtet',
+                                                      'arm', 'gnirehtet')
+                elif platform.architecture()[0] == '64bit':
+                    self.gnirehtet_exe = os.path.join(self.root_path, 'gnirehtet',
+                                                      'linux64', 'gnirehtet')
         if self.gnirehtet_exe is not None:
             from .os_util import kill_all
             kill_all(os.path.basename(self.gnirehtet_exe), True)
@@ -576,7 +583,7 @@ class Adb(object):
             # Start tethering
             args = [self.gnirehtet_exe, 'run']
             logging.debug(' '.join(args))
-            self.gnirehtet = subprocess.Popen(args, shell=True)
+            self.gnirehtet = subprocess.Popen(args)
             # Give the app time to start before trying to connect to it
             time.sleep(5)
             self.dismiss_vpn_dialog()
