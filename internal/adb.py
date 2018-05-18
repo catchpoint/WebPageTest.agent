@@ -39,6 +39,16 @@ class Adb(object):
             'com.google.android.apps.docs': {},
             'com.samsung.android.MtpApplication': {}
         }
+        self.gnirehtet = None
+        self.gnirehtet_exe = None
+        if options.gnirehtet:
+            if platform.system() == "Windows":
+                if platform.machine().endswith('64'):
+                    self.gnirehtet_exe = os.path.join(self.root_path, 'gnirehtet',
+                                                      'win64', 'gnirehtet.exe')
+        if self.gnirehtet_exe is not None:
+            from .os_util import kill_all
+            kill_all(os.path.basename(self.gnirehtet_exe), True)
         self.exe = 'adb'
 
     def run(self, cmd, timeout_sec=60, silent=False):
@@ -155,6 +165,18 @@ class Adb(object):
                     pass
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
+        if self.gnirehtet_exe is not None:
+            try:
+                subprocess.call([self.gnirehtet_exe, 'stop'])
+                if self.gnirehtet is not None:
+                    self.gnirehtet.terminate()
+                    self.gnirehtet.communicate()
+                    self.gnirehtet = None
+                from .os_util import kill_all
+                kill_all(os.path.basename(self.gnirehtet_exe), True)
+            except Exception:
+                pass
+
 
     def kill_proc(self, procname, kill_signal='-SIGINT'):
         """Kill all processes with the given name"""
@@ -528,6 +550,46 @@ class Adb(object):
         return is_ready
     # pylint: enable=E1101
 
+    def check_gnirehtet(self):
+        """Install and bring up the gnirehtet bridge if necessary"""
+        is_ready = False
+        if self.is_tun_interface_available():
+            is_ready = True
+        elif self.gnirehtet_exe is not None:
+            interface, dns_server = self.options.gnirehtet.split(',', 1)
+            if self.gnirehtet is not None:
+                try:
+                    subprocess.call([self.gnirehtet_exe, 'stop'])
+                    self.gnirehtet.terminate()
+                    self.gnirehtet.communicate()
+                    self.gnirehtet = None
+                except Exception:
+                    pass
+                self.gnirehtet = None
+                from .os_util import kill_all
+                kill_all(os.path.basename(self.gnirehtet_exe), True)
+            self.shell(['am', 'force-stop', 'com.genymobile.gnirehtet'])
+            if not self.is_installed('com.genymobile.gnirehtet'):
+                apk = os.path.join(self.root_path, 'gnirehtet', 'gnirehtet.apk')
+                self.adb(['install', apk])
+            self.cleanup_device()
+            # Start tethering
+            args = [self.gnirehtet_exe, 'run']
+            logging.debug(' '.join(args))
+            self.gnirehtet = subprocess.Popen(args, shell=True)
+            # Give the app time to start before trying to connect to it
+            time.sleep(5)
+            self.dismiss_vpn_dialog()
+            # Simulate pressing the home button to dismiss any UI
+            self.shell(['input', 'keyevent', '3'])
+            end = monotonic.monotonic() + 30
+            while not is_ready and monotonic.monotonic() < end:
+                if self.is_tun_interface_available():
+                    is_ready = True
+                else:
+                    time.sleep(2)
+        return is_ready
+
     def is_device_ready(self):
         """Check to see if the device is ready to run tests"""
         is_ready = True
@@ -567,8 +629,10 @@ class Adb(object):
                 self.reset_simplert()
         if is_ready and self.options.vpntether is not None:
             is_ready = self.check_vpntether()
+        if is_ready and self.options.gnirehtet is not None:
+            is_ready = self.check_gnirehtet()
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
-        if is_ready:
+        if is_ready and self.options.gnirehtet is None:
             net_ok = False
             if self.ping(self.ping_address) is not None:
                 self.no_network_count = 0

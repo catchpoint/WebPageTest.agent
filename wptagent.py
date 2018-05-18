@@ -149,6 +149,7 @@ class WPTAgent(object):
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
+        self.cleanup()
 
     def run_single_test(self):
         """Run a single test run"""
@@ -663,6 +664,10 @@ def main():
                         " phone) to dismiss any system dialogs.  The ethernet interface and DNS "\
                         "server should be passed as options:\n"\
                         "    <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8")
+    parser.add_argument('--gnirehtet',
+                        help="Use gnirehtet for reverse-tethering. You will need to manually "\
+                        "approve the vpn once per mobile device. Valid options are:\n"\
+                        "   <interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8")
     parser.add_argument('--vpntether',
                         help="Use vpn-reverse-tether for reverse-tethering. This is the "\
                         "recommended way to reverse-tether devices. You will need to manually "\
