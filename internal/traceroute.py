@@ -175,6 +175,10 @@ class Traceroute(object):
         """Stub for clearing profile"""
         pass
 
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        pass
+
     def on_stop_recording(self, _):
         """Notification that recording is done"""
         pass

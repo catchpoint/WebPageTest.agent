@@ -147,9 +147,15 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.devtools.start_recording()
 
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        if self.devtools is not None:
+            self.devtools.stop_capture()
+
     def on_stop_recording(self, task):
         """Stop recording"""
         if self.devtools is not None:
+            self.devtools.collect_trace()
             if self.job['pngScreenShot']:
                 screen_shot = os.path.join(task['dir'],
                                            task['prefix'] + '_screen.png')
@@ -182,6 +188,7 @@ class DevtoolsBrowser(object):
                 if command['record']:
                     self.devtools.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
+                        self.on_stop_capture(task)
                         self.on_stop_recording(task)
                         recording = False
                         self.on_start_processing(task)

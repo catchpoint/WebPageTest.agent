@@ -415,6 +415,24 @@ class DesktopBrowser(BaseBrowser):
             self.thread.start()
         self.start_cpu_throttling()
 
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        if self.tcpdump is not None:
+            logging.debug('Stopping tcpdump')
+            from .os_util import kill_all
+            if platform.system() == 'Windows':
+                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT)
+                kill_all('WinDump', False)
+            else:
+                subprocess.call(['sudo', 'killall', 'tcpdump'])
+                kill_all('tcpdump', False)
+        if self.ffmpeg is not None:
+            logging.debug('Stopping video capture')
+            if platform.system() == 'Windows':
+                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+            else:
+                self.ffmpeg.terminate()
+
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
         self.stop_cpu_throttling()
@@ -444,24 +462,15 @@ class DesktopBrowser(BaseBrowser):
                         snapshot['time'], snapshot['bw'], snapshot['cpu']))
                 gzfile.close()
         if self.tcpdump is not None:
-            logging.debug('Stopping tcpdump')
-            from .os_util import kill_all
+            logging.debug('Waiting for tcpdump to stop')
             from .os_util import wait_for_all
             if platform.system() == 'Windows':
-                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT)
-                kill_all('WinDump', False)
                 wait_for_all('WinDump')
             else:
-                subprocess.call(['sudo', 'killall', 'tcpdump'])
-                kill_all('tcpdump', False)
                 wait_for_all('tcpdump')
             self.tcpdump = None
         if self.ffmpeg is not None:
-            logging.debug('Stopping video capture')
-            if platform.system() == 'Windows':
-                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
-            else:
-                self.ffmpeg.terminate()
+            logging.debug('Waiting for video capture to finish')
             self.ffmpeg.communicate()
             self.ffmpeg = None
         if platform.system() == 'Windows':

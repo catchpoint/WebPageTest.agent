@@ -183,6 +183,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         AndroidBrowser.on_start_recording(self, task)
         DevtoolsBrowser.on_start_recording(self, task)
 
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        AndroidBrowser.on_stop_capture(self, task)
+        DevtoolsBrowser.on_stop_capture(self, task)
+
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         AndroidBrowser.on_stop_recording(self, task)

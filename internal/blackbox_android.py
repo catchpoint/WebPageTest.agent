@@ -132,6 +132,7 @@ class BlackBoxAndroid(AndroidBrowser):
                     self.adb.shell([remote_intent])
                     self.adb.shell(['rm', remote_intent])
             self.wait_for_page_load()
+        self.on_stop_capture(task)
         self.on_stop_recording(task)
         self.on_start_processing(task)
         self.wait_for_processing(task)
@@ -147,6 +148,10 @@ class BlackBoxAndroid(AndroidBrowser):
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
         self.adb.su('rm /data/local/chrome-command-line')
+
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        AndroidBrowser.on_stop_capture(self, task)
 
     def on_stop_recording(self, task):
         """Collect post-test data"""

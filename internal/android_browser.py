@@ -152,6 +152,10 @@ class AndroidBrowser(BaseBrowser):
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(2)
 
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        pass
+
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
         if self.tcpdump_enabled:

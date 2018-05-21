@@ -304,10 +304,14 @@ class DevTools(object):
         if self.page_loaded is not None:
             self.page_loaded = now
 
-    def stop_recording(self):
-        """Stop capturing dev tools, timeline and trace data"""
+    def stop_capture(self):
+        """Do any quick work to stop things that are capturing data"""
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        self.start_collecting_trace()
+
+    def stop_recording(self):
+        """Stop capturing dev tools, timeline and trace data"""
         if self.task['log_data']:
             if 'coverage' in self.job and self.job['coverage']:
                 try:
@@ -381,7 +385,6 @@ class DevTools(object):
                 except Exception as err:
                     logging.exception(err)
         self.recording = False
-        self.collect_trace()
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
@@ -400,10 +403,9 @@ class DevTools(object):
             self.dev_tools_file.close()
             self.dev_tools_file = None
 
-    def collect_trace(self):
-        """Stop tracing and collect the results"""
+    def start_collecting_trace(self):
+        """Kick off the trace processing asynchronously"""
         if self.trace_enabled:
-            self.trace_enabled = False
             keep_timeline = True
             if 'discard_timeline' in self.job and self.job['discard_timeline']:
                 keep_timeline = False
@@ -412,6 +414,11 @@ class DevTools(object):
                                                   self.options, self.job, self.task,
                                                   self.start_timestamp, keep_timeline)
             self.send_command('Tracing.end', {})
+
+    def collect_trace(self):
+        """Stop tracing and collect the results"""
+        if self.trace_enabled:
+            self.trace_enabled = False
             start = monotonic.monotonic()
             # Keep pumping messages until we get tracingComplete or
             # we get a gap of 30 seconds between messages
@@ -435,7 +442,7 @@ class DevTools(object):
             elapsed = monotonic.monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
-    
+
     def get_response_body(self, request_id):
         """Retrieve and store the given response body (if necessary)"""
         if request_id not in self.response_bodies and self.body_fail_count < 3:
@@ -645,7 +652,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
                 out = json.dumps(msg)
-                logging.debug("Sending: %s", out)
+                logging.debug("Sending: %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
                     end_time = monotonic.monotonic() + timeout

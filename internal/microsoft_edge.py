@@ -252,6 +252,7 @@ class Edge(DesktopBrowser):
                 if command['record']:
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
+                        self.on_stop_capture(task)
                         self.on_stop_recording(task)
                         recording = False
                         self.on_start_processing(task)
@@ -720,6 +721,10 @@ class Edge(DesktopBrowser):
         DesktopBrowser.on_start_recording(self, task)
         logging.debug('Starting measurement')
         task['start_time'] = datetime.utcnow()
+
+    def on_stop_capture(self, task):
+        """Do any quick work to stop things that are capturing data"""
+        DesktopBrowser.on_stop_capture(self, task)
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""

@@ -143,6 +143,7 @@ class WPTAgent(object):
                 logging.exception("Unhandled exception: %s", msg)
                 traceback.print_exc(file=sys.stdout)
                 if browser is not None:
+                    browser.on_stop_capture(None)
                     browser.on_stop_recording(None)
                     browser = None
             if self.options.exit > 0:
