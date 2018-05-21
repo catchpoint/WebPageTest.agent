@@ -589,7 +589,10 @@ class WebPageTest(object):
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
                 task['time_limit'] = job['timeout']
-                task['test_time_limit'] = task['time_limit'] * task['script_step_count']
+                if 'test_time_limit' in job:
+                    task['test_time_limit'] = job['test_time_limit']
+                else:
+                    task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 task['run_start_time'] = monotonic.monotonic()
                 # Keep the full resolution video frames if the browser window is smaller than 600px
