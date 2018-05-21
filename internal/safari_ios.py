@@ -231,9 +231,12 @@ class iWptBrowser(BaseBrowser):
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
+            interval = 1
             while not done:
+                if self.page_loaded is not None:
+                    interval = 0.1
                 try:
-                    self.process_message(self.messages.get(timeout=1))
+                    self.process_message(self.messages.get(timeout=interval))
                 except Exception:
                     pass
                 now = monotonic.monotonic()

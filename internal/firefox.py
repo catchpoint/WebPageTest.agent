@@ -290,9 +290,12 @@ class Firefox(DesktopBrowser):
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
+            interval = 1
             while not done:
+                if self.page_loaded is not None:
+                    interval = 0.1
                 try:
-                    self.process_message(self.job['message_server'].get_message(1))
+                    self.process_message(self.job['message_server'].get_message(interval))
                 except Exception:
                     pass
                 now = monotonic.monotonic()

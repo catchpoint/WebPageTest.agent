@@ -671,9 +671,12 @@ class DevTools(object):
             start_time = monotonic.monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
+            interval = 1
             while not done:
+                if self.page_loaded is not None:
+                    interval = 0.1
                 try:
-                    raw = self.websocket.get_message(1)
+                    raw = self.websocket.get_message(interval)
                     if raw is not None and len(raw):
                         logging.debug(raw[:200])
                         msg = json.loads(raw)
