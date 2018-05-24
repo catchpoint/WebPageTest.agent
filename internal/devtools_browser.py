@@ -29,6 +29,7 @@ class DevtoolsBrowser(object):
         self.device_pixel_ratio = None
         self.use_devtools_video = use_devtools_video
         self.lighthouse_command = None
+        self.devtools_screenshot = True
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
 
@@ -156,14 +157,15 @@ class DevtoolsBrowser(object):
         """Stop recording"""
         if self.devtools is not None:
             self.devtools.collect_trace()
-            if self.job['pngScreenShot']:
-                screen_shot = os.path.join(task['dir'],
-                                           task['prefix'] + '_screen.png')
-                self.devtools.grab_screenshot(screen_shot, png=True)
-            else:
-                screen_shot = os.path.join(task['dir'],
-                                           task['prefix'] + '_screen.jpg')
-                self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+            if self.devtools_screenshot:
+                if self.job['pngScreenShot']:
+                    screen_shot = os.path.join(task['dir'],
+                                            task['prefix'] + '_screen.png')
+                    self.devtools.grab_screenshot(screen_shot, png=True)
+                else:
+                    screen_shot = os.path.join(task['dir'],
+                                            task['prefix'] + '_screen.jpg')
+                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
             # Stop recording dev tools (which also collects the trace)

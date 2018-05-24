@@ -269,3 +269,23 @@ class AndroidBrowser(BaseBrowser):
             logging.debug('Page Data: %s', json_page_data)
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json_page_data)
+
+    def screenshot(self, task):
+        """Grab a screenshot using adb"""
+        png_file = os.path.join(task['dir'], task['prefix'] + '_screen.png')
+        self.adb.screenshot(png_file, self.job['image_magick']['mogrify'])
+        task['page_data']['result'] = 0
+        task['page_data']['visualTest'] = 1
+        if os.path.isfile(png_file):
+            if not self.job['pngScreenShot']:
+                jpeg_file = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
+                command = '{0} "{1}" -resize {2:d}x{2:d} -quality {3:d} "{4}"'.format(
+                    self.job['image_magick']['convert'],
+                    png_file, 600, self.job['imageQuality'], jpeg_file)
+                logging.debug(command)
+                subprocess.call(command, shell=True)
+                if os.path.isfile(jpeg_file):
+                    try:
+                        os.remove(png_file)
+                    except Exception:
+                        pass

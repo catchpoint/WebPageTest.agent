@@ -111,10 +111,8 @@
   "Samsung Browser": {
     "package": "com.sec.android.app.sbrowser",
     "activity": ".SBrowserMainActivity",
-    "videoFlags": ["--findstart", "25", "--notification"],
     "directories": ["cache", "databases", "files", "app_sbrowser", "code_cache"],
-    "startupDelay": 10,
-    "type": "blackbox"
+    "type": "chrome"
   },
   "QQ Browser": {
     "package": "com.tencent.mtt.intl",
