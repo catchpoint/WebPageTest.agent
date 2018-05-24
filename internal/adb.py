@@ -729,12 +729,29 @@ class Adb(object):
             size = int(match.group(1))
         return size
 
-    def screenshot(self, dest_file):
+    def screenshot(self, dest_file, mogrify):
         """Capture a png screenshot of the device"""
         device_path = '/data/local/tmp/wpt_screenshot.png'
         self.shell(['rm', '/data/local/tmp/wpt_screenshot.png'], silent=True)
         self.shell(['screencap', '-p', device_path])
         self.adb(['pull', device_path, dest_file])
+        if os.path.isfile(dest_file):
+            orientation = self.get_orientation()
+            rotation = [0, 270, 180, 90]
+            if orientation > 0 and orientation < 4:
+                angle = rotation[orientation]
+                command = '{0} -rotate "{1}" "{2}"'.format(mogrify, angle, dest_file)
+                logging.debug(command)
+                subprocess.call(command, shell=True)
+
+    def get_orientation(self):
+        """Get the device orientation"""
+        orientation = 0
+        out = self.shell(['dumpsys', 'input'], silent=True)
+        match = re.search(r'SurfaceOrientation: ([\d])', out)
+        if match:
+            orientation = int(match.group(1))
+        return orientation
 
     def get_package_version(self, package):
         """Get the version number of the given package"""

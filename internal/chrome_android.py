@@ -5,8 +5,10 @@
 import gzip
 import logging
 import os
+import re
 import shutil
 import time
+import monotonic
 from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
@@ -67,7 +69,6 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.config = dict(config)
         # default (overridable) configs
         self.config['command_line_file'] = 'chrome-command-line'
-        self.config['adb_socket'] = 'localabstract:chrome_devtools_remote'
         # pull in the APK info for the browser
         if 'apk_info' in job and 'packages' in job['apk_info'] and \
                 self.config['package'] in job['apk_info']['packages']:
@@ -83,12 +84,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             self.config['apk_url'] = job['customBrowserUrl']
         if 'customBrowserMD5' in job:
             self.config['md5'] = job['customBrowserMD5'].lower()
-        if 'customBrowser_socket' in job:
-            self.config['adb_socket'] = job['customBrowser_socket']
         if 'customBrowser_flagsFile' in job:
             self.config['command_line_file'] = os.path.basename(job['customBrowser_flagsFile'])
         AndroidBrowser.__init__(self, adb, options, job, self.config)
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
+        self.devtools_screenshot = False
         self.connected = False
 
     def prepare(self, job, task):
@@ -139,13 +139,31 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             self.adb.shell(['am', 'start', '-n', activity, '-a',
                             'android.intent.action.VIEW', '-d', START_PAGE])
             # port-forward the devtools interface
-            if self.adb.adb(['forward', 'tcp:{0}'.format(task['port']),
-                             self.config['adb_socket']]):
-                if DevtoolsBrowser.connect(self, task):
-                    self.connected = True
-                    DevtoolsBrowser.prepare_browser(self, task)
-                    DevtoolsBrowser.navigate(self, START_PAGE)
-                    time.sleep(0.5)
+            socket_name = self.get_devtools_socket()
+            if socket_name is not None:
+                if self.adb.adb(['forward', 'tcp:{0}'.format(task['port']),
+                                 'localabstract:{}'.format(socket_name)]):
+                    if DevtoolsBrowser.connect(self, task):
+                        self.connected = True
+                        DevtoolsBrowser.prepare_browser(self, task)
+                        DevtoolsBrowser.navigate(self, START_PAGE)
+                        time.sleep(0.5)
+
+    def get_devtools_socket(self):
+        """Get the socket name of the remote devtools socket. @..._devtools_remote"""
+        socket_name = None
+        end_time = monotonic.monotonic() + 30
+        time.sleep(1)
+        while socket_name is None and monotonic.monotonic() < end_time:
+            out = self.adb.shell(['cat', '/proc/net/unix'])
+            if out is not None:
+                for line in out.splitlines():
+                    match = re.search(r'00010000 0001.* @([^\s]+_devtools_remote)', line)
+                    if match:
+                        socket_name = match.group(1)
+            if socket_name is None:
+                time.sleep(1)
+        return socket_name
 
     def run_task(self, task):
         """Run an individual test"""
@@ -191,6 +209,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def on_stop_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         AndroidBrowser.on_stop_recording(self, task)
+        AndroidBrowser.screenshot(self, task)
         DevtoolsBrowser.on_stop_recording(self, task)
 
     def on_start_processing(self, task):
