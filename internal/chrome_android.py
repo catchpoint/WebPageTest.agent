@@ -134,6 +134,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             # try copying it to /data/local for rooted devices that need it there
             if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
                 self.adb.su('chmod 666 {0}'.format(root_command_line))
+            # configure any browser-specific prefs
+            self.configure_prefs()
             # launch the browser
             activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
             self.adb.shell(['am', 'start', '-n', activity, '-a',
@@ -148,6 +150,57 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, START_PAGE)
                         time.sleep(0.5)
+
+    def configure_prefs(self):
+        """Configure browser-specific shared_prefs"""
+        if self.config['package'] == 'com.sec.android.app.sbrowser':
+            prefs = {
+                'enable_quick_menu': '<boolean name="enable_quick_menu" value="false" />'
+            }
+            self.write_prefs(prefs, 'com.sec.android.app.sbrowser_preferences.xml')
+
+    def write_prefs(self, prefs, file_base):
+        """update the prefs xml file"""
+        prefs_file = '/data/data/{0}/shared_prefs/{1}'.format(self.config['package'], file_base)
+        current = None
+        current = self.adb.su('cat "{0}"'.format(prefs_file))
+        modified = False
+        if current is not None:
+            out = ''
+            for line in current.splitlines():
+                line = line.rstrip()
+                # See if it is a pref we need to modify
+                for name in prefs:
+                    if line.find('name="{0}"'.format(name)) >= 0:
+                        value = prefs[name]
+                        if value is not None:
+                            if line.find(value) < 0:
+                                logging.debug('Setting pref : %s', value)
+                                line = '    {0}'.format(value)
+                                prefs.pop(name, None)
+                                modified = True
+                                break
+                if line.startswith('</map>'):
+                    # Add any missing prefs
+                    for name in prefs:
+                        value = prefs[name]
+                        if value is not None:
+                            logging.debug('Adding pref : %s', value)
+                            out += '    {0}\n'.format(value)
+                            modified = True
+                out += line + '\n'
+        if modified:
+            local = os.path.join(self.task['dir'], 'pref.xml')
+            remote = '/data/local/tmp/pref.xml'
+            with open(local, 'wb') as f_out:
+                f_out.write(out)
+            if os.path.isfile(local):
+                self.adb.shell(['rm', remote])
+                if self.adb.adb(['push', local, remote]):
+                    if self.adb.su('cp {0} {1}'.format(remote, prefs_file)) is not None:
+                        self.adb.su('chmod 666 {0}'.format(prefs_file))
+                    self.adb.shell(['rm', remote])
+                os.remove(local)
 
     def get_devtools_socket(self):
         """Get the socket name of the remote devtools socket. @..._devtools_remote"""

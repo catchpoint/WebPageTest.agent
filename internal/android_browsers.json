@@ -114,6 +114,12 @@
     "directories": ["cache", "databases", "files", "app_sbrowser", "code_cache"],
     "type": "chrome"
   },
+  "Samsung Internet": {
+    "package": "com.sec.android.app.sbrowser",
+    "activity": ".SBrowserMainActivity",
+    "directories": ["cache", "databases", "files", "app_sbrowser", "code_cache"],
+    "type": "chrome"
+  },
   "QQ Browser": {
     "package": "com.tencent.mtt.intl",
     "activity": "com.tencent.mtt.SplashActivity",
