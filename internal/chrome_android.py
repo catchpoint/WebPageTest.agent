@@ -158,6 +158,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                 'enable_quick_menu': '<boolean name="enable_quick_menu" value="false" />'
             }
             self.write_prefs(prefs, 'com.sec.android.app.sbrowser_preferences.xml')
+        elif self.config['package'] == 'com.sec.android.app.sbrowser.beta':
+            prefs = {
+                'enable_quick_menu': '<boolean name="enable_quick_menu" value="false" />'
+            }
+            self.write_prefs(prefs, 'com.sec.android.app.sbrowser.beta_preferences.xml')
 
     def write_prefs(self, prefs, file_base):
         """update the prefs xml file"""

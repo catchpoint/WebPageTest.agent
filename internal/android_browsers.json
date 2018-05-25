@@ -122,7 +122,7 @@
   },
   "Samsung Internet Beta": {
     "package": "com.sec.android.app.sbrowser.beta",
-    "activity": ".SBrowserMainActivity",
+    "activity": "com.sec.android.app.sbrowser.SBrowserMainActivity",
     "directories": ["cache", "databases", "files", "app_sbrowser", "code_cache"],
     "type": "chrome"
   },
