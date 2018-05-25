@@ -81,6 +81,13 @@ class WebPageTest(object):
                 from win32api import GetSystemMetrics
                 self.screen_width = GetSystemMetrics(0)
                 self.screen_height = GetSystemMetrics(1)
+            elif platform.system() == 'Darwin':
+                try:
+                    from AppKit import NSScreen
+                    self.screen_width = int(NSScreen.screens()[0].frame().size.width)
+                    self.screen_height = int(NSScreen.screens()[0].frame().size.height)
+                except Exception:
+                    pass
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()

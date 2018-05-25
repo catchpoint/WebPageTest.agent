@@ -8,6 +8,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * pillow
     * psutil
     * pypiwin32 (Windows only)
+    * pyobjc (Mac only)
     * requests
     * ujson
     * tornado
