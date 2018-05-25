@@ -372,11 +372,14 @@ class DesktopBrowser(BaseBrowser):
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 elif platform.system() == 'Darwin':
-                    from AppKit import NSScreen
-                    self.screen_width = int(NSScreen.screens()[0].frame().size.width)
-                    self.screen_height = int(NSScreen.screens()[0].frame().size.height)
-                task['width'] = self.screen_width if task['width'] > self.screen_width else task['width']
-                task['height'] = self.screen_height if task['height'] > self.screen_height else task['height']
+                    try:
+                        from AppKit import NSScreen
+                        self.screen_width = int(NSScreen.screens()[0].frame().size.width)
+                        self.screen_height = int(NSScreen.screens()[0].frame().size.height)
+                    except Exception:
+                        pass
+                task['width'] = min(task['width'], self.screen_width)
+                task['height'] = min(task['height'], self.screen_height)
                 if platform.system() == 'Darwin':
                     width = int(math.ceil(task['width'] * self.device_pixel_ratio))
                     height = int(math.ceil(task['height'] * self.device_pixel_ratio))
