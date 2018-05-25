@@ -56,8 +56,8 @@ class DesktopBrowser(BaseBrowser):
         self.task = None
         self.cpu_start = None
         self.throttling_cpu = False
-        self.screen_width = None
-        self.screen_height = None
+        self.screen_width = 1920
+        self.screen_height = 1200
         self.device_pixel_ratio = None
         self.stopping = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
@@ -375,9 +375,6 @@ class DesktopBrowser(BaseBrowser):
                     from AppKit import NSScreen
                     self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
-                else:
-                    self.screen_width = 1920
-                    self.screen_height = 1200
                 task['width'] = self.screen_width if task['width'] > self.screen_width else task['width']
                 task['height'] = self.screen_height if task['height'] > self.screen_height else task['height']
                 if platform.system() == 'Darwin':
