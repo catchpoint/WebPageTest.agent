@@ -433,9 +433,9 @@ class OptimizationChecks(object):
                     is_static, time_remaining = self.get_time_remaining(request)
                     if is_static:
                         check['time'] = time_remaining
-                        if time_remaining > 604800: # 7 days
+                        if time_remaining >= 604800: # 7 days
                             check['score'] = 100
-                        elif time_remaining > 3600: # 1 hour
+                        elif time_remaining >= 3600: # 1 hour
                             check['score'] = 50
                         else:
                             check['score'] = 0
