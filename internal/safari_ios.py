@@ -61,6 +61,7 @@ class iWptBrowser(BaseBrowser):
         self.command_id = 0
         self.command_responses = {}
         self.pending_commands = []
+        self.headers = {}
         self.webinspector_proxy = None
         self.ios_utils_path = None
         self.ios_version = None
@@ -282,6 +283,23 @@ class iWptBrowser(BaseBrowser):
             if script is not None:
                 ret = self.ios.execute_js(script)
         return ret
+
+    def set_header(self, header):
+        """Add/modify a header on the outbound requests"""
+        if header is not None and len(header):
+            separator = header.find(':')
+            if separator > 0:
+                name = header[:separator].strip()
+                value = header[separator + 1:].strip()
+                self.headers[name] = value
+                self.send_command('Network.setExtraHTTPHeaders',
+                                  {'headers': self.headers}, wait=True)
+
+    def reset_headers(self):
+        """Add/modify a header on the outbound requests"""
+        self.headers = {}
+        self.send_command('Network.setExtraHTTPHeaders',
+                          {'headers': self.headers}, wait=True)
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
@@ -964,6 +982,12 @@ class iWptBrowser(BaseBrowser):
             pass
         elif command['command'] == 'clearcache':
             self.ios.clear_cache()
+        elif command['command'] == 'addheader':
+            self.set_header(command['target'])
+        elif command['command'] == 'setheader':
+            self.set_header(command['target'])
+        elif command['command'] == 'resetheaders':
+            self.reset_headers()
 
     def navigate(self, url):
         """Navigate to the given URL"""
