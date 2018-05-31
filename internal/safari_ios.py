@@ -720,6 +720,9 @@ class iWptBrowser(BaseBrowser):
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
         self.send_command('Inspector.enable', {})
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders',
+                              {'headers': self.headers}, wait=True)
         if self.task['log_data']:
             if not self.job['shaper'].configure(self.job):
                 self.task['error'] = "Error configuring traffic-shaping"

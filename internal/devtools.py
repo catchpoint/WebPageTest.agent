@@ -229,9 +229,16 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('Network.enable', {})
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders',
+                              {'headers': self.headers}, wait=True)
         if len(self.workers):
             for target in self.workers:
                 self.send_command('Network.enable', {}, target_id=target['targetId'])
+                if self.headers:
+                    self.send_command('Network.setExtraHTTPHeaders',
+                                      {'headers': self.headers}, target_id=target['targetId'],
+                                      wait=True)
         if 'user_agent_string' in self.job:
             self.send_command('Network.setUserAgentOverride',
                               {'userAgent': self.job['user_agent_string']}, wait=True)
@@ -995,6 +1002,10 @@ class DevTools(object):
                     self.workers.append(target)
                     if self.recording:
                         self.send_command('Network.enable', {}, target_id=target['targetId'])
+                        if self.headers:
+                            self.send_command('Network.setExtraHTTPHeaders',
+                                              {'headers': self.headers}, target_id=target['targetId'],
+                                              wait=True)
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
         if event == 'receivedMessageFromTarget':
