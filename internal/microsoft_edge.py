@@ -128,10 +128,11 @@ class Edge(DesktopBrowser):
                 self.browser_version = self.driver.capabilities['browserVersion']
             elif 'version' in self.driver.capabilities:
                 self.browser_version = self.driver.capabilities['version']
-            self.driver.get(self.start_page)
+            self.driver.get('http://127.0.0.1:8888/blank.html')
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.driver.set_window_position(0, 0)
             self.driver.set_window_size(task['width'], task['height'])
+            self.driver.get(self.start_page)
             # Start the relay agent to capture ETW events
             wpt_etw_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                         'support', 'edge', 'wpt-etw', 'wpt-etw.exe')

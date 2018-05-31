@@ -85,7 +85,7 @@ var installBlockingHandler = function() {
 };
 
 // Get the config from wptagent when the config.html page is loaded
-browser.runtime.onMessage.addListener(function(data, sender, sendResponse) {
+browser.runtime.onMessage.addListener(function(data) {
   if (data['block'] != undefined) {
     block = data['block'];
   }
