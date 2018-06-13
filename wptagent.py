@@ -391,7 +391,34 @@ class WPTAgent(object):
             else:
                 print "Error configuring traffic shaping, make sure it is installed."
             ret = False
+
+        # Update the WIndows root certs
+        if platform.system() == "Windows":
+            self.update_windows_certificates()
+
         return ret
+
+    def update_windows_certificates(self):
+        """ Update the root Windows certificates"""
+        try:
+            cert_file = os.path.join(self.persistent_work_dir, 'root_certs.sst')
+            if not os.path.isdir(self.persistent_work_dir):
+                os.makedirs(self.persistent_work_dir)
+            needs_update = True
+            if os.path.isfile(cert_file):
+                days = (time.time() - os.path.getmtime(cert_file)) / 86400
+                if days < 5:
+                    needs_update = False
+            if needs_update:
+                logging.debug("Updating Windows root certificates...")
+                if os.path.isfile(cert_file):
+                    os.unlink(cert_file)
+                from internal.os_util import run_elevated
+                run_elevated('certutil.exe', '-generateSSTFromWU "{0}"'.format(cert_file))
+                if os.path.isfile(cert_file):
+                    run_elevated('certutil.exe', '-addstore -f Root "{0}"'.format(cert_file))
+        except Exception:
+            pass
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
