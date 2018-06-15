@@ -14,7 +14,7 @@ until sudo pip install dnspython monotonic pillow psutil requests ujson tornado 
 do
     sleep 1
 done
-curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
     sleep 1
