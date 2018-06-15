@@ -418,8 +418,7 @@ class DevtoolsBrowser(object):
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
             command = ['lighthouse',
-                       '--disable-network-throttling',
-                       '--disable-cpu-throttling',
+                       '--throttling-method', 'provided',
                        '--enable-error-reporting',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--port', str(task['port']),
@@ -490,12 +489,14 @@ class DevtoolsBrowser(object):
                 # Extract the audit scores
                 if lh_report is not None:
                     audits = {}
+                    # v1.x
                     if 'aggregations' in lh_report:
                         for entry in lh_report['aggregations']:
                             if 'name' in entry and 'total' in entry and \
                                     'scored' in entry and entry['scored']:
                                 name = entry['name'].replace(' ', '')
                                 audits[name] = entry['total']
+                    # v2.x
                     elif 'reportCategories' in lh_report:
                         for category in lh_report['reportCategories']:
                             if 'name' in category and 'score' in category:
@@ -511,6 +512,27 @@ class DevtoolsBrowser(object):
                                             name = category_name + '.' + \
                                                     audit['id'].replace(' ', '')
                                             audits[name] = audit['result']['rawValue']
+                    # v3.x
+                    elif 'categories' in lh_report:
+                        for categoryId in lh_report['categories']:
+                            category = lh_report['categories'][categoryId]
+                            if 'title' not in category or 'score' not in category:
+                                continue
+
+                            category_title = category['title'].replace(' ', '')
+                            audits[category_title] = category['score']
+
+                            if categoryId != 'performance' or 'auditRefs' not in category:
+                                continue
+
+                            for auditRef in category['auditRefs']:
+                                if auditRef['id'] not in lh_report['audits']:
+                                    continue
+                                if 'group' not in auditRef or auditRef['group'] != 'metrics':
+                                    continue
+                                audit = lh_report['audits'][auditRef['id']]
+                                name = category_title + '.' + audit['id']
+                                audits[name] = audit['rawValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
                     with gzip.open(audits_gzip, 'wb', 7) as f_out:
                         json.dump(audits, f_out)
