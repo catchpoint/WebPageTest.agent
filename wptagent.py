@@ -374,6 +374,17 @@ class WPTAgent(object):
             except Exception:
                 pass
 
+        # Check for Node 8+
+        if self.get_node_version() < 8.0:
+            if platform.system() == "Linux":
+                # This only works on debian-based systems
+                logging.debug('Updating Node.js to 10.x')
+                subprocess.call('curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -',
+                                shell=True)
+                subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
+            if self.get_node_version() < 8.0:
+                logging.warning("Node.js 8 or newer is required for Lighthouse testing")
+
         # Check the iOS install
         if self.ios is not None:
             ret = self.ios.check_install()
@@ -392,11 +403,23 @@ class WPTAgent(object):
                 print "Error configuring traffic shaping, make sure it is installed."
             ret = False
 
-        # Update the WIndows root certs
+        # Update the Windows root certs
         if platform.system() == "Windows":
             self.update_windows_certificates()
 
         return ret
+
+    def get_node_version(self):
+        """Get the installed version of Node.js"""
+        version = 0
+        try:
+            stdout = subprocess.check_output(['node', '--version'])
+            matches = re.match(r'^v(\d+\.\d+)', stdout)
+            if matches:
+                version = float(matches.group(1))
+        except Exception:
+            pass
+        return version
 
     def update_windows_certificates(self):
         """ Update the root Windows certificates"""
