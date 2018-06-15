@@ -21,6 +21,8 @@ RUN apt-get update && \
     tcpdump \
     traceroute \
     bind9utils \
+    libnss3-tools \
+    iproute2 \
     software-properties-common && \
 # Node setup
   curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash - && \
