@@ -418,6 +418,8 @@ class DevtoolsBrowser(object):
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
             command = ['lighthouse',
+                       '--disable-network-throttling',
+                       '--disable-cpu-throttling',
                        '--throttling-method', 'provided',
                        '--enable-error-reporting',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
