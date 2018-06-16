@@ -2,7 +2,7 @@
 Cross-platform WebPageTest agent
 
 ## Supported Platforms/Browsers
-Chrome is the only browser that currently supports manipulating requests (changing headers, blocking requests, etc).  Chrome, IE and Microsoft Edge are the only browsers that currently support capturing response bodieas and running optimizarion checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
+Chrome is the only browser that currently supports manipulating requests (changing headers, blocking requests, etc).  Chrome, IE and Microsoft Edge are the only browsers that currently support capturing response bodies and running optimization checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
 
 ### Linux (with display or headless with Xvfb)
 * Chrome (Stable, Beta and Unstable)
@@ -24,16 +24,15 @@ Chrome is the only browser that currently supports manipulating requests (changi
 * Chrome (Stable, Beta, Dev and Canary)
 * Several browsers run as "black box" tests (single page load, visual metrics only):
     * Chrome (Stable, Beta, Dev and Canary)
+    * Samsung Browser
     * Opera
     * Opera Mini
     * UC Browser
     * UC Mini
-    * Samsung Browser
     * Firefox (Stable and Beta)
 
 ## Known Issues
-* Not all features have been implemented yet (see list below)
-* Microsoft Edge and Firefox do not (yet) support manipulating requests (adding headers, blocking requests, etc)
+* Internet Explorer does not support manipulating requests (adding headers, blocking requests, etc)
 
 ## Installation
 * Install docs are [here](docs/install.md)
