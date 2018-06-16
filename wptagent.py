@@ -474,8 +474,11 @@ def find_browsers():
     plat = platform.system()
     if plat == "Windows":
         local_appdata = os.getenv('LOCALAPPDATA')
-        program_files = os.getenv('ProgramFiles')
-        program_files_x86 = os.getenv('ProgramFiles(x86)')
+        program_files = str(os.getenv('ProgramFiles'))
+        program_files_x86 = str(os.getenv('ProgramFiles(x86)'))
+        # Allow 32-bit python to detect 64-bit browser installs
+        if program_files == program_files_x86 and program_files.find(' (x86)') >= 0:
+            program_files = program_files.replace(' (x86)', '')
         # Chrome
         paths = [program_files, program_files_x86, local_appdata]
         channels = ['Chrome', 'Chrome Beta', 'Chrome Dev']
