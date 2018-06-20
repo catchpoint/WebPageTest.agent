@@ -75,6 +75,30 @@ Passing the agent a "--shaper external" command-line flag you give it the IP add
     * ```net.ipv6.conf.default.disable_ipv6 = 1```
     * ```net.ipv6.conf.lo.disable_ipv6 = 1```
 
+#### Running the agent as a systemd service
+
+You can run the agent as a systemd service with the following unit description:
+
+```
+[Unit]
+Description=wptagent
+
+[Service]
+ExecStart=/usr/bin/python <path-to-wptagent.py> --server <SERVER>/work/ --location <LOCATION> <OPTIONAL-COMMANDS>
+Restart=always
+TimeoutStopSec=300
+
+[Install]
+WantedBy=default.target
+```
+
+Keeping the agent up to date can then be achieved by installing a cron job for the script located under `scripts/updateAgentAndRebootSystem.sh`. This script checks if there are new commits on the master branch and pulls new changes. Afterwards a system reboot is triggered. The service will try to stop gracefully and eventually stops after 300 seconds as it is configured under `TimeoutStopSec`.
+
+An example cron job would be every night:
+```bash
+15 0 * * * <PATH-TO-UPDATE-SCRIPT> <PATH-TO-WPTAGENT-DIRECTORY> >> /var/log/wptagent_updater.log
+```
+
 ### Windows
 * To install some of the python dependencies you may need [Visual C++ for python](http://aka.ms/vcpython27) to be installed.
 * ImageMagick includes ffmpeg in the path automatically but not the latest version.  It is usually easiest to just copy the [static ffmpeg build](https://ffmpeg.zeranoe.com/builds/) over the one installed by ImageMagick.
