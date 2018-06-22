@@ -200,10 +200,15 @@ class Wappalyzer {
    *
    */
   ping() {
-    if ( Object.keys(this.hostnameCache).length + this.adCache.length > 50 ) {
-      this.driver.ping(this.hostnameCache, this.adCache);
+    if ( Object.keys(this.hostnameCache).length > 100 ) {
+      this.driver.ping(this.hostnameCache);
 
       this.hostnameCache = {};
+    }
+
+    if ( this.adCache.length > 50 ) {
+      this.driver.ping({}, this.adCache);
+
       this.adCache = [];
     }
   }
@@ -333,7 +338,7 @@ class Wappalyzer {
 
             // Apply app confidence to implied app
             Object.keys(app.confidence).forEach(id => {
-              apps[implied.string].confidence[id + ' implied by ' + appName] = app.confidence[id] * ( implied.confidence ? implied.confidence / 100 : 1 );
+              apps[implied.string].confidence[id + ' implied by ' + appName] = app.confidence[id] * ( implied.confidence === undefined ? 1 : implied.confidence / 100 );
             });
           });
         }
@@ -568,7 +573,7 @@ class Wappalyzer {
     app.detected = true;
 
     // Set confidence level
-    app.confidence[type + ' ' + ( key ? key + ' ' : '' ) + pattern.regex] = pattern.confidence || 100;
+    app.confidence[type + ' ' + ( key ? key + ' ' : '' ) + pattern.regex] = pattern.confidence === undefined ? 100 : pattern.confidence;
 
     // Detect version number
     if ( pattern.version ) {
