@@ -14,7 +14,6 @@ import subprocess
 import threading
 import time
 import monotonic
-import requests
 import ujson as json
 
 class OptimizationChecks(object):
@@ -67,6 +66,8 @@ class OptimizationChecks(object):
             'Azion': ['.azioncdn.net',
                       '.azioncdn.com',
                       '.azion.net'],
+            'BelugaCDN': ['.belugacdn.com',
+                          '.belugacdn.link'],
             'Bison Grid': ['.bisongrid.net'],
             'BitGravity': ['.bitgravity.com'],
             'Blue Hat Network': ['.bluehatnetwork.com'],
@@ -191,6 +192,8 @@ class OptimizationChecks(object):
             'Airee': [{'Server': 'Airee'}],
             'Amazon CloudFront': [{'Via': 'CloudFront'}],
             'Aryaka': [{'X-Ar-Debug': ''}],
+            'BelugaCDN': [{'Server': 'Beluga'},
+                          {'X-Beluga-Cache-Status': ''}],
             'BunnyCDN': [{'Server': 'BunnyCDN'}],
             'Caspowa': [{'Server': 'Caspowa'}],
             'CDN': [{'X-Edge-IP': ''},
