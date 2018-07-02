@@ -71,7 +71,7 @@ class TrafficShaper(object):
             ret = self.shaper.reset()
         return ret
 
-    def configure(self, job):
+    def configure(self, job, task):
         """Enable traffic-shaping"""
         ret = False
         in_bps = 0
@@ -87,6 +87,14 @@ class TrafficShaper(object):
         if 'plr' in job:
             plr = float(job['plr'])
         if self.shaper is not None:
+            # If a lighthouse test is running, force the Lighthouse 3G profile:
+            # https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md
+            # 1.6Mbps down, 750Kbps up, 150ms RTT
+            if task['running_lighthouse']:
+                rtt = 150
+                in_bps = 1600000
+                out_bps = 750000
+                plr = .0
             logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr',
                           in_bps, out_bps, rtt, plr)
             ret = self.shaper.configure(in_bps, out_bps, rtt, plr)

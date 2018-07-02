@@ -332,7 +332,7 @@ class DesktopBrowser(BaseBrowser):
             except Exception:
                 pass
         if task['log_data']:
-            if not self.job['shaper'].configure(self.job):
+            if not self.job['shaper'].configure(self.job, task):
                 self.task['error'] = "Error configuring traffic-shaping"
             self.cpu_start = psutil.cpu_times()
             self.recording = True

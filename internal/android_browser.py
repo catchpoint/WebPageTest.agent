@@ -139,7 +139,7 @@ class AndroidBrowser(BaseBrowser):
             if version is not None:
                 task['page_data']['browserVersion'] = version
                 task['page_data']['browser_version'] = version
-            if not self.job['shaper'].configure(self.job):
+            if not self.job['shaper'].configure(self.job, task):
                 task['error'] = "Error configuring traffic-shaping"
                 task['page_data']['result'] = 12999
             if self.tcpdump_enabled:

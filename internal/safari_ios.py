@@ -724,7 +724,7 @@ class iWptBrowser(BaseBrowser):
             self.send_command('Network.setExtraHTTPHeaders',
                               {'headers': self.headers}, wait=True)
         if self.task['log_data']:
-            if not self.job['shaper'].configure(self.job):
+            if not self.job['shaper'].configure(self.job, task):
                 self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
                 self.bodies_zip_file.close()
