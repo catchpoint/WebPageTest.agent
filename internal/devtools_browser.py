@@ -402,8 +402,11 @@ class DevtoolsBrowser(object):
         logging.debug(cmd)
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         for line in iter(proc.stderr.readline, b''):
-            logging.debug(line.rstrip())
-            self.task['lighthouse_log'] += line
+            try:
+                logging.debug(line.rstrip())
+                self.task['lighthouse_log'] += line
+            except Exception:
+                pass
         proc.communicate()
 
     def run_lighthouse_test(self, task):
@@ -418,6 +421,7 @@ class DevtoolsBrowser(object):
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
             command = ['lighthouse',
+                       '"{0}"'.format(self.job['url']),
                        '--disable-network-throttling',
                        '--disable-cpu-throttling',
                        '--throttling-method', 'provided',
@@ -431,7 +435,10 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.append('--disable-device-emulation')
-            command.append('"{0}"'.format(self.job['url']))
+            if len(task['block']):
+                for pattern in task['block']:
+                    pattern = "'" + pattern.replace("'", "'\\''") + "'"
+                    command.extend(['--blocked-url-patterns', pattern])
             cmd = ' '.join(command)
             self.lighthouse_command = cmd
             # Give lighthouse up to 10 minutes to run all of the audits
