@@ -123,8 +123,7 @@ class Firefox(DesktopBrowser):
                                           'support', 'Firefox', 'extension')
             self.extension_id = self.addons.install(extension_path, temp=True)
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
-            self.marionette.set_window_position(x=0, y=0)
-            self.marionette.set_window_size(height=task['height'], width=task['width'])
+            self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
             if 'browserVersion' in self.marionette.session_capabilities:
                 self.browser_version = self.marionette.session_capabilities['browserVersion']
             self.marionette.navigate(self.start_page)
@@ -160,6 +159,7 @@ class Firefox(DesktopBrowser):
                 # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
+            logging.exception("Error starting Firefox")
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
 
     def get_pref_value(self, value):
