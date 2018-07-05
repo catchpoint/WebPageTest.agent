@@ -1,4 +1,4 @@
-(function() {
+(function(customHeroSelectors) {
 /**
 Returns an object that can be used to calculate the render times of "hero"
 elements. The object will look like:
@@ -54,9 +54,9 @@ if (heroElements.h2) {
 
 // Look for custom elements. Note that document.querySelector is used (not
 // querySelectorAll) to ensure a 1:1 mapping of hero name to element.
-if (typeof window.__wptHeroElements === 'object') {
-  for (var heroName in window.__wptHeroElements) {
-    var selector = window.__wptHeroElements[heroName];
+if (typeof customHeroSelectors === 'object') {
+  for (var heroName in customHeroSelectors) {
+    var selector = customHeroSelectors[heroName];
     var element = document.querySelector(selector);
 
     if (element) {
@@ -146,4 +146,4 @@ function visibleElementArea(rect) {
 
   return w * h;
 }
-})()
+})

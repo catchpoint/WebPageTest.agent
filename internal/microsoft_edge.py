@@ -653,14 +653,15 @@ class Edge(DesktopBrowser):
         if page_data is not None:
             task['page_data'].update(page_data)
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            hero_elements = None
+            custom_hero_selectors = {}
             if 'heroElements' in self.job:
-                logging.debug('Injecting custom hero element selectors')
-                script = '(function() {' + \
-                         'window.__wptHeroElements = ' + json.dumps(self.job['heroElements']) + \
-                         '})()'
-                self.devtools.execute_js(script)
+                custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            hero_elements = self.run_js_file('hero_elements.js')
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+                hero_elements_script = script_file.read()
+            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
+            hero_elements = self.devtools.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
                 with gzip.open(path, 'wb', 7) as outfile:
