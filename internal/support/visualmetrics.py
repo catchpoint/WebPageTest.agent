@@ -1330,9 +1330,9 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                         hero_timings.append({'name': hero['name'],
                                              'value': calculate_hero_time(progress, dirs, hero, viewport)})
                     hero_timings_sorted = sorted(hero_timings, key=lambda timing: timing['value'])
-                    hero_timings.append({'name': 'First Painted Hero',
+                    hero_timings.append({'name': 'FirstPaintedHero',
                                          'value': hero_timings_sorted[0]['value']})
-                    hero_timings.append({'name': 'Last Painted Hero',
+                    hero_timings.append({'name': 'LastPaintedHero',
                                          'value': hero_timings_sorted[-1]['value']})
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
