@@ -818,7 +818,7 @@ class DevToolsParser(object):
         page_data['responses_200'] = 0
         page_data['responses_404'] = 0
         page_data['responses_other'] = 0
-        page_data['fullyLoaded'] = 0
+        page_data['fullyLoaded'] = page_data['docTime'] if 'docTime' in page_data else 0
         for request in requests:
             if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
                     request['ttfb_ms'] >= 0 and 'responseCode' in request and \
