@@ -1497,17 +1497,17 @@ def calculate_hero_time(progress, directory, hero, viewport):
         if width != viewport['width']:
             scale = float(width) / float(viewport['width'])
             logging.debug('Frames are %dpx wide but viewport was %dpx. Scaling by %f' % (width, viewport['width'], scale))
-            hero['width'] = int(hero['width'] * scale)
-            hero['height'] = int(hero['height'] * scale)
-            hero['x'] = int(hero['x'] * scale)
-            hero['y'] = int(hero['y'] * scale)
+            hero_width = int(hero['width'] * scale)
+            hero_height = int(hero['height'] * scale)
+            hero_x = int(hero['x'] * scale)
+            hero_y = int(hero['y'] * scale)
 
         logging.debug('Calculating render time for hero element "%s" at position [%d, %d, %d, %d]' % (hero['name'], hero['x'], hero['y'], hero['width'], hero['height']))
 
         # Create a rectangular mask of the hero element position
         hero_mask = os.path.join(dir, 'hero_{0}_mask.png'.format(hero['name']))
         command = '{0} -size {1}x{2} xc:black -fill white -draw "rectangle {3},{4} {5},{6}" PNG24:"{7}"'.format(
-            image_magick['convert'], width, height, hero['x'], hero['y'], hero['x'] + hero['width'], hero['y'] + hero['height'], hero_mask)
+            image_magick['convert'], width, height, hero_x, hero_y, hero_x + hero_width, hero_y + hero_height, hero_mask)
         subprocess.call(command, shell=True)
 
         # Apply the mask to the target frame to create the reference frame
