@@ -19,7 +19,7 @@ docElements.forEach(function(element) {
   var elementRect = element.getBoundingClientRect();
   var elementArea = visibleElementArea(elementRect);
 
-  if (isVisibleElement(element) && isInViewport(elementRect)) {
+  if (isVisibleElement(elementRect) && isInViewport(elementRect)) {
     // Specific elements we look for - headings and images
     if (element.tagName === 'H1' && isLargestHero('h1', elementArea)) {
       setHeroElement('h1', elementRect, elementArea);
@@ -63,7 +63,7 @@ if (typeof customHeroSelectors === 'object') {
       var elementRect = element.getBoundingClientRect();
       var elementArea = visibleElementArea(elementRect);
 
-      if (isVisibleElement(element) && isInViewport(elementRect)) {
+      if (isVisibleElement(elementRect) && isInViewport(elementRect)) {
         setHeroElement(heroName, elementRect, elementArea);
       }
     }
@@ -102,8 +102,8 @@ function isLargestHero(name, area) {
   );
 }
 
-function isVisibleElement(el) {
-  return el.offsetHeight > 0;
+function isVisibleElement(rect) {
+  return rect.height > 0;
 }
 
 function isInViewport(rect) {
