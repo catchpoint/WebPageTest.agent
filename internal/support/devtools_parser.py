@@ -45,7 +45,7 @@ class DevToolsParser(object):
         """Main entry point for processing"""
         logging.debug("Processing raw devtools events")
         raw_requests, raw_page_data = self.extract_net_requests()
-        if len(raw_requests) and len(raw_page_data):
+        if len(raw_requests) or len(raw_page_data):
             logging.debug("Extracting requests and page data")
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
@@ -89,18 +89,18 @@ class DevToolsParser(object):
 
     def write(self):
         """Write out the resulting json data"""
-        if self.out_file is not None and len(self.result['pageData']) and \
-            len(self.result['requests']):
-            try:
-                _, ext = os.path.splitext(self.out_file)
-                if ext.lower() == '.gz':
-                    with gzip.open(self.out_file, 'wb') as f_out:
-                        json.dump(self.result, f_out)
-                else:
-                    with open(self.out_file, 'w') as f_out:
-                        json.dump(self.result, f_out)
-            except Exception:
-                logging.critical("Error writing to " + self.out_file)
+        if self.out_file is not None:
+            if len(self.result['pageData']) or len(self.result['requests']):
+                try:
+                    _, ext = os.path.splitext(self.out_file)
+                    if ext.lower() == '.gz':
+                        with gzip.open(self.out_file, 'wb') as f_out:
+                            json.dump(self.result, f_out)
+                    else:
+                        with open(self.out_file, 'w') as f_out:
+                            json.dump(self.result, f_out)
+                except Exception:
+                    logging.critical("Error writing to " + self.out_file)
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
@@ -684,7 +684,7 @@ class DevToolsParser(object):
             # Add any requests we didn't know about
             index = 0
             for entry in netlog:
-                if 'claimed' not in entry and 'url' in entry:
+                if 'claimed' not in entry and 'url' in entry and 'start' in entry:
                     index += 1
                     request = {'type': 3, 'full_url': entry['url']}
                     parts = urlparse.urlsplit(entry['url'])
@@ -857,8 +857,11 @@ class DevToolsParser(object):
                 if end_time > page_data['fullyLoaded']:
                     page_data['fullyLoaded'] = end_time
         if page_data['responses_200'] == 0:
-            if len(requests) > 0 and 'responseCode' in requests[0]:
+            if len(requests) > 0 and 'responseCode' in requests[0] and \
+                    requests[0]['responseCode'] >= 400:
                 page_data['result'] = requests[0]['responseCode']
+            elif 'docTime' in page_data and page_data['docTime'] > 0:
+                page_data['result'] = 0
             else:
                 page_data['result'] = 12999
 

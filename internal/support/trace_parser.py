@@ -590,8 +590,8 @@ class Trace():
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
-                if 'url' in request and request['url'][:16] != 'http://127.0.0.1' and \
-                        'start' in request:
+                request['fromNet'] = bool('start' in request)
+                if 'url' in request and request['url'][:16] != 'http://127.0.0.1':
                     # Copy any http/2 info over
                     if 'h2_session' in self.netlog and \
                             'h2_session' in request and \
@@ -622,7 +622,7 @@ class Trace():
                         requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
-                requests.sort(key=lambda x: x['start'])
+                requests.sort(key=lambda x: x['start'] if 'start' in x else x['created'])
                 # Assign the socket connect time to the first request on each socket
                 if 'socket' in self.netlog:
                     for request in requests:
@@ -672,7 +672,7 @@ class Trace():
                 times = ['dns_start', 'dns_end',
                          'connect_start', 'connect_end',
                          'ssl_start', 'ssl_end',
-                         'start', 'first_byte', 'end']
+                         'start', 'created', 'first_byte', 'end']
                 for request in requests:
                     for time_name in times:
                         if time_name in request:
@@ -814,7 +814,9 @@ class Trace():
                 self.netlog['url_request'] = {}
             request_id = self.netlog['next_request_id']
             self.netlog['next_request_id'] += 1
-            self.netlog['url_request'][request_id] = {'bytes_in': 0, 'chunks': []}
+            self.netlog['url_request'][request_id] = {'bytes_in': 0,
+                                                      'chunks': [],
+                                                      'created': trace_event['ts']}
             request = self.netlog['url_request'][request_id]
             stream_id = params['promised_stream_id']
             if stream_id not in entry['stream']:
@@ -911,7 +913,9 @@ class Trace():
             self.netlog['url_request'] = {}
         request_id = trace_event['id']
         if request_id not in self.netlog['url_request']:
-            self.netlog['url_request'][request_id] = {'bytes_in': 0, 'chunks': []}
+            self.netlog['url_request'][request_id] = {'bytes_in': 0,
+                                                      'chunks': [],
+                                                      'created': trace_event['ts']}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['url_request'][request_id]
         name = trace_event['name']
