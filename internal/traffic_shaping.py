@@ -90,7 +90,7 @@ class TrafficShaper(object):
             # If a lighthouse test is running, force the Lighthouse 3G profile:
             # https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md
             # 1.6Mbps down, 750Kbps up, 150ms RTT
-            if task['running_lighthouse']:
+            if task['running_lighthouse'] and not job['lighthouse_throttle']:
                 rtt = 150
                 in_bps = 1600000
                 out_bps = 750000

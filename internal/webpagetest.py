@@ -439,6 +439,8 @@ class WebPageTest(object):
                         job['lighthouse'] = 1
                     job['keep_lighthouse_trace'] = \
                             bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                    job['lighthouse_throttle'] = \
+                        bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and \
