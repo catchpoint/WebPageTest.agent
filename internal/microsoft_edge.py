@@ -661,7 +661,7 @@ class Edge(DesktopBrowser):
             with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.devtools.execute_js(script)
+            hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
                 with gzip.open(path, 'wb', 7) as outfile:
