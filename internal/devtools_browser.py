@@ -495,9 +495,15 @@ class DevtoolsBrowser(object):
                 lh_report = None
                 with open(json_file, 'rb') as f_in:
                     lh_report = json.load(f_in)
-                if lh_report is not None and 'audits' in lh_report and \
-                        'screenshots' in lh_report['audits']:
-                    del lh_report['audits']['screenshots']
+                modified = False
+                if lh_report is not None and 'audits' in lh_report:
+                    if 'screenshots' in lh_report['audits']:
+                        del lh_report['audits']['screenshots']
+                        modified = True
+                    if 'screenshot-thumbnails' in lh_report['audits']:
+                        del lh_report['audits']['screenshot-thumbnails']
+                        modified = True
+                if modified:
                     with gzip.open(json_gzip, 'wb', 7) as f_out:
                         json.dump(lh_report, f_out)
                 else:
