@@ -1488,6 +1488,10 @@ def calculate_hero_time(progress, directory, hero, viewport):
     elif os.path.isfile(target_frame + '.jpg'):
         extension = '.jpg'
     if extension is not None:
+        hero_width = int(hero['width'])
+        hero_height = int(hero['height'])
+        hero_x = int(hero['x'])
+        hero_y = int(hero['y'])
         target_frame = target_frame + extension
         logging.debug('Target image for hero %s is %s' % (hero['name'], target_frame))
 
