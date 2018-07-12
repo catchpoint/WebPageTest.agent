@@ -154,8 +154,7 @@ class Firefox(DesktopBrowser):
                             width = task['width'] + delta_x
                             height = task['height'] + delta_y
                             logging.debug('Resizing browser to %dx%d', width, height)
-                            self.marionette.set_window_position(x=0, y=0)
-                            self.marionette.set_window_size(height=height, width=width)
+                            self.marionette.set_window_rect(x=0, y=0, height=height, width=width)
                 # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
