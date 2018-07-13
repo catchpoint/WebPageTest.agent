@@ -56,6 +56,7 @@ user_pref("dom.max_script_run_time", 0);
 user_pref("dom.webnotifications.enabled", false);
 user_pref("dom.performance.time_to_non_blank_paint.enabled", true);
 user_pref("extensions.checkCompatibility", false);
+user_pref("extensions.pocket.enabled", false);
 user_pref("extensions.update.enabled", false);
 user_pref("extensions.update.notifyUser", false);
 user_pref("extensions.shownSelectionUI", true);
