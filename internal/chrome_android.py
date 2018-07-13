@@ -135,6 +135,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
                 self.adb.su('chmod 666 {0}'.format(root_command_line))
             # configure any browser-specific prefs
+            self.setup_prefs()
             self.configure_prefs()
             # launch the browser
             activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
@@ -150,6 +151,23 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, START_PAGE)
                         time.sleep(0.5)
+
+    def setup_prefs(self):
+        """Install our base set of preferences"""
+        src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           'support', 'chrome', 'prefs.json')
+        remote_prefs = '/data/local/tmp/Preferences'
+        self.adb.shell(['rm', remote_prefs])
+        app_dir = '/data/data/{0}'.format(self.config['package'])
+        self.adb.su('mkdir {0}/app_chrome'.format(app_dir))
+        self.adb.su('chmod 777 {0}/app_chrome'.format(app_dir))
+        self.adb.su('mkdir {0}/app_chrome/Default'.format(app_dir))
+        self.adb.su('chmod 777 {0}/app_chrome/Default'.format(app_dir))
+        dest = '{0}/app_chrome/Default/Preferences'.format(app_dir)
+        self.adb.adb(['push', src, remote_prefs])
+        self.adb.su('cp {0} {1}'.format(remote_prefs, dest))
+        self.adb.shell(['rm', remote_prefs])
+        self.adb.su('chmod 777 {0}'.format(dest))
 
     def configure_prefs(self):
         """Configure browser-specific shared_prefs"""
