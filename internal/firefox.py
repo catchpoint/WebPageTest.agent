@@ -142,6 +142,19 @@ class Firefox(DesktopBrowser):
                 if modified:
                     logging.debug(ua_string)
                     self.marionette.set_pref('general.useragent.override', ua_string)
+                # Location
+                if 'lat' in self.job and 'lng' in self.job:
+                    try:
+                        lat = float(str(self.job['lat']))
+                        lng = float(str(self.job['lng']))
+                        location_uri = 'data:application/json,{{'\
+                            '"status":"OK","accuracy":10.0,'\
+                            '"location":{{"lat":{0:f},"lng":{1:f}}}'\
+                            '}}'.format(lat, lng)
+                        logging.debug('Setting location: %s', location_uri)
+                        self.set_pref('geo.wifi.uri', location_uri)
+                    except Exception:
+                        pass
                 # Figure out the native viewport size
                 size = self.execute_js("[window.innerWidth, window.innerHeight]")
                 logging.debug(size)
@@ -706,6 +719,23 @@ class Firefox(DesktopBrowser):
         elif command['command'] == 'firefoxpref':
             if 'target' in command and 'value' in command:
                 self.set_pref(command['target'], command['value'])
+        elif command['command'] == 'setlocation':
+            try:
+                if 'target' in command and command['target'].find(',') > 0:
+                    accuracy = 0
+                    if 'value' in command and re.match(r'\d+', command['value']):
+                        accuracy = int(re.search(r'\d+', str(command['value'])).group())
+                    parts = command['target'].split(',')
+                    lat = float(parts[0])
+                    lng = float(parts[1])
+                    location_uri = 'data:application/json,{{'\
+                        '"status":"OK","accuracy":{2:d},'\
+                        '"location":{{"lat":{0:f},"lng":{1:f}}}'\
+                        '}}'.format(lat, lng, accuracy)
+                    logging.debug('Setting location: %s', location_uri)
+                    self.set_pref('geo.wifi.uri', location_uri)
+            except Exception:
+                pass
 
     def navigate(self, url):
         """Navigate to the given URL"""
