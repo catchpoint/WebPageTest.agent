@@ -46,7 +46,7 @@ run the agent in a docker container.
 * **-v** : Increase verbosity (specify multiple times for more). -vvvv for full debug output.
 * **--name** : Agent name (defaults to the machine's hostname).
 * **--exit** : Exit after the specified number of minutes.
-    * Useful for running in a shell script that does some maintenence or updates periodically (like hourly).
+    * Useful for running in a shell script that does some maintenance or updates periodically (like hourly).
 * **--dockerized**: The agent is running inside a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
