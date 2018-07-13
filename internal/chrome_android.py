@@ -154,6 +154,9 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
 
     def setup_prefs(self):
         """Install our base set of preferences"""
+        # Crashes chrome on the Moto G4's so disabled for now
+        return
+        """
         src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                            'support', 'chrome', 'prefs.json')
         remote_prefs = '/data/local/tmp/Preferences'
@@ -168,6 +171,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.adb.su('cp {0} {1}'.format(remote_prefs, dest))
         self.adb.shell(['rm', remote_prefs])
         self.adb.su('chmod 777 {0}'.format(dest))
+        """
 
     def configure_prefs(self):
         """Configure browser-specific shared_prefs"""
