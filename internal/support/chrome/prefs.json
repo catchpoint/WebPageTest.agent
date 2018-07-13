@@ -17,7 +17,7 @@
   },
   "profile":{
     "default_content_setting_values": {
-      "geolocation": 2,
+      "geolocation": 1,
       "media_stream_camera":2,
       "media_stream_mic":2,
       "notifications":2

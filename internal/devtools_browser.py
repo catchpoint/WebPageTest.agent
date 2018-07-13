@@ -115,6 +115,19 @@ class DevtoolsBrowser(object):
                         self.devtools.send_command("Emulation.setCPUThrottlingRate",
                                                    {"rate": self.job['throttle_cpu']},
                                                    wait=True)
+
+            # Location
+            if 'lat' in self.job and 'lng' in self.job:
+                try:
+                    lat = float(str(self.job['lat']))
+                    lng = float(str(self.job['lng']))
+                    self.devtools.send_command(
+                        'Emulation.setGeolocationOverride',
+                        {'latitude': lat, 'longitude': lng,
+                         'accuracy': 0})
+                except Exception:
+                    pass
+
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None:
@@ -387,6 +400,21 @@ class DevtoolsBrowser(object):
                     if len(name) and len(value) and len(url):
                         self.devtools.send_command('Network.setCookie',
                                                    {'url': url, 'name': name, 'value': value})
+        elif command['command'] == 'setlocation':
+            try:
+                if 'target' in command and command['target'].find(',') > 0:
+                    accuracy = 0
+                    if 'value' in command and re.match(r'\d+', command['value']):
+                        accuracy = int(re.search(r'\d+', str(command['value'])).group())
+                    parts = command['target'].split(',')
+                    lat = float(parts[0])
+                    lng = float(parts[1])
+                    self.devtools.send_command(
+                        'Emulation.setGeolocationOverride',
+                        {'latitude': lat, 'longitude': lng,
+                         'accuracy': accuracy})
+            except Exception:
+                pass
         elif command['command'] == 'addheader':
             self.devtools.set_header(command['target'])
         elif command['command'] == 'setheader':
