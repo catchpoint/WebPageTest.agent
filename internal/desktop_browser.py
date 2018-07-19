@@ -511,6 +511,8 @@ class DesktopBrowser(BaseBrowser):
                     '{0:d}'.format(self.job['imageQuality']),
                     '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms,
                     '--progress', progress_file]
+            if 'debug' in self.job and self.job['debug']:
+                args.append('-vvvv')
             if not task['navigated']:
                 args.append('--forceblank')
             if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
