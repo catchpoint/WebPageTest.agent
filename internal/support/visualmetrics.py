@@ -1314,11 +1314,13 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                 metrics.append({'name': 'Perceptual Speed Index',
                                 'value': calculate_perceptual_speed_index(progress, dirs)})
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
+                logging.debug('Calculating hero element times')
                 hero_data = None
                 hero_f_in = gzip.open(hero_elements_file, 'rb')
                 try:
                     hero_data = json.load(hero_f_in)
                 except Exception as e:
+                    logging.exception('Could not load hero elements data')
                     logging.exception(e)
                 hero_f_in.close()
 
@@ -1340,6 +1342,8 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_f_out = gzip.open(hero_elements_file, 'wb', 7)
                     json.dump(hero_data, hero_f_out)
                     hero_f_out.close()
+            else:
+                logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
         else:
             metrics = [
                 {'name': 'First Visual Change',
