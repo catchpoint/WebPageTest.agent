@@ -9,7 +9,7 @@
   wappalyzer.driver.document = document;
 
 	const container = document.getElementById('wappalyzer-container');
-	const url = wappalyzer.parseUrl(top.location.href);
+	const url = wappalyzer.parseUrl(window.top.location.href);
 	const hasOwn = Object.prototype.hasOwnProperty;
 
   wappalyzer.driver.log = (message, source, type) => {
@@ -65,9 +65,9 @@
       }
     }
     // Run the analysis        
-    const url = wappalyzer.parseUrl(top.location.href);
+    const url = wappalyzer.parseUrl(window.top.location.href);
     wappalyzer.analyze(url, {
-      html: new XMLSerializer().serializeToString(document),
+      html: new window.XMLSerializer().serializeToString(document),
       headers: responseHeaders,
       env: env,
       js: js,

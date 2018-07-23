@@ -1,6 +1,20 @@
 {
   "$schema": "../schema.json",
   "apps": {
+    "1C-Bitrix": {
+      "cats": [
+        1
+      ],
+      "headers": {
+        "Set-Cookie": "BITRIX_",
+        "X-Powered-CMS": "Bitrix Site Manager"
+      },
+      "html": "(?:<link[^>]+components/bitrix|(?:src|href)=\"/bitrix/(?:js|templates))",
+      "icon": "1C-Bitrix.png",
+      "implies": "PHP",
+      "script": "1c-bitrix",
+      "website": "http://www.1c-bitrix.ru"
+    },
     "3dCart": {
       "cats": [
         1,
@@ -594,6 +608,10 @@
       ],
       "html": "<[^>]+ ng-version=\"([\\d.]+)\"\\;version:\\1",
       "icon": "Angular.svg",
+      "js": {
+        "ng.coreTokens": "",
+        "ng.probe": ""
+      },
       "website": "https://angular.io"
     },
     "Angular Material": {
@@ -1194,7 +1212,7 @@
     },
     "Boba.js": {
       "cats": [
-        12
+        59
       ],
       "implies": "Google Analytics",
       "script": "boba(?:\\.min)?\\.js",
@@ -1254,7 +1272,7 @@
         "<link[^>]+?href=\"[^\"]*bootstrap(?:\\.min)?\\.css",
         "<div[^>]+class=\"[^\"]*glyphicon glyphicon-"
       ],
-      "icon": "Bootstrap.svg",
+      "icon": "Bootstrap.png",
       "js": {
         "bootstrap.Alert.VERSION": "(.*)\\;version:\\1",
         "jQuery.fn.tooltip.Constructor.VERSION": "(.*)\\;version:\\1"
@@ -1268,7 +1286,7 @@
     },
     "Bootstrap Table": {
       "cats": [
-        12
+        59
       ],
       "html": "<link[^>]+href=\"[^>]*bootstrap-table(?:\\.min)?\\.css",
       "icon": "Bootstrap Table.svg",
@@ -1483,17 +1501,6 @@
       },
       "website": "http://www.cmsimple.org/en"
     },
-    "CNV Platform": {
-      "cats": [
-        1
-      ],
-      "cookies": {
-        "cnv_session": ""
-      },
-      "icon": "CNV.png",
-      "implies": "Laravel",
-      "website": "https://cnv.vn"
-    },
     "CO2Stats": {
       "cats": [
         10
@@ -1631,16 +1638,6 @@
       },
       "icon": "CentOS.png",
       "website": "http://centos.org"
-    },
-    "CenteHTTPd": {
-      "cats": [
-        22
-      ],
-      "headers": {
-        "Server": "CenteHTTPd(?:/([\\d.]+))?\\;version:\\1"
-      },
-      "icon": "CenteHTTPd.png",
-      "website": "http://cente.jp/cente/app/HTTPdc.html"
     },
     "Chameleon": {
       "cats": [
@@ -2241,7 +2238,7 @@
     },
     "DHTMLX": {
       "cats": [
-        12
+        59
       ],
       "icon": "DHTMLX.png",
       "script": "dhtmlxcommon\\.js",
@@ -2378,7 +2375,7 @@
     },
     "DataTables": {
       "cats": [
-        12
+        59
       ],
       "icon": "DataTables.png",
       "implies": "jQuery",
@@ -2511,7 +2508,7 @@
     },
     "Dojo": {
       "cats": [
-        12
+        59
       ],
       "icon": "Dojo.png",
       "js": {
@@ -2685,22 +2682,6 @@
       "script": "dtagent.*\\.js",
       "website": "http://dynatrace.com"
     },
-    "E-Commerce Paraguay": {
-      "cats": [
-        6
-      ],
-      "icon": "eCommercePy.png",
-      "script": "cdn\\.e-commerceparaguay\\.com",
-      "website": "http://e-commerceparaguay.com"
-    },
-    "E-Merchant": {
-      "cats": [
-        6
-      ],
-      "icon": "E-Merchant.png",
-      "script": "cdn\\.e-merchant\\.com",
-      "website": "http://e-merchant.com"
-    },
     "EC-CUBE": {
       "cats": [
         6
@@ -2832,16 +2813,6 @@
       },
       "icon": "Embedthis.png",
       "website": "http://embedthis.com/appweb"
-    },
-    "Embedthis-http": {
-      "cats": [
-        22
-      ],
-      "headers": {
-        "Server": "Embedthis-http(?:/([\\d.]+))?\\;version:\\1"
-      },
-      "icon": "Embedthis.png",
-      "website": "http://github.com/embedthis/http"
     },
     "Ember.js": {
       "cats": [
@@ -3016,7 +2987,7 @@
     },
     "FancyBox": {
       "cats": [
-        12
+        59
       ],
       "icon": "FancyBox.png",
       "implies": "jQuery",
@@ -3025,6 +2996,16 @@
       },
       "script": "jquery\\.fancybox(?:\\.pack|\\.min)?\\.js(?:\\?v=([\\d.]+))?$\\;version:\\1",
       "website": "http://fancyapps.com/fancybox"
+    },
+    "Fastcommerce": {
+      "cats": [
+        6
+      ],
+      "icon": "Fastcommerce.png",
+      "meta": {
+        "generator": "^Fastcommerce"
+      },
+      "website": "https://www.fastcommerce.com.br"
     },
     "Fastly": {
       "cats": [
@@ -3049,6 +3030,16 @@
       "implies": "PHP",
       "website": "http://fatfreeframework.com"
     },
+    "Fbits": {
+      "cats": [
+        6
+      ],
+      "icon": "Fbits.png",
+      "js": {
+        "fbits": ""
+      },
+      "website": "https://www.traycorp.com.br"
+    },
     "Fedora": {
       "cats": [
         28
@@ -3061,7 +3052,7 @@
     },
     "Fingerprintjs": {
       "cats": [
-        12
+        59
       ],
       "js": {
         "Fingerprint": "(\\d)?$\\;version:\\1",
@@ -3157,7 +3148,7 @@
     },
     "Flickity": {
       "cats": [
-        12
+        59
       ],
       "js": {
         "Flickity": ""
@@ -3415,19 +3406,6 @@
       },
       "website": "https://whatcd.github.io/Gazelle/"
     },
-    "Genexus": {
-      "cats": [
-        18,
-        19
-      ],
-      "html": "<[^>]+class=\"gxp-page\"",
-      "icon": "genexus.png",
-      "js": {
-        "gx.evt": ""
-      },
-      "script": "/gxp\\.js",
-      "website": "https://www.genexus.com"
-    },
     "Gentoo": {
       "cats": [
         28
@@ -3504,8 +3482,8 @@
       "meta": {
         "generator": "GitBook(?:.([\\d.]+))?\\;version:\\1"
       },
-      "url": "^https?://[^/]+\\.gitbook\\.io/",
-      "website": "http://gitbook.io"
+      "url": "^https?://[^/]+\\.gitbook\\.com/",
+      "website": "https://www.gitbook.com"
     },
     "GitHub Pages": {
       "cats": [
@@ -3694,7 +3672,7 @@
         "GoogleAnalyticsObject": "",
         "gaGlobal": ""
       },
-      "script": "google-analytics\\.com\\/(?:ga|urchin|(analytics))\\.js\\;version:\\1?UA:",
+      "script": "google-analytics\\.com\\/(?:ga|urchin|(analytics))\\.js\\;version:\\1?Universal Analytics:",
       "website": "http://google.com/analytics"
     },
     "Google Analytics Enhanced eCommerce": {
@@ -4032,7 +4010,7 @@
     },
     "Hammer.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "Hammer.js.png",
       "js": {
@@ -4076,7 +4054,7 @@
     },
     "HeadJS": {
       "cats": [
-        12
+        59
       ],
       "html": "<[^>]*data-headjs-load",
       "icon": "HeadJS.png",
@@ -4400,7 +4378,7 @@
     },
     "Immutable.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "Immutable.js.png",
       "js": {
@@ -5271,7 +5249,7 @@
     },
     "Lazy.js": {
       "cats": [
-        12
+        59
       ],
       "script": "lazy(?:\\.browser)?(?:\\.min)?\\.js",
       "website": "http://danieltao.com/lazy.js"
@@ -5338,7 +5316,7 @@
     },
     "Lightbox": {
       "cats": [
-        12
+        59
       ],
       "html": "<link [^>]*href=\"[^\"]+lightbox(?:\\.min)?\\.css",
       "icon": "Lightbox.png",
@@ -5399,7 +5377,7 @@
     },
     "List.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "List.js.png",
       "js": {
@@ -5533,7 +5511,7 @@
     },
     "Lodash": {
       "cats": [
-        12
+        59
       ],
       "excludes": "Underscore.js",
       "icon": "Lo-dash.png",
@@ -5724,6 +5702,17 @@
       ],
       "website": "http://mailchimp.com"
     },
+    "MakeShopKorea": {
+      "cats": [
+        6
+      ],
+      "icon": "MakeShopKorea.png",
+      "js": {
+        "Makeshop": "",
+        "MakeshopLogUniqueId": ""
+      },
+      "website": "https://www.makeshop.co.kr"
+    },
     "Mambo": {
       "cats": [
         1
@@ -5770,7 +5759,7 @@
     },
     "Marked": {
       "cats": [
-        12
+        59
       ],
       "icon": "marked.svg",
       "js": {
@@ -5823,6 +5812,27 @@
       },
       "script": "([\\d.]+)?/mathjax\\.js\\;version:\\1",
       "website": "https://www.mathjax.org"
+    },
+    "Matomo": {
+      "cats": [
+        10
+      ],
+      "cookies": {
+        "PIWIK_SESSID": ""
+      },
+      "icon": "Piwik.png",
+      "js": {
+        "Matomo": "",
+        "Piwik": "",
+        "_paq": ""
+      },
+      "meta": {
+        "apple-itunes-app": "app-id=737216887",
+        "generator": "(?:Matomo|Piwik) - Open Source Web Analytics",
+        "google-play-app": "app-id=org\\.piwik\\.mobile2"
+      },
+      "script": "piwik\\.js|piwik\\.php",
+      "website": "http://piwik.org"
     },
     "Mattermost": {
       "cats": [
@@ -6199,7 +6209,7 @@
     },
     "MochiKit": {
       "cats": [
-        12
+        59
       ],
       "icon": "MochiKit.png",
       "js": {
@@ -6220,7 +6230,7 @@
     },
     "Modernizr": {
       "cats": [
-        12
+        59
       ],
       "icon": "Modernizr.svg",
       "js": {
@@ -6290,7 +6300,7 @@
     },
     "Moment Timezone": {
       "cats": [
-        12
+        59
       ],
       "icon": "Moment.js.svg",
       "implies": "Moment.js",
@@ -6299,7 +6309,7 @@
     },
     "Moment.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "Moment.js.svg",
       "js": {
@@ -6370,7 +6380,7 @@
         1
       ],
       "icon": "Mono.net.png",
-      "implies": "Piwik",
+      "implies": "Matomo",
       "js": {
         "_monoTracker": ""
       },
@@ -6415,7 +6425,7 @@
       ],
       "icon": "moon.svg",
       "script": "/moon(?:\\.min)?\\.js$",
-      "website": "http://moonjs.ga/"
+      "website": "https://kbrsh.github.io/moon/"
     },
     "MotoCMS": {
       "cats": [
@@ -6837,13 +6847,6 @@
       "icon": "Olark.png",
       "script": "^https?:\\/\\/static\\.olark\\.com\\/jsclient\\/loader1\\.js",
       "website": "https://www.olark.com/"
-    },
-    "OmniTouch 8660 My Teamwork": {
-      "cats": [
-        19
-      ],
-      "icon": "OmniTouch 8660 My Teamwork.png",
-      "website": "http://enterprise.alcatel-lucent.com"
     },
     "OneAPM": {
       "cats": [
@@ -7408,16 +7411,6 @@
       },
       "website": "http://percussion.com"
     },
-    "PerfSONAR-PS": {
-      "cats": [
-        19
-      ],
-      "headers": {
-        "User-agent": "perfSONAR-PS/?([\\d\\.]+)?\\;version:\\1"
-      },
-      "icon": "PerfSONAR-PS.png",
-      "website": "http://psps.perfsonar.net"
-    },
     "Perl": {
       "cats": [
         27
@@ -7501,26 +7494,6 @@
       "script": "//assets\\.pinterest\\.com/js/pinit\\.js",
       "website": "http://pinterest.com"
     },
-    "Piwik": {
-      "cats": [
-        10
-      ],
-      "cookies": {
-        "PIWIK_SESSID": ""
-      },
-      "icon": "Piwik.png",
-      "js": {
-        "Piwik": "",
-        "_paq": ""
-      },
-      "meta": {
-        "apple-itunes-app": "app-id=737216887",
-        "generator": "Piwik - Open Source Web Analytics",
-        "google-play-app": "app-id=org\\.piwik\\.mobile2"
-      },
-      "script": "piwik\\.js|piwik\\.php",
-      "website": "http://piwik.org"
-    },
     "Planet": {
       "cats": [
         49
@@ -7601,14 +7574,6 @@
       "script": "https?://cdn\\.plot\\.ly/plotly",
       "website": "https://plot.ly/javascript/"
     },
-    "Plura": {
-      "cats": [
-        19
-      ],
-      "html": "<iframe src=\"[^>]+pluraserver\\.com",
-      "icon": "Plura.png",
-      "website": "http://www.pluraprocessing.com"
-    },
     "Po.st": {
       "cats": [
         5
@@ -7618,6 +7583,17 @@
         "pwidget_config": ""
       },
       "website": "http://www.po.st/"
+    },
+    "Polyfill": {
+      "cats": [
+        59
+      ],
+      "icon": "polyfill.svg",
+      "script": [
+        "^https?://cdn\\.polyfill\\.io/",
+        "/polyfill\\.min\\.js"
+      ],
+      "website": "https://polyfill.io"
     },
     "Polymer": {
       "cats": [
@@ -7760,15 +7736,6 @@
         "projesoft\\.js"
       ],
       "website": "https://www.projesoft.com.tr"
-    },
-    "Prospector": {
-      "cats": [
-        36
-      ],
-      "html": "<[^>]+data-name=['\"]prospectscript",
-      "icon": "Prospector.png",
-      "script": "processprospector\\.js",
-      "website": "http://prospector.io"
     },
     "Prototype": {
       "cats": [
@@ -8024,9 +7991,19 @@
       },
       "website": "http://ecservice.rakuten.com.br"
     },
+    "Rakuten Digital Commerce": {
+      "cats": [
+        6
+      ],
+      "icon": "RakutenDigitalCommerce.png",
+      "js": {
+        "RakutenApplication": ""
+      },
+      "website": "https://digitalcommerce.rakuten.com.br"
+    },
     "Ramda": {
       "cats": [
-        12
+        59
       ],
       "icon": "Ramda.png",
       "script": "ramda.*\\.js",
@@ -8256,7 +8233,7 @@
         "riot": ""
       },
       "script": "riot(?:\\+compiler)?(?:\\.min)?\\.js",
-      "website": "http://muut.com/riotjs"
+      "website": "https://riot.js.org/"
     },
     "RiteCMS": {
       "cats": [
@@ -8642,7 +8619,7 @@
     },
     "Select2": {
       "cats": [
-        12
+        59
       ],
       "icon": "Select2.png",
       "implies": "jQuery",
@@ -8671,34 +8648,6 @@
       "icon": "Sencha Touch.png",
       "script": "sencha-touch.*\\.js",
       "website": "http://sencha.com/products/touch"
-    },
-    "Sentinel Keys Server": {
-      "cats": [
-        22
-      ],
-      "headers": {
-        "Server": "SentinelKeysServer\\/?([\\d\\.]+)?\\;version:\\1"
-      },
-      "icon": "Sentinel.png",
-      "website": "http://www.safenet-inc.com/software-monetization/sentinel-rms"
-    },
-    "Sentinel License Monitor": {
-      "cats": [
-        19
-      ],
-      "html": "<title>Sentinel (?:Keys )?License Monitor</title>",
-      "icon": "Sentinel.png",
-      "website": "http://www.safenet-inc.com/software-monetization/sentinel-rms/"
-    },
-    "Sentinel Protection Server": {
-      "cats": [
-        22
-      ],
-      "headers": {
-        "Server": "SentinelProtectionServer\\/?([\\d\\.]+)?\\;version:\\1"
-      },
-      "icon": "Sentinel.png",
-      "website": "http://www.safenet-inc.com/software-monetization/sentinel-rms/"
     },
     "Serendipity": {
       "cats": [
@@ -9019,7 +8968,7 @@
     },
     "Slick": {
       "cats": [
-        12
+        59
       ],
       "html": "<link [^>]+(?:/([\\d.]+)/)?slick-theme\\.css\\;version:\\1",
       "implies": "jQuery",
@@ -9028,7 +8977,7 @@
     },
     "Slimbox": {
       "cats": [
-        12
+        59
       ],
       "html": "<link [^>]*href=\"[^/]*slimbox(?:-rtl)?\\.css",
       "icon": "Slimbox.png",
@@ -9038,7 +8987,7 @@
     },
     "Slimbox 2": {
       "cats": [
-        12
+        59
       ],
       "html": "<link [^>]*href=\"[^/]*slimbox2(?:-rtl)?\\.css",
       "icon": "Slimbox 2.png",
@@ -9090,7 +9039,7 @@
     },
     "Snap.svg": {
       "cats": [
-        12
+        59
       ],
       "icon": "Snap.svg.png",
       "js": {
@@ -9133,6 +9082,16 @@
       },
       "script": "socket\\.io.*\\.js",
       "website": "https://socket.io"
+    },
+    "SoftTr": {
+      "cats": [
+        6
+      ],
+      "icon": "softtr.png",
+      "meta": {
+        "author": "SoftTr E-Ticaret Sitesi Yazılımı"
+      },
+      "website": "http://www.softtr.com"
     },
     "Solodev": {
       "cats": [
@@ -9205,7 +9164,7 @@
     },
     "SoundManager": {
       "cats": [
-        12
+        59
       ],
       "icon": "SoundManager.png",
       "js": {
@@ -9345,16 +9304,6 @@
         "Stackla": ""
       },
       "script": "assetscdn\\.stackla\\.com\\/media\\/js\\/widget\\/(?:[a-zA-Z0-9.]+)?\\.js",
-      "website": "http://stackla.com/"
-    },
-    "Stackla Social Hub": {
-      "cats": [
-        1
-      ],
-      "icon": "Stackla.png",
-      "js": {
-        "stacklaSocialHub": ""
-      },
       "website": "http://stackla.com/"
     },
     "Starlet": {
@@ -9529,7 +9478,7 @@
     },
     "SweetAlert": {
       "cats": [
-        12
+        59
       ],
       "html": "<link[^>]+?href=\"[^\"]+sweet-alert(?:\\.min)?\\.css",
       "icon": "SweetAlert.png",
@@ -9541,7 +9490,7 @@
     },
     "SweetAlert2": {
       "cats": [
-        12
+        59
       ],
       "excludes": "SweetAlert",
       "html": "<link[^>]+?href=\"[^\"]+sweetalert2(?:\\.min)?\\.css",
@@ -9608,16 +9557,6 @@
         "SyntaxHighlighter": ""
       },
       "website": "http://github.com/syntaxhighlighter"
-    },
-    "T-Soft": {
-      "cats": [
-        6
-      ],
-      "icon": "Tsoft.png",
-      "meta": {
-        "copyright": "T-Soft E-Ticaret Sistemleri"
-      },
-      "website": "http://www.tsoft.com.tr/"
     },
     "TWiki": {
       "cats": [
@@ -9957,6 +9896,14 @@
       "script": "lucide\\.init(?:\\.min)?\\.js",
       "website": "http://www.translucide.net"
     },
+    "Tray": {
+      "cats": [
+        6
+      ],
+      "icon": "tray.png",
+      "script": ".+tcdn\\.com\\.br",
+      "website": "https://www.tray.com.br"
+    },
     "Tumblr": {
       "cats": [
         11
@@ -10042,7 +9989,7 @@
     },
     "Twitter typeahead.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "Twitter typeahead.js.png",
       "implies": "jQuery",
@@ -10188,7 +10135,7 @@
     },
     "Underscore.js": {
       "cats": [
-        12
+        59
       ],
       "excludes": "Lodash",
       "icon": "Underscore.js.png",
@@ -10657,6 +10604,20 @@
       },
       "website": "http://websitex5.com"
     },
+    "Webdev": {
+      "cats": [
+        20
+      ],
+      "headers": {
+        "WebDevSrc": ""
+      },
+      "html": "<!-- [a-zA-Z0-9_]+ [\\d/]+ [\\d:]+ WebDev \\d\\d ([\\d.]+) -->\\;version:\\1",
+      "icon": "webdev.png",
+      "meta": {
+        "generator": "^WEBDEV$"
+      },
+      "website": "https://www.windev.com/webdev/index.html"
+    },
     "Webix": {
       "cats": [
         12
@@ -11011,7 +10972,7 @@
     },
     "XRegExp": {
       "cats": [
-        12
+        59
       ],
       "icon": "XRegExp.png",
       "js": {
@@ -11041,7 +11002,7 @@
     },
     "Xajax": {
       "cats": [
-        12
+        59
       ],
       "icon": "Xajax.png",
       "script": "xajax_core.*\\.js",
@@ -11130,7 +11091,7 @@
     },
     "YUI": {
       "cats": [
-        12
+        59
       ],
       "icon": "YUI.png",
       "js": {
@@ -11248,6 +11209,9 @@
       "cats": [
         18
       ],
+      "cookies": {
+        "YII_CSRF_TOKEN": ""
+      },
       "html": [
         "Powered by <a href=\"http://www\\.yiiframework\\.com/\" rel=\"external\">Yii Framework</a>",
         "<input type=\"hidden\" value=\"[a-zA-Z0-9]{40}\" name=\"YII_CSRF_TOKEN\" \\/>",
@@ -11257,7 +11221,11 @@
       "implies": [
         "PHP"
       ],
-      "website": "http://yiiframework.com"
+      "script": [
+        "/assets/[a-zA-Z0-9]{8}\\/yii\\.js$",
+        "/yii\\.(?:validation|activeForm)\\.js"
+      ],
+      "website": "https://www.yiiframework.com"
     },
     "Yoast SEO": {
       "cats": [
@@ -11385,7 +11353,7 @@
     },
     "Zepto": {
       "cats": [
-        12
+        59
       ],
       "icon": "Zepto.png",
       "js": {
@@ -11414,6 +11382,15 @@
         "generator": "Zinnia"
       },
       "website": "http://django-blog-zinnia.com"
+    },
+    "Zone.js": {
+      "cats": [
+        12
+      ],
+      "js": {
+        "Zone.root": ""
+      },
+      "website": "https://github.com/angular/zone.js/"
     },
     "Zope": {
       "cats": [
@@ -11475,7 +11452,7 @@
     },
     "basket.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "basket.js.png",
       "js": {
@@ -11559,16 +11536,6 @@
       "implies": "PHP",
       "script": "[^a-z\\d]e107\\.js",
       "website": "http://e107.org"
-    },
-    "eDevice SmartStack": {
-      "cats": [
-        22
-      ],
-      "headers": {
-        "Server": "eDevice SmartStack(?: ?/?([\\d.]+))?\\;version:\\1"
-      },
-      "icon": "eDevice SmartStack.png",
-      "website": "http://edevice.com"
     },
     "eSyndiCat": {
       "cats": [
@@ -11797,7 +11764,7 @@
     },
     "jQuery": {
       "cats": [
-        12
+        59
       ],
       "icon": "jQuery.svg",
       "js": {
@@ -11812,7 +11779,7 @@
     },
     "jQuery Migrate": {
       "cats": [
-        12
+        59
       ],
       "icon": "jQuery.svg",
       "implies": "jQuery",
@@ -11844,7 +11811,7 @@
     },
     "jQuery UI": {
       "cats": [
-        12
+        59
       ],
       "icon": "jQuery UI.svg",
       "implies": "jQuery",
@@ -11890,7 +11857,7 @@
     },
     "math.js": {
       "cats": [
-        12
+        59
       ],
       "icon": "math.js.png",
       "js": {
@@ -12108,7 +12075,7 @@
       ],
       "html": "<!--\\s+OTRS: Copyright \\d+-\\d+, OTRS AG",
       "icon": "otrs.png",
-      "implies": "perl",
+      "implies": "Perl",
       "script": "^/otrs-web/js/",
       "website": "https://www.otrs.com"
     },
@@ -12273,7 +12240,7 @@
     },
     "prettyPhoto": {
       "cats": [
-        12
+        59
       ],
       "html": "(?:<link [^>]*href=\"[^\"]*prettyPhoto(?:\\.min)?\\.css|<a [^>]*rel=\"prettyPhoto)",
       "icon": "prettyPhoto.png",
@@ -12328,7 +12295,7 @@
     },
     "script.aculo.us": {
       "cats": [
-        12
+        59
       ],
       "icon": "script.aculo.us.png",
       "js": {
@@ -12452,6 +12419,7 @@
       "cats": [
         2
       ],
+      "html": "<div id=\"copyright\">Powered by vBulletin",
       "icon": "vBulletin.png",
       "implies": "PHP",
       "js": {
@@ -12474,13 +12442,6 @@
         "generator": "vibecommerce"
       },
       "website": "http://vibecommerce.com.br"
-    },
-    "viennaCMS": {
-      "cats": [
-        1
-      ],
-      "html": "powered by <a href=\"[^>]+viennacms",
-      "website": "http://www.viennacms.nl"
     },
     "webEdition": {
       "cats": [
@@ -12778,6 +12739,10 @@
     },
     "58": {
       "name": "User Onboarding",
+      "priority": 1
+    },
+    "59": {
+      "name": "JavaScript Libraries",
       "priority": 1
     }
   }
