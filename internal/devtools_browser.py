@@ -481,6 +481,11 @@ class DevtoolsBrowser(object):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
                     command.extend(['--blocked-url-patterns', pattern])
+            if 'headers' in task:
+                headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
+                with open(headers_file, 'wb') as f_out:
+                    json.dump(task['headers'], f_out)
+                command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
             cmd = ' '.join(command)
             self.lighthouse_command = cmd
             # Give lighthouse up to 10 minutes to run all of the audits
