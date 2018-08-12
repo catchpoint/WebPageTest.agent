@@ -79,11 +79,8 @@ function blockRequest(details) {
       }
     }
     if (!ret.cancel && block_domains_except.length > 0) {
-      for (var i = 0; i < block_domains_except.length; i++) {
-        if (domain != block_domains_except[i]) {
-          ret.cancel = true;
-          break;
-        }
+      if (!block_domains_except.includes(domain)) {
+        ret.cancel = true;
       }
     }
   }
