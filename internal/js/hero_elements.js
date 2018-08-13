@@ -30,13 +30,13 @@ docElements.forEach(function(element) {
     }
 
     // Always check if an element has a background image
-    if (hasValidBackgroundImage(element) && elementArea > elementAreas['BackgroundImage']) {
-      setHeroElement('BackgroundImage', rect, elementArea);
+    if (hasValidBackgroundImage(element) && isLargestHero('BackgroundImage', elementArea)) {
+      setHeroElement('BackgroundImage', elementRect, elementArea);
     }
 
     // Always record elements with the 'elementtiming' attribute
     if (element.getAttribute('elementtiming')) {
-      setHeroElement(element.getAttribute('elementtiming'), rect, elementArea);
+      setHeroElement(element.getAttribute('elementtiming'), elementRect, elementArea);
     }
   }
 });
