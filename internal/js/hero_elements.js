@@ -11,46 +11,8 @@ elements. The object will look like:
 
 var heroElements = {};
 var elementAreas = {};
-var docElements = [].slice.call(document.documentElement.getElementsByTagName('*'));
 var vh = document.documentElement.clientHeight;
 var vw = document.documentElement.clientWidth;
-
-docElements.forEach(function(element) {
-  var elementRect = element.getBoundingClientRect();
-  var elementArea = visibleElementArea(elementRect);
-
-  if (isVisibleElement(elementRect) && isInViewport(elementRect)) {
-    // Specific elements we look for - headings and images
-    if (element.tagName === 'H1' && isLargestHero('Heading', elementArea)) {
-      setHeroElement('Heading', elementRect, elementArea);
-    } else if (element.tagName === 'H2' && isLargestHero('Heading2', elementArea)) {
-      setHeroElement('Heading2', elementRect, elementArea);
-    } else if (element.tagName === 'IMG' && isLargestHero('Image', elementArea)) {
-      setHeroElement('Image', elementRect, elementArea);
-    }
-
-    // Always check if an element has a background image
-    if (hasValidBackgroundImage(element) && isLargestHero('BackgroundImage', elementArea)) {
-      setHeroElement('BackgroundImage', elementRect, elementArea);
-    }
-
-    // Always record elements with the 'elementtiming' attribute
-    if (element.getAttribute('elementtiming')) {
-      setHeroElement(element.getAttribute('elementtiming'), elementRect, elementArea);
-    }
-  }
-});
-
-if (heroElements.Heading2) {
-  if (!heroElements.Heading) {
-    // If there was a H2 but no H1, we use the H2 as the hero heading element
-    heroElements.Heading = heroElements.Heading2;
-    heroElements.Heading.name = 'Heading';
-  }
-
-  // Throw away the H2 data - we only want to use it as a stand-in for H1
-  delete heroElements.Heading2;
-}
 
 // Look for custom elements. Note that document.querySelector is used (not
 // querySelectorAll) to ensure a 1:1 mapping of hero name to element.
@@ -68,7 +30,45 @@ if (typeof customHeroSelectors === 'object') {
       }
     }
   }
-}
+ } else {
+  var docElements = [].slice.call(document.documentElement.getElementsByTagName('*'));
+  docElements.forEach(function (element) {
+    var elementRect = element.getBoundingClientRect();
+    var elementArea = visibleElementArea(elementRect);
+
+    if (isVisibleElement(elementRect) && isInViewport(elementRect)) {
+      // Specific elements we look for - headings and images
+      if (element.tagName === 'H1' && isLargestHero('Heading', elementArea)) {
+        setHeroElement('Heading', elementRect, elementArea);
+      } else if (element.tagName === 'H2' && isLargestHero('Heading2', elementArea)) {
+        setHeroElement('Heading2', elementRect, elementArea);
+      } else if (element.tagName === 'IMG' && isLargestHero('Image', elementArea)) {
+        setHeroElement('Image', elementRect, elementArea);
+      }
+
+      // Always check if an element has a background image
+      if (hasValidBackgroundImage(element) && isLargestHero('BackgroundImage', elementArea)) {
+        setHeroElement('BackgroundImage', elementRect, elementArea);
+      }
+
+      // Always record elements with the 'elementtiming' attribute
+      if (element.getAttribute('elementtiming')) {
+        setHeroElement(element.getAttribute('elementtiming'), elementRect, elementArea);
+      }
+    }
+  });
+
+  if (heroElements.Heading2) {
+    if (!heroElements.Heading) {
+      // If there was a H2 but no H1, we use the H2 as the hero heading element
+      heroElements.Heading = heroElements.Heading2;
+      heroElements.Heading.name = 'Heading';
+    }
+
+    // Throw away the H2 data - we only want to use it as a stand-in for H1
+    delete heroElements.Heading2;
+  }
+ }
 
 return {
   viewport: {
