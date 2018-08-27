@@ -11,16 +11,17 @@ elements. The object will look like:
 
 var heroElements = {};
 var elementAreas = {};
-var docElements = [].slice.call(document.documentElement.getElementsByTagName('*'));
 var vh = document.documentElement.clientHeight;
 var vw = document.documentElement.clientWidth;
 
-docElements.forEach(function(element) {
+// Specific elements we look for - headings, images, and anything with the elementtiming attribute
+var defaultHeroes = [].slice.call(document.querySelectorAll('h1, h2, img, [elementtiming]'));
+
+defaultHeroes.forEach(function(element) {
   var elementRect = element.getBoundingClientRect();
   var elementArea = visibleElementArea(elementRect);
 
   if (isVisibleElement(elementRect) && isInViewport(elementRect)) {
-    // Specific elements we look for - headings and images
     if (element.tagName === 'H1' && isLargestHero('Heading', elementArea)) {
       setHeroElement('Heading', elementRect, elementArea);
     } else if (element.tagName === 'H2' && isLargestHero('Heading2', elementArea)) {
@@ -29,14 +30,23 @@ docElements.forEach(function(element) {
       setHeroElement('Image', elementRect, elementArea);
     }
 
-    // Always check if an element has a background image
-    if (hasValidBackgroundImage(element) && isLargestHero('BackgroundImage', elementArea)) {
-      setHeroElement('BackgroundImage', elementRect, elementArea);
-    }
-
     // Always record elements with the 'elementtiming' attribute
     if (element.getAttribute('elementtiming')) {
       setHeroElement(element.getAttribute('elementtiming'), elementRect, elementArea);
+    }
+  }
+})
+
+// We also check every other visible element for background images
+var docElements = [].slice.call(document.documentElement.getElementsByTagName('*'));
+
+docElements.forEach(function(element) {
+  if (hasValidBackgroundImage(element)) {
+    var elementRect = element.getBoundingClientRect();
+    var elementArea = visibleElementArea(elementRect);
+
+    if (isVisibleElement(elementRect) && isInViewport(elementRect) && isLargestHero('BackgroundImage', elementArea)) {
+      setHeroElement('BackgroundImage', elementRect, elementArea);
     }
   }
 });
