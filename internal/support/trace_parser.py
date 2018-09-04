@@ -606,7 +606,7 @@ class Trace():
                             if 'response_headers' in stream:
                                 request['response_headers'] = stream['response_headers']
                             if 'exclusive' in stream:
-                                request['exclusive'] = stream['exclusive']
+                                request['exclusive'] = 1 if stream['exclusive'] else 0
                             if 'parent_stream_id' in stream:
                                 request['parent_stream_id'] = stream['parent_stream_id']
                             if 'weight' in stream:
