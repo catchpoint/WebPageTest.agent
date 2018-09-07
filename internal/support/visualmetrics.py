@@ -1543,7 +1543,7 @@ def calculate_hero_time(progress, directory, hero, viewport):
                     image_magick['convert'], current_frame + extension, hero_mask, current_mask)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
-                match = frames_match(target_mask, current_mask, 2, 0, None, None)
+                match = frames_match(target_mask, current_mask, 5, 0, None, None)
                 # Remove each mask after using it
                 os.remove(current_mask)
 
