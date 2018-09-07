@@ -477,6 +477,8 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.append('--disable-device-emulation')
+                if 'user_agent_string' in self.job:
+                    command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(self.job['user_agent_string']))
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
