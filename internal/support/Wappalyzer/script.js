@@ -1,4 +1,4 @@
-(function() {
+(async function() {
   %WAPPALYZER%;
   const json = %JSON%;
   var responseHeaders = %RESPONSE_HEADERS%;
@@ -7,6 +7,7 @@
   wappalyzer.categories = json.categories;
   wappalyzer.parseJsPatterns();
   wappalyzer.driver.document = document;
+  let wptagentWappalyzer = null;
 
 	const container = document.getElementById('wappalyzer-container');
 	const url = wappalyzer.parseUrl(window.top.location.href);
@@ -30,7 +31,7 @@
     return typeof value === 'string' || typeof value === 'number' ? value : !!value;
   }
   
-  function getPageContent() {
+  async function getPageContent() {
     var e = document.getElementById('wptagentWappalyzer');
     if (e) {
       e.parentNode.removeChild(e);
@@ -66,7 +67,7 @@
     }
     // Run the analysis        
     const url = wappalyzer.parseUrl(window.top.location.href);
-    wappalyzer.analyze(url, {
+    await wappalyzer.analyze(url, {
       html: new window.XMLSerializer().serializeToString(document),
       headers: responseHeaders,
       env: env,
@@ -76,7 +77,6 @@
   }
 
   wappalyzer.driver.displayApps = detected => {
-    console.log('wappalyzer results');
     var categories = {};
     var apps = {};
     if ( detected != null && Object.keys(detected).length ) {
@@ -117,24 +117,12 @@
       } catch (e) {
       }
     }
-    var result = JSON.stringify({
+    wptagentWappalyzer = JSON.stringify({
       categories: categories,
       apps: apps
     });
-    console.log('wptagentWappalyzer:' + result);
-    var e = document.getElementById('wptagentWappalyzer');
-    if (!e && document.body) {
-      e = document.createElement('div');
-      e.id = 'wptagentWappalyzer';
-      e.style = 'display: none;';
-      document.body.appendChild(e);
-    }
-    if (e) {
-      e.innerHTML = '';
-      e.appendChild(document.createTextNode(result));
-    }
   };
 
-  getPageContent();
-  return true;
+  await getPageContent();
+  return wptagentWappalyzer;
 })();

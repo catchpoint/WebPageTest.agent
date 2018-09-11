@@ -616,3 +616,80 @@ class DevtoolsBrowser(object):
                     os.remove(html_file)
                 except Exception:
                     pass
+
+    def wappalyzer_detect(self, task, request_headers):
+        """Run the wappalyzer detection"""
+        # Run the Wappalyzer detection (give it 30 seconds at most)
+        completed = False
+        if self.devtools is not None:
+            try:
+                logging.debug('wappalyzer_detect')
+                detect_script = self.wappalyzer_script(request_headers)
+                response = self.devtools.send_command("Runtime.evaluate",
+                                                      {'expression': detect_script,
+                                                       'awaitPromise': True,
+                                                       'returnByValue': True,
+                                                       'timeout': 30000},
+                                                       wait=True, timeout=30)
+                if response is not None and 'result' in response and\
+                        'result' in response['result'] and\
+                        'value' in response['result']['result']:
+                    result = response['result']['result']['value']
+                    if result:
+                        completed = True
+                        logging.debug(result)
+                        detected = json.loads(result)
+                        if 'categories' in detected:
+                            task['page_data']['detected'] = dict(detected['categories'])
+                        if 'apps' in detected:
+                            task['page_data']['detected_apps'] = dict(detected['apps'])
+            except Exception as err:
+                logging.exception("Exception running Wappalyzer: %s", err.__str__())
+        if not completed:
+            task['page_data']['wappalyzer_failed'] = 1
+
+    def wappalyzer_script(self, response_headers):
+        """Build the wappalyzer script to run in-browser"""
+        script = None
+        try:
+            with open(os.path.join(self.support_path, 'Wappalyzer', 'script.js')) as f_in:
+                script = f_in.read()
+            if script is not None:
+                wappalyzer = None
+                with open(os.path.join(self.support_path, 'Wappalyzer', 'wappalyzer.js')) as f_in:
+                    wappalyzer = f_in.read()
+                if wappalyzer is not None:
+                    json_data = None
+                    with open(os.path.join(self.support_path, 'Wappalyzer', 'apps.json')) as f_in:
+                        json_data = f_in.read()
+                    if json is not None:
+                        # Format the headers as a dictionary of lists
+                        headers = {}
+                        if response_headers is not None:
+                            if isinstance(response_headers, dict):
+                                for key in response_headers:
+                                    values = []
+                                    entry = response_headers[key]
+                                    if isinstance(entry, list):
+                                        values = entry
+                                    elif isinstance(entry, (str, unicode)):
+                                        entries = entry.split('\n')
+                                        for value in entries:
+                                            values.append(value.strip())
+                                    if values:
+                                        headers[key.lower()] = values
+                            elif isinstance(response_headers, list):
+                                for pair in response_headers:
+                                    if isinstance(pair, (str, unicode)):
+                                        parts = pair.split(':', 1)
+                                        key = parts[0].strip(' :\n\t').lower()
+                                        value = parts[1].strip(' :\n\t')
+                                        if key not in headers:
+                                            headers[key] = []
+                                        headers[key].append(value)
+                        script = script.replace('%WAPPALYZER%', wappalyzer)
+                        script = script.replace('%JSON%', json_data)
+                        script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
+        except Exception:
+            pass
+        return script
