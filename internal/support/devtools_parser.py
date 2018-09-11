@@ -627,7 +627,10 @@ class DevToolsParser(object):
                    'stream_id': 'http2_stream_id',
                    'parent_stream_id': 'http2_stream_dependency',
                    'weight': 'http2_stream_weight',
-                   'exclusive': 'http2_stream_exclusive'}
+                   'exclusive': 'http2_stream_exclusive',
+                   'chunks': 'chunks',
+                   'chunks_in': 'chunks_in',
+                   'chunks_out': 'chunks_out'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
@@ -649,7 +652,9 @@ class DevToolsParser(object):
                             for key in mapping:
                                 try:
                                     if key in entry:
-                                        if re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
+                                        if type(entry[key]) is list:
+                                            request[mapping[key]] = entry[key]
+                                        elif re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
                                             request[mapping[key]] = \
                                                     int(round(float(str(entry[key]).strip())))
                                         else:
@@ -733,7 +738,9 @@ class DevToolsParser(object):
                     for key in mapping:
                         try:
                             if key in entry:
-                                if re.match(r'\d+\.?(\d+)?', str(entry[key])):
+                                if type(entry[key]) is list:
+                                    request[mapping[key]] = entry[key]
+                                elif re.match(r'\d+\.?(\d+)?', str(entry[key])):
                                     request[mapping[key]] = int(round(float(entry[key])))
                                 else:
                                     request[mapping[key]] = str(entry[key])

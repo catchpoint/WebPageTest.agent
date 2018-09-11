@@ -685,6 +685,11 @@ class Trace():
                             if time_name in request:
                                 request[time_name] = \
                                         float(request[time_name] - self.start_time) / 1000.0
+                        for key in ['chunks', 'chunks_in', 'chunks_out']:
+                            if key in request:
+                                for chunk in request[key]:
+                                    if 'ts' in chunk:
+                                        chunk['ts'] = float(chunk['ts'] - self.start_time) / 1000.0
                 else:
                     requests = []
         if not len(requests):
