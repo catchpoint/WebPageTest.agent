@@ -20,6 +20,7 @@ class BaseBrowser(object):
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
         # Run the Wappalyzer detection (give it 30 seconds at most)
+        completed = False
         try:
             detect_script = self.wappalyzer_script(request_headers)
             result_script = self.wappalyzer_result_script()
@@ -32,6 +33,7 @@ class BaseBrowser(object):
                     time.sleep(0.5)
                     result = self.execute_js(result_script)
                 if 'detected' not in task['page_data'] and result is not None:
+                    completed = True
                     logging.debug(result)
                     detected = json.loads(result)
                     if 'categories' in detected:
@@ -40,6 +42,8 @@ class BaseBrowser(object):
                         task['page_data']['detected_apps'] = dict(detected['apps'])
         except Exception:
             pass
+        if not completed:
+            task['page_data']['wappalyzer_failed'] = 1
 
     def wappalyzer_script(self, response_headers):
         """Build the wappalyzer script to run in-browser"""
