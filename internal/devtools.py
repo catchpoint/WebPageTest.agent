@@ -395,7 +395,8 @@ class DevTools(object):
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
-            self.send_command('Console.disable', {})
+            # Keep recording console messages as a backup communication
+            #self.send_command('Console.disable', {})
             self.get_response_bodies()
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
@@ -801,7 +802,22 @@ class DevTools(object):
 
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
-        if 'method' in msg and self.recording:
+        handled = False
+        # Handle communication events
+        if 'method' in msg and 'params' in msg and 'message' in msg['params'] and \
+                'text' in msg['params']['message'] and \
+                msg['method'] == 'Console.messageAdded' and \
+                msg['params']['message']['text'].startswith('wptagentWappalyzer:'):
+            wappalyzer = msg['params']['message']['text'][19:]
+            logging.debug(wappalyzer)
+            detected = json.loads(wappalyzer)
+            if 'categories' in detected:
+                self.task['page_data']['detected'] = dict(detected['categories'])
+            if 'apps' in detected:
+                self.task['page_data']['detected_apps'] = dict(detected['apps'])
+            handled = True
+        # log other events
+        if not handled and 'method' in msg and self.recording:
             parts = msg['method'].split('.')
             if len(parts) >= 2:
                 category = parts[0]

@@ -2,6 +2,7 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for browsers"""
+import logging
 import os
 import time
 import monotonic
@@ -26,10 +27,12 @@ class BaseBrowser(object):
             if result:
                 end_time = monotonic.monotonic() + 30
                 result = None
-                while result is None and monotonic.monotonic() < end_time:
+                while result is None and 'detected' not in task['page_data'] and \
+                        monotonic.monotonic() < end_time:
                     time.sleep(0.5)
                     result = self.execute_js(result_script)
-                if result is not None:
+                if 'detected' not in task['page_data'] and result is not None:
+                    logging.debug(result)
                     detected = json.loads(result)
                     if 'categories' in detected:
                         task['page_data']['detected'] = dict(detected['categories'])

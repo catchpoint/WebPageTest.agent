@@ -76,40 +76,52 @@
   }
 
   wappalyzer.driver.displayApps = detected => {
+    console.log('wappalyzer results');
     var categories = {};
     var apps = {};
     if ( detected != null && Object.keys(detected).length ) {
-      for (var app in detected) {
-        if ( !hasOwn.call(detected, app) ) {
-          continue;
-        }
-        var version = detected[app].version;
-        for ( let i in wappalyzer.apps[app].cats ) {
-          if ( !hasOwn.call(wappalyzer.apps[app].cats, i) ) {
-            continue;
-          }
-          var category = wappalyzer.categories[wappalyzer.apps[app].cats[i]].name;
-          if (categories[category] === undefined) {
-            categories[category] = '';
-          }
-          if (apps[app] === undefined) {
-            apps[app] = '';
-          }
-          var app_name = app.trim();
-          if (version && version.length) {
-            app_name += ' ' + version.trim();
-            if (apps[app].length) {
-              apps[app] += ',';
+      try {
+        for (var app in detected) {
+          try {
+            if ( !hasOwn.call(detected, app) ) {
+              continue;
             }
-            apps[app] += version.trim();
+            var version = detected[app].version;
+            for ( let i in wappalyzer.apps[app].cats ) {
+              if ( !hasOwn.call(wappalyzer.apps[app].cats, i) ) {
+                continue;
+              }
+              var category = wappalyzer.categories[wappalyzer.apps[app].cats[i]].name;
+              if (categories[category] === undefined) {
+                categories[category] = '';
+              }
+              if (apps[app] === undefined) {
+                apps[app] = '';
+              }
+              var app_name = app.trim();
+              if (version && version.length) {
+                app_name += ' ' + version.trim();
+                if (apps[app].length) {
+                  apps[app] += ',';
+                }
+                apps[app] += version.trim();
+              }
+              if (categories[category].length) {
+                categories[category] += ',';
+              }
+              categories[category] += app_name;
+            }
+          } catch (e) {
           }
-          if (categories[category].length) {
-            categories[category] += ',';
-          }
-          categories[category] += app_name;
         }
+      } catch (e) {
       }
     }
+    var result = JSON.stringify({
+      categories: categories,
+      apps: apps
+    });
+    console.log('wptagentWappalyzer:' + result);
     var e = document.getElementById('wptagentWappalyzer');
     if (!e && document.body) {
       e = document.createElement('div');
@@ -119,12 +131,9 @@
     }
     if (e) {
       e.innerHTML = '';
-      e.appendChild(document.createTextNode(JSON.stringify({
-        categories: categories,
-        apps: apps
-      })));
+      e.appendChild(document.createTextNode(result));
     }
-  },
+  };
 
   getPageContent();
   return true;
