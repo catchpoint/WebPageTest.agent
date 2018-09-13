@@ -178,6 +178,8 @@ class OptimizationChecks(object):
             'TRBCDN': ['.trbcdn.net'],
             'Twitter': ['.twimg.com'],
             'UnicornCDN': ['.unicorncdn.net'],
+            'VegaCDN': ['.vegacdn.vn',
+                        '.vegacdn.com'],
             'VoxCDN': ['.voxcdn.net'],
             'WordPress': ['.wp.com',
                           '.wordpress.com',
