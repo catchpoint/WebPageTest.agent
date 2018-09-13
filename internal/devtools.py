@@ -770,7 +770,9 @@ class DevTools(object):
         ret = None
         if self.task['error'] is None and not self.main_thread_blocked:
             response = self.send_command("Runtime.evaluate",
-                                         {'expression': script, 'returnByValue': True},
+                                         {'expression': script,
+                                          'returnByValue': True,
+                                          'timeout': 30000},
                                          wait=True, timeout=30)
             if response is not None and 'result' in response and\
                     'result' in response['result'] and\

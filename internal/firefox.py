@@ -632,7 +632,6 @@ class Firefox(DesktopBrowser):
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         DesktopBrowser.on_start_processing(self, task)
-        self.wappalyzer_detect(task, self.main_request_headers)
         # Parse the moz log for the accurate request timings
         request_timings = []
         if 'moz_log' in task:
