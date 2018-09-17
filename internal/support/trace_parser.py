@@ -565,7 +565,10 @@ class Trace():
                 if isinstance(trace_event['id'], (str, unicode)):
                     trace_event['id'] = int(trace_event['id'], 16)
                 event_type = trace_event['args']['source_type']
-                if event_type == 'CONNECT_JOB' or \
+                if event_type == 'HOST_RESOLVER_IMPL_JOB' or \
+                        trace_event['name'].startswith('HOST_RESOLVER'):
+                    self.ProcessNetlogDnsEvent(trace_event)
+                elif event_type == 'CONNECT_JOB' or \
                         event_type == 'SSL_CONNECT_JOB' or \
                         event_type == 'TRANSPORT_CONNECT_JOB':
                     self.ProcessNetlogConnectJobEvent(trace_event)
@@ -573,8 +576,6 @@ class Trace():
                     self.ProcessNetlogStreamJobEvent(trace_event)
                 elif event_type == 'HTTP2_SESSION':
                     self.ProcessNetlogHttp2SessionEvent(trace_event)
-                elif event_type == 'HOST_RESOLVER_IMPL_JOB':
-                    self.ProcessNetlogDnsEvent(trace_event)
                 elif event_type == 'SOCKET':
                     self.ProcessNetlogSocketEvent(trace_event)
                 elif event_type == 'URL_REQUEST':
@@ -652,7 +653,7 @@ class Trace():
                     dns_lookups = {}
                     for dns_id in self.netlog['dns']:
                         dns = self.netlog['dns'][dns_id]
-                        if 'host' in dns and 'start' in dns:
+                        if 'host' in dns and 'start' in dns and 'address_list' in dns:
                             hostname = dns['host']
                             if hostname not in dns_lookups:
                                 dns_lookups[hostname] = dns
@@ -870,10 +871,20 @@ class Trace():
             parent_id = params['source_dependency']['id']
             if 'connect_job' in self.netlog and parent_id in self.netlog['connect_job']:
                 self.netlog['connect_job'][parent_id]['dns'] = request_id
+        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'ph' in trace_event:
+            if trace_event['ph'] == 'b':
+                if 'start' not in entry or trace_event['ts'] < entry['start']:
+                    entry['start'] = trace_event['ts']
+            if trace_event['ph'] == 'e':
+                if 'end' not in entry or trace_event['ts'] > entry['end']:
+                    entry['end'] = trace_event['ts']
         if 'start' not in entry and name == 'HOST_RESOLVER_IMPL_ATTEMPT_STARTED':
             entry['start'] = trace_event['ts']
         if name == 'HOST_RESOLVER_IMPL_ATTEMPT_FINISHED':
             entry['end'] = trace_event['ts']
+        if name == 'HOST_RESOLVER_IMPL_CACHE_HIT':
+            if 'end' not in entry or trace_event['ts'] > entry['end']:
+                entry['end'] = trace_event['ts']
         if 'host' not in entry and 'host' in params:
             entry['host'] = params['host']
         if 'address_list' in params:
