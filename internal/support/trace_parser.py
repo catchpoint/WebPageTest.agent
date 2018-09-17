@@ -960,6 +960,7 @@ class Trace():
                 entry['first_byte'] = trace_event['ts']
             entry['end'] = trace_event['ts']
         if 'byte_count' in params and name == 'URL_REQUEST_JOB_BYTES_READ':
+            entry['has_raw_bytes'] = True
             entry['end'] = trace_event['ts']
             entry['bytes_in'] += params['byte_count']
             entry['chunks'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
@@ -968,6 +969,9 @@ class Trace():
             if 'uncompressed_bytes_in' not in entry:
                 entry['uncompressed_bytes_in'] = 0
             entry['uncompressed_bytes_in'] += params['byte_count']
+            if 'has_raw_bytes' not in entry or not entry['has_raw_bytes']:
+                entry['bytes_in'] += params['byte_count']
+                entry['chunks'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
         if 'stream_id' in params:
             entry['stream_id'] = params['stream_id']
         if name == 'URL_REQUEST_REDIRECTED':
