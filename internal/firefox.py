@@ -1044,7 +1044,9 @@ class Firefox(DesktopBrowser):
             elif request['responseCode'] > -1:
                 page['responses_other'] += 1
             if main_request is None and \
-                    (request['responseCode'] == 200 or request['responseCode'] == 304):
+                    (request['responseCode'] == 200 or request['responseCode'] == 304) and \
+                     request['contentType'] != 'application/ocsp-response' and \
+                     request['contentType'] != 'application/pkix-crl':
                 main_request = request['id']
                 request['is_base_page'] = True
                 page['final_base_page_request'] = index
