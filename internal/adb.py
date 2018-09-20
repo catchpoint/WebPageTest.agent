@@ -33,6 +33,7 @@ class Adb(object):
         self.simplert_path = None
         self.simplert = None
         self.no_network_count = 0
+        self.needs_exit = False
         self.vpn_forwarder = None
         self.known_apps = {
             'com.motorola.ccc.ota': {},
@@ -127,7 +128,9 @@ class Adb(object):
                     proc.cpu_affinity([0])
             # install the tun0 device if necessary
             if self.options.vpntether and platform.system() == "Linux":
-                self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
+                if self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun']):
+                    ret = False
+                    self.needs_exit = True
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
@@ -525,7 +528,9 @@ class Adb(object):
                                    'VpnReverseTether.apk')
                 self.adb(['install', apk])
             # Set up the host for forwarding
-            self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
+            if self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun']):
+                # Flag for a process exit if the tun adapter isn't available
+                self.needs_exit = True
             self.sudo(['sysctl', '-w', 'net.ipv4.ip_forward=1'])
             self.sudo(['iptables', '-t', 'nat', '-F'])
             self.sudo(['iptables', '-t', 'nat', '-A', 'POSTROUTING', '-s', '172.31.0.0/24',

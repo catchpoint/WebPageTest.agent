@@ -150,6 +150,9 @@ class WPTAgent(object):
                 run_time = (monotonic.monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
+            # Exit if adb is having issues (will cause a reboot after several tries)
+            if self.adb is not None and self.adb.needs_exit:
+                break
         self.cleanup()
 
     def run_single_test(self):
