@@ -128,9 +128,7 @@ class Adb(object):
                     proc.cpu_affinity([0])
             # install the tun0 device if necessary
             if self.options.vpntether and platform.system() == "Linux":
-                if self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun']):
-                    ret = False
-                    self.needs_exit = True
+                self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
@@ -528,16 +526,16 @@ class Adb(object):
                                    'VpnReverseTether.apk')
                 self.adb(['install', apk])
             # Set up the host for forwarding
-            if self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun']):
-                # Flag for a process exit if the tun adapter isn't available
-                self.needs_exit = True
+            self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
             self.sudo(['sysctl', '-w', 'net.ipv4.ip_forward=1'])
             self.sudo(['iptables', '-t', 'nat', '-F'])
             self.sudo(['iptables', '-t', 'nat', '-A', 'POSTROUTING', '-s', '172.31.0.0/24',
                        '-o', interface, '-j', 'MASQUERADE'])
             self.sudo(['iptables', '-P', 'FORWARD', 'ACCEPT'])
-            self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
-                       'mtu', '1500', 'up'])
+            if self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
+                         'mtu', '1500', 'up']):
+                # Flag for a process exit if the tun adapter isn't available
+                self.needs_exit = True
             self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
             self.cleanup_device()
             # Start the tether app
