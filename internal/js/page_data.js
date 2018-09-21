@@ -17,9 +17,10 @@ function addTime(name) {
   } catch(e) {}
 };
 addTime("domInteractive");
+addTime("domContentFlushed");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
-addTime("domComplete");  
+addTime("domComplete");
 addTime("loadEventStart");
 addTime("loadEventEnd");
 pageData["firstPaint"] = 0;
