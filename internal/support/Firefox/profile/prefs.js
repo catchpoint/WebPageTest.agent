@@ -54,6 +54,7 @@ user_pref("dom.ipc.plugins.flash.disable-protected-mode", true);
 user_pref("dom.max_chrome_script_run_time", 0);
 user_pref("dom.max_script_run_time", 0);
 user_pref("dom.webnotifications.enabled", false);
+user_pref("dom.performance.time_to_dom_content_flushed.enabled", true);
 user_pref("dom.performance.time_to_non_blank_paint.enabled", true);
 user_pref("extensions.checkCompatibility", false);
 user_pref("extensions.pocket.enabled", false);
