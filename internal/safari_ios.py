@@ -493,18 +493,24 @@ class iWptBrowser(BaseBrowser):
                     if 'end' not in request or timestamp > request['end']:
                         request['end'] = timestamp
             elif event == 'dataReceived':
+                bytesIn = 0
                 if 'encodedDataLength' in msg['params'] and \
                         msg['params']['encodedDataLength'] >= 0:
-                    request['objectSize'] += msg['params']['encodedDataLength']
-                    request['bytesIn'] += msg['params']['encodedDataLength']
-                    request['transfer_size'] += msg['params']['encodedDataLength']
+                    bytesIn = msg['params']['encodedDataLength']
+                    request['objectSize'] += bytesIn
+                    request['bytesIn'] += bytesIn
+                    request['transfer_size'] += bytesIn
                 elif 'dataLength' in msg['params'] and msg['params']['dataLength'] >= 0:
-                    request['objectSize'] += msg['params']['dataLength']
-                    request['bytesIn'] += msg['params']['dataLength']
-                    request['transfer_size'] += msg['params']['dataLength']
+                    bytesIn = msg['params']['dataLength']
+                    request['objectSize'] += bytesIn
+                    request['bytesIn'] +=bytesIn
+                    request['transfer_size'] += bytesIn
                 if 'dataLength' in msg['params'] and msg['params']['dataLength'] >= 0:
                     request['objectSizeUncompressed'] += msg['params']['dataLength']
                 if timestamp and 'start' in request and timestamp > request['start']:
+                    if 'chunks' not in request:
+                        request['chunks'] = []
+                    request['chunks'].append({'ts': timestamp, 'bytes': bytesIn})
                     if 'firstByte' not in request or timestamp < request['firstByte']:
                         request['firstByte'] = timestamp
                     if 'end' not in request or timestamp > request['end']:
@@ -1152,6 +1158,11 @@ class iWptBrowser(BaseBrowser):
                         if timing['responseStart'] >= 0:
                             request['ttfb_ms'] = int(round(timing['responseStart'] -
                                                            timing['requestStart']))
+                if 'chunks' in r:
+                    request['chunks'] = []
+                    for chunk in r['chunks']:
+                        ts = (chunk['ts'] - start) * 1000.0
+                        request['chunks'].append({'ts': ts, 'bytes': chunk['bytes']})
                 request['bytesIn'] = r['bytesIn']
                 if 'bytesOut' in r:
                     request['bytesOut'] = r['bytesOut']
