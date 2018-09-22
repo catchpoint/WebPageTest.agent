@@ -572,9 +572,14 @@ class Edge(DesktopBrowser):
                 if 'firstByte' not in self.requests[event_id]:
                     self.requests[event_id]['firstByte'] = message['ts'] - self.page['start']
                 if 'data' in message and 'Size' in message['data']:
+                    bytesIn = int(message['data']['Size'])
                     if 'inBytes' not in self.requests[event_id]:
                         self.requests[event_id]['inBytes'] = 0
-                    self.requests[event_id]['inBytes'] += int(message['data']['Size'])
+                    self.requests[event_id]['inBytes'] += bytesIn
+                    if 'chunks' not in self.requests[event_id]:
+                        self.requests[event_id]['chunks'] = []
+                    ts = message['ts'] - self.page['start']
+                    self.requests[event_id]['chunks'].append( {'ts': ts, 'bytes': bytesIn})
         if message['Event'] == 'WININET_STREAM_DATA_INDICATED' and event_id in self.requests:
             if 'start' not in self.page:
                 self.page['start'] = message['ts']
@@ -584,9 +589,14 @@ class Edge(DesktopBrowser):
                 if 'firstByte' not in self.requests[event_id]:
                     self.requests[event_id]['firstByte'] = message['ts'] - self.page['start']
                 if 'data' in message and 'Size' in message['data']:
+                    bytesIn = int(message['data']['Size'])
                     if 'inBytes' not in self.requests[event_id]:
                         self.requests[event_id]['inBytes'] = 0
-                    self.requests[event_id]['inBytes'] += int(message['data']['Size'])
+                    self.requests[event_id]['inBytes'] += bytesIn
+                    if 'chunks' not in self.requests[event_id]:
+                        self.requests[event_id]['chunks'] = []
+                    ts = message['ts'] - self.page['start']
+                    self.requests[event_id]['chunks'].append( {'ts': ts, 'bytes': bytesIn})
         # completely finished
         if message['Event'] == 'Wininet_UsageLogRequest' and \
                 event_id in self.requests and 'data' in message:
@@ -1068,6 +1078,8 @@ class Edge(DesktopBrowser):
                     if 'inBytes' in req:
                         request['bytesIn'] = req['inBytes']
                         request['objectSize'] = req['inBytes']
+                    if 'chunks' in req:
+                        request['chunks'] = req['chunks']
                     if 'outBytes' in req:
                         request['bytesOut'] = req['outBytes']
                     if 'connection' in req:
