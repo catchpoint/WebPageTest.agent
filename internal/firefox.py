@@ -988,6 +988,11 @@ class Firefox(DesktopBrowser):
                                             log_request['start']) * 1000.0))
         if 'bytes_in' in log_request:
             request['bytesIn'] = log_request['bytes_in']
+        if 'chunks' in log_request and len(log_request['chunks']):
+            request['chunks'] = []
+            for chunk in log_request['chunks']:
+                ts = chunk['ts'] * 1000.0
+                request['chunks'].append({'ts': ts, 'bytes': chunk['bytes']})
         if 'request_headers' in log_request:
             request['headers']['request'] = list(log_request['request_headers'])
         if 'response_headers' in log_request:

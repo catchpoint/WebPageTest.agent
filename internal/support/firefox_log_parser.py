@@ -207,7 +207,8 @@ class FirefoxLogParser(object):
                                                        'request_headers': [],
                                                        'response_headers': [],
                                                        'status': None,
-                                                       'bytes_in': 0}
+                                                       'bytes_in': 0,
+                                                       'chunks': []}
         # D/nsHttp nsHttpTransaction::Init [this=c138c00 caps=21]
         elif msg['message'].startswith('nsHttpTransaction::Init '):
             match = re.search(r'^nsHttpTransaction::Init \[this=(?P<id>[\w\d]+)', msg['message'])
@@ -310,6 +311,8 @@ class FirefoxLogParser(object):
                             msg['timestamp'] > self.http['requests'][trans_id]['end']:
                         self.http['requests'][trans_id]['end'] = msg['timestamp']
                     self.http['requests'][trans_id]['bytes_in'] += bytes_in
+                    self.http['requests'][trans_id]['chunks'].append(\
+                        {'ts': msg['timestamp'], 'bytes': bytes_in})
         elif 'current_socket_transaction' in self.http and \
                 msg['message'].startswith('nsHttpTransaction::ParseLine '):
             trans_id = self.http['current_socket_transaction']

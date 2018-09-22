@@ -19,3 +19,4 @@ throttle.sh
 internal/support/edge/wpt-etw/.vs/wpt-etw/v15/.suo
 wptagent.alive
 vpn-reverse-tether/amd64/tether.sh
+vpn.sh
