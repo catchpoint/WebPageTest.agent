@@ -28,6 +28,7 @@ class iOSDevice(object):
         self.video_file = None
         self.last_video_data = None
         self.video_size = 0
+        self.last_restart = monotonic.monotonic()
 
     def check_install(self):
         """Check to make sure usbmux is installed and the device is available"""
@@ -184,6 +185,8 @@ class iOSDevice(object):
     def connect(self):
         """Connect to the device with the matching serial number"""
         self.startup()
+        connecting = False
+        needs_restart = False
         try:
             if self.socket is None:
                 self.disconnect()
@@ -195,13 +198,22 @@ class iOSDevice(object):
                             logging.debug("Connecting to device %s", device.serial)
                             self.serial = device.serial
                             self.must_disconnect = False
+                            connecting = True
                             self.socket = self.mux.connect(device, 19222)
                             self.message_thread = threading.Thread(target=self.pump_messages)
                             self.message_thread.daemon = True
                             self.message_thread.start()
                             break
         except Exception:
-            pass
+            # If the app isn't running restart the device (no more than every 10 minutes)
+            if connecting and monotonic.monotonic() - self.last_restart > 600:
+                needs_restart = True
+        if needs_restart:
+            self.last_restart = monotonic.monotonic()
+            try:
+                subprocess.call(['idevicediagnostics', 'restart'])
+            except Exception:
+                pass
         return self.socket is not None
 
     def disconnect(self):
