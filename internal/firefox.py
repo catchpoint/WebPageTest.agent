@@ -228,6 +228,7 @@ class Firefox(DesktopBrowser):
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'firefox'])
             subprocess.call(['killall', '-9', 'firefox-trunk'])
+            subprocess.call(['killall', '-9', 'firefox-next'])
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
         # delete the raw log files
