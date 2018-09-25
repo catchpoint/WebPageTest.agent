@@ -105,6 +105,7 @@ browser.runtime.onMessage.addListener(function(data) {
     for (var i = 0; i < data['cookies'].length; i++) {
       try {
         var cookie = data['cookies'][i];
+        cookie["expirationDate"] = Date.now() / 1000 + (60 * 60 * 24);
         console.log(JSON.stringify(cookie));
         browser.cookies.set(cookie, function(){});
       } catch(e) {
