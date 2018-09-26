@@ -666,8 +666,12 @@ class Firefox(DesktopBrowser):
             self.start_offset = earliest
             for request in requests:
                 for entry in timestamps:
-                    if entry in request and request[entry] >= 0:
+                    if entry in request and request[entry] >= earliest:
                         request[entry] -= earliest
+                if 'chunks' in request:
+                    for chunk in request['chunks']:
+                        if 'ts' in chunk and chunk['ts'] >= earliest:
+                            chunk['ts'] -= earliest
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
