@@ -749,9 +749,14 @@ class WebPageTest(object):
                         keep = False
                         if target is not None and value is not None and len(target) and len(value):
                             if target.find('"') == -1 and value.find('"') == -1:
+                                if 'dns_override' not in task:
+                                    task['dns_override'] = []
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, value))
+                                if re.match(r'^\d+\.\d+\.\d+\.\d+$', value) and \
+                                        re.match(r'^[a-zA-Z0-9\-\.]+$', target):
+                                    task['dns_override'].append([target, value])
                     elif command == 'setdnsname':
                         # Resolve the IP and treat it like a setdns command
                         keep = False
@@ -769,9 +774,14 @@ class WebPageTest(object):
                             except Exception:
                                 pass
                             if addr is not None and target.find('"') == -1:
+                                if 'dns_override' not in task:
+                                    task['dns_override'] = []
                                 if 'host_rules' not in task:
                                     task['host_rules'] = []
                                 task['host_rules'].append('"MAP {0} {1}"'.format(target, addr))
+                                if re.match(r'^\d+\.\d+\.\d+\.\d+$', addr) and \
+                                        re.match(r'^[a-zA-Z0-9\-\.]+$', target):
+                                    task['dns_override'].append([target, addr])
                     # Commands that get translated into exec commands
                     elif command in ['click', 'selectvalue', 'sendclick', 'setinnerhtml',
                                      'setinnertext', 'setvalue', 'submitform']:
