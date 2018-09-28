@@ -51,6 +51,8 @@ class Edge(DesktopBrowser):
         self.pid = None
         self.supports_interactive = True
         self.start_page = 'http://127.0.0.1:8888/config.html'
+        self.edge_registry_path = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
+        self.edge_registry_key_value = 0
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -70,16 +72,15 @@ class Edge(DesktopBrowser):
             os.makedirs(self.bodies_path)
         try:
             import _winreg
-            keyval = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
-            if not os.path.exists("keyval"):
-                key = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, keyval)
-            Registrykey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, keyval, 0, _winreg.KEY_WRITE)
+            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ)
+            self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
+            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
             if task['cached'] or job['fvonly']:
-                _winreg.SetValueEx(Registrykey, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "1")
-                _winreg.CloseKey(Registrykey)
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "1")
+                _winreg.CloseKey(registry_key)
             else:
-                _winreg.SetValueEx(Registrykey, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "0")
-                _winreg.CloseKey(Registrykey)
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "0")
+                _winreg.CloseKey(registry_key)
         except Exception as err:
             logging.exception("Error clearing cache: %s", str(err))
         DesktopBrowser.prepare(self, job, task)
