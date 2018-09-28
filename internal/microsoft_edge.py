@@ -68,8 +68,20 @@ class Edge(DesktopBrowser):
         self.bodies_path = os.path.join(task['dir'], 'bodies')
         if not os.path.isdir(self.bodies_path):
             os.makedirs(self.bodies_path)
-        if not task['cached']:
-            self.clear_cache()
+        try:
+            import _winreg
+            keyval = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
+            if not os.path.exists("keyval"):
+                key = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, keyval)
+            Registrykey = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, keyval, 0, _winreg.KEY_WRITE)
+            if task['cached'] or job['fvonly']:
+                _winreg.SetValueEx(Registrykey, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "1")
+                _winreg.CloseKey(Registrykey)
+            else:
+                _winreg.SetValueEx(Registrykey, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "0")
+                _winreg.CloseKey(Registrykey)
+        except Exception as err:
+            logging.exception("Error clearing cache: %s", str(err))
         DesktopBrowser.prepare(self, job, task)
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
