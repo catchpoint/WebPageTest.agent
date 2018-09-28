@@ -72,9 +72,8 @@ class Edge(DesktopBrowser):
             os.makedirs(self.bodies_path)
         try:
             import _winreg
-            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ)
+            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
             self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
-            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
             if task['cached'] or job['fvonly']:
                 _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "1")
                 _winreg.CloseKey(registry_key)
@@ -199,6 +198,10 @@ class Edge(DesktopBrowser):
                     os.remove(self.wpt_etw_done)
                 except Exception:
                     pass
+        import _winreg
+        registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
+        _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, str(self.edge_registry_key_value))
+        _winreg.CloseKey(registry_key)            
         self.kill()
         if self.bodies_path is not None and os.path.isdir(self.bodies_path):
             shutil.rmtree(self.bodies_path, ignore_errors=True)
