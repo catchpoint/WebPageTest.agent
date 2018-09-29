@@ -206,7 +206,7 @@ class Edge(DesktopBrowser):
         except Exception as err:
             logging.exception("Error resetting Edge cache settings: %s", str(err)) 
         self.kill()
-        if self.bodies_path is not None and yos.path.isdir(self.bodies_path):
+        if self.bodies_path is not None and os.path.isdir(self.bodies_path):
             shutil.rmtree(self.bodies_path, ignore_errors=True)
 
     def kill(self):
