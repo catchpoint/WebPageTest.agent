@@ -51,6 +51,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=use_devtools_video)
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
+        self.is_chrome = True
 
     def launch(self, job, task):
         """Launch the browser"""

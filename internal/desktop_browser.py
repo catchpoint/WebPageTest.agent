@@ -60,6 +60,7 @@ class DesktopBrowser(BaseBrowser):
         self.screen_height = 1200
         self.device_pixel_ratio = None
         self.stopping = False
+        self.is_chrome = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
 
     def prepare(self, job, task):
@@ -94,6 +95,43 @@ class DesktopBrowser(BaseBrowser):
                     os.makedirs(task['profile'])
         except Exception as err:
             logging.exception("Exception preparing Browser: %s", err.__str__())
+        # Modify the hosts file for non-Chrome browsers
+        self.restore_hosts()
+        if not self.is_chrome and 'dns_override' in task:
+            self.modify_hosts(task, task['dns_override'])
+    
+    def modify_hosts(self, task, hosts):
+        """Add entries to the system's hosts file (non-Windows currently)"""
+        hosts_backup = os.path.join(os.path.abspath(os.path.dirname(__file__)), "hosts.backup")
+        hosts_tmp = os.path.join(task['dir'], "hosts.wpt")
+        hosts_file = '/etc/hosts'
+        if len(hosts) and platform.system() != 'Windows':
+            logging.debug('Modifying hosts file:')
+            try:
+                hosts_text = None
+                with open(hosts_file, 'r') as f_in:
+                    hosts_text = f_in.read()
+                if hosts_text is not None:
+                    hosts_text += "\n"
+                    for pair in hosts:
+                        hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
+                    with open(hosts_tmp, 'w') as f_out:
+                        f_out.write(hosts_text)
+                    subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])
+                    subprocess.call(['sudo', 'cp', hosts_tmp, hosts_file])
+                    os.unlink(hosts_tmp)
+                    logging.debug(hosts_text)
+            except Exception as err:
+                logging.exception("Exception modifying hosts file: %s", err.__str__())
+
+    def restore_hosts(self):
+        """See if we have a backup hosts file to restore"""
+        hosts_backup = os.path.join(os.path.abspath(os.path.dirname(__file__)), "hosts.backup")
+        hosts_file = '/etc/hosts'
+        if os.path.isfile(hosts_backup) and platform.system() != 'Windows':
+            logging.debug('Restoring backup of hosts file')
+            subprocess.call(['sudo', 'cp', hosts_backup, hosts_file])
+            subprocess.call(['sudo', 'rm', hosts_backup])
 
     # pylint: disable=E0611,E0401,E1101
     def close_top_window(self, hwnd, _):
@@ -255,6 +293,7 @@ class DesktopBrowser(BaseBrowser):
                 pass
             self.proc = None
         self.disable_cpu_throttling()
+        self.restore_hosts()
         # Clean up the downloads folder in case anything was downloaded
         if platform.system() == 'Linux':
             downloads = os.path.expanduser('~/Downloads')
