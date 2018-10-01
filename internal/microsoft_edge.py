@@ -75,10 +75,10 @@ class Edge(DesktopBrowser):
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
             self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
             if task['cached'] or job['fvonly']:
-                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "1")
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, 1)
                 _winreg.CloseKey(registry_key)
             else:
-                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, "0")
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, 0)
                 _winreg.CloseKey(registry_key)
         except Exception as err:
             logging.exception("Error clearing cache: %s", str(err))
@@ -201,7 +201,7 @@ class Edge(DesktopBrowser):
         try:
             import _winreg
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
-            _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_SZ, str(self.edge_registry_key_value))
+            _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, self.edge_registry_key_value)
             _winreg.CloseKey(registry_key)        
         except Exception as err:
             logging.exception("Error resetting Edge cache settings: %s", str(err)) 
