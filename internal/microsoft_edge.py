@@ -74,6 +74,8 @@ class Edge(DesktopBrowser):
             import _winreg
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
             self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
+            if not task['cached']:
+                self.clear_cache()
             if task['cached'] or job['fvonly']:
                 _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, 1)
                 _winreg.CloseKey(registry_key)
