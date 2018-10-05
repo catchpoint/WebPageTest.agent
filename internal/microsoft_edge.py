@@ -51,6 +51,8 @@ class Edge(DesktopBrowser):
         self.pid = None
         self.supports_interactive = True
         self.start_page = 'http://127.0.0.1:8888/config.html'
+        self.edge_registry_path = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
+        self.edge_registry_key_value = 0
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -68,8 +70,20 @@ class Edge(DesktopBrowser):
         self.bodies_path = os.path.join(task['dir'], 'bodies')
         if not os.path.isdir(self.bodies_path):
             os.makedirs(self.bodies_path)
-        if not task['cached']:
-            self.clear_cache()
+        try:
+            import _winreg
+            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
+            self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
+            if not task['cached']:
+                self.clear_cache()
+            if task['cached'] or job['fvonly']:
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, 1)
+                _winreg.CloseKey(registry_key)
+            else:
+                _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, 0)
+                _winreg.CloseKey(registry_key)
+        except Exception as err:
+            logging.exception("Error clearing cache: %s", str(err))
         DesktopBrowser.prepare(self, job, task)
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
@@ -186,6 +200,13 @@ class Edge(DesktopBrowser):
                     os.remove(self.wpt_etw_done)
                 except Exception:
                     pass
+        try:
+            import _winreg
+            registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
+            _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, self.edge_registry_key_value)
+            _winreg.CloseKey(registry_key)        
+        except Exception as err:
+            logging.exception("Error resetting Edge cache settings: %s", str(err)) 
         self.kill()
         if self.bodies_path is not None and os.path.isdir(self.bodies_path):
             shutil.rmtree(self.bodies_path, ignore_errors=True)
