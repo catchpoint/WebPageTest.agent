@@ -17,6 +17,7 @@ import monotonic
 import ujson as json
 from .desktop_browser import DesktopBrowser
 
+
 class Firefox(DesktopBrowser):
     """Firefox"""
     def __init__(self, path, options, job):
@@ -65,7 +66,7 @@ class Firefox(DesktopBrowser):
                 shutil.copytree(profile_template, task['profile'])
             except Exception:
                 pass
-        # delete any unsent crash reports
+        # Delete any unsent crash reports
         crash_dir = None
         if platform.system() == 'Windows':
             if 'APPDATA' in os.environ:
@@ -175,7 +176,7 @@ class Firefox(DesktopBrowser):
             task['error'] = 'Error starting Firefox: {0}'.format(err.__str__())
 
     def get_pref_value(self, value):
-        """Convert a json pref value to Python"""
+        """Convert a JSON pref value to Python"""
         str_match = re.match(r'^"(.*)"$', value)
         if value == 'true':
             value = True
@@ -190,7 +191,7 @@ class Firefox(DesktopBrowser):
         return value
 
     def configure_prefs(self):
-        """Load the prefs file and configure them through marionette"""
+        """Load the prefs file and configure them through Marionette"""
         prefs = {}
         prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                   'support', 'Firefox', 'profile', 'prefs.js')
@@ -224,7 +225,7 @@ class Firefox(DesktopBrowser):
                 pass
             self.marionette = None
         DesktopBrowser.stop(self, job, task)
-        # Make SURE the firefox processes are gone
+        # make SURE the Firefox processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'firefox'])
             subprocess.call(['killall', '-9', 'firefox-trunk'])
@@ -287,7 +288,7 @@ class Firefox(DesktopBrowser):
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
-            end_time = monotonic.monotonic()  + 30
+            end_time = monotonic.monotonic() + 30
             while monotonic.monotonic() < end_time:
                 try:
                     self.job['message_server'].get_message(1)
@@ -343,7 +344,7 @@ class Firefox(DesktopBrowser):
                         done = True
 
     def execute_js(self, script):
-        """Run javascipt"""
+        """Run JavaScript"""
         ret = None
         if self.marionette is not None:
             try:
@@ -353,7 +354,7 @@ class Firefox(DesktopBrowser):
         return ret
 
     def run_js_file(self, file_name):
-        """Execute one of our js scripts"""
+        """Execute one of our JS scripts"""
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -852,7 +853,7 @@ class Firefox(DesktopBrowser):
                    'cdn_provider': None,
                    'server_count': None,
                    'socket': -1
-                  }
+                   }
         if len(parts.query):
             request['url'] += '?' + parts.query
         return request
@@ -985,10 +986,10 @@ class Firefox(DesktopBrowser):
             request['socket'] = log_request['connection']
         request['load_start'] = int(round(log_request['start'] * 1000.0))
         if 'first_byte' in log_request:
-            request['ttfb_ms'] = int(round((log_request['first_byte'] - \
+            request['ttfb_ms'] = int(round((log_request['first_byte'] -
                                             log_request['start']) * 1000.0))
         if 'end' in log_request:
-            request['load_ms'] = int(round((log_request['end'] - \
+            request['load_ms'] = int(round((log_request['end'] -
                                             log_request['start']) * 1000.0))
         if 'bytes_in' in log_request:
             request['bytesIn'] = log_request['bytes_in']
@@ -1020,9 +1021,9 @@ class Firefox(DesktopBrowser):
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
                 'optimization_checked': 0,
-                'start_epoch': int((self.task['start_time'] - \
+                'start_epoch': int((self.task['start_time'] -
                                     datetime.utcfromtimestamp(0)).total_seconds())
-               }
+                }
         if 'loaded' in self.page:
             page['loadTime'] = int(round(self.page['loaded'] * 1000.0))
             page['docTime'] = page['loadTime']
@@ -1054,9 +1055,9 @@ class Firefox(DesktopBrowser):
                 page['responses_other'] += 1
             if main_request is None and \
                     (request['responseCode'] == 200 or request['responseCode'] == 304) and \
-                    ('contentType' not in request or \
-                     (request['contentType'] != 'application/ocsp-response' and \
-                     request['contentType'] != 'application/pkix-crl')):
+                    ('contentType' not in request or
+                     (request['contentType'] != 'application/ocsp-response' and
+                      request['contentType'] != 'application/pkix-crl')):
                 main_request = request['id']
                 request['is_base_page'] = True
                 page['final_base_page_request'] = index
@@ -1068,7 +1069,7 @@ class Firefox(DesktopBrowser):
                     page['TTFB'] = request['load_start'] + request['ttfb_ms']
                 if request['ssl_end'] >= request['ssl_start'] and \
                         request['ssl_start'] >= 0:
-                    page['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                    page['basePageSSLTime'] = int(round(request['ssl_end'] -
                                                         request['ssl_start']))
         if page['responses_200'] == 0 and len(requests):
             if 'responseCode' in requests[0]:
