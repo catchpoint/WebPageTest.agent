@@ -9,6 +9,7 @@ import subprocess
 import time
 import psutil
 
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -57,6 +58,7 @@ def main():
         else:
             subprocess.call(['sudo', 'reboot'])
     exit(1)
+
 
 if __name__ == '__main__':
     main()
