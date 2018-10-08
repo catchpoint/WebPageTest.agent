@@ -628,6 +628,9 @@ def find_browsers():
         firefox_path = '/usr/lib/firefox-esr/firefox-esr'
         if 'Firefox' not in browsers and os.path.isfile(firefox_path):
             browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+        beta_path = '/usr/lib/firefox-next/firefox-next'
+        if 'Firefox Beta' not in browsers and os.path.isfile(beta_path):
+            browsers['Firefox Beta'] = {'exe': beta_path, 'type': 'Firefox'}
         if 'Firefox ESR' not in browsers and os.path.isfile(firefox_path):
             browsers['Firefox ESR'] = {'exe': firefox_path, 'type': 'Firefox'}
         nightly_path = '/usr/lib/firefox-trunk/firefox-trunk'

@@ -31,6 +31,7 @@ RUN apt-get update && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
 # Set repos
   add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
+  add-apt-repository -y ppa:mozillateam/firefox-next \
   add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free' && \
   add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free' && \
   add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free' && \
@@ -41,6 +42,7 @@ RUN apt-get update && \
   google-chrome-beta \
   google-chrome-unstable \
   firefox \
+  firefox-next \
   firefox-trunk \
   opera-stable \
   opera-beta \
