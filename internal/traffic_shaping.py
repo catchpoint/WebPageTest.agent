@@ -135,6 +135,8 @@ class WinShaper(object):
     """Windows 8.1+ traffic-shaper using winshaper"""
     def __init__(self):
         self.interface = None
+        self.in_buff = 20000000
+        self.out_buff = 20000000
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "winshaper", "shaper.exe")
 
@@ -161,7 +163,9 @@ class WinShaper(object):
                             'inbps={0:d}'.format(in_bps),
                             'outbps={0:d}'.format(out_bps),
                             'rtt={0:d}'.format(rtt),
-                            'plr={0:.2f}'.format(plr)])
+                            'plr={0:.2f}'.format(plr),
+                            'inbuff={0:d}'.format(self.in_buff),
+                            'outbuff={0:d}'.format(self.out_buff)])
 
 #
 # Dummynet
