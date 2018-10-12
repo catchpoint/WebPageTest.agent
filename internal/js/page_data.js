@@ -23,7 +23,7 @@ addTime("domContentFlushed");
 addtime("domComplete");
 addTime("loadEventStart");
 addTime("loadEventEnd");
-addtime("timeToInteractive");
+addtime("timeToFirstInteractive");
 pageData["firstPaint"] = 0;
 // Try the standardized paint timing api
 try {
