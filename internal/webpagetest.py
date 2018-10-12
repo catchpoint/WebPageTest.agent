@@ -22,6 +22,7 @@ import ujson as json
 
 DEFAULT_JPEG_QUALITY = 30
 
+
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
@@ -58,7 +59,7 @@ class WebPageTest(object):
             for interface in interfaces:
                 iface = interfaces[interface]
                 for addr in iface:
-                    match = re.search(r'^00[\-:]50[\-:]56[\-:]00[\-:]'\
+                    match = re.search(r'^00[\-:]50[\-:]56[\-:]00[\-:]'
                                       r'([\da-fA-F]+)[\-:]([\da-fA-F]+)$', addr.address)
                     if match:
                         server = match.group(1).strip('0')
@@ -175,7 +176,7 @@ class WebPageTest(object):
         while not ok:
             try:
                 response = session.get('http://169.254.169.254/latest/user-data',
-                                        timeout=30, proxies=proxies)
+                                       timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -224,7 +225,7 @@ class WebPageTest(object):
             try:
                 response = session.get(
                     'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
-                    headers={'Metadata-Flavor':'Google'},
+                    headers={'Metadata-Flavor': 'Google'},
                     timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
@@ -237,7 +238,7 @@ class WebPageTest(object):
         while not ok:
             try:
                 response = session.get('http://169.254.169.254/computeMetadata/v1/instance/id',
-                                       headers={'Metadata-Flavor':'Google'},
+                                       headers={'Metadata-Flavor': 'Google'},
                                        timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
@@ -251,7 +252,7 @@ class WebPageTest(object):
             while not ok:
                 try:
                     response = session.get('http://metadata.google.internal/computeMetadata/v1/instance/zone',
-                                           headers={'Metadata-Flavor':'Google'},
+                                           headers={'Metadata-Flavor': 'Google'},
                                            timeout=30, proxies=proxies)
                     if len(response.text):
                         zone = response.text.strip()
@@ -438,13 +439,13 @@ class WebPageTest(object):
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
                     job['keep_lighthouse_trace'] = \
-                            bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                        bool('lighthouseTrace' in job and job['lighthouseTrace'])
                     job['lighthouse_throttle'] = \
                         bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
-                    job['disable_video'] = bool(not job['video'] and \
-                                                'disable_video' in job and \
+                    job['disable_video'] = bool(not job['video'] and
+                                                'disable_video' in job and
                                                 job['disable_video'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
@@ -665,7 +666,7 @@ class WebPageTest(object):
                         pos = cookie.find('=')
                         if pos > 0:
                             cookie_name = cookie[:pos].strip()
-                            cookie_value = cookie[pos+1:].strip()
+                            cookie_value = cookie[pos + 1:].strip()
                             if len(cookie_name) and len(cookie_value) and len(url):
                                 if 'cookies' not in task:
                                     task['cookies'] = []
@@ -793,8 +794,8 @@ class WebPageTest(object):
                             if separator >= 0:
                                 attribute = target[:separator]
                                 attr_value = target[separator + 1:]
-                                script = "document.querySelector('[{0}=\"{1}\"]')".format(\
-                                        attribute, attr_value)
+                                script = "document.querySelector('[{0}=\"{1}\"]')".format(
+                                    attribute, attr_value)
                                 if command in ['click', 'sendclick']:
                                     script += '.click();'
                                 elif command == 'submitform' and value is not None:
@@ -1127,7 +1128,7 @@ class WebPageTest(object):
         try:
             if file_path is not None and os.path.isfile(file_path):
                 self.session.post(url,
-                                  files={'file':(filename, open(file_path, 'rb'))},
+                                  files={'file': (filename, open(file_path, 'rb'))},
                                   timeout=300,)
             else:
                 self.session.post(url)

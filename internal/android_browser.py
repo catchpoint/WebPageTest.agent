@@ -13,6 +13,7 @@ import monotonic
 import ujson as json
 from .base_browser import BaseBrowser
 
+
 SET_ORANGE = "(function() {" \
              "var wptDiv = document.createElement('div');" \
              "wptDiv.id = 'wptorange';" \
@@ -25,6 +26,7 @@ SET_ORANGE = "(function() {" \
              "wptDiv.style.backgroundColor = '#DE640D';" \
              "document.body.appendChild(wptDiv);" \
              "})();"
+
 
 class AndroidBrowser(BaseBrowser):
     """Android Browser base"""
@@ -177,7 +179,7 @@ class AndroidBrowser(BaseBrowser):
                                                                              task['current_step'])
                 histograms = os.path.join(task['dir'], filename)
                 progress_file = os.path.join(task['dir'], task['prefix']) + \
-                                '_visual_progress.json.gz'
+                    '_visual_progress.json.gz'
                 visualmetrics = os.path.join(support_path, "visualmetrics.py")
                 args = ['python', visualmetrics, '-i', task['video_file'],
                         '-d', video_path, '--force', '--quality',
@@ -268,7 +270,7 @@ class AndroidBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)

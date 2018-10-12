@@ -8,6 +8,7 @@ import platform
 from .microsoft_edge import Edge
 from .os_util import run_elevated
 
+
 class InternetExplorer(Edge):
     """Microsoft Edge"""
     def __init__(self, path, options, job):

@@ -5,7 +5,6 @@
 import logging
 import os
 import re
-import subprocess
 import time
 import monotonic
 from .android_browser import AndroidBrowser
@@ -41,6 +40,7 @@ HOST_RULES = [
 ]
 
 START_PAGE = 'http://www.webpagetest.org/blank.html'
+
 
 class BlackBoxAndroid(AndroidBrowser):
     """Chrome browser on Android"""
@@ -119,18 +119,19 @@ class BlackBoxAndroid(AndroidBrowser):
             if command['command'] == 'navigate':
                 task['page_data']['URL'] = command['target']
                 activity = '{0}/{1}'.format(self.config['package'], self.config['activity'])
-                cmd = 'am start -n {0} -a android.intent.action.VIEW -d "{1}"'.format(activity, \
-                        command['target'].replace('"', '%22'))
+                cmd = 'am start -n {0} -a android.intent.action.VIEW \
+                       -d "{1}"'.format(activity,
+                                        command['target'].replace('"', '%22'))
                 local_intent = os.path.join(task['dir'], 'wpt_intent.sh')
                 remote_intent = '/data/local/tmp/wpt_intent.sh'
                 self.adb.shell(['rm', remote_intent])
-                with open(local_intent, 'wb') as f_out:
+            with open(local_intent, 'wb') as f_out:
                     f_out.write(cmd)
-                if self.adb.adb(['push', local_intent, remote_intent]):
-                    os.remove(local_intent)
-                    self.adb.shell(['chmod', '777', remote_intent])
-                    self.adb.shell([remote_intent])
-                    self.adb.shell(['rm', remote_intent])
+            if self.adb.adb(['push', local_intent, remote_intent]):
+                os.remove(local_intent)
+                self.adb.shell(['chmod', '777', remote_intent])
+                self.adb.shell([remote_intent])
+                self.adb.shell(['rm', remote_intent])
             self.wait_for_page_load()
         self.on_stop_capture(task)
         self.on_stop_recording(task)
@@ -180,8 +181,8 @@ class BlackBoxAndroid(AndroidBrowser):
             settings = re.sub(r'name=\"{0}\" value=\"[^\"]\"'.format(key),
                               'name="{0}" value="{1}"'.format(key, value), settings)
             if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
-                settings = settings.replace('\n</map>', \
-                        '\n    <int name="{0}" value="{1}" />\n</map>'.format(key, value))
+                settings = settings.replace('\n</map>',
+                                            '\n    <int name="{0}" value="{1}" />\n</map>'.format(key, value))
         return settings
 
     def prepare_opera_mini_settings(self):
@@ -190,8 +191,7 @@ class BlackBoxAndroid(AndroidBrowser):
         if "mode" in self.config:
             if self.config["mode"].find("high") >= 0:
                 compression = "0"
-        settings_file = \
-                "/data/data/{0}/shared_prefs/user_settings.xml".format(self.config['package'])
+        settings_file = "/data/data/{0}/shared_prefs/user_settings.xml".format(self.config['package'])
         settings = self.adb.su('cat ' + settings_file).replace("\r", "")
         original_settings = str(settings)
         # make sure ad blocking and compression are at least enabled
