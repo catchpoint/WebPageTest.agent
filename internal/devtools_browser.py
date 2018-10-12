@@ -15,6 +15,7 @@ import monotonic
 import ujson as json
 from .optimization_checks import OptimizationChecks
 
+
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 120
@@ -103,7 +104,7 @@ class DevtoolsBrowser(object):
                                             "mobile": True,
                                             "fitWindow": False,
                                             "screenOrientation":
-                                                {"angle":0, "type":"portraitPrimary"}},
+                                                {"angle": 0, "type": "portraitPrimary"}},
                                            wait=True)
                 self.devtools.send_command("Emulation.setTouchEmulationEnabled",
                                            {"enabled": True,
@@ -187,11 +188,11 @@ class DevtoolsBrowser(object):
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
                     screen_shot = os.path.join(task['dir'],
-                                            task['prefix'] + '_screen.png')
+                                               task['prefix'] + '_screen.png')
                     self.devtools.grab_screenshot(screen_shot, png=True)
                 else:
                     screen_shot = os.path.join(task['dir'],
-                                            task['prefix'] + '_screen.jpg')
+                                               task['prefix'] + '_screen.jpg')
                     self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
@@ -378,7 +379,7 @@ class DevtoolsBrowser(object):
             if delay > 0:
                 time.sleep(delay)
         elif command['command'] == 'setabm':
-            self.task['stop_at_onload'] = bool('target' in command and \
+            self.task['stop_at_onload'] = bool('target' in command and
                                                int(re.search(r'\d+',
                                                              str(command['target'])).group()) == 0)
         elif command['command'] == 'setactivitytimeout':
@@ -397,7 +398,7 @@ class DevtoolsBrowser(object):
                 pos = cookie.find('=')
                 if pos > 0:
                     name = cookie[:pos].strip()
-                    value = cookie[pos+1:].strip()
+                    value = cookie[pos + 1:].strip()
                     if len(name) and len(value) and len(url):
                         self.devtools.send_command('Network.setCookie',
                                                    {'url': url, 'name': name, 'value': value})
@@ -575,7 +576,7 @@ class DevtoolsBrowser(object):
                                                 'result' in audit and \
                                                 'rawValue' in audit['result']:
                                             name = category_name + '.' + \
-                                                    audit['id'].replace(' ', '')
+                                                audit['id'].replace(' ', '')
                                             audits[name] = audit['result']['rawValue']
                     # v3.x
                     elif 'categories' in lh_report:
@@ -630,7 +631,7 @@ class DevtoolsBrowser(object):
                                                        'awaitPromise': True,
                                                        'returnByValue': True,
                                                        'timeout': 30000},
-                                                       wait=True, timeout=30)
+                                                      wait=True, timeout=30)
                 if response is not None and 'result' in response and\
                         'result' in response['result'] and\
                         'value' in response['result']['result']:

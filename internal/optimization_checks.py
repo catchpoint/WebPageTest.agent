@@ -16,6 +16,7 @@ import time
 import monotonic
 import ujson as json
 
+
 class OptimizationChecks(object):
     """Threaded optimization checks"""
     def __init__(self, job, task, requests):
@@ -100,7 +101,7 @@ class OptimizationChecks(object):
                          '.v2cdn.net',
                          '.v3cdn.net',
                          '.v4cdn.net',
-                         '.v5cdn.net',],
+                         '.v5cdn.net'],
             'Facebook': ['.facebook.com',
                          '.facebook.net',
                          '.fbcdn.net',
@@ -389,8 +390,8 @@ class OptimizationChecks(object):
                     content_type = self.get_header_value(request['response_headers'],
                                                          'Content-Type')
                     if content_type is None or \
-                            (content_type.find('/html') == -1 and \
-                            content_type.find('/cache-manifest') == -1):
+                            (content_type.find('/html') == -1 and
+                             content_type.find('/cache-manifest') == -1):
                         is_static = True
                         cache = self.get_header_value(request['response_headers'], 'Cache-Control')
                         pragma = self.get_header_value(request['response_headers'], 'Pragma')
@@ -440,9 +441,9 @@ class OptimizationChecks(object):
                     is_static, time_remaining = self.get_time_remaining(request)
                     if is_static:
                         check['time'] = time_remaining
-                        if time_remaining >= 604800: # 7 days
+                        if time_remaining >= 604800:  # 7 days
                             check['score'] = 100
-                        elif time_remaining >= 3600: # 1 hour
+                        elif time_remaining >= 3600:  # 1 hour
                             check['score'] = 50
                         else:
                             check['score'] = 0
@@ -778,14 +779,14 @@ class OptimizationChecks(object):
                             bytes_remaining = image_size - 8
                             pos = 8
                             while valid and bytes_remaining >= 4:
-                                chunk_len = struct.unpack('>I', body[pos:pos+4])[0]
+                                chunk_len = struct.unpack('>I', body[pos: pos + 4])[0]
                                 pos += 4
                                 if chunk_len + 12 <= bytes_remaining:
-                                    chunk_type = body[pos:pos+4]
+                                    chunk_type = body[pos: pos + 4]
                                     pos += 4
                                     if chunk_type in image_chunks:
                                         target_size += chunk_len + 12
-                                    pos += chunk_len + 4 # Skip the data and CRC
+                                    pos += chunk_len + 4  # Skip the data and CRC
                                     bytes_remaining -= chunk_len + 12
                                 else:
                                     valid = False
@@ -875,7 +876,7 @@ class OptimizationChecks(object):
                                         pos += 1
                                     if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
                                         continue
-                                    elif block == 0xda: # Image data
+                                    elif block == 0xda:  # Image data
                                         check['scan_count'] += 1
                                         # Seek to the next non-padded 0xff to find the next marker
                                         found = False
@@ -889,7 +890,7 @@ class OptimizationChecks(object):
                                                     found = True
                                                     pos -= 2
                                     else:
-                                        chunk = body[pos:pos+2]
+                                        chunk = body[pos: pos + 2]
                                         block_size = struct.unpack('2B', chunk)
                                         pos += 2
                                         block_size = block_size[0] * 256 + block_size[1] - 2

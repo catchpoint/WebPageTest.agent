@@ -11,6 +11,7 @@ import subprocess
 
 VIDEO_SIZE = 400
 
+
 class VideoProcessing(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, options, job, task):
@@ -31,8 +32,8 @@ class VideoProcessing(object):
                 crop = '{0:d}%x{1:d}%+0+0'.format(self.task['crop_pct']['width'],
                                                   self.task['crop_pct']['height'])
                 for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
-                    command = '{0} -define jpeg:dct-method=fast -crop {1} "{2}"'.format(\
-                            self.job['image_magick']['mogrify'], crop, path)
+                    command = '{0} -define jpeg:dct-method=fast -crop {1} "{2}"'.format(
+                        self.job['image_magick']['mogrify'], crop, path)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
             # Make the initial screen shot the same size as the video
@@ -95,13 +96,13 @@ class VideoProcessing(object):
                                                                          self.task['current_step'])
             histograms = os.path.join(self.task['dir'], filename)
             progress_file = os.path.join(self.task['dir'], self.task['prefix']) + \
-                            '_visual_progress.json.gz'
+                '_visual_progress.json.gz'
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
             args = ['python', visualmetrics, '-d', self.video_path,
                     '--histogram', histograms, '--progress', progress_file]
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(self.task['dir'], self.task['prefix']) + \
-                        '_rendered_video.mp4'
+                    '_rendered_video.mp4'
                 args.extend(['--render', video_out])
             if 'fullSizeVideo' in self.job and self.job['fullSizeVideo']:
                 args.append('--full')
@@ -120,7 +121,7 @@ class VideoProcessing(object):
         if crop_region is not None:
             crop = '-crop {0} '.format(crop_region)
         match = False
-        command = '{0} {1} {2} {3}miff:- | {4} -metric AE -'.format(\
+        command = '{0} {1} {2} {3}miff:- | {4} -metric AE -'.format(
             self.job['image_magick']['convert'],
             image1, image2, crop,
             self.job['image_magick']['compare'])
@@ -159,7 +160,6 @@ class VideoProcessing(object):
         frame_count = len(frames)
         logging.debug('%d frames final count with a target max of %d frames...',
                       frame_count, maxframes)
-
 
     def sample_frames(self, frames, interval, start_ms, skip_frames):
         """Sample frames at a given interval"""

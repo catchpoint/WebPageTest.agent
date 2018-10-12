@@ -32,6 +32,7 @@ SET_ORANGE = "(function() {" \
              "document.body.appendChild(wptDiv);" \
              "}})();"
 
+
 class DesktopBrowser(BaseBrowser):
     """Desktop Browser base"""
     START_BROWSER_TIME_LIMIT = 30
@@ -99,7 +100,7 @@ class DesktopBrowser(BaseBrowser):
         self.restore_hosts()
         if not self.is_chrome and 'dns_override' in task:
             self.modify_hosts(task, task['dns_override'])
-    
+
     def modify_hosts(self, task, hosts):
         """Add entries to the system's hosts file (non-Windows currently)"""
         hosts_backup = os.path.join(os.path.abspath(os.path.dirname(__file__)), "hosts.backup")
@@ -168,7 +169,7 @@ class DesktopBrowser(BaseBrowser):
                                       window_title, window_class, left, top, width, height,
                                       placement[1], exe)
                         handle = win32api.OpenProcess(
-                            win32con.PROCESS_TERMINATE | win32con.SYNCHRONIZE | \
+                            win32con.PROCESS_TERMINATE | win32con.SYNCHRONIZE |
                             win32con.PROCESS_QUERY_INFORMATION,
                             0, proccess_id)
                         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
@@ -390,8 +391,8 @@ class DesktopBrowser(BaseBrowser):
                         args = [tcpdump, '-p', '-i', interface, '-s', '0',
                                 '-w', self.pcap_file]
                     logging.debug(' '.join(args))
-                    self.tcpdump = subprocess.Popen(args, \
-                            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                    self.tcpdump = subprocess.Popen(args,
+                                                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
                 else:
                     args = ['sudo', 'tcpdump', '-p', '-i', interface, '-s', '0',
                             '-w', self.pcap_file]
@@ -444,8 +445,8 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(args))
                 try:
                     if platform.system() == 'Windows':
-                        self.ffmpeg = subprocess.Popen(args, \
-                            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                        self.ffmpeg = subprocess.Popen(args,
+                                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
                     else:
                         self.ffmpeg = subprocess.Popen(args)
                     # Wait up to 5 seconds for something to be captured
@@ -494,7 +495,7 @@ class DesktopBrowser(BaseBrowser):
         if self.cpu_start is not None:
             cpu_end = psutil.cpu_times()
             cpu_busy = (cpu_end.user - self.cpu_start.user) + \
-                    (cpu_end.system - self.cpu_start.system)
+                (cpu_end.system - self.cpu_start.system)
             cpu_total = cpu_busy + (cpu_end.idle - self.cpu_start.idle)
             cpu_pct = cpu_busy * 100.0 / cpu_total
             task['page_data']['fullyLoadedCPUms'] = int(cpu_busy * 1000.0)
@@ -620,7 +621,7 @@ class DesktopBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)

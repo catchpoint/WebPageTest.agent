@@ -30,6 +30,7 @@ body {background-color: white; margin: 0;}
 <body><div id='wptorange'></div></body>
 </html>"""
 
+
 class TornadoRequestHandler(tornado.web.RequestHandler):
     """Request handler for when we are using tornado"""
     def get(self):
@@ -92,6 +93,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         except Exception:
             pass
         self.set_status(200)
+
 
 class MessageServer(object):
     """Local HTTP server for interacting with the extension"""

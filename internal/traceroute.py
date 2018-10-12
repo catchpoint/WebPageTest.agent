@@ -10,6 +10,7 @@ import re
 import subprocess
 import urlparse
 
+
 class Traceroute(object):
     """Traceroute (desktop)"""
     def __init__(self, options, job):
@@ -60,12 +61,12 @@ class Traceroute(object):
         lines = out.splitlines()
         dest = re.compile(r'^Tracing route to.*\[([\d\.]+)\]')
         timeout = re.compile(r'^\s*(\d+).*Request timed out')
-        address_only = re.compile(r'^\s*(\d+)\s+'\
-            r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'\
-            r'([\d\.]+)')
-        with_hostname = re.compile(r'^\s*(\d+)\s+'\
-            r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'\
-            r'([^\s]*)\s+\[([\d\.]+)\]')
+        address_only = re.compile(r'^\s*(\d+)\s+'
+                                  r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'
+                                  r'([\d\.]+)')
+        with_hostname = re.compile(r'^\s*(\d+)\s+'
+                                   r'\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+\<?\*?(\d*)[\sms]+'
+                                   r'([^\s]*)\s+\[([\d\.]+)\]')
         for line in lines:
             logging.debug(line)
             try:
@@ -128,7 +129,7 @@ class Traceroute(object):
         lines = out.splitlines()
         dest = re.compile(r'^traceroute to [^\(]+\(([\d\.]+)\)')
         timeout = re.compile(r'^\s*(\d+)\s+\*\s+\*\s+\*')
-        success = re.compile(r'^\s*(\d+)\s+([^\s]+)\s+\(([\d\.]+)\)\s+'\
+        success = re.compile(r'^\s*(\d+)\s+([^\s]+)\s+\(([\d\.]+)\)\s+'
                              r'\*?([\d\.]*)[\sms]+\*?([\d\.]*)[\sms]+\*?([\d\.]*)[\sms]+')
         for line in lines:
             logging.debug(line)

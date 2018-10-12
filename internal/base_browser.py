@@ -2,11 +2,8 @@
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for browsers"""
-import logging
 import os
-import time
-import monotonic
-import ujson as json
+
 
 class BaseBrowser(object):
     """Browser base"""
