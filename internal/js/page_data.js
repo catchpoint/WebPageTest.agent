@@ -17,12 +17,13 @@ function addTime(name) {
   } catch(e) {}
 };
 addTime("domInteractive");
-addTime("domContentFlushed");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
-addTime("domComplete");
+addTime("domContentFlushed");
+addtime("domComplete");
 addTime("loadEventStart");
 addTime("loadEventEnd");
+addtime("timeToInteractive");
 pageData["firstPaint"] = 0;
 // Try the standardized paint timing api
 try {
