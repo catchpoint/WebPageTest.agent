@@ -125,13 +125,13 @@ class BlackBoxAndroid(AndroidBrowser):
                 local_intent = os.path.join(task['dir'], 'wpt_intent.sh')
                 remote_intent = '/data/local/tmp/wpt_intent.sh'
                 self.adb.shell(['rm', remote_intent])
-            with open(local_intent, 'wb') as f_out:
+                with open(local_intent, 'wb') as f_out:
                     f_out.write(cmd)
-            if self.adb.adb(['push', local_intent, remote_intent]):
-                os.remove(local_intent)
-                self.adb.shell(['chmod', '777', remote_intent])
-                self.adb.shell([remote_intent])
-                self.adb.shell(['rm', remote_intent])
+                if self.adb.adb(['push', local_intent, remote_intent]):
+                    os.remove(local_intent)
+                    self.adb.shell(['chmod', '777', remote_intent])
+                    self.adb.shell([remote_intent])
+                    self.adb.shell(['rm', remote_intent])
             self.wait_for_page_load()
         self.on_stop_capture(task)
         self.on_stop_recording(task)
