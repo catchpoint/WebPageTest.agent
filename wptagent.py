@@ -549,21 +549,29 @@ def find_browsers():
             edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
                                     'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
             if not os.path.isfile(edge_exe):
-                if build >= 17000:
-                    edge_version = 17
-                elif build >= 16000:
-                    edge_version = 16
-                elif build >= 15000:
-                    edge_version = 15
-                elif build >= 14000:
-                    edge_version = 14
-                elif build >= 10586:
-                    edge_version = 13
+                if build > 17134:
+                    from internal.os_util import run_elevated
+                    logging.debug('Installing latest webdriver for Microsoft Edge...')
+                    run_elevated('DISM.exe', '/Online /Add-Capability '
+                                 '/CapabilityName:Microsoft.WebDriver~~~~0.0.1.0')
+                    edge_exe = os.path.join(os.environ['windir'], 'System32',
+                                            'MicrosoftWebDriver.exe')
                 else:
-                    edge_version = 12
-                edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
-                                        'support', 'edge', str(edge_version),
-                                        'MicrosoftWebDriver.exe')
+                    if build >= 17000:
+                        edge_version = 17
+                    elif build >= 16000:
+                        edge_version = 16
+                    elif build >= 15000:
+                        edge_version = 15
+                    elif build >= 14000:
+                        edge_version = 14
+                    elif build >= 10586:
+                        edge_version = 13
+                    else:
+                        edge_version = 12
+                    edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                            'support', 'edge', str(edge_version),
+                                            'MicrosoftWebDriver.exe')
             if os.path.isfile(edge_exe):
                 edge = {'exe': edge_exe}
         if edge is not None:
