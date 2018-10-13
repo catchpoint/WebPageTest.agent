@@ -20,10 +20,10 @@ addTime("domInteractive");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
 addTime("domContentFlushed");
-addtime("domComplete");
+addTime("domComplete");
 addTime("loadEventStart");
 addTime("loadEventEnd");
-addtime("timeToFirstInteractive");
+addTime("timeToFirstInteractive");
 pageData["firstPaint"] = 0;
 // Try the standardized paint timing api
 try {
