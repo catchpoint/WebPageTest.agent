@@ -457,7 +457,7 @@ class NetEm(object):
         """Configure traffic-shaping for a single interface"""
         ret = False
         args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root',
-                'netem', 'limit', '150000', 'delay', '{0:d}ms'.format(latency)]
+                'netem', 'delay', '{0:d}ms'.format(latency)]
         if bps > 0:
             kbps = int(bps / 1000)
             args.extend(['rate', '{0:d}kbit'.format(kbps)])
