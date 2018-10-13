@@ -14,6 +14,7 @@ import threading
 import monotonic
 import ujson as json
 
+
 class iOSDevice(object):
     """iOS device interface"""
     def __init__(self, serial=None):
@@ -223,7 +224,7 @@ class iOSDevice(object):
             self.socket.close()
             self.socket = None
         if self.message_thread is not None:
-            #self.message_thread.join()
+            # self.message_thread.join()
             self.message_thread = None
 
     def send_message(self, message, data=None, wait=True, timeout=30):
@@ -283,13 +284,13 @@ class iOSDevice(object):
                 rlo, _, xlo = select.select([self.socket], [], [self.socket])
                 if xlo:
                     logging.debug("iWptBrowser disconnected")
-                    self.messages.put({"msg":"disconnected"})
+                    self.messages.put({"msg": "disconnected"})
                     return
                 if rlo:
                     data_in = self.socket.recv(8192)
                     if not data_in:
                         logging.debug("iWptBrowser disconnected")
-                        self.messages.put({"msg":"disconnected"})
+                        self.messages.put({"msg": "disconnected"})
                         return
                     buff += data_in
                     pos = 0
@@ -356,6 +357,7 @@ class iOSDevice(object):
             except Exception:
                 pass
 
+
 def install_main():
     """Main entry-point when running as an installer (under sudo permissions)"""
     if os.getuid() != 0:
@@ -389,6 +391,7 @@ def install_main():
         print "Starting usbmuxd"
         subprocess.call(['/usr/local/sbin/usbmuxd'])
         subprocess.call(['/usr/local/bin/ideviceinfo'])
+
 
 if __name__ == '__main__':
     install_main()

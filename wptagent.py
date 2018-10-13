@@ -16,6 +16,7 @@ import sys
 import time
 import traceback
 
+
 class WPTAgent(object):
     """Main agent workflow"""
     def __init__(self, options, browsers):
@@ -205,7 +206,7 @@ class WPTAgent(object):
         self.must_exit = True
 
     def cleanup(self):
-        """Do any cleanup that needs to be run regardless of how we exit."""
+        """Do any cleanup that needs to be run regardless of how we exit"""
         logging.debug('Cleaning up')
         self.shaper.remove()
         if self.xvfb is not None:
@@ -332,7 +333,7 @@ class WPTAgent(object):
                 logging.debug("Traceroute is missing, installing...")
                 subprocess.call(['sudo', 'apt-get', '-yq', 'install', 'traceroute'])
 
-        # if we are on Linux and there is no display, enable xvfb by default
+        # If we are on Linux and there is no display, enable xvfb by default
         if platform.system() == "Linux" and not self.options.android and \
                 not self.options.iOS and 'DISPLAY' not in os.environ:
             self.options.xvfb = True
@@ -446,6 +447,7 @@ class WPTAgent(object):
         except Exception:
             pass
 
+
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
     import ConfigParser
@@ -462,12 +464,14 @@ def parse_ini(ini):
             ret = None
     return ret
 
+
 def get_windows_build():
     """Get the current Windows build number from the registry"""
     key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
     val = 'CurrentBuild'
     output = os.popen('REG QUERY "{0}" /V "{1}"'.format(key, val)).read()
     return int(output.strip().split(' ')[-1])
+
 
 def find_browsers():
     """Find the various known-browsers in case they are not explicitly configured"""
@@ -663,6 +667,7 @@ def find_browsers():
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
     return browsers
 
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -673,8 +678,8 @@ def main():
                         " -vvvv for full debug output.")
     parser.add_argument('--name', help="Agent name (for the work directory).")
     parser.add_argument('--exit', type=int, default=0,
-                        help='Exit after the specified number of minutes.\n'\
-                        '    Useful for running in a shell script that does some maintenence\n'\
+                        help='Exit after the specified number of minutes.\n'
+                        '    Useful for running in a shell script that does some maintenence\n'
                         '    or updates periodically (like hourly).')
     parser.add_argument('--dockerized', action='store_true', default=False,
                         help="Agent is running in a docker container.")
@@ -693,7 +698,7 @@ def main():
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
     parser.add_argument('--fps', type=int, choices=xrange(1, 61), default=10,
-                        help='Video capture frame rate (defaults to 10). '\
+                        help='Video capture frame rate (defaults to 10). '
                              'Valid range is 1-60 (Linux only).')
 
     # Server/location configuration
@@ -708,18 +713,18 @@ def main():
                         help='Polling interval for work (defaults to 5 seconds).')
 
     # Traffic-shaping options (defaults to host-based)
-    parser.add_argument('--shaper', help='Override default traffic shaper. '\
-                        'Current supported values are:\n'\
-                        '    none - Disable traffic-shaping (i.e. when root is not available)\n.'\
-                        '    netem,<interface> - Use NetEm for bridging rndis traffic '\
-                        '(specify outbound interface).  i.e. --shaper netem,eth0\n'\
-                        '    remote,<server>,<down pipe>,<up pipe> - Connect to the remote server '\
-                        'over ssh and use pre-configured dummynet pipes (ssh keys for root user '\
+    parser.add_argument('--shaper', help='Override default traffic shaper. '
+                        'Current supported values are:\n'
+                        '    none - Disable traffic-shaping (i.e. when root is not available)\n.'
+                        '    netem,<interface> - Use NetEm for bridging rndis traffic '
+                        '(specify outbound interface).  i.e. --shaper netem,eth0\n'
+                        '    remote,<server>,<down pipe>,<up pipe> - Connect to the remote server '
+                        'over ssh and use pre-configured dummynet pipes (ssh keys for root user '
                         'should be pre-authorized).')
 
     # CPU Throttling
     parser.add_argument('--throttle', action='store_true', default=False,
-                        help='Enable cgroup-based CPU throttling for mobile emulation '\
+                        help='Enable cgroup-based CPU throttling for mobile emulation '
                         '(Linux only).')
 
     # Android options
@@ -728,30 +733,30 @@ def main():
     parser.add_argument('--device',
                         help="Device ID (only needed if more than one android device attached).")
     parser.add_argument('--simplert',
-                        help="Use SimpleRT for reverse-tethering.  The APK should "\
-                        "be installed manually (adb install simple-rt/simple-rt-1.1.apk) and "\
-                        "tested once manually (./simple-rt -i eth0 then disconnect and re-connect"\
-                        " phone) to dismiss any system dialogs.  The ethernet interface and DNS "\
-                        "server should be passed as options:\n"\
+                        help="Use SimpleRT for reverse-tethering.  The APK should "
+                        "be installed manually (adb install simple-rt/simple-rt-1.1.apk) and "
+                        "tested once manually (./simple-rt -i eth0 then disconnect and re-connect"
+                        " phone) to dismiss any system dialogs.  The ethernet interface and DNS "
+                        "server should be passed as options:\n"
                         "    <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8")
     parser.add_argument('--gnirehtet',
-                        help="Use gnirehtet for reverse-tethering. You will need to manually "\
-                        "approve the vpn once per mobile device. Valid options are:\n"\
+                        help="Use gnirehtet for reverse-tethering. You will need to manually "
+                        "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8")
     parser.add_argument('--vpntether',
-                        help="Use vpn-reverse-tether for reverse-tethering. This is the "\
-                        "recommended way to reverse-tether devices. You will need to manually "\
-                        "approve the vpn once per mobile device. Valid options are:\n"\
+                        help="Use vpn-reverse-tether for reverse-tethering. This is the "
+                        "recommended way to reverse-tether devices. You will need to manually "
+                        "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --vpntether eth0,8.8.8.8")
     parser.add_argument('--rndis',
-                        help="(deprecated) Enable reverse-tethering over rndis. "\
-                        "Valid options are:\n"\
-                        "    dhcp: Configure interface for DHCP\n"\
-                        "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"\
+                        help="(deprecated) Enable reverse-tethering over rndis. "
+                        "Valid options are:\n"
+                        "    dhcp: Configure interface for DHCP\n"
+                        "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"
                         "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
     # iOS options
     parser.add_argument('--iOS', action='store_true', default=False,
-                        help="Run tests on an attached iOS device "\
+                        help="Run tests on an attached iOS device "
                         "(specify serial number in --device).")
     parser.add_argument('--list', action='store_true', default=False,
                         help="List available iOS devices.")
@@ -761,7 +766,7 @@ def main():
                         help="User name if using HTTP Basic auth with WebPageTest server.")
     parser.add_argument('--password',
                         help="Password if using HTTP Basic auth with WebPageTest server.")
-    parser.add_argument('--cert', help="Client certificate if using certificates to "\
+    parser.add_argument('--cert', help="Client certificate if using certificates to "
                         "authenticate the WebPageTest server connection.")
     parser.add_argument('--certkey', help="Client-side private key (if not embedded in the cert).")
     options, _ = parser.parse_known_args()
@@ -771,7 +776,7 @@ def main():
         if sys.version_info[0] != 2 or \
                 sys.version_info[1] != 7 or \
                 sys.version_info[2] < 11:
-            print "Requires python 2.7.11 (2.7.11 or later)"
+            print "Requires python 2.7.11 (or later)"
             exit(1)
     elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
         print "Requires python 2.7"
@@ -814,10 +819,11 @@ def main():
 
     agent = WPTAgent(options, browsers)
     if agent.startup():
-        #Create a work directory relative to where we are running
+        # Create a work directory relative to where we are running
         print "Running agent, hit Ctrl+C to exit"
         agent.run_testing()
         print "Done"
+
 
 if __name__ == '__main__':
     main()

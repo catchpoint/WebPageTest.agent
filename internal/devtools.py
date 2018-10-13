@@ -16,6 +16,7 @@ import monotonic
 import ujson as json
 from ws4py.client.threadedclient import WebSocketClient
 
+
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, options, job, task, use_devtools_video):
@@ -733,8 +734,8 @@ class DevTools(object):
                         image_file.write(base64.b64decode(response['result']['data']))
                     # Fix png issues
                     cmd = '{0} -format png -define png:color-type=2 '\
-                            '-depth 8 {1}"{2}"'.format(self.job['image_magick']['mogrify'],
-                                                       resize_string, path)
+                        '-depth 8 {1}"{2}"'.format(self.job['image_magick']['mogrify'],
+                                                   resize_string, path)
                     logging.debug(cmd)
                     subprocess.call(cmd, shell=True)
                 else:
@@ -1068,8 +1069,9 @@ class DevTools(object):
             pass
         return byte_count
 
+
 class DevToolsClient(WebSocketClient):
-    """DevTools Websocket client"""
+    """DevTools WebSocket client"""
     def __init__(self, url, protocols=None, extensions=None, heartbeat_freq=None,
                  ssl_options=None, headers=None):
         WebSocketClient.__init__(self, url, protocols, extensions, heartbeat_freq,
@@ -1093,17 +1095,17 @@ class DevToolsClient(WebSocketClient):
         self.keep_timeline = True
 
     def opened(self):
-        """Websocket interface - connection opened"""
+        """WebSocket interface - connection opened"""
         logging.debug("DevTools websocket connected")
         self.connected = True
 
     def closed(self, code, reason=None):
-        """Websocket interface - connection closed"""
+        """WebSocket interface - connection closed"""
         logging.debug("DevTools websocket disconnected")
         self.connected = False
 
     def received_message(self, raw):
-        """Websocket interface - message received"""
+        """WebSocket interface - message received"""
         try:
             if raw.is_text:
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
@@ -1217,13 +1219,13 @@ class DevToolsClient(WebSocketClient):
                 if self.video_prefix is not None and 'cat' in trace_event and \
                         'name' in trace_event and 'ts' in trace_event:
                     if self.trace_ts_start is None and \
-                            (trace_event['name'] == 'navigationStart' or \
+                            (trace_event['name'] == 'navigationStart' or
                                 trace_event['name'] == 'fetchStart') and \
                             trace_event['cat'].find('blink.user_timing') > -1:
                         logging.debug("Trace start detected: %d", trace_event['ts'])
                         self.trace_ts_start = trace_event['ts']
                     if self.trace_ts_start is None and \
-                            (trace_event['name'] == 'navigationStart' or \
+                            (trace_event['name'] == 'navigationStart' or
                                 trace_event['name'] == 'fetchStart') and \
                             trace_event['cat'].find('rail') > -1:
                         logging.debug("Trace start detected: %d", trace_event['ts'])
