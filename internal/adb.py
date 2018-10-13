@@ -320,6 +320,12 @@ class Adb(object):
                     '/data/local/tmp/tcpdump.cap', '/data/local/tmp/wpt_video.mp4'])
         self.su('rm -rf /data/media/0/Download/* /data/media/0/Backucup '\
                 '/data/media/0/UCDownloads /data/data/com.UCMobile.intl/wa/sv/*')
+        # Clean up some system apps that collect cruft
+        self.shell(['pm', 'clear', 'com.android.providers.downloads'])
+        self.shell(['pm', 'clear', 'com.google.android.googlequicksearchbox'])
+        self.shell(['pm', 'clear', 'com.google.android.gms'])
+        self.shell(['pm', 'clear', 'com.google.android.youtube'])
+        self.shell(['pm', 'clear', 'com.motorola.motocare'])
         # See if there are any system dialogs that need dismissing
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
         if re.search(r'Window #[^\n]*Application Error\:', out) is not None or \

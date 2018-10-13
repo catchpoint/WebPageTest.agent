@@ -150,6 +150,7 @@ class AndroidBrowser(BaseBrowser):
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
                     time.sleep(0.5)
+                logging.debug('Starting video capture...')
                 self.adb.start_screenrecord()
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(2)
