@@ -653,11 +653,15 @@ class Trace():
                     dns_lookups = {}
                     for dns_id in self.netlog['dns']:
                         dns = self.netlog['dns'][dns_id]
-                        if 'host' in dns and 'start' in dns and 'address_list' in dns:
+                        if 'host' in dns and 'start' in dns and 'end' in dns and 'address_list' in dns:
                             hostname = dns['host']
+                            separator = hostname.find(':')
+                            if separator > 0:
+                                hostname = hostname[:separator]
+                            dns['elapsed'] = dns['end'] - dns['start']
                             if hostname not in dns_lookups:
                                 dns_lookups[hostname] = dns
-                            elif dns['start'] < dns_lookups[hostname]['start']:
+                            elif dns['elapsed'] > dns_lookups[hostname]['elapsed']:
                                 dns_lookups[hostname] = dns
                     # Go through the requests and assign the DNS lookups as needed
                     for request in requests:
@@ -667,7 +671,8 @@ class Trace():
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
                                 request['dns_start'] = dns['start']
-                                if 'end' in dns:
+                                request['dns_end'] = request['connect_start']
+                                if 'end' in dns and dns['end'] < request['dns_end']:
                                     request['dns_end'] = dns['end']
                 # Find the start timestamp if we didn't have one already
                 times = ['dns_start', 'dns_end',
