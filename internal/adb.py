@@ -539,7 +539,7 @@ class Adb(object):
                        '-o', interface, '-j', 'MASQUERADE'])
             self.sudo(['iptables', '-P', 'FORWARD', 'ACCEPT'])
             if self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
-                         'mtu', '1500', 'up']):
+                          'mtu', '1500', 'up']):
                 # Flag for a process exit if the tun adapter isn't available
                 self.needs_exit = True
             self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
@@ -645,8 +645,12 @@ class Adb(object):
                 self.reset_simplert()
         if is_ready and self.options.vpntether is not None:
             is_ready = self.check_vpntether()
+            if not is_ready:
+                self.no_network_count += 1
         if is_ready and self.options.gnirehtet is not None:
             is_ready = self.check_gnirehtet()
+            if not is_ready:
+                self.no_network_count += 1
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready and self.options.gnirehtet is None:
             net_ok = False
