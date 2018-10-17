@@ -239,7 +239,7 @@ class Trace():
             if 'url' in trace_event['args']['data'] and \
                     trace_event['args']['data']['url'].startswith('http://127.0.0.1:8888'):
                 self.ignore_threads[thread] = True
-            if self.cpu['main_thread'] is None:
+            if self.cpu['main_thread'] is None or 'isMainFrame' in trace_event['args']['data']:
                 if ('isMainFrame' in trace_event['args']['data'] and \
                      trace_event['args']['data']['isMainFrame']) or \
                    (trace_event['name'] == 'ResourceSendRequest' and \
