@@ -82,6 +82,7 @@ class WPTAgent(object):
                 return
         while not self.must_exit:
             try:
+                self.alive()
                 if os.path.isfile(exit_file):
                     try:
                         os.remove(exit_file)
