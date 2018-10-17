@@ -232,7 +232,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def get_devtools_socket(self):
         """Get the socket name of the remote devtools socket. @..._devtools_remote"""
         socket_name = None
-        end_time = monotonic.monotonic() + 30
+        end_time = monotonic.monotonic() + 90
         time.sleep(1)
         while socket_name is None and monotonic.monotonic() < end_time:
             out = self.adb.shell(['cat', '/proc/net/unix'])
@@ -241,8 +241,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                     match = re.search(r'00010000 0001.* @([^\s]+_devtools_remote)', line)
                     if match:
                         socket_name = match.group(1)
+                        logging.debug('Remote devtools socket: {0}'.format(socket_name))
             if socket_name is None:
                 time.sleep(1)
+        if socket_name is None:
+            logging.debug('Failed to find remote devtools socket')
         return socket_name
 
     def run_task(self, task):
