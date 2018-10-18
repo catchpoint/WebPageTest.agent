@@ -73,6 +73,7 @@ class iOSDevice(object):
         if response:
             level = int(round(float(response) * 100))
             if level > 75:
+                logging.debug("Battery level = %d%%", level)
                 is_ready = True
             else:
                 logging.debug("Device battery is low (%d%%)", level)
