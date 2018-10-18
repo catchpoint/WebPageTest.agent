@@ -1529,6 +1529,12 @@ def calculate_hero_time(progress, directory, hero, viewport):
             if os.path.isfile(target_mask):
                 os.remove(target_mask)
 
+        # Allow for small differences like scrollbars and overlaid UI elements
+        # by applying a 10% fuzz and allowing for up to 2% of the pixels to be
+        # different.
+        fuzz = 10
+        max_pixel_diff = math.ceil(hero_width * hero_height * 0.02)
+
         for p in progress:
             current_frame = os.path.join(dir, 'ms_{0:06d}'.format(p['time']))
             extension = None
@@ -1543,7 +1549,7 @@ def calculate_hero_time(progress, directory, hero, viewport):
                     image_magick['convert'], current_frame + extension, hero_mask, current_mask)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
-                match = frames_match(target_mask, current_mask, 5, 0, None, None)
+                match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
                 # Remove each mask after using it
                 os.remove(current_mask)
 
