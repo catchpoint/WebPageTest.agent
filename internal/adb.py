@@ -326,6 +326,8 @@ class Adb(object):
         self.shell(['pm', 'clear', 'com.google.android.gms'])
         self.shell(['pm', 'clear', 'com.google.android.youtube'])
         self.shell(['pm', 'clear', 'com.motorola.motocare'])
+        # in case busybox is installed, try a manual fstrim
+        self.su('fstrim -v /data')
         # See if there are any system dialogs that need dismissing
         out = self.shell(['dumpsys', 'window', 'windows'], silent=True)
         if re.search(r'Window #[^\n]*Application Error\:', out) is not None or \
