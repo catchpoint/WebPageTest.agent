@@ -682,8 +682,8 @@ class Trace():
                                     request['dns_end'] = request['ssl_start']
                                 if 'ssl_end' in request and request['ssl_end'] < request['dns_end']:
                                     request['dns_end'] = request['ssl_end']
-                                if 'start' in request and request['start'] < request['dns_end']:
-                                    request['dns_end'] = request['start']
+                                if request['dns_end'] < request['dns_start']:
+                                    request['dns_end'] = request['dns_start']
                 # Find the start timestamp if we didn't have one already
                 times = ['dns_start', 'dns_end',
                          'connect_start', 'connect_end',
