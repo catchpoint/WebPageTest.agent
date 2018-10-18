@@ -125,16 +125,17 @@ function isInViewport(rect) {
   );
 }
 
-// Check if an element has a non-repeating background loaded from a URL
+// Check if an element has a background loaded from a URL
 function hasValidBackgroundImage(el) {
   var computedStyle = window.getComputedStyle(el);
   var elementBgImg = computedStyle.backgroundImage.toLowerCase();
+  var isRepeating = ['repeat', 'repeat-x', 'repeat-y'].indexOf(computedStyle.backgroundRepeat) !== -1;
+  var isCovering = computedStyle.backgroundSize.toLowerCase() === 'cover';
 
   return (
     elementBgImg.indexOf('url(') === 0 &&
-    computedStyle.backgroundRepeat !== 'repeat' &&
-    computedStyle.backgroundRepeat !== 'repeat-x' &&
-    computedStyle.backgroundRepeat !== 'repeat-y'
+    // We want to ignore repeating patterns, but background-size: cover supersedes this
+    (!isRepeating || isCovering)
   );
 }
 
