@@ -1,4 +1,5 @@
 {
   "TranslateEnabled": false,
-  "PasswordManagerEnabled": false
+  "PasswordManagerEnabled": false,
+  "EnableMediaRouter": false
 }
