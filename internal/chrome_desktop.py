@@ -30,6 +30,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-client-side-phishing-detection',
     '--disable-datasaver-prompt',
     '--disable-default-apps',
+    '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
     '--safebrowsing-disable-auto-update',
     '--disable-background-timer-throttling',

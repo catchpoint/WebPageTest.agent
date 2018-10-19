@@ -29,6 +29,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
     '--disable-datasaver-prompt',
+    '--disable-device-discovery-notifications',
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
