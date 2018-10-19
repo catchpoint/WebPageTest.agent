@@ -34,6 +34,7 @@ class Adb(object):
         self.simplert = None
         self.no_network_count = 0
         self.needs_exit = False
+        self.rebooted = False
         self.vpn_forwarder = None
         self.known_apps = {
             'com.motorola.ccc.ota': {},
@@ -658,6 +659,7 @@ class Adb(object):
             net_ok = False
             if self.ping(self.ping_address) is not None:
                 self.no_network_count = 0
+                self.rebooted = False
                 net_ok = True
             else:
                 addresses = []
@@ -695,8 +697,12 @@ class Adb(object):
                 is_ready = False
         if not is_ready and self.no_network_count > 20:
             self.no_network_count = 0
-            self.adb(['reboot'])
-            self.adb(['wait-for-device'])
+            if self.rebooted:
+                self.needs_exit = True
+            else:
+                self.adb(['reboot'])
+                self.adb(['wait-for-device'])
+                self.rebooted = True
         if is_ready and not self.initialized:
             self.initialized = True
             # Disable emergency alert notifications
