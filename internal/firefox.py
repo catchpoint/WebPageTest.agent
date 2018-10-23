@@ -648,7 +648,7 @@ class Firefox(DesktopBrowser):
                 except Exception:
                     pass
         # Build the request and page data
-        if len(request_timings) and task['current_step'] == 1:
+        if len(request_timings) and task['current_step'] >= 1:
             self.adjust_timings(request_timings)
         self.process_requests(request_timings, task)
 
