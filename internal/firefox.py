@@ -414,10 +414,11 @@ class Firefox(DesktopBrowser):
                     elapsed = event_time - self.task['start_time']
                     message['body']['timeStamp'] = elapsed.total_seconds()
                 cat, msg = message['path'].split('.', 1)
-                if cat == 'webNavigation':
-                    self.process_web_navigation(msg, message['body'])
-                elif cat == 'webRequest':
-                    self.process_web_request(msg, message['body'])
+                if 'timeStamp' not in message['body'] or message['body']['timeStamp'] > 0:
+                    if cat == 'webNavigation':
+                        self.process_web_navigation(msg, message['body'])
+                    elif cat == 'webRequest':
+                        self.process_web_request(msg, message['body'])
             except Exception:
                 pass
 
