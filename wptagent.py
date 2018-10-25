@@ -838,7 +838,8 @@ def main():
         err_log.setLevel(logging.ERROR)
         logging.getLogger().addHandler(err_log)
 
-    upgrade_pip_modules()
+    if platform.system() == "Linux":
+        upgrade_pip_modules()
 
     browsers = None
     if not options.android and not options.iOS:
