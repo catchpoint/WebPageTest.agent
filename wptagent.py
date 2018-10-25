@@ -677,6 +677,25 @@ def find_browsers():
     return browsers
 
 
+def upgrade_pip_modules():
+    """Upgrade all of the outdated pip modules"""
+    try:
+        from internal.os_util import run_elevated
+        subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        run_elevated(sys.executable, '-m pip install --upgrade pip')
+        out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
+                                       '--outdated'])
+        for line in out.splitlines():
+            separator = line.find(' ')
+            if separator > 0:
+                package = line[:separator]
+                subprocess.call([sys.executable, '-m', 'pip', 'install',
+                                 '--upgrade', package])
+                run_elevated(sys.executable, '-m pip install --upgrade {0}'.format(package))
+    except Exception:
+        pass
+
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -818,6 +837,8 @@ def main():
                                                        backupCount=5, delay=True)
         err_log.setLevel(logging.ERROR)
         logging.getLogger().addHandler(err_log)
+
+    upgrade_pip_modules()
 
     browsers = None
     if not options.android and not options.iOS:
