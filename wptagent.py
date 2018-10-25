@@ -276,6 +276,24 @@ class WPTAgent(object):
             print "Missing {0} module. Please run 'pip install {1}'".format(module, module_name)
         return ret
 
+    def upgrade_pip_modules(self):
+        """Upgrade any out-of-date pip modules"""
+        try:
+            from internal.os_util import run_elevated
+            packages = []
+            out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
+                                           '--outdated', '--format=freeze'])
+            for line in out.splitlines():
+                separator = line.find('=')
+                if separator > 0:
+                    packages.append(line[:separator])
+            if len(packages):
+                logging.debug('Upgrading pip packages...')
+                from internal.os_util import run_elevated
+                run_elevated(sys.executable, '-m pip install --upgrade ' + ' '.join(packages))
+        except Exception:
+            pass
+
     def startup(self):
         """Validate that all of the external dependencies are installed"""
         ret = True
@@ -411,6 +429,8 @@ class WPTAgent(object):
         # Update the Windows root certs
         if platform.system() == "Windows":
             self.update_windows_certificates()
+
+        self.upgrade_pip_modules()
 
         return ret
 
