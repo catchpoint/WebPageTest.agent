@@ -79,9 +79,12 @@ class WebPageTest(object):
                 self.screen_width = 1920
                 self.screen_height = 1200
             elif platform.system() == 'Windows':
-                from win32api import GetSystemMetrics
-                self.screen_width = GetSystemMetrics(0)
-                self.screen_height = GetSystemMetrics(1)
+                try:
+                    from win32api import GetSystemMetrics
+                    self.screen_width = GetSystemMetrics(0)
+                    self.screen_height = GetSystemMetrics(1)
+                except Exception:
+                    pass
             elif platform.system() == 'Darwin':
                 try:
                     from AppKit import NSScreen

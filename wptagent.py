@@ -301,7 +301,6 @@ class WPTAgent(object):
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
-            ret = self.requires('win32api', 'pypiwin32') and ret
 
         # Try patching ws4py with a faster lib
         try:
@@ -844,6 +843,14 @@ def main():
 
     if platform.system() == "Linux":
         upgrade_pip_modules()
+    elif platform.system() == "Windows":
+        # recovery for a busted Windows install
+        try:
+            import win32api
+        except ImportError:
+            subprocess.call([sys.executable, '-m', 'pip', 'uninstall', '-y',
+                             'pywin32', 'pypiwin32'])
+            subprocess.call([sys.executable, '-m', 'pip', 'install', 'pywin32', 'pypiwin32'])
 
     browsers = None
     if not options.android and not options.iOS:
