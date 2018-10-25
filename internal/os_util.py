@@ -59,30 +59,33 @@ def flush_dns():
 def run_elevated(command, args, wait=True):
     """Run the given command as an elevated user and wait for it to return"""
     ret = 1
-    if command.find(' ') > -1:
-        command = '"' + command + '"'
-    if platform.system() == 'Windows':
-        import win32api
-        import win32con
-        import win32event
-        import win32process
-        from win32com.shell.shell import ShellExecuteEx
-        from win32com.shell import shellcon
-        logging.debug(command + ' ' + args)
-        process_info = ShellExecuteEx(nShow=win32con.SW_HIDE,
-                                      fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
-                                      lpVerb='runas',
-                                      lpFile=command,
-                                      lpParameters=args)
-        if wait:
-            win32event.WaitForSingleObject(process_info['hProcess'], 600000)
-            ret = win32process.GetExitCodeProcess(process_info['hProcess'])
-            win32api.CloseHandle(process_info['hProcess'])
+    try:
+        if command.find(' ') > -1:
+            command = '"' + command + '"'
+        if platform.system() == 'Windows':
+            import win32api
+            import win32con
+            import win32event
+            import win32process
+            from win32com.shell.shell import ShellExecuteEx
+            from win32com.shell import shellcon
+            logging.debug(command + ' ' + args)
+            process_info = ShellExecuteEx(nShow=win32con.SW_HIDE,
+                                        fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
+                                        lpVerb='runas',
+                                        lpFile=command,
+                                        lpParameters=args)
+            if wait:
+                win32event.WaitForSingleObject(process_info['hProcess'], 600000)
+                ret = win32process.GetExitCodeProcess(process_info['hProcess'])
+                win32api.CloseHandle(process_info['hProcess'])
+            else:
+                ret = process_info
         else:
-            ret = process_info
-    else:
-        logging.debug('sudo ' + command + ' ' + args)
-        ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
+            logging.debug('sudo ' + command + ' ' + args)
+            ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
+    except Exception:
+        pass
     return ret
 
 def wait_for_elevated_process(process_info):

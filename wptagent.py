@@ -266,7 +266,9 @@ class WPTAgent(object):
         if not ret:
             from internal.os_util import run_elevated
             logging.debug('Trying to install %s...', module_name)
+            subprocess.call([sys.executable, '-m', 'pip', 'uninstall', '-y', module_name])
             run_elevated(sys.executable, '-m pip uninstall -y {0}'.format(module_name))
+            subprocess.call([sys.executable, '-m', 'pip', 'install', module_name])
             run_elevated(sys.executable, '-m pip install {0}'.format(module_name))
             try:
                 __import__(module)
