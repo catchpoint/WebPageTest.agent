@@ -841,7 +841,7 @@ def main():
         err_log.setLevel(logging.ERROR)
         logging.getLogger().addHandler(err_log)
 
-    if not options.android and not options.iOS and platform.system() == "Linux":
+    if options.ec2 or options.gce:
         upgrade_pip_modules()
     elif platform.system() == "Windows":
         # recovery for a busted Windows install
