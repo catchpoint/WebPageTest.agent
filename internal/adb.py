@@ -541,10 +541,8 @@ class Adb(object):
             self.sudo(['iptables', '-t', 'nat', '-A', 'POSTROUTING', '-s', '172.31.0.0/24',
                        '-o', interface, '-j', 'MASQUERADE'])
             self.sudo(['iptables', '-P', 'FORWARD', 'ACCEPT'])
-            if self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
-                          'mtu', '1500', 'up']):
-                # Flag for a process exit if the tun adapter isn't available
-                self.needs_exit = True
+            self.sudo(['ifconfig', 'tun0', '172.31.0.1', 'dstaddr', '172.31.0.2',
+                       'mtu', '1500', 'up'])
             self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
             self.cleanup_device()
             # Start the tether app
@@ -645,15 +643,18 @@ class Adb(object):
             is_ready = self.check_simplert()
             if not is_ready:
                 self.no_network_count += 1
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
                 self.reset_simplert()
         if is_ready and self.options.vpntether is not None:
             is_ready = self.check_vpntether()
             if not is_ready:
                 self.no_network_count += 1
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
         if is_ready and self.options.gnirehtet is not None:
             is_ready = self.check_gnirehtet()
             if not is_ready:
                 self.no_network_count += 1
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready and self.options.gnirehtet is None:
             net_ok = False
@@ -686,23 +687,28 @@ class Adb(object):
                 for address in addresses:
                     if self.ping(address) is not None:
                         self.ping_address = address
-                        self.no_network_count = 0
                         net_ok = True
                         break
-            if not net_ok:
+            if net_ok:
+                if self.no_network_count > 0:
+                    logging.debug("Network became available")
+                self.no_network_count = 0
+            else:
                 logging.info("Device not ready, network not responding")
                 if self.options.simplert is not None:
                     self.reset_simplert()
                 self.no_network_count += 1
                 is_ready = False
         if not is_ready and self.no_network_count > 20:
-            self.no_network_count = 0
             if self.rebooted:
+                logging.debug("Flagging for exit - %d attempts to connect failed", self.no_network_count)
                 self.needs_exit = True
             else:
+                logging.debug("Rebooting device - %d attempts to connect failed", self.no_network_count)
+                self.rebooted = True
                 self.adb(['reboot'])
                 self.adb(['wait-for-device'])
-                self.rebooted = True
+            self.no_network_count = 0
         if is_ready and not self.initialized:
             self.initialized = True
             # Disable emergency alert notifications
