@@ -33,6 +33,7 @@ class Adb(object):
         self.simplert_path = None
         self.simplert = None
         self.no_network_count = 0
+        self.last_network_ok = monotonic.monotonic()
         self.needs_exit = False
         self.rebooted = False
         self.vpn_forwarder = None
@@ -643,23 +644,27 @@ class Adb(object):
             is_ready = self.check_simplert()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed",
+                              self.no_network_count)
                 self.reset_simplert()
         if is_ready and self.options.vpntether is not None:
             is_ready = self.check_vpntether()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed",
+                              self.no_network_count)
         if is_ready and self.options.gnirehtet is not None:
             is_ready = self.check_gnirehtet()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed",
+                              self.no_network_count)
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready and self.options.gnirehtet is None:
             net_ok = False
             if self.ping(self.ping_address) is not None:
                 self.no_network_count = 0
+                self.last_network_ok = monotonic.monotonic()
                 self.rebooted = False
                 net_ok = True
             else:
@@ -699,16 +704,25 @@ class Adb(object):
                     self.reset_simplert()
                 self.no_network_count += 1
                 is_ready = False
-        if not is_ready and self.no_network_count > 20:
-            if self.rebooted:
-                logging.debug("Flagging for exit - %d attempts to connect failed", self.no_network_count)
-                self.needs_exit = True
-            else:
-                logging.debug("Rebooting device - %d attempts to connect failed", self.no_network_count)
-                self.rebooted = True
-                self.adb(['reboot'])
-                self.adb(['wait-for-device'])
-            self.no_network_count = 0
+        if not is_ready:
+            needs_kick = False
+            elapsed = monotonic.monotonic() - self.last_network_ok
+            if self.no_network_count > 20:
+                needs_kick = True
+            elif self.no_network_count > 1 and elapsed > 1800:
+                needs_kick = True
+            if needs_kick:
+                if self.rebooted:
+                    logging.debug("Flagging for exit - %d attempts to connect failed",
+                                  self.no_network_count)
+                    self.needs_exit = True
+                else:
+                    logging.debug("Rebooting device - %d attempts to connect failed",
+                                  self.no_network_count)
+                    self.rebooted = True
+                    self.adb(['reboot'])
+                    self.adb(['wait-for-device'])
+                self.no_network_count = 0
         if is_ready and not self.initialized:
             self.initialized = True
             # Disable emergency alert notifications
