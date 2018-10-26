@@ -305,6 +305,7 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
+        start = monotonic.monotonic()
         # Simulate pressing the home button to dismiss any UI
         self.shell(['input', 'keyevent', '3'])
         # Clear notifications
@@ -342,6 +343,14 @@ class Adb(object):
             self.shell(['am', 'force-stop', 'com.google.android.googlequicksearchbox'])
         if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
             self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
+        # reboot the phone and exit the agent if it is running EXTREMELY slowly
+        elapsed = monotonic.monotonic() - start
+        if elapsed > 300:
+            logging.debug("Cleanup took %0.3f seconds. Rebooting the phone and restarting agent",
+                          elapsed)
+            self.adb(['reboot'])
+            self.needs_exit = True
+
 
     def get_rndis_interface(self):
         """Return the name of the rndis interface, it's state and assigned address"""
