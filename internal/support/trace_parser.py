@@ -653,7 +653,8 @@ class Trace():
                     dns_lookups = {}
                     for dns_id in self.netlog['dns']:
                         dns = self.netlog['dns'][dns_id]
-                        if 'host' in dns and 'start' in dns and 'end' in dns and 'address_list' in dns:
+                        if 'host' in dns and 'start' in dns and 'end' in dns \
+                                and dns['end'] >= dns['start'] and 'address_list' in dns:
                             hostname = dns['host']
                             separator = hostname.find(':')
                             if separator > 0:
@@ -661,8 +662,14 @@ class Trace():
                             dns['elapsed'] = dns['end'] - dns['start']
                             if hostname not in dns_lookups:
                                 dns_lookups[hostname] = dns
-                            elif dns['elapsed'] > dns_lookups[hostname]['elapsed']:
-                                dns_lookups[hostname] = dns
+                            # collect all of the times for all of the DNS lookups for that host
+                            if 'times' not in dns_lookups[hostname]:
+                                dns_lookups[hostname]['times'] = []
+                            dns_lookups[hostname]['times'].append({
+                                'start': dns['start'],
+                                'end': dns['end'],
+                                'elapsed': dns['elapsed'],
+                            })
                     # Go through the requests and assign the DNS lookups as needed
                     for request in requests:
                         if 'connect_start' in request:
@@ -670,20 +677,17 @@ class Trace():
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
-                                request['dns_start'] = dns['start']
-                                request['dns_end'] = request['connect_start']
-                                if 'end' in dns and dns['end'] < request['dns_end']:
-                                    request['dns_end'] = dns['end']
-                                if 'connect_end' in request and \
-                                        request['connect_end'] < request['dns_end']:
-                                    request['dns_end'] = request['connect_end']
-                                if 'ssl_start' in request and \
-                                        request['ssl_start'] < request['dns_end']:
-                                    request['dns_end'] = request['ssl_start']
-                                if 'ssl_end' in request and request['ssl_end'] < request['dns_end']:
-                                    request['dns_end'] = request['ssl_end']
-                                if request['dns_end'] < request['dns_start']:
-                                    request['dns_end'] = request['dns_start']
+                                # Find the longest DNS time that completed before connect_start
+                                if 'times' in dns_lookups[hostname]:
+                                    elapsed = None
+                                    for dns in dns_lookups[hostname]['times']:
+                                        dns['end'] = min(dns['end'], request['connect_start'])
+                                        if dns['end'] >= dns['start']:
+                                            dns['elapsed'] = dns['end'] - dns['start']
+                                            if elapsed is None or dns['elapsed'] > elapsed:
+                                                elapsed = dns['elapsed']
+                                                request['dns_start'] = dns['start']
+                                                request['dns_end'] = dns['end']
                 # Find the start timestamp if we didn't have one already
                 times = ['dns_start', 'dns_end',
                          'connect_start', 'connect_end',
