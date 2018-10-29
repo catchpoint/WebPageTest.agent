@@ -636,6 +636,7 @@ class OptimizationChecks(object):
 
     def check_cdn_headers(self, headers):
         """Check the given headers against our header list"""
+        matched_cdns = []
         for cdn in self.cdn_headers:
             for header_group in self.cdn_headers[cdn]:
                 all_match = True
@@ -651,8 +652,13 @@ class OptimizationChecks(object):
                             all_match = False
                             break
                 if all_match:
-                    return cdn
-        return None
+                    matched_cdns.append(cdn)
+                    break;
+
+        if not len(matched_cdns):
+            return None
+
+        return ', '.join(matched_cdns)
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
