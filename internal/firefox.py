@@ -233,13 +233,12 @@ class Firefox(DesktopBrowser):
         os.environ["MOZ_LOG"] = ''
         # delete the raw log files
         if self.moz_log is not None:
-            if 'debug' not in self.job or not self.job['debug']:
-                files = sorted(glob.glob(self.moz_log + '*'))
-                for path in files:
-                    try:
-                        os.remove(path)
-                    except Exception:
-                        pass
+            files = sorted(glob.glob(self.moz_log + '*'))
+            for path in files:
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
 
     def run_lighthouse_test(self, task):
         """Stub for lighthouse test"""
@@ -643,12 +642,11 @@ class Firefox(DesktopBrowser):
             logging.debug('Parsing moz logs relative to %s start time', start_time)
             request_timings = parser.process_logs(task['moz_log'], start_time)
             files = sorted(glob.glob(task['moz_log'] + '*'))
-            if 'debug' not in self.job or not self.job['debug']:
-                for path in files:
-                    try:
-                        os.remove(path)
-                    except Exception:
-                        pass
+            for path in files:
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
         # Build the request and page data
         if len(request_timings) and task['current_step'] == 1:
             self.adjust_timings(request_timings)
@@ -1007,8 +1005,8 @@ class Firefox(DesktopBrowser):
         if 'http2_stream_id' in log_request:
             request['http2_stream_id'] = log_request['http2_stream_id']
             request['protocol'] = 'HTTP/2'
-        if 'parent_stream_id' in log_request:
-            request['http2_stream_dependency'] = log_request['parent_stream_id']
+        if 'http2_stream_dependency' in log_request:
+            request['http2_stream_dependency'] = log_request['http2_stream_dependency']
         if 'http2_stream_weight' in log_request:
             request['http2_stream_weight'] = log_request['http2_stream_weight']
 
