@@ -1004,8 +1004,9 @@ class Firefox(DesktopBrowser):
             request['headers']['response'] = list(log_request['response_headers'])
         if 'http2_stream_id' in log_request:
             request['http2_stream_id'] = log_request['http2_stream_id']
+            request['protocol'] = 'HTTP/2'
         if 'parent_stream_id' in log_request:
-            request['parent_stream_id'] = log_request['parent_stream_id']
+            request['http2_stream_dependency'] = log_request['parent_stream_id']
         if 'http2_stream_weight' in log_request:
             request['http2_stream_weight'] = log_request['http2_stream_weight']
 
