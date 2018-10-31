@@ -36,7 +36,7 @@ class FirefoxLogParser(object):
         for val in xrange(0, 100):
             self.int_map['{0:02d}'.format(val)] = float(val)
         self.dns = {}
-        self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}}
+        self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}, 'streams': {}}
         self.logline = re.compile(r'^(?P<timestamp>\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) \w+ - '
                                   r'\[(?P<thread>[^\]]+)\]: (?P<level>\w)/(?P<category>[^ ]+) '
                                   r'(?P<message>[^\r\n]+)')
@@ -65,6 +65,17 @@ class FirefoxLogParser(object):
     def finish_processing(self):
         """Do the post-parse processing"""
         logging.debug('Processing network requests from moz log')
+        # Pass the HTTP/2 stream information to the requests
+        for stream_key in self.http['streams']:
+            stream = self.http['streams'][stream_key]
+            if 'request_id' in stream and stream['request_id'] in self.http['requests']:
+                request = self.http['requests'][stream['request_id']]
+                if 'stream_id' in stream:
+                    request['http2_stream_id'] = stream['stream_id']
+                    if 'parent_stream_id' in stream:
+                        request['http2_stream_dependency'] = stream['parent_stream_id']
+                    if 'weight' in stream:
+                        request['http2_stream_weight'] = stream['weight']
         requests = []
         # Pull out the network requests and sort them
         for request_id in self.http['requests']:
@@ -313,6 +324,52 @@ class FirefoxLogParser(object):
                     self.http['requests'][trans_id]['bytes_in'] += bytes_in
                     self.http['requests'][trans_id]['chunks'].append(\
                         {'ts': msg['timestamp'], 'bytes': bytes_in})
+        elif msg['message'].startswith('Http2Stream::Http2Stream '):
+            match = re.search(r'^Http2Stream::Http2Stream '
+                              r'(?P<stream>[\w\d]+) '
+                              r'trans=(?P<id>[\w\d]+) ', msg['message'])
+            if match:
+                stream = match.groupdict().get('stream')
+                trans_id = match.groupdict().get('id')
+                if stream not in self.http['streams']:
+                    self.http['streams'][stream] = {}
+                if 'trans_id' not in self.http['streams'][stream]:
+                    self.http['streams'][stream]['request_id'] = trans_id
+        elif msg['message'].startswith('Http2Session::RegisterStreamID '):
+            match = re.search(r'^Http2Session::RegisterStreamID '
+                              r'session=[\w\d]+ '
+                              r'stream=(?P<stream>[\w\d]+) '
+                              r'id=(?P<id>0x[\w\d]+) ', msg['message'])
+            if match:
+                stream = match.groupdict().get('stream')
+                stream_id = int(match.groupdict().get('id'), 16)
+                if stream in self.http['streams']:
+                    self.http['streams'][stream]['stream_id'] = stream_id
+        elif msg['message'].startswith('Http2Stream::UpdatePriorityDependency '):
+            match = re.search(r'^Http2Stream::UpdatePriorityDependency '
+                              r'(?P<stream>[\w\d]+) '
+                              r'depends on stream (?P<parent>0x[\w\d]+) ', msg['message'])
+            if match:
+                stream = match.groupdict().get('stream')
+                parent_id = int(match.groupdict().get('parent'), 16)
+                if stream in self.http['streams']:
+                    self.http['streams'][stream]['parent_stream_id'] = parent_id
+        elif msg['message'].startswith('Http2Stream '):
+            match = re.search(r'^Http2Stream '
+                              r'(?P<stream>[\w\d]+) '
+                              r'Generating [\d]+ bytes of HEADERS for '
+                              r'stream (?P<id>0x[\w\d]+) '
+                              r'with priority weight (?P<weight>[\d]+) '
+                              r'dep (?P<parent>0x[\w\d]+) ', msg['message'])
+            if match:
+                stream = match.groupdict().get('stream')
+                stream_id = int(match.groupdict().get('id'), 16)
+                weight = int(match.groupdict().get('weight'), 10)
+                parent_id = int(match.groupdict().get('parent'), 16)
+                if stream in self.http['streams']:
+                    self.http['streams'][stream]['stream_id'] = stream_id
+                    self.http['streams'][stream]['weight'] = weight
+                    self.http['streams'][stream]['parent_stream_id'] = parent_id
         elif 'current_socket_transaction' in self.http and \
                 msg['message'].startswith('nsHttpTransaction::ParseLine '):
             trans_id = self.http['current_socket_transaction']
