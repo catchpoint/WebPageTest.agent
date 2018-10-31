@@ -148,7 +148,7 @@ class FirefoxLogParser(object):
                         thread = line[34:offset]
                         separator = thread.find(':')
                         if separator >= 0:
-                            thread = thread[separator + 1:]
+                            thread = thread[separator + 1:].strip()
                         msg['thread'] = thread
                         msg['level'] = line[offset + 3:offset + 4]
                         msg_start = line.find(' ', offset + 5)
