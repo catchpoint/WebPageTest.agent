@@ -233,12 +233,13 @@ class Firefox(DesktopBrowser):
         os.environ["MOZ_LOG"] = ''
         # delete the raw log files
         if self.moz_log is not None:
-            files = sorted(glob.glob(self.moz_log + '*'))
-            for path in files:
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
+            if 'debug' not in self.job or not self.job['debug']:
+                files = sorted(glob.glob(self.moz_log + '*'))
+                for path in files:
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
 
     def run_lighthouse_test(self, task):
         """Stub for lighthouse test"""
@@ -642,11 +643,12 @@ class Firefox(DesktopBrowser):
             logging.debug('Parsing moz logs relative to %s start time', start_time)
             request_timings = parser.process_logs(task['moz_log'], start_time)
             files = sorted(glob.glob(task['moz_log'] + '*'))
-            for path in files:
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
+            if 'debug' not in self.job or not self.job['debug']:
+                for path in files:
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
         # Build the request and page data
         if len(request_timings) and task['current_step'] == 1:
             self.adjust_timings(request_timings)
