@@ -326,7 +326,6 @@ class Adb(object):
         # Clean up some system apps that collect cruft
         self.shell(['pm', 'clear', 'com.android.providers.downloads'])
         self.shell(['pm', 'clear', 'com.google.android.googlequicksearchbox'])
-        self.shell(['pm', 'clear', 'com.google.android.gms'])
         self.shell(['pm', 'clear', 'com.google.android.youtube'])
         self.shell(['pm', 'clear', 'com.motorola.motocare'])
         # in case busybox is installed, try a manual fstrim
