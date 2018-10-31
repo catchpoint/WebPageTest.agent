@@ -1002,6 +1002,12 @@ class Firefox(DesktopBrowser):
             request['headers']['request'] = list(log_request['request_headers'])
         if 'response_headers' in log_request:
             request['headers']['response'] = list(log_request['response_headers'])
+        if 'http2_stream_id' in log_request:
+            request['http2_stream_id'] = log_request['http2_stream_id']
+        if 'parent_stream_id' in log_request:
+            request['parent_stream_id'] = log_request['parent_stream_id']
+        if 'http2_stream_weight' in log_request:
+            request['http2_stream_weight'] = log_request['http2_stream_weight']
 
     def calculate_page_stats(self, requests):
         """Calculate the page-level stats"""
