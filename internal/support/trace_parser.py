@@ -218,6 +218,10 @@ class Trace():
             if 'name' in trace_event and trace_event['name'].find('navigationStart') >= 0:
                 if self.start_time is None or trace_event['ts'] < self.start_time:
                     self.start_time = trace_event['ts']
+            if self.cpu['main_thread'] is None and 'name' in trace_event and \
+                    trace_event['name'] in ['navigationStart', 'fetchStart']:
+                thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
+                self.cpu['main_thread'] = thread
         if cat == 'netlog' or cat.find('netlog') >= 0:
             self.ProcessNetlogEvent(trace_event)
         elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
@@ -239,7 +243,7 @@ class Trace():
             if 'url' in trace_event['args']['data'] and \
                     trace_event['args']['data']['url'].startswith('http://127.0.0.1:8888'):
                 self.ignore_threads[thread] = True
-            if self.cpu['main_thread'] is None or 'isMainFrame' in trace_event['args']['data']:
+            if self.cpu['main_thread'] is None and 'isMainFrame' in trace_event['args']['data']:
                 if ('isMainFrame' in trace_event['args']['data'] and \
                      trace_event['args']['data']['isMainFrame']) or \
                    (trace_event['name'] == 'ResourceSendRequest' and \
