@@ -48,7 +48,7 @@ class Trace():
         self.interactive_end = None
         self.start_time = None
         self.end_time = None
-        self.cpu = {'main_thread': None}
+        self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': []}
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
@@ -108,7 +108,7 @@ class Trace():
         self.__init__()
         logging.debug("Loading trace: %s", trace)
         try:
-            file_name, ext = os.path.splitext(trace)
+            _, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
                 f = gzip.open(trace, 'rb')
             else:
@@ -137,7 +137,7 @@ class Trace():
         events = None
         f = None
         try:
-            file_name, ext = os.path.splitext(timeline)
+            _, ext = os.path.splitext(timeline)
             if ext.lower() == '.gz':
                 f = gzip.open(timeline, 'rb')
             else:
@@ -175,6 +175,7 @@ class Trace():
         if cat == 'toplevel' or cat == 'ipc,toplevel':
             return
         if cat == 'devtools.timeline' or \
+                cat == '__metadata' or \
                 cat.find('devtools.timeline') >= 0 or \
                 cat.find('blink.feature_usage') >= 0 or \
                 cat.find('blink.user_timing') >= 0 or \
@@ -222,6 +223,14 @@ class Trace():
                     trace_event['name'] in ['navigationStart', 'fetchStart']:
                 thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
                 self.cpu['main_thread'] = thread
+                if thread not in self.cpu['main_threads']:
+                    self.cpu['main_threads'].append(thread)
+        if cat == '__metadata' and 'name' in trace_event and \
+                trace_event['name'] == 'process_labels' and \
+                'pid' in trace_event and 'args' in trace_event and \
+                'labels' in trace_event['args'] and \
+                trace_event['args']['labels'].startswith('Subframe:'):
+            self.cpu['subframes'].append(str(trace_event['pid']))
         if cat == 'netlog' or cat.find('netlog') >= 0:
             self.ProcessNetlogEvent(trace_event)
         elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
@@ -243,7 +252,7 @@ class Trace():
             if 'url' in trace_event['args']['data'] and \
                     trace_event['args']['data']['url'].startswith('http://127.0.0.1:8888'):
                 self.ignore_threads[thread] = True
-            if self.cpu['main_thread'] is None and 'isMainFrame' in trace_event['args']['data']:
+            if self.cpu['main_thread'] is None or 'isMainFrame' in trace_event['args']['data']:
                 if ('isMainFrame' in trace_event['args']['data'] and \
                      trace_event['args']['data']['isMainFrame']) or \
                    (trace_event['name'] == 'ResourceSendRequest' and \
@@ -253,6 +262,8 @@ class Trace():
                     if self.start_time is None or trace_event['ts'] < self.start_time:
                         self.start_time = trace_event['ts']
                     self.cpu['main_thread'] = thread
+                    if thread not in self.cpu['main_threads']:
+                        self.cpu['main_threads'].append(thread)
                     if 'dur' not in trace_event:
                         trace_event['dur'] = 1
 
@@ -370,6 +381,18 @@ class Trace():
         return e
 
     def ProcessTimelineEvents(self):
+        # Fix the main thread selection to ignore subframes
+        main_thread = None
+        for thread in self.cpu['main_threads']:
+            pid = thread.split(':')[0]
+            if pid in self.cpu['subframes'] and \
+                    self.cpu['main_thread'] is not None and \
+                    self.cpu['main_thread'].startswith(pid):
+                self.cpu['main_thread'] = None
+            if pid not in self.cpu['subframes'] and main_thread is None:
+                main_thread = thread
+        if self.cpu['main_thread'] is None and main_thread is not None:
+            self.cpu['main_thread'] = main_thread
         if len(self.timeline_events) and self.end_time > self.start_time:
             # Figure out how big each slice should be in usecs. Size it to a
             # power of 10 where we have at least 2000 slices
