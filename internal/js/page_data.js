@@ -19,6 +19,7 @@ function addTime(name) {
 addTime("domInteractive");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
+addTime("timeToContentfulPaint");
 addTime("timeToDOMContentFlushed");
 addTime("domComplete");
 addTime("loadEventStart");
