@@ -54,8 +54,8 @@ class Firefox(DesktopBrowser):
         self.requests = {}
         self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
-        os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:5,nsSocketTransport:5'\
-                                'nsHostResolver:5,pipnss:5'
+        os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:1,nsSocketTransport:1'\
+                                'nsHostResolver:1,pipnss:5'
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                         'support', 'Firefox', 'profile')
