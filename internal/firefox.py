@@ -40,6 +40,9 @@ class Firefox(DesktopBrowser):
         self.browser_version = None
         self.main_request_headers = None
         self.log_pos = {}
+        self.log_level = 5
+        if 'browser_info' in job and 'log_level' in job['browser_info']:
+            self.log_level = job['browser_info']['log_level']
         self.page = {}
         self.requests = {}
         self.last_activity = monotonic.monotonic()
@@ -54,8 +57,10 @@ class Firefox(DesktopBrowser):
         self.requests = {}
         self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
-        os.environ["MOZ_LOG"] = 'timestamp,sync,nsHttp:5,nsSocketTransport:5'\
-                                'nsHostResolver:5,pipnss:5'
+        moz_log_env = 'timestamp,sync,nsHttp:{0:d},nsSocketTransport:{0:d}'\
+                      'nsHostResolver:{0:d},pipnss:5'.format(self.log_level)
+        os.environ["MOZ_LOG"] = moz_log_env
+        logging.debug('MOZ_LOG = %s', moz_log_env)
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                         'support', 'Firefox', 'profile')

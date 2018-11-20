@@ -549,7 +549,9 @@ def find_browsers():
             if path is not None and 'Firefox Nightly' not in browsers:
                 firefox_path = os.path.join(path, 'Nightly', 'firefox.exe')
                 if os.path.isfile(firefox_path):
-                    browsers['Firefox Nightly'] = {'exe': firefox_path, 'type': 'Firefox'}
+                    browsers['Firefox Nightly'] = {'exe': firefox_path,
+                                                   'type': 'Firefox',
+                                                   'log_level': 1}
         # Microsoft Edge
         edge = None
         build = get_windows_build()
@@ -644,10 +646,14 @@ def find_browsers():
             browsers['Firefox ESR'] = {'exe': firefox_path, 'type': 'Firefox'}
         nightly_path = '/usr/lib/firefox-trunk/firefox-trunk'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
-            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
+            browsers['Firefox Nightly'] = {'exe': nightly_path,
+                                           'type': 'Firefox',
+                                           'log_level': 1}
         nightly_path = '/usr/bin/firefox-trunk'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
-            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
+            browsers['Firefox Nightly'] = {'exe': nightly_path,
+                                           'type': 'Firefox',
+                                           'log_level': 1}
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
@@ -665,7 +671,9 @@ def find_browsers():
             browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
         nightly_path = '/Applications/FirefoxNightly.app/Contents/MacOS/firefox'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
-            browsers['Firefox Nightly'] = {'exe': nightly_path, 'type': 'Firefox'}
+            browsers['Firefox Nightly'] = {'exe': nightly_path,
+                                           'type': 'Firefox',
+                                           'log_level': 1}
     logging.debug('Detected Browsers:')
     for browser in browsers:
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
