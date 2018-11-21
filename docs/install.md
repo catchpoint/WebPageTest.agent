@@ -55,13 +55,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * ```sudo npm install -g lighthouse```
 
 ## Remote traffic-shaping
-wptagent supports configuring an external FreeBSD network bridge for traffic-shaping.  This is particularly useful for mobile device testing where the devices can be connected to a WiFi access point and the access point is connected through a FreeBSD bridge to get to the network.
-
-i.e. mobile phone <--> WiFi <--> FreeBSD bridge <--> Internet
-
-In this configuration the mobile devices are given static IP addresses and the FreeBSD bridge is pre-configured with 2 dummynet pipes for each IP address (one for inbound and one for outbound traffic).  The root account needs to allow for cert-based ssh access from the test machine (with the cert installed in authorized_keys).
-
-Passing the agent a "--shaper external" command-line flag you give it the IP address of the FreeBSD bridge as well as the pipe numbers for inbound and outbound traffic for the device.  At test time the agent will ssh to the bridge and adjust the settings for the device as needed.
+wptagent supports configuring an external FreeBSD network bridge for traffic-shaping.  This is particularly useful for mobile device testing. For further details, see the [remote traffic shaping documentation](./remote_trafficshaping.md).
 
 ## OS Notes
 ### Linux
