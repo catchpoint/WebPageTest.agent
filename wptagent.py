@@ -551,7 +551,7 @@ def find_browsers():
                 if os.path.isfile(firefox_path):
                     browsers['Firefox Nightly'] = {'exe': firefox_path,
                                                    'type': 'Firefox',
-                                                   'log_level': 1}
+                                                   'log_level': 5}
         # Microsoft Edge
         edge = None
         build = get_windows_build()
@@ -648,12 +648,12 @@ def find_browsers():
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
-                                           'log_level': 1}
+                                           'log_level': 5}
         nightly_path = '/usr/bin/firefox-trunk'
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
-                                           'log_level': 1}
+                                           'log_level': 5}
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
@@ -673,7 +673,7 @@ def find_browsers():
         if 'Firefox Nightly' not in browsers and os.path.isfile(nightly_path):
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
-                                           'log_level': 1}
+                                           'log_level': 5}
     logging.debug('Detected Browsers:')
     for browser in browsers:
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
