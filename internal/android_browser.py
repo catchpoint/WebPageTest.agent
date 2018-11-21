@@ -15,17 +15,19 @@ from .base_browser import BaseBrowser
 
 
 SET_ORANGE = "(function() {" \
-             "var wptDiv = document.createElement('div');" \
+             "var wptDiv = document.getElementById('wptorange');" \
+             "if (!wptDiv) {" \
+             "wptDiv = document.createElement('div');" \
              "wptDiv.id = 'wptorange';" \
              "wptDiv.style.position = 'absolute';" \
              "wptDiv.style.top = '0';" \
              "wptDiv.style.left = '0';" \
-             "wptDiv.style.width = document.body.clientWidth + 'px';" \
-             "wptDiv.style.height = document.body.clientHeight + 'px';" \
+             "wptDiv.style.width = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) + 'px';" \
+             "wptDiv.style.height = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) + 'px';" \
              "wptDiv.style.zIndex = '2147483647';" \
              "wptDiv.style.backgroundColor = '#DE640D';" \
              "document.body.appendChild(wptDiv);" \
-             "})();"
+             "}})();"
 
 
 class AndroidBrowser(BaseBrowser):
