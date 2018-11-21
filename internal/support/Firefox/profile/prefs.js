@@ -10,6 +10,7 @@
  */
 
 user_pref("app.update.enabled", false);
+user_pref("app.update.url", "");
 user_pref("browser.aboutHomeSnippets.updateUrl", "");
 user_pref("browser.bookmarks.restore_default_bookmarks", false);
 user_pref("browser.bookmarks.added_static_root", true);
@@ -53,6 +54,7 @@ user_pref("datareporting.policy.dataSubmissionPolicyAccepted", false);
 user_pref("dom.ipc.plugins.flash.disable-protected-mode", true);
 user_pref("dom.max_chrome_script_run_time", 0);
 user_pref("dom.max_script_run_time", 0);
+user_pref("dom.push.serverURL", "");
 user_pref("dom.webnotifications.enabled", false);
 user_pref("dom.performance.time_to_dom_content_flushed.enabled", true);
 user_pref("dom.performance.time_to_contentful_paint.enabled", true);
@@ -63,6 +65,7 @@ user_pref("extensions.pocket.enabled", false);
 user_pref("extensions.update.enabled", false);
 user_pref("extensions.update.notifyUser", false);
 user_pref("extensions.shownSelectionUI", true);
+user_pref("extensions.systemAddon.update.url", "");
 user_pref("extensions.autoDisableScopes", 14);
 user_pref("extensions.shield-recipe-client.enabled", false);
 user_pref("geo.prompt.testing", true);
