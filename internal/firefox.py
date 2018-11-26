@@ -134,7 +134,10 @@ class Firefox(DesktopBrowser):
         DesktopBrowser.launch_browser(self, command_line)
         try:
             self.marionette = Marionette('localhost', port=2828)
-            self.marionette.start_session(timeout=self.task['time_limit'])
+            capabilities = None
+            if 'ignoreSSL' in job and job['ignoreSSL']:
+                capabilities = {'acceptInsecureCerts': True}
+            self.marionette.start_session(timeout=self.task['time_limit'], capabilities=capabilities)
             self.configure_prefs()
             logging.debug('Installing extension')
             self.addons = Addons(self.marionette)
