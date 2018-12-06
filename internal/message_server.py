@@ -1,7 +1,7 @@
 # Copyright 2017 Google Inc. All rights reserved.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
-import Queue
+from multiprocessing import JoinableQueue
 import logging
 import threading
 import time
@@ -101,7 +101,7 @@ class MessageServer(object):
         global MESSAGE_SERVER
         MESSAGE_SERVER = self
         self.thread = None
-        self.messages = Queue.Queue()
+        self.messages = JoinableQueue()
         self.config = None
         self.__is_started = threading.Event()
 
