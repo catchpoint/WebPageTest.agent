@@ -1,4 +1,7 @@
 # wptagent
+
+[![travis](https://img.shields.io/travis/WPO-Foundation/wptagent.svg?label=travis)](http://travis-ci.org/WPO-Foundation/wptagent)
+
 Cross-platform WebPageTest agent
 
 ## Supported Platforms/Browsers
@@ -147,4 +150,3 @@ run the agent in a docker container.
     * waitForJSDone (change semantics to console log message)
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
-
