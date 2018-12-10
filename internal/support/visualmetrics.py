@@ -564,7 +564,7 @@ def find_render_start(directory, orange_file, gray_file):
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(
                     width, height, left, top)
                 for i in xrange(1, count):
-                    if frames_match(first, files[i], 10, 500, crop, mask):
+                    if frames_match(first, files[i], 10, 0, crop, mask):
                         logging.debug('Removing pre-render frame %s', files[i])
                         os.remove(files[i])
                     elif orange_file is not None and is_color_frame(files[i], orange_file):
