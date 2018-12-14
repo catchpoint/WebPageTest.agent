@@ -231,6 +231,7 @@ class DevToolsParser(object):
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
                                 # Chrome reports some phantom duplicate requests
+                                '''
                                 if has_request_headers and \
                                         'requestHeaders' not in params['response']:
                                     url = request['url']
@@ -238,6 +239,7 @@ class DevToolsParser(object):
                                         self.request_ids[url] = []
                                     self.request_ids[url].append(request_id)
                                     request['fromNet'] = False
+                                '''
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
                                 if 'firstByteTime' not in request:
@@ -783,6 +785,15 @@ class DevToolsParser(object):
                         request['objectSize'] = int(entry['bytes_in'])
                     if 'certificates' in entry:
                         request['certificates'] = entry['certificates']
+                    if 'server_address' in entry:
+                        parts = entry['server_address'].rsplit(':', 1)
+                        if len(parts) == 2:
+                            request['ip_addr'] = parts[0]
+                            request['server_port'] = parts[1]
+                    if 'client_address' in entry:
+                        parts = entry['client_address'].rsplit(':', 1)
+                        if len(parts) == 2:
+                            request['client_port'] = parts[1]
                     request['bytesOut'] = 0
                     request['request_id'] = request['id']
                     request['raw_id'] = request['id']
