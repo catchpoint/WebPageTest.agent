@@ -639,6 +639,33 @@ class Trace():
                 request = self.netlog['url_request'][request_id]
                 request['fromNet'] = bool('start' in request)
                 if 'url' in request and request['url'][:16] != 'http://127.0.0.1':
+                    # Match orphaned request streams with their h2 sessions
+                    if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
+                        request_host = urlparse.urlparse(request['url']).hostname
+                        for h2_session_id in self.netlog['h2_session']:
+                            h2_session = self.netlog['h2_session'][h2_session_id]
+                            if 'host' in h2_session:
+                                session_host = h2_session['host'].split(':')[0]
+                                if 'stream' in h2_session and \
+                                        request['stream_id'] in h2_session['stream'] and \
+                                        session_host == request_host and \
+                                        'request_headers' in request and \
+                                        'request_headers' in h2_session['stream'][request['stream_id']]:
+                                    # See if the path header matches
+                                    stream = h2_session['stream'][request['stream_id']]
+                                    request_path = None
+                                    stream_path = None
+                                    for header in request['request_headers']:
+                                        if header.startswith(':path:'):
+                                            request_path = header
+                                            break
+                                    for header in stream['request_headers']:
+                                        if header.startswith(':path:'):
+                                            stream_path = header
+                                            break
+                                    if request_path is not None and request_path == stream_path:
+                                        request['h2_session'] = h2_session_id
+                                        break
                     # Copy any http/2 info over
                     if 'h2_session' in self.netlog and \
                             'h2_session' in request and \
