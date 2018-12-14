@@ -671,6 +671,8 @@ class Trace():
                             'h2_session' in request and \
                             request['h2_session'] in self.netlog['h2_session']:
                         h2_session = self.netlog['h2_session'][request['h2_session']]
+                        if 'socket' not in request and 'socket' in h2_session:
+                            request['socket'] = h2_session['socket']
                         if 'stream_id' in request and \
                                 'stream' in h2_session and \
                                 request['stream_id'] in h2_session['stream']:
