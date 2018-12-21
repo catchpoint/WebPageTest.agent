@@ -90,9 +90,6 @@ class DevTools(object):
             self.all_bodies = True
         if 'htmlbody' in self.job and self.job['htmlbody']:
             self.html_body = True
-        if self.html_body or self.all_bodies:
-            self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
-                                                   zipfile.ZIP_DEFLATED)
 
     def start_navigating(self):
         """Indicate that we are about to start a known-navigation"""
@@ -214,6 +211,9 @@ class DevTools(object):
     def start_recording(self):
         """Start capturing dev tools, timeline and trace data"""
         self.prepare()
+        if (self.bodies_zip_file is None and (self.html_body or self.all_bodies)):
+            self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
+                                                   zipfile.ZIP_DEFLATED)
         self.recording = True
         if self.use_devtools_video and self.job['video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.jpg', png=False)
@@ -458,7 +458,7 @@ class DevTools(object):
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request:
                 content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                                                    'Content-Length')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
@@ -466,7 +466,7 @@ class DevTools(object):
                 else:
                     content_length = 0
                 logging.debug('Getting body for %s (%d) - %s', request_id,
-                              content_length, request['url'])
+                            content_length, request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')
                 if not os.path.isdir(path):
                     os.makedirs(path)
@@ -476,13 +476,14 @@ class DevTools(object):
                     # or if we are saving full bodies
                     need_body = True
                     content_type = self.get_header_value(request['response_headers'],
-                                                         'Content-Type')
+                                                        'Content-Type')
                     is_text = False
                     if content_type is not None:
                         content_type = content_type.lower()
                         if content_type.startswith('text/') or \
                                 content_type.find('javascript') >= 0 or \
-                                content_type.find('json') >= 0:
+                                content_type.find('json') >= 0 or \
+                                content_type.find('/svg+xml'):
                             is_text = True
                         # Ignore video files over 10MB
                         if content_type[:6] == 'video/' and content_length > 10000000:
@@ -495,8 +496,8 @@ class DevTools(object):
                         if request_id in self.requests and 'targetId' in self.requests[request_id]:
                             target_id = self.requests[request_id]['targetId']
                         response = self.send_command("Network.getResponseBody",
-                                                     {'requestId': request_id}, wait=True,
-                                                     target_id=target_id)
+                                                    {'requestId': request_id}, wait=True,
+                                                    target_id=target_id)
                         if response is None:
                             self.body_fail_count += 1
                             logging.warning('No response to body request for request %s',
