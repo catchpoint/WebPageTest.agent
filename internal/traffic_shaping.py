@@ -430,6 +430,10 @@ class NetEm(object):
 
     def remove(self):
         """Uninstall traffic-shaping"""
+        if self.interface:
+            subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
+                             'ingress'])
+            subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
         return True
 
     def reset(self):
