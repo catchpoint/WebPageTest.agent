@@ -1010,7 +1010,6 @@ class WebPageTest(object):
         logging.info('Uploading result')
         cpu_pct = None
         self.update_browser_viewport(task)
-        self.get_bodies(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:
