@@ -62,7 +62,7 @@ class WebPageTest(object):
                     match = re.search(r'^00[\-:]50[\-:]56[\-:]00[\-:]'
                                       r'([\da-fA-F]+)[\-:]([\da-fA-F]+)$', addr.address)
                     if match:
-                        server = match.group(1).strip('0')
+                        server = match.group(1)
                         machine = match.group(2)
                         hostname = 'VM{0}-{1}'.format(server, machine)
         self.pc_name = hostname if options.name is None else options.name
