@@ -611,6 +611,23 @@ class DevToolsParser(object):
                         break
         return value
 
+    def mergeHeaders(self, dest, headers):
+        """Merge the headers list into the dest array of existing headers"""
+        for header in headers:
+            key_len = header.find(':', 1)
+            if key_len >= 0:
+                key = header[:key_len]
+                dupe = False
+                for dest_header in dest:
+                    key_len = dest_header.find(':', 1)
+                    if key_len >= 0:
+                        dest_key = dest_header[:key_len]
+                        if dest_key == key:
+                            dupe = True
+                            break
+                if not dupe:
+                    dest.append(header)
+
     def process_netlog_requests(self):
         """Merge the data from the netlog requests file"""
         page_data = self.result['pageData']
@@ -676,11 +693,11 @@ class DevToolsParser(object):
                             if 'request_headers' in entry:
                                 if 'headers' not in request:
                                     request['headers'] = {'request': [], 'response': []}
-                                request['headers']['request'] = list(entry['request_headers'])
+                                self.mergeHeaders(request['headers']['request'], entry['request_headers'])
                             if 'response_headers' in entry:
                                 if 'headers' not in request:
                                     request['headers'] = {'request': [], 'response': []}
-                                request['headers']['response'] = list(entry['response_headers'])
+                                self.mergeHeaders(request['headers']['response'], entry['response_headers'])
                                 for header in entry['response_headers']:
                                     matches = re.search(r'^HTTP\/1[^\s]+ (\d+)', header)
                                     if matches:
