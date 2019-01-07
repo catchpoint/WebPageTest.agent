@@ -90,6 +90,19 @@ class DevtoolsBrowser(object):
                     'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
+                self.devtools.send_command("Emulation.setTouchEmulationEnabled",
+                                           {"enabled": True,
+                                            "configuration": "mobile"},
+                                           wait=True)
+                self.devtools.send_command("Emulation.setScrollbarsHidden",
+                                           {"hidden": True},
+                                           wait=True)
+                if not self.options.throttle and 'throttle_cpu' in self.job:
+                    logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+                    if self.job['throttle_cpu'] > 1:
+                        self.devtools.send_command("Emulation.setCPUThrottlingRate",
+                                                   {"rate": self.job['throttle_cpu']},
+                                                   wait=True)
                 width = int(re.search(r'\d+', str(self.job['width'])).group())
                 height = int(re.search(r'\d+', str(self.job['height'])).group())
                 self.devtools.send_command("Emulation.setDeviceMetricsOverride",
@@ -102,20 +115,9 @@ class DevtoolsBrowser(object):
                                             "positionY": 0,
                                             "deviceScaleFactor": float(self.job['dpr']),
                                             "mobile": True,
-                                            "fitWindow": False,
                                             "screenOrientation":
                                                 {"angle": 0, "type": "portraitPrimary"}},
                                            wait=True)
-                self.devtools.send_command("Emulation.setTouchEmulationEnabled",
-                                           {"enabled": True,
-                                            "configuration": "mobile"},
-                                           wait=True)
-                if not self.options.throttle and 'throttle_cpu' in self.job:
-                    logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
-                    if self.job['throttle_cpu'] > 1:
-                        self.devtools.send_command("Emulation.setCPUThrottlingRate",
-                                                   {"rate": self.job['throttle_cpu']},
-                                                   wait=True)
 
             # Location
             if 'lat' in self.job and 'lng' in self.job:
