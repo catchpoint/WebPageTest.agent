@@ -673,6 +673,36 @@ class DevToolsParser(object):
                                                                entry['start']))
                             if 'pushed' in entry and entry['pushed']:
                                 request['was_pushed'] = 1
+                            if 'request_headers' in entry:
+                                if 'headers' not in request:
+                                    request['headers'] = {'request': [], 'response': []}
+                                request['headers']['request'] = list(entry['request_headers'])
+                            if 'response_headers' in entry:
+                                if 'headers' not in request:
+                                    request['headers'] = {'request': [], 'response': []}
+                                request['headers']['response'] = list(entry['response_headers'])
+                                for header in entry['response_headers']:
+                                    matches = re.search(r'^HTTP\/1[^\s]+ (\d+)', header)
+                                    if matches:
+                                        request['responseCode'] = int(matches.group(1))
+                                    matches = re.search(r'^:status: (\d+)', header)
+                                    if matches:
+                                        request['responseCode'] = int(matches.group(1))
+                                    matches = re.search(r'^content-type: (.+)', header, re.IGNORECASE)
+                                    if matches:
+                                        request['contentType'] = matches.group(1).split(';')[0]
+                                    matches = re.search(r'^cache-control: (.+)', header, re.IGNORECASE)
+                                    if matches:
+                                        request['cacheControl'] = matches.group(1)
+                                    matches = re.search(r'^content-encoding: (.+)', header, re.IGNORECASE)
+                                    if matches:
+                                        request['contentEncoding'] = matches.group(1)
+                                    matches = re.search(r'^expires: (.+)', header, re.IGNORECASE)
+                                    if matches:
+                                        request['expires'] = matches.group(1)
+                            if 'bytes_in' in entry:
+                                request['bytesIn'] = int(entry['bytes_in'])
+                                request['objectSize'] = int(entry['bytes_in'])
                             if 'server_address' in entry:
                                 parts = entry['server_address'].rsplit(':', 1)
                                 if len(parts) == 2:
