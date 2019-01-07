@@ -694,7 +694,7 @@ class Trace():
                             if stream['bytes_in'] > request['bytes_in']:
                                 request['bytes_in'] = stream['bytes_in']
                                 request['chunks'] = stream['chunks']
-                    if 'phantom' not in request:
+                    if 'phantom' not in request and 'request_headers' in request:
                         requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
