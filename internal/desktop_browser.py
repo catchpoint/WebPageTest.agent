@@ -51,6 +51,7 @@ class DesktopBrowser(BaseBrowser):
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump = None
         self.ffmpeg = None
+        self.video_capture_running = False
         self.video_processing = None
         self.pcap_file = None
         self.pcap_thread = None
@@ -465,6 +466,7 @@ class DesktopBrowser(BaseBrowser):
                                 started = True
                         if not started:
                             time.sleep(0.1)
+                    self.video_capture_running = True
                 except Exception:
                     pass
 
@@ -488,6 +490,7 @@ class DesktopBrowser(BaseBrowser):
                 kill_all('tcpdump', False)
         if self.ffmpeg is not None:
             logging.debug('Stopping video capture')
+            self.video_capture_running = False
             if platform.system() == 'Windows':
                 os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
             else:
@@ -689,6 +692,20 @@ class DesktopBrowser(BaseBrowser):
             last_time = now
             last_bytes = bytes_in
             self.usage_queue.put(snapshot)
+            # if we are capturing video, make sure it doesn't get too big
+            if self.ffmpeg is not None and \
+                    self.video_capture_running and \
+                    'video_file' in self.task and \
+                    os.path.isfile(self.task['video_file']):
+                video_size = os.path.getsize(self.task['video_file'])
+                logging.debug("Video file size: %d", video_size)
+                if video_size > 50000000:
+                    logging.debug('Stopping video capture - File is too big: %d', video_size)
+                    self.video_capture_running = False
+                    if platform.system() == 'Windows':
+                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+                    else:
+                        self.ffmpeg.terminate()
 
     def enable_cpu_throttling(self, command_line):
         """Prepare the CPU throttling if necessary"""
