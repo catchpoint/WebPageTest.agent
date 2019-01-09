@@ -458,11 +458,14 @@ class DesktopBrowser(BaseBrowser):
                     # Wait up to 5 seconds for something to be captured
                     end_time = monotonic.monotonic() + 5
                     started = False
+                    initial_size = None
                     while not started and monotonic.monotonic() < end_time:
                         if os.path.isfile(task['video_file']):
                             video_size = os.path.getsize(task['video_file'])
+                            if initial_size == None:
+                                initial_size = video_size
                             logging.debug("Video file size: %d", video_size)
-                            if video_size > 10000:
+                            if video_size > initial_size or video_size > 10000:
                                 started = True
                         if not started:
                             time.sleep(0.1)
