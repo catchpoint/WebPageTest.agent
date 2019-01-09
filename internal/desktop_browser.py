@@ -698,7 +698,6 @@ class DesktopBrowser(BaseBrowser):
                     'video_file' in self.task and \
                     os.path.isfile(self.task['video_file']):
                 video_size = os.path.getsize(self.task['video_file'])
-                logging.debug("Video file size: %d", video_size)
                 if video_size > 50000000:
                     logging.debug('Stopping video capture - File is too big: %d', video_size)
                     self.video_capture_running = False
