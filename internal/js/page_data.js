@@ -20,11 +20,16 @@ addTime("domInteractive");
 addTime("domContentLoadedEventStart");
 addTime("domContentLoadedEventEnd");
 addTime("timeToContentfulPaint");
-addTime("timeToDOMContentFlushed");
 addTime("domComplete");
 addTime("loadEventStart");
 addTime("loadEventEnd");
 addTime("timeToFirstInteractive");
+try {
+    if (window.performance.timing['timeToDOMContentFlushed']) {
+        pageData["domContentFlushed"] = window.performance.timing.timeToDOMContentFlushed - window.performance.timing.fetchStart;
+    }
+} catch(e) {
+}
 pageData["firstPaint"] = 0;
 // Try the standardized paint timing api
 try {
