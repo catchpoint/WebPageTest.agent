@@ -896,6 +896,7 @@ class DevTools(object):
                     headers['Host'] = self.task['overrideHosts'][host]
                     headers['x-Host'] = host
                     params['headers'] = headers
+                    params['url'] = url.replace(host, self.task['overrideHosts'][host], 1)
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
