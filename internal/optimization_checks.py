@@ -470,7 +470,7 @@ class OptimizationChecks(object):
             try:
                 from dns import resolver, reversename
                 dns_resolver = resolver.Resolver()
-                dns_resolver.timeout = 30
+                dns_resolver.timeout = 5
                 # reverse-lookup the edge server
                 try:
                     addresses = dns_resolver.query(domain)
