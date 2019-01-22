@@ -211,6 +211,7 @@ class OptimizationChecks(object):
                          {'Server': 'ECAcc'},
                          {'Server': 'ECD'}],
             'Fastly': [{'X-Served-By': 'cache-', 'X-Cache': ''}],
+            'Fly': [{'Server': 'Fly.io'}],
             'GoCache': [{'Server': 'gocache'}],
             'Google': [{'Server': 'sffe'},
                        {'Server': 'gws'},
