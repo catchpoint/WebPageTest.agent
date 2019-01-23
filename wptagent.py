@@ -701,8 +701,6 @@ def upgrade_pip_modules():
             separator = line.find('==')
             if separator > 0:
                 package = line[:separator]
-                subprocess.call([sys.executable, '-m', 'pip', 'install',
-                                 '--upgrade', package])
                 run_elevated(sys.executable, '-m pip install --upgrade {0}'.format(package))
     except Exception:
         pass
