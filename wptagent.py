@@ -696,9 +696,9 @@ def upgrade_pip_modules():
         subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
         run_elevated(sys.executable, '-m pip install --upgrade pip')
         out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
-                                       '--outdated'])
+                                       '--outdated', '--format', 'freeze'])
         for line in out.splitlines():
-            separator = line.find(' ')
+            separator = line.find('==')
             if separator > 0:
                 package = line[:separator]
                 subprocess.call([sys.executable, '-m', 'pip', 'install',
