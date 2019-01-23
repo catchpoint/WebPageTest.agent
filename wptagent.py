@@ -851,7 +851,10 @@ def main():
         logging.getLogger().addHandler(err_log)
 
     if options.ec2 or options.gce:
-        upgrade_pip_modules()
+        # Pip 19.0 was released on 23 January and seems to be causing issues.
+        # Skip upgrades until this is resolved.
+        # Ticket: https://github.com/pypa/pip/issues/6169
+        # upgrade_pip_modules()
     elif platform.system() == "Windows":
         # recovery for a busted Windows install
         try:
