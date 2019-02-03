@@ -250,8 +250,12 @@ class DevTools(object):
         if 'overrideHosts' in self.task and self.task['overrideHosts']:
             patterns = []
             for host in self.task['overrideHosts']:
-                patterns.append({'urlPattern': 'http://{0}*'.format(host)})
-                patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+                if host == '*':
+                    patterns.append({'urlPattern': 'http://*'})
+                    patterns.append({'urlPattern': 'https://*'})
+                else:
+                    patterns.append({'urlPattern': 'http://{0}*'.format(host)})
+                    patterns.append({'urlPattern': 'https://{0}*'.format(host)})
             self.send_command('Network.setRequestInterception', {'patterns': patterns})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
@@ -897,6 +901,15 @@ class DevTools(object):
                     headers['x-Host'] = host
                     params['headers'] = headers
                     params['url'] = url.replace(host, self.task['overrideHosts'][host], 1)
+                elif '*' in self.task['overrideHosts']:
+                    # Overriding * to * is just a passthrough, don't actually modify anything
+                    # unless * is being mapped to a specific host.
+                    if self.task['overrideHosts']['*'] != '*':
+                        headers = msg['params']['request']['headers']
+                        headers['Host'] = self.task['overrideHosts']['*']
+                        headers['x-Host'] = host
+                        params['headers'] = headers
+                        params['url'] = url.replace(host, self.task['overrideHosts']['*'], 1)
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
