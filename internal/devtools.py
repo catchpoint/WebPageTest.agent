@@ -895,21 +895,21 @@ class DevTools(object):
                 url = msg['params']['request']['url']
                 parts = urlsplit(url).netloc.split(':')
                 host = parts[0]
-                if host in self.task['overrideHosts']:
-                    headers = msg['params']['request']['headers']
-                    headers['Host'] = self.task['overrideHosts'][host]
-                    headers['x-Host'] = host
-                    params['headers'] = headers
-                    params['url'] = url.replace(host, self.task['overrideHosts'][host], 1)
-                elif '*' in self.task['overrideHosts']:
-                    # Overriding * to * is just a passthrough, don't actually modify anything
-                    # unless * is being mapped to a specific host.
-                    if self.task['overrideHosts']['*'] != '*':
-                        headers = msg['params']['request']['headers']
-                        headers['Host'] = self.task['overrideHosts']['*']
-                        headers['x-Host'] = host
-                        params['headers'] = headers
-                        params['url'] = url.replace(host, self.task['overrideHosts']['*'], 1)
+                # go through the override list and find the fist match (supporting wildcards)
+                try:
+                    from fnmatch import fnmatch
+                    for host_match in self.task['overrideHosts']:
+                        if fnmatch(host, host_match):
+                            # Overriding to * is just a passthrough, don't actually modify anything
+                            if self.task['overrideHosts'][host_match] != '*':
+                                headers = msg['params']['request']['headers']
+                                headers['Host'] = self.task['overrideHosts'][host_match]
+                                headers['x-Host'] = host
+                                params['headers'] = headers
+                                params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
+                            break
+                except Exception:
+                    pass
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
