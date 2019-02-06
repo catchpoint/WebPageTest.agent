@@ -895,7 +895,7 @@ class DevTools(object):
                 url = msg['params']['request']['url']
                 parts = urlsplit(url).netloc.split(':')
                 host = parts[0]
-                # go through the override list and find the fist match (supporting wildcards)
+                # go through the override list and find the first match (supporting wildcards)
                 try:
                     from fnmatch import fnmatch
                     for host_match in self.task['overrideHosts']:
