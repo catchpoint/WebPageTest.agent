@@ -7,8 +7,11 @@ import os
 
 class BaseBrowser(object):
     """Browser base"""
+
     def __init__(self):
-        self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+        self.support_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), "support"
+        )
 
     def execute_js(self, script):
         """Stub to be overridden"""

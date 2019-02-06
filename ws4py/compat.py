@@ -16,6 +16,7 @@ import sys
 if sys.version_info >= (3, 0):
     py3k = True
     from urllib.parse import urlsplit
+
     range = range
     unicode = str
     basestring = (bytes, str)
@@ -31,9 +32,12 @@ if sys.version_info >= (3, 0):
         if isinstance(c, int):
             return c
         return _ord(c)
+
+
 else:
     py3k = False
     from urlparse import urlsplit
+
     range = xrange
     unicode = unicode
     basestring = basestring
