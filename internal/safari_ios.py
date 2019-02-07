@@ -1006,7 +1006,18 @@ class iWptBrowser(BaseBrowser):
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
-            pass
+            if 'target' in command and 'value' in command:
+                url = command['target'].strip()
+                cookie = command['value']
+                pos = cookie.find(';')
+                if pos > 0:
+                    cookie = cookie[:pos]
+                pos = cookie.find('=')
+                if pos > 0:
+                    name = cookie[:pos].strip()
+                    value = cookie[pos + 1:].strip()
+                    if len(name) and len(value) and len(url):
+                        self.ios.set_cookie(url, name, value)
         elif command['command'] == 'clearcache':
             self.ios.clear_cache()
         elif command['command'] == 'addheader':
