@@ -40,6 +40,7 @@ class DevToolsParser(object):
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
         self.request_ids = {}
+        self.script_ids = {}
 
     def process(self):
         """Main entry point for processing"""
@@ -134,6 +135,22 @@ class DevToolsParser(object):
                         original_id = request_id
                         if request_id in id_map:
                             request_id += '-' + str(id_map[request_id])
+                    # Pull out the script ID's
+                    if method == 'Debugger.scriptParsed' and 'scriptId' in params:
+                        script_id = params['scriptId']
+                        script_url = None
+                        if script_id not in self.script_ids:
+                            if 'stackTrace' in params and 'callFrames' in params['stackTrace']:
+                                for frame in params['stackTrace']['callFrames']:
+                                    if 'url' in frame and frame['url']:
+                                        if script_url is None:
+                                            script_url = frame['url']
+                                        if 'scriptId' in frame and frame['scriptId'] and frame['scriptId'] not in self.script_ids:
+                                            self.script_ids[frame['scriptId']] = script_url
+                            if script_url is None and 'url' in params and params['url']:
+                                script_url = params['url']
+                            if script_url is not None:
+                                self.script_ids[script_id] = script_url
                     # Handle the events without timestamps (which will be sorted to the end)
                     if method == 'Page.frameNavigated' and 'frame' in params and \
                             'id' in params['frame'] and 'parentId' not in params['frame']:
@@ -504,15 +521,19 @@ class DevToolsParser(object):
                     elif 'stack' in raw_request['initiator'] and \
                             'callFrames' in raw_request['initiator']['stack'] and \
                             raw_request['initiator']['stack']['callFrames']:
-                        frame = raw_request['initiator']['stack']['callFrames'][0]
-                        if 'url' in frame and frame['url']:
-                            request['initiator'] = frame['url']
-                            if 'lineNumber' in frame:
-                                request['initiator_line'] = frame['lineNumber']
-                            if 'columnNumber' in frame:
-                                request['initiator_column'] = frame['columnNumber']
-                            if 'functionName' in frame and frame['functionName']:
-                                request['initiator_function'] = frame['functionName']
+                        for frame in raw_request['initiator']['stack']['callFrames']:
+                            if 'url' in frame and frame['url']:
+                                request['initiator'] = frame['url']
+                                if 'lineNumber' in frame:
+                                    request['initiator_line'] = frame['lineNumber']
+                                if 'columnNumber' in frame:
+                                    request['initiator_column'] = frame['columnNumber']
+                                if 'functionName' in frame and frame['functionName']:
+                                    request['initiator_function'] = frame['functionName']
+                                break
+                            elif 'scriptId' in frame and frame['scriptId'] and frame['scriptId'] in self.script_ids:
+                                request['initiator'] = self.script_ids[frame['scriptId']]
+                                break
                 if 'initialPriority' in raw_request:
                     request['priority'] = raw_request['initialPriority']
                     request['initial_priority'] = raw_request['initialPriority']

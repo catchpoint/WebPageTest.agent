@@ -228,6 +228,7 @@ class DevTools(object):
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
+        self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('Network.enable', {})
         if self.headers:
@@ -320,6 +321,7 @@ class DevTools(object):
         """Do any quick work to stop things that are capturing data"""
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
 
     def stop_recording(self):
