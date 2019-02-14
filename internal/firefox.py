@@ -148,6 +148,8 @@ class Firefox(DesktopBrowser):
             self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
             if 'browserVersion' in self.marionette.session_capabilities:
                 self.browser_version = self.marionette.session_capabilities['browserVersion']
+            if 'buildID' in self.marionette.session_capabilities:
+                self.fx_buildID = self.marionette.session_capabilities['buildID']
             self.marionette.navigate(self.start_page)
             time.sleep(0.5)
             self.wait_for_extension()
