@@ -150,7 +150,7 @@ class Firefox(DesktopBrowser):
             if 'browserVersion' in self.marionette.session_capabilities:
                 self.browser_version = self.marionette.session_capabilities['browserVersion']
             if 'moz:buildID' in self.marionette.session_capabilities:
-                self.browser_version = self.marionette.session_capabilities['moz:buildID']
+                self.browser_build = self.marionette.session_capabilities['moz:buildID']
             self.marionette.navigate(self.start_page)
             time.sleep(0.5)
             self.wait_for_extension()
