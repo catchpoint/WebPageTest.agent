@@ -38,6 +38,7 @@ class Firefox(DesktopBrowser):
         self.connected = False
         self.start_offset = None
         self.browser_version = None
+        self.browser_build = None
         self.main_request_headers = None
         self.log_pos = {}
         self.log_level = 5
@@ -149,7 +150,7 @@ class Firefox(DesktopBrowser):
             if 'browserVersion' in self.marionette.session_capabilities:
                 self.browser_version = self.marionette.session_capabilities['browserVersion']
             if 'moz:buildID' in self.marionette.session_capabilities:
-                self.fx_buildID = self.marionette.session_capabilities['moz:buildID']
+                self.browser_version = self.marionette.session_capabilities['moz:buildID']
             self.marionette.navigate(self.start_page)
             time.sleep(0.5)
             self.wait_for_extension()
