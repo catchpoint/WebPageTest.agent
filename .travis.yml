@@ -2,6 +2,8 @@ sudo: required
 language: php
 services:
   - docker
+before_script:
+  - flake8
 script:
   - docker build --tag wptagent .
 after_script:
