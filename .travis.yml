@@ -1,5 +1,7 @@
 sudo: required
 language: php
+install:
+  - pip install -U flake8
 services:
   - docker
 before_script:
