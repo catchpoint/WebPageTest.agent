@@ -1,7 +1,10 @@
 sudo: required
 language: php
 install:
-  - pip install --upgrade pipenv
+  - pip install --upgrade pip
+  - pip install pipenv
+  - pip install flake8
+  - pip install urllib3[secure]
 services:
   - docker
 before_script:
