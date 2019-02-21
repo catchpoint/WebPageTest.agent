@@ -228,8 +228,16 @@ class DevToolsParser(object):
                                     request['bytesInData'] += params['dataLength']
                                 if 'bytesInEncoded' not in request:
                                     request['bytesInEncoded'] = 0
-                                if 'encodedDataLength' in params and 'bytesFinished' not in request:
-                                    request['bytesInEncoded'] += params['encodedDataLength']
+                                if 'encodedDataLength' in params and params['encodedDataLength']:
+                                    if 'bytesFinished' not in request:
+                                        request['bytesInEncoded'] += params['encodedDataLength']
+                                        if 'chunks' not in request:
+                                            request['chunks'] = []
+                                        request['chunks'].append({'ts': timestamp, 'bytes': params['encodedDataLength']})
+                                elif 'dataLength' in params and params['dataLength']:
+                                    if 'chunks' not in request:
+                                        request['chunks'] = []
+                                    request['chunks'].append({'ts': timestamp, 'bytes': params['dataLength']})
                             if method == 'Network.responseReceived' and 'response' in params:
                                 if not has_request_headers and \
                                         'requestHeaders' in params['response']:
@@ -432,6 +440,12 @@ class DevToolsParser(object):
                     if request['bytesIn'] == 0:
                         request['bytesIn'] = int(round(raw_request['bytesInData']))
                     request['objectSizeUncompressed'] = int(round(raw_request['bytesInData']))
+                if 'chunks' in raw_request:
+                    request['chunks'] = []
+                    for chunk in raw_request['chunks']:
+                        ts = int(round(chunk['ts'] - raw_page_data['startTime']))
+                        request['chunks'].append({'ts': ts, 'bytes': chunk['bytes']})
+
                 # if we didn't get explicit bytes, fall back to any responses that
                 # had content-length headers
                 if request['bytesIn'] == 0 and 'response' in raw_request and \
