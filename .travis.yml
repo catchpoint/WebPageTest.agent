@@ -1,6 +1,5 @@
 sudo: required
 language: php
-dist: xenial
 install:
   - pip install urllib3[secure]
   - pip install pipenv
