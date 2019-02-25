@@ -147,8 +147,8 @@ class Firefox(DesktopBrowser):
             self.extension_id = self.addons.install(extension_path, temp=True)
             logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
             self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
-            self.browser_version = self.marionette.session_capabilities.get['browserVersion']
-            self.browser_build = self.marionette.session_capabilities.get['moz:buildID']
+            self.browser_version = self.marionette.session_capabilities.get('browserVersion')
+            self.browser_build = self.marionette.session_capabilities.get('moz:buildID')
             self.marionette.navigate(self.start_page)
             time.sleep(0.5)
             self.wait_for_extension()
