@@ -125,6 +125,17 @@ class iWptBrowser(BaseBrowser):
             if self.webinspector_proxy:
                 # Connect to the dev tools interface
                 self.connected = self.connect()
+
+            if self.connected:
+                # Override the UA String if necessary
+                ua_string = self.execute_js('navigator.userAgent;')
+                if 'uastring' in self.job:
+                    ua_string = self.job['uastring']
+                if ua_string is not None and 'AppendUA' in task:
+                    ua_string += ' ' + task['AppendUA']
+                if ua_string is not None:
+                    self.job['user_agent_string'] = ua_string
+
         self.flush_messages()
 
     def connect(self, timeout=30):
@@ -729,6 +740,8 @@ class iWptBrowser(BaseBrowser):
         if self.headers:
             self.send_command('Network.setExtraHTTPHeaders',
                               {'headers': self.headers}, wait=True)
+        if 'user_agent_string' in self.job:
+            self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
             if not self.job['shaper'].configure(self.job, task):
                 self.task['error'] = "Error configuring traffic-shaping"
