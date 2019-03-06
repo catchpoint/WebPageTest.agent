@@ -404,8 +404,13 @@ class DesktopBrowser(BaseBrowser):
                             '-w', self.pcap_file]
                     logging.debug(' '.join(args))
                     self.tcpdump = subprocess.Popen(args)
-                # give it time to actually start capturing
-                time.sleep(0.5)
+                # Wait for the capture file to start growing
+                end_time = monotonic.monotonic() + 5
+                started = False
+                while not started and monotonic.monotonic() < end_time:
+                    if os.path.isfile(self.pcap_file):
+                        started = True
+                    time.sleep(0.1)
 
             # Start video capture
             if self.job['capture_display'] is not None and not self.job['disable_video']:

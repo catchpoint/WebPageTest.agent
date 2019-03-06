@@ -100,11 +100,14 @@
               }
               var app_name = app.trim();
               if (version && version.length) {
-                app_name += ' ' + version.trim();
-                if (apps[app].length) {
-                  apps[app] += ',';
+                let appVersion = version.trim();
+                app_name += ' ' + appVersion;
+                if (!apps[app].length || apps[app].indexOf(appVersion) === -1) {
+                  if (apps[app].length) {
+                    apps[app] += ',';
+                  }
+                  apps[app] += appVersion;
                 }
-                apps[app] += version.trim();
               }
               if (categories[category].length) {
                 categories[category] += ',';

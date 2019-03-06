@@ -438,6 +438,8 @@ class WebPageTest(object):
                         job['fvonly'] = 1
                     if 'fps' not in job:
                         job['fps'] = self.fps
+                    if 'warmup' not in job:
+                        job['warmup'] = 0
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
@@ -504,7 +506,10 @@ class WebPageTest(object):
                     ('fvonly' not in job or not job['fvonly']):
                 job['current_state']['repeat_view'] = True
             else:
-                job['current_state']['run'] += 1
+                if job['warmup'] > 0:
+                    job['warmup'] -= 1
+                else:
+                    job['current_state']['run'] += 1
                 job['current_state']['repeat_view'] = False
             if job['current_state']['run'] <= job['runs']:
                 test_id = job['Test ID']
@@ -1027,85 +1032,88 @@ class WebPageTest(object):
                 os.remove(task['debug_log'])
             except Exception:
                 pass
-        if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
-            cpu_pct = task['page_data']['fullyLoadedCPUpct']
-        data = {'id': task['id'],
-                'location': self.location,
-                'run': str(task['run']),
-                'cached': str(task['cached']),
-                'pc': self.pc_name}
-        if self.key is not None:
-            data['key'] = self.key
-        if self.instance_id is not None:
-            data['ec2'] = self.instance_id
-        if self.zone is not None:
-            data['ec2zone'] = self.zone
-        needs_zip = []
-        zip_path = None
-        if os.path.isdir(task['dir']):
-            # upload any video images
-            if bool(self.job['video']) and len(task['video_directories']):
-                for video_subdirectory in task['video_directories']:
-                    video_dir = os.path.join(task['dir'], video_subdirectory)
-                    if os.path.isdir(video_dir):
-                        for filename in os.listdir(video_dir):
-                            filepath = os.path.join(video_dir, filename)
-                            if os.path.isfile(filepath):
-                                name = video_subdirectory + '/' + filename
-                                if os.path.getsize(filepath) > 100000:
-                                    logging.debug('Uploading %s (%d bytes)', filename,
-                                                  os.path.getsize(filepath))
-                                    if self.post_data(self.url + "resultimage.php", data,
-                                                      filepath, task['prefix'] + '_' + filename):
-                                        os.remove(filepath)
+        if self.job['warmup'] > 0:
+            logging.debug('Discarding warmup run')
+        else:
+            if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
+                cpu_pct = task['page_data']['fullyLoadedCPUpct']
+            data = {'id': task['id'],
+                    'location': self.location,
+                    'run': str(task['run']),
+                    'cached': str(task['cached']),
+                    'pc': self.pc_name}
+            if self.key is not None:
+                data['key'] = self.key
+            if self.instance_id is not None:
+                data['ec2'] = self.instance_id
+            if self.zone is not None:
+                data['ec2zone'] = self.zone
+            needs_zip = []
+            zip_path = None
+            if os.path.isdir(task['dir']):
+                # upload any video images
+                if bool(self.job['video']) and len(task['video_directories']):
+                    for video_subdirectory in task['video_directories']:
+                        video_dir = os.path.join(task['dir'], video_subdirectory)
+                        if os.path.isdir(video_dir):
+                            for filename in os.listdir(video_dir):
+                                filepath = os.path.join(video_dir, filename)
+                                if os.path.isfile(filepath):
+                                    name = video_subdirectory + '/' + filename
+                                    if os.path.getsize(filepath) > 100000:
+                                        logging.debug('Uploading %s (%d bytes)', filename,
+                                                    os.path.getsize(filepath))
+                                        if self.post_data(self.url + "resultimage.php", data,
+                                                        filepath, task['prefix'] + '_' + filename):
+                                            os.remove(filepath)
+                                        else:
+                                            needs_zip.append({'path': filepath, 'name': name})
                                     else:
                                         needs_zip.append({'path': filepath, 'name': name})
-                                else:
-                                    needs_zip.append({'path': filepath, 'name': name})
-            # Upload the separate large files (> 100KB)
-            for filename in os.listdir(task['dir']):
-                filepath = os.path.join(task['dir'], filename)
-                if os.path.isfile(filepath):
-                    # Delete any video files that may have squeaked by
-                    if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
-                            filename.find('rendered_video') == -1:
-                        try:
-                            os.remove(filepath)
-                        except Exception:
-                            pass
-                    elif os.path.getsize(filepath) > 100000:
-                        logging.debug('Uploading %s (%d bytes)', filename,
-                                      os.path.getsize(filepath))
-                        if self.post_data(self.url + "resultimage.php", data, filepath, filename):
+                # Upload the separate large files (> 100KB)
+                for filename in os.listdir(task['dir']):
+                    filepath = os.path.join(task['dir'], filename)
+                    if os.path.isfile(filepath):
+                        # Delete any video files that may have squeaked by
+                        if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
+                                filename.find('rendered_video') == -1:
                             try:
                                 os.remove(filepath)
                             except Exception:
                                 pass
+                        elif os.path.getsize(filepath) > 100000:
+                            logging.debug('Uploading %s (%d bytes)', filename,
+                                        os.path.getsize(filepath))
+                            if self.post_data(self.url + "resultimage.php", data, filepath, filename):
+                                try:
+                                    os.remove(filepath)
+                                except Exception:
+                                    pass
+                            else:
+                                needs_zip.append({'path': filepath, 'name': filename})
                         else:
                             needs_zip.append({'path': filepath, 'name': filename})
-                    else:
-                        needs_zip.append({'path': filepath, 'name': filename})
-            # Zip the remaining files
-            if len(needs_zip):
-                zip_path = os.path.join(task['dir'], "result.zip")
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
-                    for zipitem in needs_zip:
-                        logging.debug('Storing %s (%d bytes)', zipitem['name'],
-                                      os.path.getsize(zipitem['path']))
-                        zip_file.write(zipitem['path'], zipitem['name'])
-                        try:
-                            os.remove(zipitem['path'])
-                        except Exception:
-                            pass
-        # Post the workdone event for the task (with the zip attached)
-        if task['done']:
-            data['done'] = '1'
-        if task['error'] is not None:
-            data['error'] = task['error']
-        if cpu_pct is not None:
-            data['cpu'] = '{0:0.2f}'.format(cpu_pct)
-        logging.debug('Uploading result zip')
-        self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+                # Zip the remaining files
+                if len(needs_zip):
+                    zip_path = os.path.join(task['dir'], "result.zip")
+                    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
+                        for zipitem in needs_zip:
+                            logging.debug('Storing %s (%d bytes)', zipitem['name'],
+                                        os.path.getsize(zipitem['path']))
+                            zip_file.write(zipitem['path'], zipitem['name'])
+                            try:
+                                os.remove(zipitem['path'])
+                            except Exception:
+                                pass
+            # Post the workdone event for the task (with the zip attached)
+            if task['done']:
+                data['done'] = '1'
+            if task['error'] is not None:
+                data['error'] = task['error']
+            if cpu_pct is not None:
+                data['cpu'] = '{0:0.2f}'.format(cpu_pct)
+            logging.debug('Uploading result zip')
+            self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around
         if os.path.isdir(task['dir']):
             try:

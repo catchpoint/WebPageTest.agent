@@ -2451,6 +2451,16 @@
       "script": "dataTables.*\\.js",
       "website": "http://datatables.net"
     },
+    "Day.js": {
+      "cats": [
+        59
+      ],
+      "icon": "Day.js.svg",
+      "js": {
+        "dayjs": ""
+      },
+      "website": "https://github.com/iamkun/dayjs"
+    },
     "Debian": {
       "cats": [
         28
@@ -2910,6 +2920,19 @@
       },
       "website": "http://eleanor-cms.ru"
     },
+    "Element UI": {
+      "cats": [
+        12
+      ],
+      "icon": "ElementUI.svg",
+      "implies": [
+        "Vue"
+      ],
+      "html": [
+        "<(?:div|button) class=\"el-(?:table-column|table-filter|popper|pagination|pager|select-group|form|form-item|color-predefine|color-hue-slider|color-svpanel|color-alpha-slider|color-dropdown|color-picker|badge|tree|tree-node|select|message|dialog|checkbox|checkbox-button|checkbox-group|container|steps|carousel|menu|menu-item|submenu|menu-item-group|button|button-group|card|table|select-dropdown|row|tabs|notification|radio|progress|progress-bar|tag|popover|tooltip|cascader|cascader-menus|cascader-menu|time-spinner|spinner|spinner-inner|transfer|transfer-panel|rate|slider|dropdown|dropdown-menu|textarea|input|input-group|popup-parent|radio-group|main|breadcrumb|time-range-picker|date-range-picker|year-table|date-editor|range-editor|time-spinner|date-picker|time-panel|date-table|month-table|picker-panel|collapse|collapse-item|alert|select-dropdown|select-dropdown__empty|select-dropdown__wrap|select-dropdown__list|scrollbar|switch|carousel|upload|upload-dragger|upload-list|upload-cover|aside|input-number|header|message-box|footer|radio-button|step|autocomplete|autocomplete-suggestion|loading-parent|loading-mask|loading-spinner|)"
+      ],
+      "website": "https://element.eleme.io/"
+    },
     "Eloqua": {
       "cats": [
         32
@@ -2953,6 +2976,17 @@
       "script": "//nexus\\.ensighten\\.com/",
       "icon": "ensighten.png",
       "website": "https://success.ensighten.com/hc/en-us"
+    },
+    "Envoy": {
+      "cats": [
+        22
+      ],
+      "icon": "Envoy.png",
+      "headers": {
+        "Server": "^envoy$",
+        "x-envoy-upstream-service-time": ""
+      },
+      "website": "https://www.envoyproxy.io/"
     },
     "Enyo": {
       "cats": [
@@ -4266,13 +4300,13 @@
       },
       "website": "http://hinzaco.com"
     },
-    "Hippo": {
+    "Bloomreach": {
       "cats": [
         1
       ],
       "html": "<[^>]+/binaries/(?:[^/]+/)*content/gallery/",
-      "icon": "Hippo.png",
-      "website": "http://onehippo.org"
+      "icon": "Bloomreach.png",
+      "website": "https://developers.bloomreach.com"
     },
     "Hogan.js": {
       "cats": [
@@ -4629,6 +4663,21 @@
       ],
       "website": "https://www.inspectlet.com/"
     },
+    "Instabot": {
+      "cats": [
+        5,
+        10,
+        32,
+        52,
+        58
+      ],
+      "icon": "Instabot.png",
+      "js": {
+        "Instabot": ""
+      },
+      "script": "/rokoInstabot\\.js",
+      "website": "https://instabot.io/"
+    },
     "InstantCMS": {
       "cats": [
         1
@@ -4703,6 +4752,18 @@
       "script": "https?://cdn\\.inwemo\\.com/inwemo\\.min\\.js",
       "website": "https://inwemo.com/"
     },
+    "Ionic": {
+      "cats": [
+        18
+      ],
+      "icon": "ionic.png",
+      "implies": "Angular",
+      "js": {
+        "Ionic.config": "",
+        "Ionic.version": "^(.+)$\\;version:\\1"
+      },
+      "website": "https://ionicframework.com"
+    },
     "Ionicons": {
       "cats": [
         17
@@ -4773,7 +4834,7 @@
       "js": {
         "jseMine": ""
       },
-      "script": "^(?:https):?//load\\.jsecoin\\.com/server/load/",
+      "script": "^(?:https):?//load\\.jsecoin\\.com/load/",
       "website": "https://jsecoin.com/"
     },
     "JTL Shop": {
@@ -5763,6 +5824,9 @@
       "cookies": {
         "botble_session": ""
       },
+      "headers": {
+        "CMS-Version": "^(.+)$\\;version:\\1;confidence:0"
+      },
       "icon": "mypage-platform.png",
       "implies": "Laravel",
       "website": "https://www.mypage.vn"
@@ -6291,6 +6355,14 @@
       },
       "script": "mint/\\?js",
       "website": "https://haveamint.com"
+    },
+    "Mithril": {
+      "cats": [
+        12
+      ],
+      "icon": "Mithril.svg",
+      "script": "mithril/\\?js",
+      "website": "https://mithril.js.org"
     },
     "Mixpanel": {
       "cats": [
@@ -7338,9 +7410,15 @@
         1
       ],
       "html": "Powered by <a href=\"[^>]+php-fusion",
+      "headers": {
+        "X-Powered-By": "PHP-Fusion (.+)$\\;version:\\1"
+      },
       "icon": "PHP-Fusion.png",
-      "implies": "PHP",
-      "website": "http://www.php-fusion.co.uk"
+      "implies": [
+        "PHP",
+        "MySQL"
+      ],
+      "website": "https://www.php-fusion.co.uk"
     },
     "PHP-Nuke": {
       "cats": [
@@ -7615,11 +7693,12 @@
     },
     "PlatformOS": {
       "cats": [
-        1
+        1,
+        62
       ],
       "icon": "PlatformOS.svg",
       "headers": {
-        "x-powered-by": "^PlatformOS$"
+        "x-powered-by": "^platformOS$"
       },
       "website": "https://www.platform-os.com"
     },
@@ -8917,15 +8996,18 @@
     },
     "Shopfa": {
       "cats": [
-        6
+        "6"
       ],
-      "icon": "Shopfa.svg",
       "js": {
         "shopfa": ""
+      },
+      "headers": {
+        "X-Powered-By": "^ShopFA ([\\d.]+)$\\;version:\\1"
       },
       "meta": {
         "generator": "^ShopFA ([\\d.]+)$\\;version:\\1"
       },
+      "icon": "Shopfa.svg",
       "website": "https://shopfa.com"
     },
     "Shopify": {
@@ -9513,6 +9595,16 @@
       "script": "strapdown\\.js",
       "website": "http://strapdownjs.com"
     },
+    "Strapi": {
+      "cats": [
+        1
+      ],
+      "headers": {
+        "X-Powered-By": "^Strapi"
+      },
+      "icon": "Strapi.png",
+      "website": "https://strapi.io"
+    },
     "Strato": {
       "cats": [
         6
@@ -9795,7 +9887,7 @@
         "TEALIUMENABLED": ""
       },
       "script": [
-        "^//tags\\.tiqcdn\\.com/",
+        "^(?:https?:)?//tags\\.tiqcdn\\.com/",
         "/tealium/utag\\.js$"
       ],
       "website": "http://tealium.com"
@@ -10325,16 +10417,16 @@
       },
       "website": "http://usabilla.com"
     },
-    "UserEngage": {
+    "user.com": {
       "cats": [
         10
       ],
       "html": "<div[^>]+/id=\"ue_widget\"",
-      "icon": "UserEngage.png",
+      "icon": "user.com.svg",
       "js": {
         "UserEngage": ""
       },
-      "website": "https://userengage.com"
+      "website": "https://user.com"
     },
     "UserGuiding": {
       "cats": [
@@ -10667,7 +10759,7 @@
         "<div [^>]*id=\"__nuxt\"",
         "<script [^>]*>window\\.__NUXT__"
       ],
-      "icon": "Nuxt.js.png",
+      "icon": "Nuxt.js.svg",
       "js": {
         "$nuxt": ""
       },
@@ -10931,6 +11023,20 @@
       },
       "script": "cdn\\d+\\.editmysite\\.com",
       "website": "https://www.weebly.com"
+    },
+    "Weglot": {
+      "cats": [
+        19
+      ],
+      "headers": {
+        "Weglot-Translated": ""
+      },
+      "icon": "Weglot.png",
+      "script": [
+        "cdn\\.weglot\\.com",
+        "wp-content/plugins/weglot"
+      ],
+      "website": "https://www.weglot.com"
     },
     "Wikinggruppen": {
       "cats": [
@@ -11703,6 +11809,10 @@
       ],
       "headers": {
         "Server": "cpsrvd/([\\d.]+)\\;version:\\1"
+      },
+      "cookies": {
+        "cpsession": "",
+        "cprelogin": ""
       },
       "html": "<!-- cPanel",
       "icon": "cPanel.png",
@@ -12781,7 +12891,7 @@
       "js": {
         "webpackJsonp": ""
       },
-      "website": "https://webpack.github.io"
+      "website": "https://webpack.js.org/"
     },
     "parcel": {
       "cats": [
@@ -12835,6 +12945,36 @@
         "generator": "xt:Commerce"
       },
       "website": "https://www.xt-commerce.com"
+    },
+    "Halo": {
+      "cats": [
+        1,
+        11
+      ],
+      "html": [
+        "<link rel=[\"']stylesheet[\"'] [^>]+/halo-(?:backend|frontend|common)/"
+      ],
+      "icon": "Halo.svg",
+      "implies": "Java",
+      "script": "/halo-(?:backend|frontend|common)/",
+      "website": "https://github.com/ruibaby/halo"
+    },
+    "Rocket": {
+      "cats": [
+        1,
+        6
+      ],
+      "headers": {
+        "x-powered-by": "^Rocket=https://rocketcms.io/"
+      },
+      "icon": "Rocket.svg",
+      "implies": [
+        "webpack",
+        "Node.js",
+        "MySQL",
+        "Less"
+      ],
+      "website": "https://rocketcms.io"
     }
   },
   "categories": {

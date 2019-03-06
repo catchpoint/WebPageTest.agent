@@ -110,6 +110,7 @@ class WPTAgent(object):
                                     self.run_single_test()
                                     self.wpt.get_bodies(self.task)
                                 if self.task['run'] == 1 and not self.task['cached'] and \
+                                        self.job['warmup'] <= 0 and \
                                         self.task['error'] is None and \
                                         'lighthouse' in self.job and self.job['lighthouse']:
                                     if 'page_result' not in self.task or \
@@ -696,13 +697,11 @@ def upgrade_pip_modules():
         subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
         run_elevated(sys.executable, '-m pip install --upgrade pip')
         out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
-                                       '--outdated'])
+                                       '--outdated', '--format', 'freeze'])
         for line in out.splitlines():
-            separator = line.find(' ')
+            separator = line.find('==')
             if separator > 0:
                 package = line[:separator]
-                subprocess.call([sys.executable, '-m', 'pip', 'install',
-                                 '--upgrade', package])
                 run_elevated(sys.executable, '-m pip install --upgrade {0}'.format(package))
     except Exception:
         pass

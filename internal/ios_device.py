@@ -133,6 +133,13 @@ class iOSDevice(object):
             is_ok = True
         return is_ok
 
+    def set_cookie(self, url, name, value):
+        """Set a cookie"""
+        is_ok = False
+        if self.send_message("setcookie", data=url + ";" + name + ";" + value):
+            is_ok = True
+        return is_ok
+
     def show_orange(self):
         """Bring up the orange overlay"""
         is_ok = False

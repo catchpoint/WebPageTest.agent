@@ -127,6 +127,7 @@ class Edge(DesktopBrowser):
             except Exception:
                 pass
         capabilities['extensionPaths'] = [extension_dir]
+        capabilities['ms:extensionPaths'] = [extension_dir]
         driver = webdriver.Edge(executable_path=self.path, capabilities=capabilities)
         return driver
 

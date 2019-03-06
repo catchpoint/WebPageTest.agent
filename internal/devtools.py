@@ -228,6 +228,7 @@ class DevTools(object):
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
+        self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('Network.enable', {})
         if self.headers:
@@ -250,8 +251,12 @@ class DevTools(object):
         if 'overrideHosts' in self.task and self.task['overrideHosts']:
             patterns = []
             for host in self.task['overrideHosts']:
-                patterns.append({'urlPattern': 'http://{0}*'.format(host)})
-                patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+                if host == '*':
+                    patterns.append({'urlPattern': 'http://*'})
+                    patterns.append({'urlPattern': 'https://*'})
+                else:
+                    patterns.append({'urlPattern': 'http://{0}*'.format(host)})
+                    patterns.append({'urlPattern': 'https://{0}*'.format(host)})
             self.send_command('Network.setRequestInterception', {'patterns': patterns})
         if self.task['log_data']:
             self.send_command('Security.enable', {})
@@ -316,6 +321,7 @@ class DevTools(object):
         """Do any quick work to stop things that are capturing data"""
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
 
     def stop_recording(self):
@@ -891,11 +897,21 @@ class DevTools(object):
                 url = msg['params']['request']['url']
                 parts = urlsplit(url).netloc.split(':')
                 host = parts[0]
-                if host in self.task['overrideHosts']:
-                    headers = msg['params']['request']['headers']
-                    headers['Host'] = self.task['overrideHosts'][host]
-                    headers['x-Host'] = host
-                    params['headers'] = headers
+                # go through the override list and find the first match (supporting wildcards)
+                try:
+                    from fnmatch import fnmatch
+                    for host_match in self.task['overrideHosts']:
+                        if fnmatch(host, host_match):
+                            # Overriding to * is just a passthrough, don't actually modify anything
+                            if self.task['overrideHosts'][host_match] != '*':
+                                headers = msg['params']['request']['headers']
+                                headers['Host'] = self.task['overrideHosts'][host_match]
+                                headers['x-Host'] = host
+                                params['headers'] = headers
+                                params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
+                            break
+                except Exception:
+                    pass
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']

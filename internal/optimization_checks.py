@@ -211,6 +211,7 @@ class OptimizationChecks(object):
                          {'Server': 'ECAcc'},
                          {'Server': 'ECD'}],
             'Fastly': [{'X-Served-By': 'cache-', 'X-Cache': ''}],
+            'Fly': [{'Server': 'Fly.io'}],
             'GoCache': [{'Server': 'gocache'}],
             'Google': [{'Server': 'sffe'},
                        {'Server': 'gws'},
@@ -470,7 +471,8 @@ class OptimizationChecks(object):
             try:
                 from dns import resolver, reversename
                 dns_resolver = resolver.Resolver()
-                dns_resolver.timeout = 30
+                dns_resolver.timeout = 5
+                dns_resolver.lifetime = 5
                 # reverse-lookup the edge server
                 try:
                     addresses = dns_resolver.query(domain)
@@ -583,6 +585,7 @@ class OptimizationChecks(object):
         from dns import resolver, reversename
         dns_resolver = resolver.Resolver()
         dns_resolver.timeout = 1
+        dns_resolver.lifetime = 1
         provider = self.check_cdn_name(domain)
         # First do a CNAME check
         if provider is None:
