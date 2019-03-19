@@ -806,7 +806,7 @@ class WebPageTest(object):
                                     attribute, attr_value)
                                 if command in ['click', 'sendclick']:
                                     script += '.click();'
-                                elif command == 'submitform' and value is not None:
+                                elif command == 'submitform' and attr_value is not None:
                                     script += '.submit();'
                                     record = True
                                 elif command in ['setvalue', 'selectvalue'] and value is not None:
