@@ -91,6 +91,10 @@ class AndroidBrowser(BaseBrowser):
                     pass
                 if os.path.isfile(tmp_file):
                     if valid:
+                        # Uninstall the previous install of the same package if we are installing a custom browser.
+                        if 'activity' in self.config:
+                            logging.debug('Unistalling previous browser APK')
+                            self.adb.adb(['uninstall', self.config['package']])
                         logging.debug('Installing browser APK')
                         self.adb.adb(['install', '-rg', tmp_file])
                         with open(last_install_file, 'wb') as f_out:
