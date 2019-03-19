@@ -82,6 +82,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             self.config['activity'] = job['customBrowser_activity']
         if 'customBrowserUrl' in job:
             self.config['apk_url'] = job['customBrowserUrl']
+            self.config['uninstall'] = True
         if 'customBrowserMD5' in job:
             self.config['md5'] = job['customBrowserMD5'].lower()
         if 'customBrowser_flagsFile' in job:
