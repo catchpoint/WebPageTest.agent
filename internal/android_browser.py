@@ -289,7 +289,8 @@ class AndroidBrowser(BaseBrowser):
         png_file = os.path.join(task['dir'], task['prefix'] + '_screen.png')
         self.adb.screenshot(png_file, self.job['image_magick']['mogrify'])
         task['page_data']['result'] = 0
-        task['page_data']['visualTest'] = 1
+        if self.config['type'] == 'blackbox':
+            task['page_data']['visualTest'] = 1
         if os.path.isfile(png_file):
             if not self.job['pngScreenShot']:
                 jpeg_file = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
