@@ -427,6 +427,7 @@ class DevToolsParser(object):
                     request['ttfb_ms'] = int(round(raw_request['firstByteTime'] -
                                                    raw_request['startTime']))
                 request['load_start'] = int(round(start_time - raw_page_data['startTime']))
+                request['load_start_float'] = start_time - raw_page_data['startTime']
                 request['bytesIn'] = 0
                 request['objectSize'] = ''
                 if 'bytesIn' in raw_request:
@@ -630,7 +631,7 @@ class DevToolsParser(object):
                     requests.append(dict(request))
         page_data['connections'] = len(connections)
         if len(requests):
-            requests.sort(key=lambda x: x['load_start'])
+            requests.sort(key=lambda x: x['load_start_float'])
 
     def get_response_header(self, request, header):
         """Pull a specific header value from the response headers"""
@@ -715,6 +716,8 @@ class DevToolsParser(object):
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
                                     pass
+                            if 'start' in entry:
+                                request['load_start_float'] = float(str(entry['start']).strip())
                             if 'certificates' in entry:
                                 request['certificates'] = entry['certificates']
                             if 'first_byte' in entry:
@@ -838,6 +841,8 @@ class DevToolsParser(object):
                                                        entry['start']))
                     if 'pushed' in entry and entry['pushed']:
                         request['was_pushed'] = 1
+                    if 'start' in entry:
+                        request['load_start_float'] = float(str(entry['start']).strip())
                     request['headers'] = {'request': [], 'response': []}
                     if 'request_headers' in entry:
                         request['headers']['request'] = list(entry['request_headers'])
@@ -881,7 +886,7 @@ class DevToolsParser(object):
                     request['raw_id'] = request['id']
                     requests.append(request)
         if len(requests):
-            requests.sort(key=lambda x: x['load_start'])
+            requests.sort(key=lambda x: x['load_start_float'])
         if 'main_frame' in page_data:
             index = 0
             main_request = None
