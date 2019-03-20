@@ -169,7 +169,7 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.devtools.stop_capture()
 
-            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            if 'heroElementTimes' not in self.job or self.job['heroElementTimes']:
                 hero_elements = None
                 custom_hero_selectors = {}
                 if 'heroElements' in self.job:

@@ -205,9 +205,9 @@ class Edge(DesktopBrowser):
             import _winreg
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
             _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, self.edge_registry_key_value)
-            _winreg.CloseKey(registry_key)        
+            _winreg.CloseKey(registry_key)
         except Exception as err:
-            logging.exception("Error resetting Edge cache settings: %s", str(err)) 
+            logging.exception("Error resetting Edge cache settings: %s", str(err))
         self.kill()
         if self.bodies_path is not None and os.path.isdir(self.bodies_path):
             shutil.rmtree(self.bodies_path, ignore_errors=True)
@@ -758,7 +758,7 @@ class Edge(DesktopBrowser):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         DesktopBrowser.on_stop_capture(self, task)
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+        if 'heroElementTimes' not in self.job or self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
             if 'heroElements' in self.job:

@@ -571,7 +571,7 @@ class DesktopBrowser(BaseBrowser):
                 args.append('-vvvv')
             if not task['navigated']:
                 args.append('--forceblank')
-            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            if 'heroElementTimes' not in self.job or self.job['heroElementTimes']:
                 hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
                 args.extend(['--herodata', hero_elements_file])
             if 'renderVideo' in self.job and self.job['renderVideo']:
