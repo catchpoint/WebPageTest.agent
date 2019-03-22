@@ -642,7 +642,7 @@ class Adb(object):
         if 'level' in battery and battery['level'] < 50:
             logging.info("Device not ready, low battery: %d %%", battery['level'])
             is_ready = False
-        if 'temp' in battery and battery['temp'] > 36.0:
+        if 'temp' in battery and battery['temp'] > self.options.temperature:
             logging.info("Device not ready, high temperature: %0.1f degrees", battery['temp'])
             is_ready = False
         # Bring up the bridged interface if necessary
