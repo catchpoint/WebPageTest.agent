@@ -638,7 +638,8 @@ class Trace():
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 request['fromNet'] = bool('start' in request)
-                if 'url' in request and request['url'][:16] != 'http://127.0.0.1':
+                if 'url' in request and not request['url'].startswith('http://127.0.0.1') and \
+                        not request['url'].startswith('http://192.168.10.'):
                     # Match orphaned request streams with their h2 sessions
                     if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
                         request_host = urlparse.urlparse(request['url']).hostname
