@@ -793,6 +793,9 @@ def main():
                         "    dhcp: Configure interface for DHCP\n"
                         "    <ip>/<network>,<gateway>,<dns1>,<dns2>: Static Address.  \n"
                         "        i.e. 192.168.0.8/24,192.168.0.1,8.8.8.8,8.8.4.4")
+    parser.add_argument('--ping', type=str, default='8.8.8.8',
+                        help="Set custom IP or domain to ping for checking network connection "
+                        "when using Android devices. Default is 8.8.8.8")
     parser.add_argument('--temperature', type=int, default=36,
                         help="set custom temperature treshold for device as int")
 
