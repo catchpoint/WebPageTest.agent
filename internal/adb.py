@@ -696,7 +696,7 @@ class Adb(object):
                             gateway = match.group(1)
                 if gateway is not None:
                     addresses.insert(0, gateway)
-                addresses.append('8.8.8.8')
+                addresses.append(self.options.ping)
                 for address in addresses:
                     if self.ping(address) is not None:
                         self.ping_address = address
