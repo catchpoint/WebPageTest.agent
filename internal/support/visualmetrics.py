@@ -1318,13 +1318,12 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
                 logging.debug('Calculating hero element times')
                 hero_data = None
-                hero_f_in = gzip.open(hero_elements_file, 'rb')
-                try:
-                    hero_data = json.load(hero_f_in)
-                except Exception as e:
-                    logging.exception('Could not load hero elements data')
-                    logging.exception(e)
-                hero_f_in.close()
+                with gzip.open(hero_elements_file, 'rb') as hero_f_in:
+                    try:
+                        hero_data = json.load(hero_f_in)
+                    except Exception as e:
+                        logging.exception('Could not load hero elements data')
+                        logging.exception(e)
 
                 if hero_data is not None and hero_data['heroes'] is not None and \
                         hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:
@@ -1341,9 +1340,8 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    hero_f_out = gzip.open(hero_elements_file, 'wb', 7)
-                    json.dump(hero_data, hero_f_out)
-                    hero_f_out.close()
+                    with gzip.open(hero_elements_file, 'wb', 7) as hero_f_out:
+                        json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
         else:
@@ -1484,6 +1482,7 @@ def calculate_perceptual_speed_index(progress, directory):
 
 
 def calculate_hero_time(progress, directory, hero, viewport):
+    hero_time = None
     dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
     n = len(progress)
     target_frame = os.path.join(dir, 'ms_{0:06d}'.format(progress[n - 1]['time']))
@@ -1526,11 +1525,6 @@ def calculate_hero_time(progress, directory, hero, viewport):
             image_magick['convert'], target_frame, hero_mask, target_mask)
         subprocess.call(command, shell=True)
 
-        def cleanup():
-            os.remove(hero_mask)
-            if os.path.isfile(target_mask):
-                os.remove(target_mask)
-
         # Allow for small differences like scrollbars and overlaid UI elements
         # by applying a 10% fuzz and allowing for up to 2% of the pixels to be
         # different.
@@ -1553,17 +1547,27 @@ def calculate_hero_time(progress, directory, hero, viewport):
                 subprocess.call(command, shell=True)
                 match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
                 # Remove each mask after using it
-                os.remove(current_mask)
+                try:
+                    os.remove(current_mask)
+                except Exception:
+                    pass
 
                 if match:
-                    # Clean up masks as soon as a match is found
-                    cleanup()
-                    return p['time']
+                    hero_time = p['time']
+                    break
 
-        # No matches found; clean up masks
-        cleanup()
+        # Cleanup the masks
+        try:
+            os.remove(hero_mask)
+        except Exception:
+            pass
+        try:
+            if os.path.isfile(target_mask):
+                os.remove(target_mask)
+        except Exception:
+            pass
 
-    return None
+    return hero_time
 
 
 ##########################################################################
