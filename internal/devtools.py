@@ -5,8 +5,8 @@
 import base64
 import gzip
 import logging
+import multiprocessing
 import os
-import Queue
 import re
 import subprocess
 import time
@@ -441,7 +441,8 @@ class DevTools(object):
                     logging.info('Collecting trace events')
                     done = False
                     no_message_count = 0
-                    while not done and no_message_count < 30:
+                    elapsed = monotonic.monotonic() - start
+                    while not done and no_message_count < 30 and elapsed < 60:
                         try:
                             raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
@@ -1099,7 +1100,7 @@ class DevToolsClient(WebSocketClient):
         WebSocketClient.__init__(self, url, protocols, extensions, heartbeat_freq,
                                  ssl_options, headers)
         self.connected = False
-        self.messages = Queue.Queue()
+        self.messages = multiprocessing.JoinableQueue()
         self.trace_file = None
         self.video_prefix = None
         self.trace_ts_start = None

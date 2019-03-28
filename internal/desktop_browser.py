@@ -5,9 +5,9 @@
 import gzip
 import logging
 import math
+import multiprocessing
 import os
 import platform
-import Queue
 import shutil
 import signal
 import subprocess
@@ -479,7 +479,7 @@ class DesktopBrowser(BaseBrowser):
                     pass
 
             # start the background thread for monitoring CPU and bandwidth
-            self.usage_queue = Queue.Queue()
+            self.usage_queue = multiprocessing.JoinableQueue()
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()

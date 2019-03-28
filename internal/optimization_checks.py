@@ -5,8 +5,8 @@
 import binascii
 import gzip
 import logging
+import multiprocessing
 import os
-import Queue
 import re
 import shutil
 import struct
@@ -40,10 +40,10 @@ class OptimizationChecks(object):
         self.image_results = {}
         self.progressive_results = {}
         self.results = {}
-        self.dns_lookup_queue = Queue.Queue()
-        self.dns_result_queue = Queue.Queue()
-        self.fetch_queue = Queue.Queue()
-        self.fetch_result_queue = Queue.Queue()
+        self.dns_lookup_queue = multiprocessing.JoinableQueue()
+        self.dns_result_queue = multiprocessing.JoinableQueue()
+        self.fetch_queue = multiprocessing.JoinableQueue()
+        self.fetch_result_queue = multiprocessing.JoinableQueue()
         # spell-checker: disable
         self.cdn_cnames = {
             'Advanced Hosters CDN': ['.pix-cdn.org'],

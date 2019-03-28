@@ -6,9 +6,9 @@ import base64
 from datetime import datetime
 import gzip
 import logging
+import multiprocessing
 import os
 import platform
-import Queue
 import re
 import subprocess
 import time
@@ -35,7 +35,7 @@ class iWptBrowser(BaseBrowser):
         self.page_loaded = None
         self.recording = False
         self.connected = False
-        self.messages = Queue.Queue()
+        self.messages = multiprocessing.JoinableQueue()
         self.video_processing = None
         self.optimization = None
         self.is_navigating = False

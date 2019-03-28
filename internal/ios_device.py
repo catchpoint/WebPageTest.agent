@@ -4,9 +4,9 @@
 """Interface for iWptBrowser on iOS devices"""
 import base64
 import logging
+import multiprocessing
 import os
 import platform
-import Queue
 import select
 import shutil
 import subprocess
@@ -23,7 +23,7 @@ class iOSDevice(object):
         self.must_disconnect = False
         self.mux = None
         self.message_thread = None
-        self.messages = Queue.Queue()
+        self.messages = multiprocessing.JoinableQueue()
         self.notification_queue = None
         self.current_id = 0
         self.video_file = None
