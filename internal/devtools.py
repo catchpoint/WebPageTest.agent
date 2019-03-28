@@ -434,25 +434,30 @@ class DevTools(object):
         if self.trace_enabled:
             self.trace_enabled = False
             start = monotonic.monotonic()
-            # Keep pumping messages until we get tracingComplete or
-            # we get a gap of 30 seconds between messages
-            if self.websocket:
-                logging.info('Collecting trace events')
-                done = False
-                no_message_count = 0
-                while not done and no_message_count < 30:
-                    try:
-                        raw = self.websocket.get_message(1)
-                        if raw is not None and len(raw):
-                            no_message_count = 0
-                            msg = json.loads(raw)
-                            if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
-                                done = True
-                        else:
+            try:
+                # Keep pumping messages until we get tracingComplete or
+                # we get a gap of 30 seconds between messages
+                if self.websocket:
+                    logging.info('Collecting trace events')
+                    done = False
+                    no_message_count = 0
+                    while not done and no_message_count < 30:
+                        try:
+                            raw = self.websocket.get_message(1)
+                            if raw is not None and len(raw):
+                                no_message_count = 0
+                                msg = json.loads(raw)
+                                if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
+                                    done = True
+                            else:
+                                no_message_count += 1
+                        except Exception:
                             no_message_count += 1
-                    except Exception:
-                        pass
-            self.websocket.stop_processing_trace()
+                            time.sleep(1)
+                            pass
+                self.websocket.stop_processing_trace()
+            except Exception:
+                pass
             elapsed = monotonic.monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
