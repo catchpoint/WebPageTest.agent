@@ -215,7 +215,7 @@ class AndroidBrowser(BaseBrowser):
                 else:
                     args.append('--orange')
                 logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args)
+                self.video_processing = subprocess.Popen(args, close_fds=True)
         self.job['shaper'].reset()
 
     def on_start_processing(self, task):

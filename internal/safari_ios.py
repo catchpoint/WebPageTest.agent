@@ -882,7 +882,7 @@ class iWptBrowser(BaseBrowser):
                     except Exception:
                         pass
                 logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args)
+                self.video_processing = subprocess.Popen(args, close_fds=True)
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'
