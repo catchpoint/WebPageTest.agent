@@ -549,6 +549,10 @@ class DesktopBrowser(BaseBrowser):
             kill_all('ffmpeg.exe', True)
         else:
             subprocess.call(['killall', '-9', 'ffmpeg'])
+        self.job['shaper'].reset()
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
             video_path = os.path.join(task['dir'], task['video_subdirectory'])
@@ -588,10 +592,6 @@ class DesktopBrowser(BaseBrowser):
                     pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args, close_fds=True)
-        self.job['shaper'].reset()
-
-    def on_start_processing(self, task):
-        """Start any processing of the captured data"""
         # Process the tcpdump
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
