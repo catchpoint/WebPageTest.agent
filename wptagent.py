@@ -554,7 +554,7 @@ def find_browsers():
                     browsers['Firefox Nightly'] = {'exe': firefox_path,
                                                    'type': 'Firefox',
                                                    'log_level': 5}
-        # Microsoft Edge
+        # Microsoft Edge (Legacy)
         edge = None
         build = get_windows_build()
         if build >= 10240:
@@ -588,10 +588,29 @@ def find_browsers():
                 edge = {'exe': edge_exe}
         if edge is not None:
             edge['type'] = 'Edge'
+            if 'Microsoft Edge (EdgeHTML)' not in browsers:
+                browsers['Microsoft Edge (EdgeHTML)'] = dict(edge)
             if 'Microsoft Edge' not in browsers:
                 browsers['Microsoft Edge'] = dict(edge)
             if 'Edge' not in browsers:
                 browsers['Edge'] = dict(edge)
+        # Microsoft Edge (Chromium)
+        paths = [program_files, program_files_x86, local_appdata]
+        channels = ['Edge Dev']
+        for channel in channels:
+            for path in paths:
+                if path is not None and channel not in browsers:
+                    edge_path = os.path.join(path, 'Microsoft', channel,
+                                             'Application', 'msedge.exe')
+                    if os.path.isfile(edge_path):
+                        browser_name = 'Microsoft {0} (Chromium)'.format(channel)
+                        if browser_name not in browsers:
+                            browsers[browser_name] = {'exe': edge_path}
+        if local_appdata is not None and 'Microsoft Edge Canary (Chromium)' not in browsers:
+            edge_path = os.path.join(local_appdata, 'Microsoft', 'Edge SxS',
+                                     'Application', 'msedge.exe')
+            if os.path.isfile(edge_path):
+                browsers['Microsoft Edge Canary (Chromium)'] = {'exe': edge_path}
         # Internet Explorer
         paths = [program_files, program_files_x86]
         for path in paths:
