@@ -5,9 +5,9 @@
 from datetime import datetime
 import gzip
 import logging
+import multiprocessing
 import os
 import platform
-import Queue
 import re
 import shutil
 import socket
@@ -28,8 +28,8 @@ class WebPageTest(object):
     # pylint: disable=E0611
     def __init__(self, options, workdir):
         import requests
-        self.fetch_queue = Queue.Queue()
-        self.fetch_result_queue = Queue.Queue()
+        self.fetch_queue = multiprocessing.JoinableQueue()
+        self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
         self.first_failure = None
         self.session = requests.Session()

@@ -5,9 +5,9 @@
 import gzip
 import logging
 import math
+import multiprocessing
 import os
 import platform
-import Queue
 import shutil
 import signal
 import subprocess
@@ -479,7 +479,7 @@ class DesktopBrowser(BaseBrowser):
                     pass
 
             # start the background thread for monitoring CPU and bandwidth
-            self.usage_queue = Queue.Queue()
+            self.usage_queue = multiprocessing.JoinableQueue()
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()
@@ -549,6 +549,10 @@ class DesktopBrowser(BaseBrowser):
             kill_all('ffmpeg.exe', True)
         else:
             subprocess.call(['killall', '-9', 'ffmpeg'])
+        self.job['shaper'].reset()
+
+    def on_start_processing(self, task):
+        """Start any processing of the captured data"""
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
             video_path = os.path.join(task['dir'], task['video_subdirectory'])
@@ -587,11 +591,7 @@ class DesktopBrowser(BaseBrowser):
                 except Exception:
                     pass
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args)
-        self.job['shaper'].reset()
-
-    def on_start_processing(self, task):
-        """Start any processing of the captured data"""
+            self.video_processing = subprocess.Popen(args, close_fds=True)
         # Process the tcpdump
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')

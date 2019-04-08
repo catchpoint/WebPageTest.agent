@@ -701,6 +701,20 @@ class Edge(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wb', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            hero_elements = None
+            custom_hero_selectors = {}
+            if 'heroElements' in self.job:
+                custom_hero_selectors = self.job['heroElements']
+            logging.debug('Collecting hero element positions')
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+                hero_elements_script = script_file.read()
+            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
+            hero_elements = self.execute_js(script)
+            if hero_elements is not None:
+                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
+                with gzip.open(path, 'wb', 7) as outfile:
+                    outfile.write(json.dumps(hero_elements))
         # Wait for the interactive periods to be written
         if self.supports_interactive:
             end_time = monotonic.monotonic() + 10
@@ -758,20 +772,6 @@ class Edge(DesktopBrowser):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         DesktopBrowser.on_stop_capture(self, task)
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.execute_js(script)
-            if hero_elements is not None:
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""

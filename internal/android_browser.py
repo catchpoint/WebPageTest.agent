@@ -173,53 +173,53 @@ class AndroidBrowser(BaseBrowser):
         if self.video_enabled and not self.job['disable_video']:
             task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
             self.adb.stop_screenrecord(task['video_file'])
-            # kick off the video processing (async)
-            if os.path.isfile(task['video_file']):
-                video_path = os.path.join(task['dir'], task['video_subdirectory'])
-                support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
-                if task['current_step'] == 1:
-                    filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'],
-                                                                       task['cached'])
-                else:
-                    filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
-                                                                             task['cached'],
-                                                                             task['current_step'])
-                histograms = os.path.join(task['dir'], filename)
-                progress_file = os.path.join(task['dir'], task['prefix']) + \
-                    '_visual_progress.json.gz'
-                visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                args = ['python', visualmetrics, '-i', task['video_file'],
-                        '-d', video_path, '--force', '--quality',
-                        '{0:d}'.format(self.job['imageQuality']),
-                        '--viewport', '--maxframes', '50', '--histogram', histograms,
-                        '--progress', progress_file]
-                if 'debug' in self.job and self.job['debug']:
-                    args.append('-vvvv')
-                if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-                    hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
-                    args.extend(['--herodata', hero_elements_file])
-                if 'renderVideo' in self.job and self.job['renderVideo']:
-                    video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
-                    args.extend(['--render', video_out])
-                if 'fullSizeVideo' in self.job and self.job['fullSizeVideo']:
-                    args.append('--full')
-                if 'thumbsize' in self.job:
-                    try:
-                        thumbsize = int(self.job['thumbsize'])
-                        if thumbsize > 0 and thumbsize <= 2000:
-                            args.extend(['--thumbsize', str(thumbsize)])
-                    except Exception:
-                        pass
-                if 'videoFlags' in self.config:
-                    args.extend(self.config['videoFlags'])
-                else:
-                    args.append('--orange')
-                logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args)
         self.job['shaper'].reset()
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        # kick off the video processing (async)
+        if os.path.isfile(task['video_file']):
+            video_path = os.path.join(task['dir'], task['video_subdirectory'])
+            support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+            if task['current_step'] == 1:
+                filename = '{0:d}.{1:d}.histograms.json.gz'.format(task['run'],
+                                                                    task['cached'])
+            else:
+                filename = '{0:d}.{1:d}.{2:d}.histograms.json.gz'.format(task['run'],
+                                                                            task['cached'],
+                                                                            task['current_step'])
+            histograms = os.path.join(task['dir'], filename)
+            progress_file = os.path.join(task['dir'], task['prefix']) + \
+                '_visual_progress.json.gz'
+            visualmetrics = os.path.join(support_path, "visualmetrics.py")
+            args = ['python', visualmetrics, '-i', task['video_file'],
+                    '-d', video_path, '--force', '--quality',
+                    '{0:d}'.format(self.job['imageQuality']),
+                    '--viewport', '--maxframes', '50', '--histogram', histograms,
+                    '--progress', progress_file]
+            if 'debug' in self.job and self.job['debug']:
+                args.append('-vvvv')
+            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+                hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
+                args.extend(['--herodata', hero_elements_file])
+            if 'renderVideo' in self.job and self.job['renderVideo']:
+                video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
+                args.extend(['--render', video_out])
+            if 'fullSizeVideo' in self.job and self.job['fullSizeVideo']:
+                args.append('--full')
+            if 'thumbsize' in self.job:
+                try:
+                    thumbsize = int(self.job['thumbsize'])
+                    if thumbsize > 0 and thumbsize <= 2000:
+                        args.extend(['--thumbsize', str(thumbsize)])
+                except Exception:
+                    pass
+            if 'videoFlags' in self.config:
+                args.extend(self.config['videoFlags'])
+            else:
+                args.append('--orange')
+            logging.debug(' '.join(args))
+            self.video_processing = subprocess.Popen(args, close_fds=True)
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             if os.path.isfile(tcpdump):

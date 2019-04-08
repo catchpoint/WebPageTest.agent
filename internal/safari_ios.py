@@ -6,9 +6,9 @@ import base64
 from datetime import datetime
 import gzip
 import logging
+import multiprocessing
 import os
 import platform
-import Queue
 import re
 import subprocess
 import time
@@ -35,7 +35,7 @@ class iWptBrowser(BaseBrowser):
         self.page_loaded = None
         self.recording = False
         self.connected = False
-        self.messages = Queue.Queue()
+        self.messages = multiprocessing.JoinableQueue()
         self.video_processing = None
         self.optimization = None
         self.is_navigating = False
@@ -343,6 +343,20 @@ class iWptBrowser(BaseBrowser):
                 path = self.path_base + '_metrics.json.gz'
                 with gzip.open(path, 'wb', 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
+        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
+            hero_elements = None
+            custom_hero_selectors = {}
+            if 'heroElements' in self.job:
+                custom_hero_selectors = self.job['heroElements']
+            logging.debug('Collecting hero element positions')
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+                hero_elements_script = script_file.read()
+            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
+            hero_elements = self.ios.execute_js(script)
+            if hero_elements is not None:
+                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
+                with gzip.open(path, 'wb', 7) as outfile:
+                    outfile.write(json.dumps(hero_elements))
 
     def process_message(self, msg):
         """Process a message from the browser
@@ -783,20 +797,7 @@ class iWptBrowser(BaseBrowser):
 
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.ios.execute_js(script)
-            if hero_elements is not None:
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
+        pass
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -882,7 +883,7 @@ class iWptBrowser(BaseBrowser):
                     except Exception:
                         pass
                 logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args)
+                self.video_processing = subprocess.Popen(args, close_fds=True)
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'

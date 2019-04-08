@@ -242,6 +242,7 @@ def remove_orange_frames(directory, orange_file):
 
 def find_image_viewport(file):
     logging.debug("Finding the viewport for %s", file)
+    im = None
     try:
         from PIL import Image
         im = Image.open(file)
@@ -306,6 +307,12 @@ def find_image_viewport(file):
 
     except Exception as e:
         viewport = None
+    
+    if im is not None:
+        try:
+            im.close()
+        except Exception:
+            pass
 
     return viewport
 
@@ -329,44 +336,54 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                 width, height = im.size
                 logging.debug('%s is %dx%d', frame, width, height)
             if options.notification:
-                im = Image.open(frame)
-                pixels = im.load()
-                middle = int(math.floor(height / 2))
-                # Find the top edge (at ~40% in to deal with browsers that
-                # color the notification area)
-                x = int(width * 0.4)
-                y = 0
-                background = pixels[x, y]
-                top = None
-                while top is None and y < middle:
-                    if not colors_are_similar(background, pixels[x, y]):
-                        top = y
-                    else:
-                        y += 1
-                if top is None:
-                    top = 0
-                logging.debug('Window top edge is {0:d}'.format(top))
+                im = None
+                try:
+                    im = Image.open(frame)
+                    pixels = im.load()
+                    middle = int(math.floor(height / 2))
+                    # Find the top edge (at ~40% in to deal with browsers that
+                    # color the notification area)
+                    x = int(width * 0.4)
+                    y = 0
+                    background = pixels[x, y]
+                    top = None
+                    while top is None and y < middle:
+                        if not colors_are_similar(background, pixels[x, y]):
+                            top = y
+                        else:
+                            y += 1
+                    if top is None:
+                        top = 0
+                    logging.debug('Window top edge is {0:d}'.format(top))
 
-                # Find the bottom edge
-                x = 0
-                y = height - 1
-                bottom = None
-                while bottom is None and y > middle:
-                    if not colors_are_similar(background, pixels[x, y]):
-                        bottom = y
-                    else:
-                        y -= 1
-                if bottom is None:
-                    bottom = height - 1
-                logging.debug('Window bottom edge is {0:d}'.format(bottom))
+                    # Find the bottom edge
+                    x = 0
+                    y = height - 1
+                    bottom = None
+                    while bottom is None and y > middle:
+                        if not colors_are_similar(background, pixels[x, y]):
+                            bottom = y
+                        else:
+                            y -= 1
+                    if bottom is None:
+                        bottom = height - 1
+                    logging.debug('Window bottom edge is {0:d}'.format(bottom))
 
-                viewport = {
-                    'x': 0,
-                    'y': top,
-                    'width': width,
-                    'height': (
-                        bottom -
-                        top)}
+                    viewport = {
+                        'x': 0,
+                        'y': top,
+                        'width': width,
+                        'height': (
+                            bottom -
+                            top)}
+                except Exception:
+                    pass
+
+                if im is not None:
+                    try:
+                        im.close()
+                    except Exception:
+                        pass
 
             elif find_viewport:
                 viewport = find_image_viewport(frame)
@@ -1085,8 +1102,9 @@ def calculate_histograms(directory, histograms_file, force):
 
 def calculate_image_histogram(file):
     logging.debug('Calculating histogram for ' + file)
+    from PIL import Image
+    im = None
     try:
-        from PIL import Image
         im = Image.open(file)
         width, height = im.size
         colors = im.getcolors(width * height)
@@ -1109,6 +1127,11 @@ def calculate_image_histogram(file):
     except Exception:
         histogram = None
         logging.exception('Error calculating histogram for ' + file)
+    if im is not None:
+        try:
+            im.close()
+        except Exception:
+            pass
     return histogram
 
 
@@ -1318,13 +1341,12 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
                 logging.debug('Calculating hero element times')
                 hero_data = None
-                hero_f_in = gzip.open(hero_elements_file, 'rb')
-                try:
-                    hero_data = json.load(hero_f_in)
-                except Exception as e:
-                    logging.exception('Could not load hero elements data')
-                    logging.exception(e)
-                hero_f_in.close()
+                with gzip.open(hero_elements_file, 'rb') as hero_f_in:
+                    try:
+                        hero_data = json.load(hero_f_in)
+                    except Exception as e:
+                        logging.exception('Could not load hero elements data')
+                        logging.exception(e)
 
                 if hero_data is not None and hero_data['heroes'] is not None and \
                         hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:
@@ -1341,9 +1363,8 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    hero_f_out = gzip.open(hero_elements_file, 'wb', 7)
-                    json.dump(hero_data, hero_f_out)
-                    hero_f_out.close()
+                    with gzip.open(hero_elements_file, 'wb', 7) as hero_f_out:
+                        json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
         else:
@@ -1484,9 +1505,10 @@ def calculate_perceptual_speed_index(progress, directory):
 
 
 def calculate_hero_time(progress, directory, hero, viewport):
-    dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
+    hero_time = None
+    abs_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
     n = len(progress)
-    target_frame = os.path.join(dir, 'ms_{0:06d}'.format(progress[n - 1]['time']))
+    target_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(progress[n - 1]['time']))
 
     extension = None
     if os.path.isfile(target_frame + '.png'):
@@ -1515,21 +1537,16 @@ def calculate_hero_time(progress, directory, hero, viewport):
         logging.debug('Calculating render time for hero element "%s" at position [%d, %d, %d, %d]' % (hero['name'], hero['x'], hero['y'], hero['width'], hero['height']))
 
         # Create a rectangular mask of the hero element position
-        hero_mask = os.path.join(dir, 'hero_{0}_mask.png'.format(hero['name']))
+        hero_mask = os.path.join(abs_directory, 'hero_{0}_mask.png'.format(hero['name']))
         command = '{0} -size {1}x{2} xc:black -fill white -draw "rectangle {3},{4} {5},{6}" PNG24:"{7}"'.format(
             image_magick['convert'], width, height, hero_x, hero_y, hero_x + hero_width, hero_y + hero_height, hero_mask)
         subprocess.call(command, shell=True)
 
         # Apply the mask to the target frame to create the reference frame
-        target_mask = os.path.join(dir, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], progress[n - 1]['time']))
+        target_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], progress[n - 1]['time']))
         command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
             image_magick['convert'], target_frame, hero_mask, target_mask)
         subprocess.call(command, shell=True)
-
-        def cleanup():
-            os.remove(hero_mask)
-            if os.path.isfile(target_mask):
-                os.remove(target_mask)
 
         # Allow for small differences like scrollbars and overlaid UI elements
         # by applying a 10% fuzz and allowing for up to 2% of the pixels to be
@@ -1538,32 +1555,43 @@ def calculate_hero_time(progress, directory, hero, viewport):
         max_pixel_diff = math.ceil(hero_width * hero_height * 0.02)
 
         for p in progress:
-            current_frame = os.path.join(dir, 'ms_{0:06d}'.format(p['time']))
+            current_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(p['time']))
             extension = None
             if os.path.isfile(current_frame + '.png'):
                 extension = '.png'
             elif os.path.isfile(current_frame + '.jpg'):
                 extension = '.jpg'
             if extension is not None:
-                current_mask = os.path.join(dir, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], p['time']))
+                current_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], p['time']))
                 # Apply the mask to the current frame
                 command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
                     image_magick['convert'], current_frame + extension, hero_mask, current_mask)
                 logging.debug(command)
                 subprocess.call(command, shell=True)
-                match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
-                # Remove each mask after using it
-                os.remove(current_mask)
+                if os.path.isfile(current_mask):
+                    match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
+                    # Remove each mask after using it
+                    try:
+                        os.remove(current_mask)
+                    except Exception:
+                        pass
 
                 if match:
-                    # Clean up masks as soon as a match is found
-                    cleanup()
-                    return p['time']
+                    hero_time = p['time']
+                    break
 
-        # No matches found; clean up masks
-        cleanup()
+        # Cleanup the masks
+        try:
+            os.remove(hero_mask)
+        except Exception:
+            pass
+        try:
+            if os.path.isfile(target_mask):
+                os.remove(target_mask)
+        except Exception:
+            pass
 
-    return None
+    return hero_time
 
 
 ##########################################################################
