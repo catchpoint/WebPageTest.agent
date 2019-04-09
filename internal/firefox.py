@@ -941,6 +941,7 @@ class Firefox(DesktopBrowser):
                     if 'created' in req:
                         request['created'] = req['created']
                     request['load_start'] = int(round(req['start'] * 1000.0))
+                    request['startTime'] = req['start'] * 1000.0
                     if 'first_byte' in req:
                         ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
                         request['ttfb_ms'] = max(0, ttfb)
@@ -992,12 +993,13 @@ class Firefox(DesktopBrowser):
                     request['objectSize'] = value
             except Exception:
                 pass
-        requests.sort(key=lambda x: x['load_start'])
+        requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
         return requests
 
     def populate_request(self, request, log_request):
         """Populate a request object from the log request values"""
         request['load_start'] = int(log_request['start'] * 1000)
+        request['startTime'] = log_request['start'] * 1000.0
         if 'status' in log_request:
             request['responseCode'] = log_request['status']
         if 'dns_start' in log_request and log_request['dns_start'] >= 0:
@@ -1014,7 +1016,6 @@ class Firefox(DesktopBrowser):
             request['ssl_end'] = int(round(log_request['ssl_end'] * 1000.0))
         if 'connection' in log_request:
             request['socket'] = log_request['connection']
-        request['load_start'] = int(round(log_request['start'] * 1000.0))
         if 'first_byte' in log_request:
             request['ttfb_ms'] = int(round((log_request['first_byte'] -
                                             log_request['start']) * 1000.0))
