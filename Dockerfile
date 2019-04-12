@@ -1,8 +1,8 @@
 # FROM debian:jessie-slim
 FROM ubuntu:18.04
 
-RUN apt-get update && \
-  apt-get install -y \
+RUN apt-get --allow-unauthenticated update && \
+  apt-get install -y --allow-unauthenticated \
     wget \
     curl \
     python \
@@ -35,8 +35,8 @@ RUN apt-get update && \
   add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free' && \
   add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free' && \
 # Install browsers
-  apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -yq \
+  apt-get --allow-unauthenticated update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -yq --allow-unauthenticated \
   google-chrome-stable \
   google-chrome-beta \
   google-chrome-unstable \
@@ -48,7 +48,7 @@ RUN apt-get update && \
   nodejs && \
 # Get fonts
   echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
-  sudo DEBIAN_FRONTEND=noninteractive apt-get -y install ttf-mscorefonts-installer fonts-noto* && \
+  sudo DEBIAN_FRONTEND=noninteractive apt-get -y --allow-unauthenticated install ttf-mscorefonts-installer fonts-noto* && \
   sudo fc-cache -f -v && \
 # Cleaup to save space in layer
   sudo apt-get clean && \
