@@ -532,6 +532,10 @@ def find_browsers():
                 firefox_path = os.path.join(path, 'Firefox', 'firefox.exe')
                 if os.path.isfile(firefox_path):
                     browsers['Firefox'] = {'exe': firefox_path, 'type': 'Firefox'}
+            if path is not None and 'Firefox ESR' not in browsers:
+                firefox_path = os.path.join(path, 'Mozilla Firefox ESR', 'firefox.exe')
+                if os.path.isfile(firefox_path):
+                    browsers['Firefox ESR'] = {'exe': firefox_path, 'type': 'Firefox'}
             if path is not None and 'Firefox Beta' not in browsers:
                 firefox_path = os.path.join(path, 'Mozilla Firefox Beta', 'firefox.exe')
                 if os.path.isfile(firefox_path):
