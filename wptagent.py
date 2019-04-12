@@ -783,6 +783,7 @@ def main():
                         '    remote,<server>,<down pipe>,<up pipe> - Connect to the remote server '
                         'over ssh and use pre-configured dummynet pipes (ssh keys for root user '
                         'should be pre-authorized).')
+    parser.add_argument('--tcpdump', help='Specify an interface to use for tcpdump.')
 
     # CPU Throttling
     parser.add_argument('--throttle', action='store_true', default=False,

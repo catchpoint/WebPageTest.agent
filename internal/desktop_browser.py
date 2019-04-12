@@ -389,6 +389,8 @@ class DesktopBrowser(BaseBrowser):
             if self.tcpdump_enabled:
                 self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'
                 interface = 'any' if self.job['interface'] is None else self.job['interface']
+                if self.options.tcpdump:
+                    interface = self.options.tcpdump
                 if platform.system() == 'Windows':
                     tcpdump = os.path.join(self.support_path, 'windows', 'WinDump.exe')
                     if interface == 'any':
