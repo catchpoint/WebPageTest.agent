@@ -1,21 +1,21 @@
 #!/bin/bash
-until sudo apt-get update
+until sudo apt-get --allow-unauthenticated update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools
+until sudo apt-get install -y --allow-unauthenticated python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools
 do
     sleep 1
 done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
-sudo apt-get install -y python-software-properties
+sudo apt-get install -y --allow-unauthenticated python-software-properties
 sudo dbus-uuidgen --ensure
 until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper marionette_driver
 do
     sleep 1
 done
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-until sudo apt-get install -y nodejs
+until sudo apt-get install -y --allow-unauthenticated nodejs
 do
     sleep 1
 done
@@ -32,8 +32,8 @@ wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'
-sudo apt-get update
-until sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk firefox-esr opera-stable opera-beta opera-developer
+sudo apt-get --allow-unauthenticated update
+until sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq --allow-unauthenticated google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk firefox-esr opera-stable opera-beta opera-developer
 do
     sleep 1
 done
