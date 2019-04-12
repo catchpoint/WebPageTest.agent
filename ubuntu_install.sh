@@ -27,12 +27,13 @@ sudo npm update -g
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
 sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' 
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
+sudo add-apt-repository -y ppa:mozillateam/ppa
 wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'
 sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'
 sudo apt-get update
-until sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk opera-stable opera-beta opera-developer
+until sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq google-chrome-stable google-chrome-beta google-chrome-unstable firefox firefox-trunk firefox-esr opera-stable opera-beta opera-developer
 do
     sleep 1
 done
