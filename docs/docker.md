@@ -34,5 +34,6 @@ Build the image first (from project root), load ifb and start it the container:
       -e LOCATION="docker-location" \
       -e NAME="Docker Test" \
       --cap-add=NET_ADMIN \
+      --init \
       wptagent
 
