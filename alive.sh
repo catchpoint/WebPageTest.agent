@@ -5,4 +5,5 @@
 # test-binary = /home/ubuntu/wptagent/alive.sh
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
+rm /var/log/watchdog/* || true
 python $DIR/alive.py --file /tmp/wptagent
