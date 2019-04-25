@@ -16,7 +16,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-background-networking',
     '--no-default-browser-check',
     '--no-first-run',
-    '--process-per-tab',
     '--new-window',
     '--disable-infobars',
     '--disable-translate',
@@ -76,6 +75,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             self.setup_prefs(task['profile'])
         if 'overrideHosts' in task and task['overrideHosts']:
             args.append('--enable-features=NetworkService')
+        else:
+            args.append('--disable-features=NetworkService')
         if self.options.xvfb:
             args.append('--disable-gpu')
         if self.options.dockerized:

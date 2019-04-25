@@ -120,6 +120,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             args.append('--log-net-log=/data/local/tmp/netlog.txt')
         if 'overrideHosts' in task and task['overrideHosts']:
             args.append('--enable-features=NetworkService')
+        else:
+            args.append('--disable-features=NetworkService')
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']

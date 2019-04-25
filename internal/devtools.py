@@ -268,48 +268,66 @@ class DevTools(object):
                 self.send_command('Profiler.enable', {})
                 self.send_command('Profiler.setSamplingInterval', {'interval': 100})
                 self.send_command('Profiler.start', {})
+            trace_config = {"recordMode": "recordAsMuchAsPossible",
+                            "includedCategories": []}
             if 'trace' in self.job and self.job['trace']:
                 if 'traceCategories' in self.job:
-                    trace = self.job['traceCategories']
-                    if not trace.startswith('-*,'):
-                        trace = '-*,' + trace
-                    if trace.find('netlog') >= 0:
+                    categories = self.job['traceCategories'].split(',')
+                    for category in categories:
+                        if category.find("*") < 0 and category not in trace_config["includedCategories"]:
+                            trace_config["includedCategories"].append(category)
+                    if "netlog" in trace_config["includedCategories"]:
                         self.job['keep_netlog'] = True
                 else:
-                    trace = "-*,toplevel,blink,v8,cc,gpu,blink.net," \
-                            "disabled-by-default-v8.runtime_stats"
+                    trace_config["includedCategories"] = [
+                        "toplevel",
+                        "blink",
+                        "v8",
+                        "cc",
+                        "gpu",
+                        "blink.net",
+                        "disabled-by-default-v8.runtime_stats"
+                    ]
                     self.job['keep_netlog'] = True
             else:
                 self.job['keep_netlog'] = False
-                trace = "-*"
             if 'netlog' in self.job and self.job['netlog']:
                 self.job['keep_netlog'] = True
             if 'timeline' in self.job and self.job['timeline']:
-                trace += ',' + ','.join([
-                    'blink.console',
-                    'devtools.timeline'
-                ])
+                if "blink.console" not in trace_config["includedCategories"]:
+                    trace_config["includedCategories"].append("blink.console")
+                if "devtools.timeline" not in trace_config["includedCategories"]:
+                    trace_config["includedCategories"].append("devtools.timeline")
+                trace_config["enableSampling"] = True
                 if 'timeline_fps' in self.job and self.job['timeline_fps']:
-                    trace += ',' + ','.join([
-                        'disabled-by-default-devtools.timeline',
-                        'disabled-by-default-devtools.timeline.frame'
-                    ])
+                    if "disabled-by-default-devtools.timeline" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-devtools.timeline")
+                    if "disabled-by-default-devtools.timeline.frame" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-devtools.timeline.frame")
             if self.use_devtools_video and self.job['video']:
-                trace += ",disabled-by-default-devtools.screenshot"
+                if "disabled-by-default-devtools.screenshot" not in trace_config["includedCategories"]:
+                    trace_config["includedCategories"].append("disabled-by-default-devtools.screenshot")
                 self.recording_video = True
             # Add the required trace events
-            if trace.find(',rail') == -1:
-                trace += ',rail'
-            if trace.find(',blink.user_timing') == -1:
-                trace += ',blink.user_timing'
-            if trace.find(',netlog') == -1:
-                trace += ',netlog'
-            if trace.find(',disabled-by-default-blink.feature_usage') == -1:
-                trace += ',disabled-by-default-blink.feature_usage'
+            if "rail" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("rail")
+            if "blink.user_timing" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("blink.user_timing")
+            if "netlog" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("netlog")
+            if "net" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("net")
+            if "disabled-by-default-netlog" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("disabled-by-default-netlog")
+            if "disabled-by-default-net" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("disabled-by-default-net")
+            if "disabled-by-default-network" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("disabled-by-default-network")
+            if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
             self.trace_enabled = True
             self.send_command('Tracing.start',
-                              {'categories': trace,
-                               'options': 'record-as-much-as-possible'},
+                              {'traceConfig': trace_config},
                               wait=True)
         now = monotonic.monotonic()
         if not self.task['stop_at_onload']:
