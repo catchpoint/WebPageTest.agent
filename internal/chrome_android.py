@@ -44,6 +44,10 @@ HOST_RULES = [
     '"MAP clients1.google.com 127.0.0.1"'
 ]
 
+ENABLE_CHROME_FEATURES = [
+    'SecMetadata'
+]
+
 """ Orange page
 <html>
 <head>
@@ -109,6 +113,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def launch(self, job, task):
         """Launch the browser"""
         args = list(CHROME_COMMAND_LINE_OPTIONS)
+        features = list(ENABLE_CHROME_FEATURES)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
@@ -119,9 +124,9 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
             args.append('--log-net-log=/data/local/tmp/netlog.txt')
         if 'overrideHosts' in task and task['overrideHosts']:
-            args.append('--enable-features=NetworkService')
-        else:
-            args.append('--disable-features=NetworkService')
+            features.append('NetworkService')
+            features.append('NetworkServiceInProcess')
+        args.append('--enable-features=' + ','.join(features))
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']

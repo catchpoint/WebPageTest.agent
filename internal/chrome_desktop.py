@@ -43,6 +43,12 @@ HOST_RULES = [
     '"MAP clients1.google.com 127.0.0.1"'
 ]
 
+ENABLE_CHROME_FEATURES = [
+    'NetworkService',
+    'NetworkServiceInProcess',
+    'SecMetadata'
+]
+
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
@@ -58,6 +64,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         """Launch the browser"""
         self.install_policy()
         args = list(CHROME_COMMAND_LINE_OPTIONS)
+        features = list(ENABLE_CHROME_FEATURES)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
@@ -73,16 +80,13 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'profile' in task:
             args.append('--user-data-dir="{0}"'.format(task['profile']))
             self.setup_prefs(task['profile'])
-        if 'overrideHosts' in task and task['overrideHosts']:
-            args.append('--enable-features=NetworkService')
-        else:
-            args.append('--disable-features=NetworkService')
         if self.options.xvfb:
             args.append('--disable-gpu')
         if self.options.dockerized:
             args.append('--no-sandbox')
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
+        args.append('--enable-features=' + ','.join(features))
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
