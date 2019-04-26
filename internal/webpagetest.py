@@ -117,7 +117,7 @@ class WebPageTest(object):
                 pass
         # If we are running in a git clone, grab the date of the last
         # commit as the version
-        self.version = '18.10'
+        self.version = '19.04'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
             out = subprocess.check_output('git log -1 --format=%cd --date=raw',
