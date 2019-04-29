@@ -115,15 +115,48 @@
       "icon": "Accelerated-Mobile-Pages.svg",
       "website": "https://www.ampproject.org"
     },
+    "Azure": {
+      "cats": [
+        62
+      ],
+      "headers": {
+        "azure-regionname": "",
+        "azure-sitename": "",
+        "azure-slotname": "",
+        "azure-version": ""
+      },
+      "cookies": {
+        "ARRAffinity": "",
+        "TiPMix": ""
+      },
+      "icon": "azure.svg",
+      "website": "https://azure.microsoft.com"
+    },
+    "Azure CDN": {
+      "cats": [
+        31
+      ],
+      "headers": {
+        "server": "^(?:ECAcc|ECS|ECD)",
+        "X-EC-Debug": ""
+      },
+      "icon": "azure.svg",
+      "website": "https://azure.microsoft.com/en-us/services/cdn/"
+    },
     "Acquia Cloud": {
       "cats": [
-        22
+        62
       ],
       "headers": {
         "X-AH-Environment": "^\\w+$"
       },
       "icon": "acquia-cloud.png",
-      "implies": "Drupal\\;confidence:95",
+      "implies": [
+        "Drupal\\;confidence:95",
+        "Apache",
+        "Percona",
+        "Amazon EC2"
+      ],
       "website": "https://www.acquia.com/"
     },
     "Act-On": {
@@ -491,7 +524,7 @@
       "html": "<!-- All in One SEO Pack ([\\d.]+) \\;version:\\1",
       "icon": "all-in-One-SEO-Pack.png",
       "implies": "WordPress",
-      "website": "https://www.acquia.com/"
+      "website": "https://wordpress.org/plugins/all-in-one-seo-pack/"
     },
     "Allegro RomPager": {
       "cats": [
@@ -574,7 +607,7 @@
     },
     "Amazon ELB": {
       "cats": [
-        63
+        65
       ],
       "cookies": {
         "AWSELB": ""
@@ -637,6 +670,20 @@
         "cdn\\.amplitude\\.com"
       ],
       "website": "https://amplitude.com/"
+    },
+    "Analysys Ark": {
+      "cats": [
+        10
+      ],
+      "js": {
+        "AnalysysAgent": ""
+      },
+      "cookies": {
+        "ARK_ID": ""
+      },
+      "icon": "Analysys Ark.svg",
+      "script": "AnalysysFangzhou_JS_SDK\\.min\\.js\\?v=([\\d.]+)\\;version:\\1",
+      "website": "https://ark.analysys.cn"
     },
     "Anetwork": {
       "cats": [
@@ -1133,6 +1180,16 @@
       "icon": "BaseHTTP.png",
       "implies": "Python",
       "website": "http://docs.python.org/2/library/basehttpserver.html"
+    },
+    "BigBangShop": {
+      "cats": [
+        6
+      ],
+      "headers": {
+        "X-SERVER": "BIGBANGSHOP"
+      },
+      "icon": "bigbangshop.svg",
+      "website": "https://www.bigbangshop.com.br"
     },
     "BigDump": {
       "cats": [
@@ -1785,6 +1842,24 @@
       },
       "website": "http://ckan.org/"
     },
+    "Clarity": {
+      "cats": [
+        18
+      ],
+      "html": [
+        "<clr-main-container",
+        "<link [^>]*href=\"[^\"]*clr-ui(?:\\.min)?\\.css"
+      ],
+      "js": {
+        "ClarityIcons": ""
+      },
+      "script": "clr-angular(?:\\.umd)?(?:\\.min)?\\.js",
+      "icon": "clarity.svg",
+      "implies": [
+        "Angular"
+      ],
+      "website": "https://clarity.design/"
+    },
     "ClickHeat": {
       "cats": [
         10
@@ -1996,6 +2071,14 @@
       },
       "website": "http://comandia.com"
     },
+    "Combeenation": {
+      "cats": [
+        6
+      ],
+      "html": "<iframe[^>]+src=\"[^>]+portal\\.combeenation\\.com",
+      "icon": "Combeenation.png",
+      "website": "https://www.combeenation.com"
+    },
     "Commerce Server": {
       "cats": [
         6
@@ -2151,6 +2234,16 @@
       },
       "icon": "CouchDB.png",
       "website": "http://couchdb.apache.org"
+    },
+    "Countly": {
+      "cats": [
+        10
+      ],
+      "icon": "Countly.png",
+      "js": {
+        "Countly": ""
+      },
+      "website": "https://count.ly"
     },
     "Cowboy": {
       "cats": [
@@ -2806,8 +2899,6 @@
     },
     "Elementor": {
       "cats": [
-        1,
-        11,
         51
       ],
       "html": [
@@ -2979,7 +3070,7 @@
     },
     "Envoy": {
       "cats": [
-        22
+        64
       ],
       "icon": "Envoy.png",
       "headers": {
@@ -3097,6 +3188,26 @@
       },
       "script": "ext-base\\.js",
       "website": "https://www.sencha.com"
+    },
+    "F5 BigIP": {
+      "cats": [
+        64
+      ],
+      "headers": {
+        "server": "^big-?ip$"
+      },
+      "cookies": {
+        "F5_ST": "",
+        "MRHSHint": "",
+        "F5_HT_shrinked": "",
+        "F5_fullWT": "",
+        "MRHSequence": "",
+        "MRHSession": "",
+        "LastMRH_Session": "",
+        "TIN": ""
+      },
+      "icon": "F5.png",
+      "website": "https://www.f5.com/products/big-ip-services"
     },
     "FAST ESP": {
       "cats": [
@@ -4067,6 +4178,32 @@
       },
       "website": "http://www.greenvalley.nl/Public/Producten/Content_Management/CMS"
     },
+    "Gridsome": {
+      "cats": [
+        57
+      ],
+      "icon": "Gridsome.svg",
+      "implies": "Vue.js",
+      "meta": {
+        "generator": "^Gridsome v([\\d.]+)$\\;version:\\1"
+      },
+      "website": "https://gridsome.org"
+    },
+    "GrowingIO": {
+      "cats": [
+        10
+      ],
+      "js": {
+        "gio": ""
+      },
+      "cookies": {
+        "grwng_uid": "",
+        "gr_user_id": ""
+      },
+      "icon": "GrowingIO.png",
+      "script": "assets\\.growingio\\.com/([\\d.]+)/gio.js\\;version:\\1",
+      "website": "https://www.growingio.com/"
+    },
     "HERE": {
       "cats": [
         35
@@ -4403,6 +4540,17 @@
       "icon": "IBM.svg",
       "script": "cmdatatagutils\\.js",
       "website": "http://ibm.com/software/marketing-solutions/coremetrics"
+    },
+    "IBM DataPower": {
+      "cats": [
+        64
+      ],
+      "headers": {
+        "X-Backside-Transport": "",
+        "X-Global-Transaction-ID": ""
+      },
+      "icon": "DataPower.png",
+      "website": "https://www.ibm.com/products/datapower-gateway"
     },
     "IBM HTTP Server": {
       "cats": [
@@ -5154,6 +5302,19 @@
       },
       "website": "http://www.kentico.com"
     },
+    "Kestrel": {
+      "cats": [
+        22
+      ],
+      "headers": {
+        "Server": "^Kestrel"
+      },
+      "implies": [
+        "Microsoft ASP.NET"
+      ],
+      "icon": "kestrel.svg",
+      "website": "https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel"
+    },
     "KeyCDN": {
       "cats": [
         31
@@ -5670,6 +5831,18 @@
       "script": "/js/al/common\\.js\\?[0-9_]+",
       "website": "http://liveinternet.ru/rating/"
     },
+    "LocalFocus": {
+      "cats": [
+        61
+      ],
+      "html": "<iframe[^>]+localfocus",
+      "icon": "LocalFocus.png",
+      "implies": [
+        "Angular",
+        "D3"
+      ],
+      "website": "https://www.localfocus.nl/en/"
+    },
     "Locomotive": {
       "cats": [
         1
@@ -5822,14 +5995,29 @@
         6
       ],
       "cookies": {
-        "botble_session": ""
+        "mypage_session": ""
       },
       "headers": {
-        "CMS-Version": "^(.+)$\\;version:\\1;confidence:0"
+        "CMS-Version": "^(.+)$\\;version:\\1\\;confidence:0"
       },
       "icon": "mypage-platform.png",
       "implies": "Laravel",
       "website": "https://www.mypage.vn"
+    },
+    "Botble CMS": {
+      "cats": [
+        1,
+        6
+      ],
+      "cookies": {
+        "botble_session": ""
+      },
+      "headers": {
+        "CMS-Version": "^(.+)$\\;version:\\1\\;confidence:0"
+      },
+      "icon": "Botble-CMS.png",
+      "implies": "Laravel",
+      "website": "https://botble.com"
     },
     "MadAdsMedia": {
       "cats": [
@@ -5927,6 +6115,13 @@
       "icon": "ManyContacts.png",
       "script": "\\/assets\\/js\\/manycontacts\\.min\\.js",
       "website": "http://www.manycontacts.com"
+    },
+    "MariaDB": {
+      "cats": [
+        34
+      ],
+      "icon": "mariadb.svg",
+      "website": "https://mariadb.org"
     },
     "Marionette.js": {
       "cats": [
@@ -6909,7 +7104,8 @@
     },
     "Nginx": {
       "cats": [
-        22
+        22,
+        64
       ],
       "headers": {
         "Server": "nginx(?:/([\\d.]+))?\\;version:\\1",
@@ -7110,7 +7306,9 @@
       "cats": [
         6
       ],
-      "html": "(?:index\\.php\\?route=[a-z]+/|Powered By <a href=\"[^>]+OpenCart)",
+      "cookies": {
+        "OCSESSID": ""
+      },
       "icon": "OpenCart.png",
       "implies": "PHP",
       "website": "http://www.opencart.com"
@@ -7479,6 +7677,22 @@
       },
       "website": "https://www.pagevamp.com"
     },
+    "Pantheon": {
+      "cats": [
+        62
+      ],
+      "headers": {
+        "x-pantheon-styx-hostname": "",
+        "Server": "^Pantheon"
+      },
+      "implies": [
+        "PHP",
+        "Nginx",
+        "MariaDB"
+      ],
+      "icon": "pantheon.svg",
+      "website": "https://pantheon.io/"
+    },
     "Paper.js": {
       "cats": [
         25
@@ -7586,6 +7800,13 @@
       "icon": "Pendo.svg",
       "script": "cdn\\.pendo\\.io*\\.js",
       "website": "https://pendo.io"
+    },
+    "Percona": {
+      "cats": [
+        34
+      ],
+      "icon": "percona.svg",
+      "website": "https://www.percona.com"
     },
     "Percussion": {
       "cats": [
@@ -7701,6 +7922,19 @@
         "x-powered-by": "^platformOS$"
       },
       "website": "https://www.platform-os.com"
+    },
+    "Platform.sh": {
+      "cats": [
+        62
+      ],
+      "icon": "platformsh.svg",
+      "headers": {
+        "x-platform-cluster": "",
+        "x-platform-processor": "",
+        "x-platform-router": "",
+        "x-platform-server": ""
+      },
+      "website": "https://platform.sh"
     },
     "Play": {
       "cats": [
@@ -8595,6 +8829,22 @@
       "icon": "SDL Tridion.png",
       "website": "http://www.sdl.com/products/tridion"
     },
+    "Sensors Data": {
+      "cats": [
+        10
+      ],
+      "js": {
+        "sa.lib_version": "([\\d.]+)\\;version:\\1",
+        "sensorsdata_app_js_bridge_call_js": ""
+      },
+      "cookies": {
+        "sensorsdata2015session": "",
+        "sensorsdata2015jssdkcross": ""
+      },
+      "icon": "Sensors Data.svg",
+      "script": "sensorsdata",
+      "website": "https://www.sensorsdata.cn"
+    },
     "Sentry": {
       "cats": [
         13
@@ -8929,6 +9179,16 @@
       },
       "website": "http://shellinabox.com"
     },
+    "Shiny": {
+      "cats": [
+        18
+      ],
+      "icon": "Shiny.png",
+      "js": {
+        "Shiny.addCustomMessageHandler": ""
+      },
+      "website": "https://shiny.rstudio.com"
+    },
     "ShinyStat": {
       "cats": [
         10
@@ -8996,7 +9256,7 @@
     },
     "Shopfa": {
       "cats": [
-        "6"
+        6
       ],
       "js": {
         "shopfa": ""
@@ -9926,6 +10186,32 @@
       },
       "website": "http://telescopeapp.org"
     },
+    "TN Express Web": {
+      "cats": [
+        1
+      ],
+      "cookies": {
+        "TNEW": ""
+      },
+      "implies": [
+        "Tessitura"
+      ],
+      "icon": "tessitura.svg",
+      "website": "https://www.tessituranetwork.com"
+    },
+    "Tessitura": {
+      "cats": [
+        53
+      ],
+      "html": "<!--[^>]+Tessitura Version: (\\d*\\.\\d*\\.\\d*)?\\;version:\\1",
+      "implies": [
+        "Microsoft ASP.NET",
+        "IIS",
+        "Windows Server"
+      ],
+      "icon": "tessitura.svg",
+      "website": "https://www.tessituranetwork.com"
+    },
     "Tengine": {
       "cats": [
         22
@@ -10516,15 +10802,19 @@
       "script": "vs350\\.js",
       "website": "http://www.vpasp.com"
     },
-    "VTEX Enterprise": {
+    "VTEX": {
       "cats": [
         6
       ],
+      "cookies": {
+        "VtexWorkspace": ""
+      },
       "headers": {
+        "Server": "^VTEX IO$",
         "powered": "vtex"
       },
-      "icon": "VTEX Enterprise.png",
-      "website": "http://vtex.com"
+      "icon": "VTEX.svg",
+      "website": "https://vtex.com/"
     },
     "VTEX Integrated Store": {
       "cats": [
@@ -10815,12 +11105,24 @@
         23
       ],
       "headers": {
-        "X-Powered-By": "WP Rocket(?:/([\\d.]+))?\\;version:\\1"
+        "X-Powered-By": "WP Rocket(?:/([\\d.]+))?\\;version:\\1",
+        "X-Rocket-Nginx-Bypass": ""
       },
       "html": "<!--[^>]+WP Rocket",
       "icon": "WP Rocket.png",
       "implies": "WordPress",
       "website": "http://wp-rocket.me"
+    },
+    "WP Engine": {
+      "cats": [
+        62
+      ],
+      "headers": {
+        "wpe-backend": ""
+      },
+      "icon": "wpengine.svg",
+      "implies": "WordPress",
+      "website": "https://wpengine.com"
     },
     "Warp": {
       "cats": [
@@ -11037,6 +11339,20 @@
         "wp-content/plugins/weglot"
       ],
       "website": "https://www.weglot.com"
+    },
+    "Webzi": {
+      "cats": [
+        1
+      ],
+      "icon": "Webzi.svg",
+      "js": {
+        "Webzi": ""
+      },
+      "meta": {
+        "generator": "^Webzi"
+      },
+      "script": "cdn\\.6th\\.ir",
+      "website": "https://webzi.ir"
     },
     "Wikinggruppen": {
       "cats": [
@@ -11599,6 +11915,24 @@
       "html": "<(?:param|embed|iframe)[^>]+youtube(?:-nocookie)?\\.com/(?:v|embed)",
       "icon": "YouTube.png",
       "website": "http://www.youtube.com"
+    },
+    "iEXExchanger": {
+      "cats": [
+        1
+      ],
+      "implies": [
+        "PHP",
+        "Apache",
+        "Angular"
+      ],
+      "cookies": {
+        "iexexchanger_session": ""
+      },
+      "meta": {
+        "generator": "iEXExchanger"
+      },
+      "icon": "iEXExchanger.png",
+      "website": "https://exchanger.iexbase.com"
     },
     "ZK": {
       "cats": [
@@ -12480,6 +12814,22 @@
       "script": "/particles(?:\\.min)?\\.js",
       "website": "https://vincentgarreau.com/particles.js/"
     },
+    "PhotoShelter": {
+      "cats": [
+        1
+      ],
+      "html": [
+        "<!--\\s+#+ Powered by the PhotoShelter Beam platform",
+        "<link rel=[\"']dns-prefetch[\"'] [^>]+photoshelter.com"
+      ],
+      "implies": [
+        "PHP",
+        "MySQL",
+        "jQuery"
+      ],
+      "icon": "PhotoShelter.png",
+      "website": "https://www.photoshelter.com"
+    },
     "phpAlbum": {
       "cats": [
         7
@@ -12975,6 +13325,20 @@
         "Less"
       ],
       "website": "https://rocketcms.io"
+    },
+    "Zipkin": {
+      "cats": [
+        10
+      ],
+      "headers": {
+        "X-B3-TraceId": "",
+        "X-B3-SpanId": "",
+        "X-B3-ParentSpanId": "",
+        "X-B3-Sampled": "",
+        "X-B3-Flags": ""
+      },
+      "icon": "Zipkin.png",
+      "website": "https://zipkin.io/"
     }
   },
   "categories": {
@@ -13221,6 +13585,14 @@
     "63": {
       "name": "IaaS",
       "priority": 8
+    },
+    "64": {
+      "name": "Reverse Proxy",
+      "priority": 7
+    },
+    "65": {
+      "name": "Load Balancer",
+      "priority": 7
     }
   }
 }
