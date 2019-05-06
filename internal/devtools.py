@@ -833,6 +833,10 @@ class DevTools(object):
         """Clear the browser cache"""
         self.send_command('Network.clearBrowserCache', {}, wait=True)
 
+    def disable_cache(self, disable):
+        """Disable the browser cache"""
+        self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
+
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
         if 'method' in msg and self.recording:
