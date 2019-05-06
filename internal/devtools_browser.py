@@ -428,6 +428,11 @@ class DevtoolsBrowser(object):
             self.devtools.reset_headers()
         elif command['command'] == 'clearcache':
             self.devtools.clear_cache()
+        elif command['command'] == 'disablecache':
+            disable_cache = bool('target' in command and \
+                                 int(re.search(r'\d+',
+                                               str(command['target'])).group()) == 1)
+            self.devtools.disable_cache(disable_cache)
 
     def navigate(self, url):
         """Navigate to the given URL"""
