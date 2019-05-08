@@ -606,7 +606,10 @@ class DevtoolsBrowser(object):
                                     continue
                                 audit = lh_report['audits'][auditRef['id']]
                                 name = category_title + '.' + audit['id']
-                                audits[name] = audit['rawValue']
+                                if 'rawValue' in audit:
+                                    audits[name] = audit['rawValue']
+                                elif 'numericValue' in audit:
+                                    audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
                     with gzip.open(audits_gzip, 'wb', 7) as f_out:
                         json.dump(audits, f_out)
