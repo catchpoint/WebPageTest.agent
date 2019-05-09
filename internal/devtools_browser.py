@@ -485,7 +485,7 @@ class DevtoolsBrowser(object):
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
-                command.append('--disable-device-emulation')
+                command.extend(['--emulated-form-factor', 'none'])
                 if 'user_agent_string' in self.job:
                     sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                     command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
