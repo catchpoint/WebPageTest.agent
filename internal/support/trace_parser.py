@@ -845,6 +845,8 @@ class Trace():
                     name == 'HTTP2_SESSION_POOL_FOUND_EXISTING_SESSION_FROM_IP_POOL':
                 h2_session_id = params['source_dependency']['id']
                 entry['h2_session'] = h2_session_id
+                if h2_session_id in self.netlog['h2_session'] and 'socket' in self.netlog['h2_session'][h2_session_id]:
+                    entry['socket'] = self.netlog['h2_session'][h2_session_id]['socket']
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
                     self.netlog['urlrequest'][entry['urlrequest']]['h2_session'] = h2_session_id
 
