@@ -22,11 +22,6 @@ import ujson as json
 
 DEFAULT_JPEG_QUALITY = 30
 
-# Hard-fail any tests that include requests to URLs starting with one of these paths.
-BLOCK_URL_PATHS = [
-    "/latest/meta-data"
-]
-
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
@@ -179,6 +174,9 @@ class WebPageTest(object):
             directory = os.path.abspath(os.path.dirname(__file__))
             ec2_script = os.path.join(directory, 'support', 'ec2', 'win_routes.ps1')
             run_elevated('powershell.exe', ec2_script)
+        # Make sure the route blocking isn't configured on Linux
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'delete', '169.254.169.254'])
         ok = False
         while not ok:
             try:
@@ -221,6 +219,9 @@ class WebPageTest(object):
                 pass
             if not ok:
                 time.sleep(10)
+        # Block access to the metadata server
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
@@ -1019,8 +1020,6 @@ class WebPageTest(object):
         logging.info('Uploading result')
         cpu_pct = None
         self.update_browser_viewport(task)
-        # Make sure we don't need to hard-fail this result
-        test_valid = self.validate_test_result(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:
@@ -1056,7 +1055,7 @@ class WebPageTest(object):
                 data['ec2zone'] = self.zone
             needs_zip = []
             zip_path = None
-            if test_valid and os.path.isdir(task['dir']):
+            if os.path.isdir(task['dir']):
                 # upload any video images
                 if bool(self.job['video']) and len(task['video_directories']):
                     for video_subdirectory in task['video_directories']:
@@ -1131,27 +1130,6 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
-
-    def validate_test_result(self, task):
-        """Check the test result for things that need to be blocked"""
-        is_valid = True
-        try:
-            requests_file = os.path.join(task['dir'], task['prefix'] + '_' + 'devtools_requests.json.gz')
-            if os.path.isfile(requests_file):
-                with gzip.open(requests_file, 'rb') as f_in:
-                    requests_data = json.load(f_in)
-                    if 'requests' in requests_data:
-                        for request in requests_data['requests']:
-                            if 'url' in request:
-                                for banned in BLOCK_URL_PATHS:
-                                    if request['url'].startswith(banned):
-                                        logging.debug('Failing test, attempted to fetch %s', request['url'])
-                                        is_valid = False
-                                if not is_valid:
-                                    break
-        except Exception:
-            pass
-        return is_valid
 
     def post_data(self, url, data, file_path, filename):
         """Send a multi-part post"""
