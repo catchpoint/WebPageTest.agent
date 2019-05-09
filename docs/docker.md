@@ -23,6 +23,12 @@ Also, the container needs `NET_ADMIN` capabilities, so run the container with
 
 To disable traffic-shaping, pass SHAPER="none".
 
+## Container Disk Space Fills Up Quickly
+
+If you see disk space within the container filling up rapidly and you notice
+core dump files in the /wptagent folder, try adding `--shm-size=1g` to your Docker run
+command. This can help resolve an issue with shared memory and headless Chrome in Docker.
+
 ## Example
 
 Build the image first (from project root), load ifb and start it the container:

@@ -271,13 +271,12 @@ class DevTools(object):
             trace_config = {"recordMode": "recordAsMuchAsPossible",
                             "includedCategories": []}
             if 'trace' in self.job and self.job['trace']:
+                self.job['keep_netlog'] = True
                 if 'traceCategories' in self.job:
                     categories = self.job['traceCategories'].split(',')
                     for category in categories:
                         if category.find("*") < 0 and category not in trace_config["includedCategories"]:
                             trace_config["includedCategories"].append(category)
-                    if "netlog" in trace_config["includedCategories"]:
-                        self.job['keep_netlog'] = True
                 else:
                     trace_config["includedCategories"] = [
                         "toplevel",
@@ -288,7 +287,6 @@ class DevTools(object):
                         "blink.net",
                         "disabled-by-default-v8.runtime_stats"
                     ]
-                    self.job['keep_netlog'] = True
             else:
                 self.job['keep_netlog'] = False
             if 'netlog' in self.job and self.job['netlog']:
@@ -832,6 +830,10 @@ class DevTools(object):
     def clear_cache(self):
         """Clear the browser cache"""
         self.send_command('Network.clearBrowserCache', {}, wait=True)
+
+    def disable_cache(self, disable):
+        """Disable the browser cache"""
+        self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
 
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""

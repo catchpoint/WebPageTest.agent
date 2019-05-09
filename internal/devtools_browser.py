@@ -428,6 +428,11 @@ class DevtoolsBrowser(object):
             self.devtools.reset_headers()
         elif command['command'] == 'clearcache':
             self.devtools.clear_cache()
+        elif command['command'] == 'disablecache':
+            disable_cache = bool('target' in command and \
+                                 int(re.search(r'\d+',
+                                               str(command['target'])).group()) == 1)
+            self.devtools.disable_cache(disable_cache)
 
     def navigate(self, url):
         """Navigate to the given URL"""
@@ -480,7 +485,7 @@ class DevtoolsBrowser(object):
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
-                command.append('--disable-device-emulation')
+                command.extend(['--emulated-form-factor', 'none'])
                 if 'user_agent_string' in self.job:
                     sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                     command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
@@ -601,7 +606,10 @@ class DevtoolsBrowser(object):
                                     continue
                                 audit = lh_report['audits'][auditRef['id']]
                                 name = category_title + '.' + audit['id']
-                                audits[name] = audit['rawValue']
+                                if 'rawValue' in audit:
+                                    audits[name] = audit['rawValue']
+                                elif 'numericValue' in audit:
+                                    audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
                     with gzip.open(audits_gzip, 'wb', 7) as f_out:
                         json.dump(audits, f_out)
