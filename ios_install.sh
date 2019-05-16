@@ -10,10 +10,12 @@ do
 done
 until sudo DEBIAN_FRONTEND=noninteractive apt -yq install build-essential \
 cmake python-dev cython swig automake autoconf libtool libusb-1.0-0 libusb-1.0-0-dev \
-libreadline-dev openssl libssl1.0.2 libssl1.1 libssl-dev
+libreadline-dev openssl libssl-dev
 do
     sleep 1
 done
+sudo DEBIAN_FRONTEND=noninteractive apt -yq install libssl1.0.2 
+sudo DEBIAN_FRONTEND=noninteractive apt -yq install libssl1.1 
 cd ~
 
 git clone --depth 1 https://github.com/libimobiledevice/libplist.git libplist
