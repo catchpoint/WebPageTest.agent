@@ -22,7 +22,6 @@ import ujson as json
 
 DEFAULT_JPEG_QUALITY = 30
 
-
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
@@ -175,6 +174,9 @@ class WebPageTest(object):
             directory = os.path.abspath(os.path.dirname(__file__))
             ec2_script = os.path.join(directory, 'support', 'ec2', 'win_routes.ps1')
             run_elevated('powershell.exe', ec2_script)
+        # Make sure the route blocking isn't configured on Linux
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'delete', '169.254.169.254'])
         ok = False
         while not ok:
             try:
@@ -217,6 +219,9 @@ class WebPageTest(object):
                 pass
             if not ok:
                 time.sleep(10)
+        # Block access to the metadata server
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
