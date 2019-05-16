@@ -64,6 +64,7 @@ class DevtoolsBrowser(object):
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
+            self.devtools.prepare_browser()
             # Figure out the native viewport size
             if not self.options.android:
                 size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")
@@ -147,7 +148,6 @@ class DevtoolsBrowser(object):
             if self.job['noscript']:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
-            self.devtools.prepare_browser()
 
     def on_start_recording(self, task):
         """Start recording"""

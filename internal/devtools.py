@@ -27,6 +27,7 @@ class DevTools(object):
         self.task = task
         self.command_id = 0
         self.command_responses = {}
+        self.target_sessions = {}
         self.pending_commands = []
         self.workers = []
         self.page_loaded = None
@@ -62,6 +63,7 @@ class DevTools(object):
         self.prepare()
         self.html_body = False
         self.all_bodies = False
+        self.default_target = None
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -128,6 +130,7 @@ class DevTools(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         ret = False
+        self.default_target = None
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
@@ -187,9 +190,14 @@ class DevTools(object):
         if response is not None and 'result' in response and 'targetInfos' in response['result']:
             for target in response['result']['targetInfos']:
                 logging.debug(target)
-                if 'type' in target and target['type'] == 'service_worker':
-                    self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                      wait=True)
+                if 'type' in target and 'targetId' in target:
+                    if target['type'] == 'service_worker':
+                        self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                           wait=True)
+                    if self.default_target is None and target['type'] == 'page':
+                        self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                            wait=True)
+                        self.default_target = target['targetId']
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -654,6 +662,10 @@ class DevTools(object):
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
+        if target_id is None and self.default_target is not None and \
+                not method.startswith('Target.') and \
+                not method.startswith('Tracing.'):
+            target_id = self.default_target
         if target_id is not None:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -837,24 +849,24 @@ class DevTools(object):
 
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
-        if 'method' in msg and self.recording:
+        if 'method' in msg:
             parts = msg['method'].split('.')
             if len(parts) >= 2:
                 category = parts[0]
                 event = parts[1]
-                if category == 'Page':
+                if category == 'Page' and self.recording:
                     self.log_dev_tools_event(msg)
                     self.process_page_event(event, msg)
-                elif category == 'Network':
+                elif category == 'Network' and self.recording:
                     self.log_dev_tools_event(msg)
                     self.process_network_event(event, msg, target_id)
                 elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
-                elif category == 'CSS':
+                elif category == 'CSS' and self.recording:
                     self.process_css_event(event, msg)
                 elif category == 'Target':
                     self.process_target_event(event, msg)
-                else:
+                elif self.recording:
                     self.log_dev_tools_event(msg)
         if 'id' in msg:
             response_id = int(re.search(r'\d+', str(msg['id'])).group())
@@ -1044,6 +1056,8 @@ class DevTools(object):
         if event == 'attachedToTarget':
             if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
                 target = msg['params']['targetInfo']
+                if 'sessionId' in msg['params']:
+                    self.target_sessions[msg['params']['sessionId']] = target['targetId']
                 if 'type' in target and target['type'] == 'service_worker':
                     self.workers.append(target)
                     if self.recording:
@@ -1055,11 +1069,25 @@ class DevTools(object):
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
         if event == 'receivedMessageFromTarget':
-            if 'message' in msg['params'] and 'targetId' in msg['params']:
-                logging.debug(msg['params']['message'][:200])
+            target_id = None
+            if 'targetId' in msg['params']:
                 target_id = msg['params']['targetId']
+            elif 'sessionId' in msg['params']:
+                session_id = msg['params']['sessionId']
+                if session_id in self.target_sessions:
+                    target_id = self.target_sessions[session_id]
+            if 'message' in msg['params'] and target_id is not None:
+                logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
+        if event == 'targetCreated' and self.default_target is None:
+            if 'targetInfo' in msg['params'] and \
+                    'type' in msg['params']['targetInfo'] and \
+                    msg['params']['targetInfo']['type'] == 'page' and \
+                    'targetId' in msg['params']['targetInfo']:
+                self.send_command('Target.attachToTarget', {'targetId': msg['params']['targetInfo']['targetId']},
+                                  wait=True)
+                self.default_target = msg['params']['targetInfo']['targetId']
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
