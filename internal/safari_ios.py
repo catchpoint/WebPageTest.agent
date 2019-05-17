@@ -65,6 +65,9 @@ class iWptBrowser(BaseBrowser):
         self.webinspector_proxy = None
         self.ios_utils_path = None
         self.ios_version = None
+        self.target_sessions = {}
+        self.workers = []
+        self.default_target = None
         plat = platform.system()
         if plat == "Darwin":
             self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -127,6 +130,22 @@ class iWptBrowser(BaseBrowser):
                 self.connected = self.connect()
 
             if self.connected:
+                self.flush_pending_messages()
+                # Run any one-time startup preparation before testing starts
+                self.send_command('Target.setAutoAttach',
+                                {'autoAttach': True, 'waitForDebuggerOnStart': True})
+                response = self.send_command('Target.getTargets', {}, wait=True)
+                if response is not None and 'result' in response and 'targetInfos' in response['result']:
+                    for target in response['result']['targetInfos']:
+                        logging.debug(target)
+                        if 'type' in target and 'targetId' in target:
+                            if target['type'] == 'service_worker':
+                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                                wait=True)
+                            if self.default_target is None and target['type'] == 'page':
+                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                                    wait=True)
+                                self.default_target = target['targetId']
                 # Override the UA String if necessary
                 ua_string = self.execute_js('navigator.userAgent;')
                 if 'uastring' in self.job:
@@ -143,6 +162,7 @@ class iWptBrowser(BaseBrowser):
         import requests
         proxies = {"http": None, "https": None}
         ret = False
+        self.default_target = None
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
@@ -305,12 +325,22 @@ class iWptBrowser(BaseBrowser):
                 self.headers[name] = value
                 self.send_command('Network.setExtraHTTPHeaders',
                                   {'headers': self.headers}, wait=True)
+                if len(self.workers):
+                    for target in self.workers:
+                        self.send_command('Network.setExtraHTTPHeaders',
+                                          {'headers': self.headers}, target_id=target['targetId'],
+                                          wait=True)
 
     def reset_headers(self):
         """Add/modify a header on the outbound requests"""
         self.headers = {}
         self.send_command('Network.setExtraHTTPHeaders',
                           {'headers': self.headers}, wait=True)
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.setExtraHTTPHeaders',
+                                  {'headers': self.headers}, target_id=target['targetId'],
+                                  wait=True)
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
@@ -358,28 +388,30 @@ class iWptBrowser(BaseBrowser):
                 with gzip.open(path, 'wb', 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
-    def process_message(self, msg):
+    def process_message(self, msg, target_id=None):
         """Process a message from the browser
         https://trac.webkit.org/browser/webkit/trunk/Source/JavaScriptCore/inspector/protocol"""
         try:
-            if 'method' in msg and self.recording:
+            if 'method' in msg:
                 parts = msg['method'].split('.')
                 if len(parts) >= 2:
                     category = parts[0]
                     event = parts[1]
-                    if category == 'Page':
+                    if category == 'Page' and self.recording:
                         self.process_page_event(event, msg)
-                    elif category == 'Network':
+                    elif category == 'Network' and self.recording:
                         self.process_network_event(event, msg)
                     elif category == 'Inspector':
                         self.process_inspector_event(event)
-                    elif category == 'Timeline':
+                    elif category == 'Timeline' and self.recording:
                         self.process_timeline_event(event, msg)
-                    elif category == 'Console':
+                    elif category == 'Console' and self.recording:
                         self.process_console_event(event, msg)
+                    elif category == 'Target':
+                        self.process_target_event(event, msg)
         except Exception:
             pass
-        if self.timeline and 'method' in msg and self.recording:
+        if self.timeline and 'method' in msg and not msg['method'].startswith('Target.') and self.recording:
             json.dump(msg, self.timeline)
             self.timeline.write(",\n")
         if 'id' in msg:
@@ -631,6 +663,45 @@ class iWptBrowser(BaseBrowser):
         if event == 'messageAdded' and 'message' in msg['params']:
             self.console_log.append(msg['params']['message'])
 
+    def process_target_event(self, event, msg):
+        """Process Target.* dev tools events"""
+        logging.debug('Processing Target message')
+        if event == 'attachedToTarget':
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                if 'sessionId' in msg['params']:
+                    self.target_sessions[msg['params']['sessionId']] = target['targetId']
+                if 'type' in target and target['type'] == 'service_worker':
+                    self.workers.append(target)
+                    if self.recording:
+                        self.send_command('Network.enable', {}, target_id=target['targetId'])
+                        if self.headers:
+                            self.send_command('Network.setExtraHTTPHeaders',
+                                              {'headers': self.headers}, target_id=target['targetId'],
+                                              wait=True)
+                self.send_command('Runtime.runIfWaitingForDebugger', {},
+                                  target_id=target['targetId'])
+        if event == 'dispatchMessageFromTarget':
+            target_id = None
+            if 'targetId' in msg['params']:
+                target_id = msg['params']['targetId']
+            elif 'sessionId' in msg['params']:
+                session_id = msg['params']['sessionId']
+                if session_id in self.target_sessions:
+                    target_id = self.target_sessions[session_id]
+            if 'message' in msg['params'] and target_id is not None:
+                logging.debug(msg['params']['message'][:200])
+                target_message = json.loads(msg['params']['message'])
+                self.process_message(target_message, target_id=target_id)
+        if event == 'targetCreated' and self.default_target is None:
+            if 'targetInfo' in msg['params'] and \
+                    'type' in msg['params']['targetInfo'] and \
+                    msg['params']['targetInfo']['type'] == 'page' and \
+                    'targetId' in msg['params']['targetInfo']:
+                self.send_command('Target.attachToTarget', {'targetId': msg['params']['targetInfo']['targetId']},
+                                  wait=True)
+                self.default_target = msg['params']['targetInfo']['targetId']
+
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
         if original_id not in self.response_bodies and self.body_fail_count < 3:
@@ -754,6 +825,13 @@ class iWptBrowser(BaseBrowser):
         if self.headers:
             self.send_command('Network.setExtraHTTPHeaders',
                               {'headers': self.headers}, wait=True)
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.enable', {}, target_id=target['targetId'])
+                if self.headers:
+                    self.send_command('Network.setExtraHTTPHeaders',
+                                      {'headers': self.headers}, target_id=target['targetId'],
+                                      wait=True)
         if 'user_agent_string' in self.job:
             self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
@@ -805,6 +883,9 @@ class iWptBrowser(BaseBrowser):
         self.send_command('Page.disable', {})
         self.send_command('Inspector.disable', {})
         self.send_command('Network.disable', {})
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.disable', {}, target_id=target['targetId'])
         self.send_command('Inspector.disable', {})
         if self.task['log_data']:
             self.send_command('Console.disable', {})
@@ -946,10 +1027,41 @@ class iWptBrowser(BaseBrowser):
                 with gzip.open(path, 'wb', 7) as outfile:
                     outfile.write(json_page_data)
 
-    def send_command(self, method, params, wait=False, timeout=10):
+    def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
-        if self.websocket:
+        if target_id is None and self.default_target is not None and \
+                not method.startswith('Target.') and \
+                not method.startswith('Tracing.'):
+            target_id = self.default_target
+        if target_id is not None:
+            self.command_id += 1
+            command_id = int(self.command_id)
+            msg = {'id': command_id, 'method': method, 'params': params}
+            if wait:
+                self.pending_commands.append(command_id)
+            end_time = monotonic.monotonic() + timeout
+            self.send_command('Target.sendMessageToTarget',
+                              {'targetId': target_id, 'message': json.dumps(msg)},
+                              wait=True, timeout=timeout)
+            if wait:
+                if command_id in self.command_responses:
+                    ret = self.command_responses[command_id]
+                    del self.command_responses[command_id]
+                else:
+                    while ret is None and monotonic.monotonic() < end_time:
+                        try:
+                            raw = self.websocket.get_message(1)
+                            if raw is not None and len(raw):
+                                logging.debug(raw[:200])
+                                msg = json.loads(raw)
+                                self.process_message(msg)
+                                if command_id in self.command_responses:
+                                    ret = self.command_responses[command_id]
+                                    del self.command_responses[command_id]
+                        except Exception:
+                            pass
+        elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
             if wait:
@@ -975,6 +1087,21 @@ class iWptBrowser(BaseBrowser):
                 logging.debug("Websocket send error: %s", err.__str__())
         return ret
 
+    def flush_pending_messages(self):
+        """Clear out any pending websocket messages"""
+        if self.websocket:
+            try:
+                while True:
+                    raw = self.websocket.get_message(0)
+                    if raw is not None and len(raw):
+                        if self.recording:
+                            logging.debug(raw[:200])
+                            msg = json.loads(raw)
+                            self.process_message(msg)
+                    if not raw:
+                        break
+            except Exception:
+                pass
 
     def process_command(self, command):
         """Process an individual script command"""
