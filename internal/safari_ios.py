@@ -130,8 +130,6 @@ class iWptBrowser(BaseBrowser):
                 self.connected = self.connect()
 
             if self.connected:
-                self.flush_pending_messages()
-                # Run any one-time startup preparation before testing starts
                 self.send_command('Target.setAutoAttach',
                                 {'autoAttach': True, 'waitForDebuggerOnStart': True})
                 response = self.send_command('Target.getTargets', {}, wait=True)
@@ -141,10 +139,10 @@ class iWptBrowser(BaseBrowser):
                         if 'type' in target and 'targetId' in target:
                             if target['type'] == 'service_worker':
                                 self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                wait=True)
+                                                  wait=True)
                             if self.default_target is None and target['type'] == 'page':
                                 self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                    wait=True)
+                                                  wait=True)
                                 self.default_target = target['targetId']
                 # Override the UA String if necessary
                 ua_string = self.execute_js('navigator.userAgent;')
@@ -665,21 +663,6 @@ class iWptBrowser(BaseBrowser):
 
     def process_target_event(self, event, msg):
         """Process Target.* dev tools events"""
-        if event == 'attachedToTarget':
-            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
-                target = msg['params']['targetInfo']
-                if 'sessionId' in msg['params']:
-                    self.target_sessions[msg['params']['sessionId']] = target['targetId']
-                if 'type' in target and target['type'] == 'service_worker':
-                    self.workers.append(target)
-                    if self.recording:
-                        self.send_command('Network.enable', {}, target_id=target['targetId'])
-                        if self.headers:
-                            self.send_command('Network.setExtraHTTPHeaders',
-                                              {'headers': self.headers}, target_id=target['targetId'],
-                                              wait=True)
-                self.send_command('Runtime.runIfWaitingForDebugger', {},
-                                  target_id=target['targetId'])
         if event == 'dispatchMessageFromTarget':
             target_id = None
             if 'targetId' in msg['params']:
@@ -692,14 +675,14 @@ class iWptBrowser(BaseBrowser):
                 logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
-        if event == 'targetCreated' and self.default_target is None:
+        if event == 'targetCreated':
             if 'targetInfo' in msg['params'] and \
                     'type' in msg['params']['targetInfo'] and \
                     msg['params']['targetInfo']['type'] == 'page' and \
                     'targetId' in msg['params']['targetInfo']:
-                self.send_command('Target.attachToTarget', {'targetId': msg['params']['targetInfo']['targetId']},
-                                  wait=True)
                 self.default_target = msg['params']['targetInfo']['targetId']
+                if self.recording:
+                    self.enable_safari_events()
 
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
@@ -803,20 +786,7 @@ class iWptBrowser(BaseBrowser):
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
 
-    def on_start_recording(self, task):
-        """Notification that we are about to start an operation that needs to be recorded"""
-        self.page = {}
-        self.requests = {}
-        self.console_log = []
-        self.response_bodies = {}
-        if self.timeline is not None:
-            self.timeline.close()
-            self.timeline = None
-        self.wpt_result = None
-        task['page_data'] = {'date': time.time()}
-        task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
-        self.flush_messages()
+    def enable_safari_events(self):
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
@@ -834,6 +804,25 @@ class iWptBrowser(BaseBrowser):
         if 'user_agent_string' in self.job:
             self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
+            self.send_command('Console.enable', {})
+            self.send_command('Timeline.start', {})
+
+    def on_start_recording(self, task):
+        """Notification that we are about to start an operation that needs to be recorded"""
+        self.page = {}
+        self.requests = {}
+        self.console_log = []
+        self.response_bodies = {}
+        if self.timeline is not None:
+            self.timeline.close()
+            self.timeline = None
+        self.wpt_result = None
+        task['page_data'] = {'date': time.time()}
+        task['page_result'] = None
+        task['run_start_time'] = monotonic.monotonic()
+        self.flush_messages()
+        self.enable_safari_events()
+        if self.task['log_data']:
             if not self.job['shaper'].configure(self.job, task):
                 self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
@@ -842,7 +831,6 @@ class iWptBrowser(BaseBrowser):
             if 'bodies' in self.job and self.job['bodies']:
                 self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
                                                        zipfile.ZIP_DEFLATED)
-            self.send_command('Console.enable', {})
             if 'timeline' in self.job and self.job['timeline']:
                 if self.path_base is not None:
                     timeline_path = self.path_base + '_devtools.json.gz'
@@ -853,7 +841,6 @@ class iWptBrowser(BaseBrowser):
                 self.trace_parser = Trace()
                 self.trace_parser.cpu['main_thread'] = '0'
                 self.trace_parser.threads['0'] = {}
-                self.send_command('Timeline.start', {})
             self.ios.show_orange()
             if self.path_base is not None and not self.job['disable_video']:
                 task['video_file'] = self.path_base + '_video.mp4'
@@ -1091,14 +1078,9 @@ class iWptBrowser(BaseBrowser):
         if self.websocket:
             try:
                 while True:
-                    raw = self.websocket.get_message(0)
-                    if raw is not None and len(raw):
-                        if self.recording:
-                            logging.debug(raw[:200])
-                            msg = json.loads(raw)
-                            self.process_message(msg)
-                    if not raw:
-                        break
+                    msg = self.messages.get(timeout=0)
+                    if msg:
+                        self.process_message(msg)
             except Exception:
                 pass
 
