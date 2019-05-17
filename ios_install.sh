@@ -57,3 +57,6 @@ make
 sudo make install
 cd ~
 rm -rf ios-webkit-debug-proxy
+
+sudo sh -c 'echo /usr/local/lib > /etc/ld.so.conf.d/libimobiledevice-libs.conf'
+sudo ldconfig
