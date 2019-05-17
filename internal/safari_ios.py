@@ -665,7 +665,6 @@ class iWptBrowser(BaseBrowser):
 
     def process_target_event(self, event, msg):
         """Process Target.* dev tools events"""
-        logging.debug('Processing Target message')
         if event == 'attachedToTarget':
             if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
                 target = msg['params']['targetInfo']
