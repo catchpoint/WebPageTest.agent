@@ -178,7 +178,8 @@ class AndroidBrowser(BaseBrowser):
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         # kick off the video processing (async)
-        if os.path.isfile(task['video_file']):
+        if 'video_file' in task and task['video_file'] is not None and \
+                os.path.isfile(task['video_file']):
             video_path = os.path.join(task['dir'], task['video_subdirectory'])
             support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
             if task['current_step'] == 1:
