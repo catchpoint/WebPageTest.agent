@@ -226,6 +226,8 @@ class OptimizationChecks(object):
             'Instart Logic': [{'X-Instart-Request-ID': 'instart'}],
             'LeaseWeb CDN': [{'Server': 'leasewebcdn'}],
             'Medianova': [{'Server': 'MNCDN'}],
+            'Myra Security CDN': [{'Server': 'myracloud'}, 
+                                  {'x-cdn': ''}],
             'Naver': [{'Server': 'Testa/'}],
             'NetDNA': [{'Server': 'NetDNA'}],
             'Netlify': [{'Server': 'Netlify'}],
