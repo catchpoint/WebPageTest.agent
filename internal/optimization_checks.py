@@ -231,7 +231,7 @@ class OptimizationChecks(object):
             'Naver': [{'Server': 'Testa/'}],
             'NetDNA': [{'Server': 'NetDNA'}],
             'Netlify': [{'Server': 'Netlify'}],
-            'NGENIX': [{'x-ngenix-cache:': ''}],
+            'NGENIX': [{'x-ngenix-cache': ''}],
             'NYI FTW': [{'X-Powered-By': 'NYI FTW'},
                         {'X-Delivered-By': 'NYI FTW'}],
             'Optimal CDN': [{'Server': 'Optimal CDN'}],
