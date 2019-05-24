@@ -685,7 +685,12 @@ class DevToolsParser(object):
                    'exclusive': 'http2_stream_exclusive',
                    'chunks': 'chunks',
                    'chunks_in': 'chunks_in',
-                   'chunks_out': 'chunks_out'}
+                   'chunks_out': 'chunks_out',
+                   'http2_server_settings': 'http2_server_settings',
+                   'tls_version': 'tls_version',
+                   'tls_resumed': 'tls_resumed',
+                   'tls_next_proto': 'tls_next_proto',
+                   'tls_cipher_suite': 'tls_cipher_suite'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':

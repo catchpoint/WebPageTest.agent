@@ -723,6 +723,19 @@ class Trace():
                                     request['ssl_end'] = socket['ssl_end']
                                 if 'certificates' in socket:
                                     request['certificates'] = socket['certificates']
+                                if 'h2_session' in request and request['h2_session'] in self.netlog['h2_session']:
+                                    h2_session = self.netlog['h2_session'][request['h2_session']]
+                                    if 'server_settings' in h2_session:
+                                        request['http2_server_settings'] = h2_session['server_settings']
+                                if 'tls_version' in socket:
+                                    request['tls_version'] = socket['tls_version']
+                                if 'tls_resumed' in socket:
+                                    request['tls_resumed'] = socket['tls_resumed']
+                                if 'tls_next_proto' in socket:
+                                    request['tls_next_proto'] = socket['tls_next_proto']
+                                if 'tls_cipher_suite' in socket:
+                                    request['tls_cipher_suite'] = socket['tls_cipher_suite']
+
                 # Assign the DNS lookup to the first request that connected to the DocumentSetDomain
                 if 'dns' in self.netlog:
                     # Build a mapping of the DNS lookups for each domain
@@ -955,6 +968,14 @@ class Trace():
             stream['url_request'] = request_id
             if 'socket' in entry:
                 request['socket'] = entry['socket']
+        if name == 'HTTP2_SESSION_RECV_SETTING' and 'id' in params and 'value' in params:
+            setting_id = None
+            match = re.search(r'\d+ \((.+)\)', params['id'])
+            if match:
+                setting_id = match.group(1)
+                if 'server_settings' not in entry:
+                    entry['server_settings'] = {}
+                entry['server_settings'][setting_id] = params['value']
 
     def ProcessNetlogDnsEvent(self, trace_event):
         if 'dns' not in self.netlog:
@@ -1011,6 +1032,14 @@ class Trace():
             entry['ssl_start'] = trace_event['ts']
         if name == 'SSL_CONNECT' and trace_event['ph'] == 'e':
             entry['ssl_end'] = trace_event['ts']
+            if 'version' in params:
+                entry['tls_version'] = params['version']
+            if 'is_resumed' in params:
+                entry['tls_resumed'] = params['is_resumed']
+            if 'next_proto' in params:
+                entry['tls_next_proto'] = params['next_proto']
+            if 'cipher_suite' in params:
+                entry['tls_cipher_suite'] = params['cipher_suite']
         if name == 'SOCKET_BYTES_SENT' and 'byte_count' in params:
             entry['bytes_out'] += params['byte_count']
             entry['chunks_out'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
