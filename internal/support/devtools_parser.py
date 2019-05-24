@@ -714,6 +714,8 @@ class DevToolsParser(object):
                                     if key in entry:
                                         if type(entry[key]) is list:
                                             request[mapping[key]] = entry[key]
+                                        elif type(entry[key]) is dict:
+                                            request[mapping[key]] = entry[key]
                                         elif re.match(r'^\d+\.?(\d+)?$', str(entry[key]).strip()):
                                             request[mapping[key]] = \
                                                     int(round(float(str(entry[key]).strip())))
