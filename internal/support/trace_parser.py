@@ -231,6 +231,14 @@ class Trace():
                 'labels' in trace_event['args'] and \
                 trace_event['args']['labels'].startswith('Subframe:'):
             self.cpu['subframes'].append(str(trace_event['pid']))
+        if cat == '__metadata' and 'name' in trace_event and \
+                trace_event['name'] == 'thread_name' and \
+                'args' in trace_event and \
+                'name' in trace_event['args'] and \
+                trace_event['args']['name'] == 'CrRendererMain':
+            thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
+            if thread not in self.cpu['main_threads']:
+                self.cpu['main_threads'].append(thread)
         if cat == 'netlog' or cat.find('netlog') >= 0:
             self.ProcessNetlogEvent(trace_event)
         elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
@@ -245,6 +253,12 @@ class Trace():
     ##########################################################################
     def ProcessTimelineTraceEvent(self, trace_event):
         thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
+        if trace_event['name'] == 'thread_name' and \
+                'args' in trace_event and \
+                'name' in trace_event['args'] and \
+                trace_event['args']['name'] == 'CrRendererMain' and \
+                thread not in self.cpu['main_threads']:
+            self.cpu['main_threads'].append(thread)
 
         # Keep track of the main thread
         if 'args' in trace_event and 'data' in trace_event['args'] and \
