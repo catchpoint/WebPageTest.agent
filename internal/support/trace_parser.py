@@ -437,36 +437,26 @@ class Trace():
                             int(self.cpu['slices'][thread][name]
                                 [slice] * self.cpu['slice_usecs'])
 
-            # If there is exactly one non-Subframe main thread, use that one
-            main_threads = []
-            for thread in self.cpu['main_threads']:
-                pid = thread.split(':')[0]
-                if pid not in self.cpu['subframes']:
-                    main_threads.append(thread)
-            if len(main_threads) == 1:
-                self.cpu['main_thread'] = main_threads[0]
-            else:
-                # Pick the candidate main thread with the most activity
-                if len(main_threads) == 0:
-                    main_threads = list(self.cpu['main_threads'])
-                if len(main_threads) == 0:
-                    main_threads = self.cpu['slices'].keys()
-                main_thread = None
-                main_thread_cpu = 0
-                for thread in main_threads:
-                    try:
-                        thread_cpu = 0
-                        if thread in self.cpu['slices']:
-                            for name in self.cpu['slices'][thread].keys():
-                                for slice in range(len(self.cpu['slices'][thread][name])):
-                                    thread_cpu += self.cpu['slices'][thread][name][slice]
-                            if main_thread is None or thread_cpu > main_thread_cpu:
-                                main_thread = thread
-                                main_thread_cpu = thread_cpu
-                    except Exception:
-                        pass
-                if main_thread is not None:
-                    self.cpu['main_thread'] = main_thread
+            # Pick the candidate main thread with the most activity
+            main_threads = list(self.cpu['main_threads'])
+            if len(main_threads) == 0:
+                main_threads = self.cpu['slices'].keys()
+            main_thread = None
+            main_thread_cpu = 0
+            for thread in main_threads:
+                try:
+                    thread_cpu = 0
+                    if thread in self.cpu['slices']:
+                        for name in self.cpu['slices'][thread].keys():
+                            for slice in range(len(self.cpu['slices'][thread][name])):
+                                thread_cpu += self.cpu['slices'][thread][name][slice]
+                        if main_thread is None or thread_cpu > main_thread_cpu:
+                            main_thread = thread
+                            main_thread_cpu = thread_cpu
+                except Exception:
+                    pass
+            if main_thread is not None:
+                self.cpu['main_thread'] = main_thread
 
     def ProcessTimelineEvent(self, timeline_event, parent, stack=None):
         start = timeline_event['s'] - self.start_time
