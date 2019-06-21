@@ -27,7 +27,6 @@ class DevTools(object):
         self.task = task
         self.command_id = 0
         self.command_responses = {}
-        self.target_sessions = {}
         self.pending_commands = []
         self.workers = []
         self.page_loaded = None
@@ -63,7 +62,6 @@ class DevTools(object):
         self.prepare()
         self.html_body = False
         self.all_bodies = False
-        self.default_target = None
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -130,7 +128,6 @@ class DevTools(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         ret = False
-        self.default_target = None
         end_time = monotonic.monotonic() + timeout
         while not ret and monotonic.monotonic() < end_time:
             try:
@@ -194,10 +191,6 @@ class DevTools(object):
                     if target['type'] == 'service_worker':
                         self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
                                            wait=True)
-                    if self.default_target is None and target['type'] == 'page':
-                        self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                            wait=True)
-                        self.default_target = target['targetId']
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -662,10 +655,6 @@ class DevTools(object):
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
-        if target_id is None and self.default_target is not None and \
-                not method.startswith('Target.') and \
-                not method.startswith('Tracing.'):
-            target_id = self.default_target
         if target_id is not None:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -1056,8 +1045,6 @@ class DevTools(object):
         if event == 'attachedToTarget':
             if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
                 target = msg['params']['targetInfo']
-                if 'sessionId' in msg['params']:
-                    self.target_sessions[msg['params']['sessionId']] = target['targetId']
                 if 'type' in target and target['type'] == 'service_worker':
                     self.workers.append(target)
                     if self.recording:
@@ -1072,22 +1059,10 @@ class DevTools(object):
             target_id = None
             if 'targetId' in msg['params']:
                 target_id = msg['params']['targetId']
-            elif 'sessionId' in msg['params']:
-                session_id = msg['params']['sessionId']
-                if session_id in self.target_sessions:
-                    target_id = self.target_sessions[session_id]
             if 'message' in msg['params'] and target_id is not None:
                 logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
-        if event == 'targetCreated' and self.default_target is None:
-            if 'targetInfo' in msg['params'] and \
-                    'type' in msg['params']['targetInfo'] and \
-                    msg['params']['targetInfo']['type'] == 'page' and \
-                    'targetId' in msg['params']['targetInfo']:
-                self.send_command('Target.attachToTarget', {'targetId': msg['params']['targetInfo']['targetId']},
-                                  wait=True)
-                self.default_target = msg['params']['targetInfo']['targetId']
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
