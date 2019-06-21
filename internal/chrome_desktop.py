@@ -49,6 +49,9 @@ ENABLE_CHROME_FEATURES = [
     'SecMetadata'
 ]
 
+DISABLE_CHROME_FEATURES = [
+]
+
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
@@ -65,6 +68,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.install_policy()
         args = list(CHROME_COMMAND_LINE_OPTIONS)
         features = list(ENABLE_CHROME_FEATURES)
+        disable_features = list(DISABLE_CHROME_FEATURES)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
@@ -87,6 +91,16 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
         args.append('--enable-features=' + ','.join(features))
+
+        # Disable site isolation if emulating mobile. It is disabled on
+        # actual mobile Chrome (and breaks CPU throttling on Windows)
+        if 'mobile' in job and job['mobile']:
+            disable_features.extend(['NetworkService',
+                                     'IsolateOrigins',
+                                     'site-per-process'])
+        if disable_features:
+            args.append('--disable-features=' + ','.join(disable_features))
+
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
