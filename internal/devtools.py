@@ -297,6 +297,8 @@ class DevTools(object):
                     trace_config["includedCategories"].append("blink.console")
                 if "devtools.timeline" not in trace_config["includedCategories"]:
                     trace_config["includedCategories"].append("devtools.timeline")
+                if "disabled-by-default-v8.runtime_stats" not in trace_config["includedCategories"]:
+                    trace_config["includedCategories"].append("disabled-by-default-v8.runtime_stats")
                 trace_config["enableSampling"] = True
                 if 'timeline_fps' in self.job and self.job['timeline_fps']:
                     if "disabled-by-default-devtools.timeline" not in trace_config["includedCategories"]:

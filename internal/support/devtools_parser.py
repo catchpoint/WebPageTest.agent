@@ -36,6 +36,7 @@ class DevToolsParser(object):
         self.user_timing_file = options['user'] if 'user' in options else None
         self.coverage = options['coverage'] if 'coverage' in options else None
         self.cpu_times = options['cpu'] if 'cpu' in options else None
+        self.v8_stats = options['v8stats'] if 'v8stats' in options else None
         self.cached = options['cached'] if 'cached' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
@@ -61,6 +62,8 @@ class DevToolsParser(object):
             self.process_code_coverage()
             logging.debug("Calculating cpu times")
             self.process_cpu_times()
+            logging.debug("Processing V8 stats")
+            self.process_v8_stats()
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
@@ -1229,6 +1232,32 @@ class DevToolsParser(object):
         except Exception:
             pass
 
+    def process_v8_stats(self):
+        """Add the v8 stats to the page data"""
+        try:
+            page_data = self.result['pageData']
+            if os.path.isfile(self.v8_stats):
+                _, ext = os.path.splitext(self.v8_stats)
+                if ext.lower() == '.gz':
+                    f_in = gzip.open(self.v8_stats, 'rb')
+                else:
+                    f_in = open(self.v8_stats, 'r')
+                stats = json.load(f_in)
+                f_in.close()
+                if stats:
+                    page_data['v8Stats'] = {}
+                    for thread in stats:
+                        if 'V8.RuntimeStats' in stats[thread] and \
+                                'events' in stats[thread]['V8.RuntimeStats']:
+                            for event in stats[thread]['V8.RuntimeStats']['events']:
+                                detail = stats[thread]['V8.RuntimeStats']['events'][event]
+                                if 'dur' in detail:
+                                    if event not in page_data['v8Stats']:
+                                        page_data['v8Stats'][event] = 0.0
+                                    page_data['v8Stats'][event] += detail['dur']
+        except Exception:
+            pass
+
 def main():
     """Main entry point"""
     import argparse
@@ -1243,6 +1272,7 @@ def main():
     parser.add_argument('-u', '--user', help="Input user timing file (optional).")
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
     parser.add_argument('--cpu', help="Input cpu time slices file (optional).")
+    parser.add_argument('--v8stats', help="Input v8 stats file (optional).")
     parser.add_argument('-c', '--cached', action='store_true', default=False,
                         help="Test was of a cached page.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
@@ -1271,6 +1301,7 @@ def main():
            'user': options.user,
            'coverage': options.coverage,
            'cpu': options.cpu,
+           'v8stats': options.v8stats,
            'cached': options.cached,
            'out': options.out}
     devtools = DevToolsParser(opt)

@@ -1134,13 +1134,11 @@ class Trace():
                     elif trace_event['ph'] == 'X' and 'dur' in trace_event:
                         duration = trace_event['dur']
                     if self.v8stats is None:
-                        self.v8stats = {"main_thread": self.cpu['main_thread']}
+                        self.v8stats = {"main_thread": self.cpu['main_thread'],
+                                        "main_threads": self.cpu['main_threads']}
                     if thread not in self.v8stats:
                         self.v8stats[thread] = {}
                     name = trace_event["name"]
-                    if name == "V8.RuntimeStats":
-                        name = "V8.ParseOnBackground"
-
                     if name not in self.v8stats[thread]:
                         self.v8stats[thread][name] = {"dur": 0.0, "events": {}}
                     self.v8stats[thread][name]['dur'] += float(

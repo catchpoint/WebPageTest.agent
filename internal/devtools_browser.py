@@ -284,6 +284,8 @@ class DevtoolsBrowser(object):
             options['coverage'] = coverage if os.path.isfile(coverage) else None
             cpu = path_base + '_timeline_cpu.json.gz'
             options['cpu'] = cpu if os.path.isfile(cpu) else None
+            v8stats = path_base + '_v8stats.json.gz'
+            options['v8stats'] = v8stats if os.path.isfile(v8stats) else None
             parser = DevToolsParser(options)
             parser.process()
             # Cleanup intermediate files that are not needed
