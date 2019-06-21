@@ -97,6 +97,8 @@ class Trace():
 
     def WriteV8Stats(self, out_file):
         if self.v8stats is not None:
+            self.v8stats["main_thread"] = self.cpu['main_thread']
+            self.v8stats["main_threads"] = self.cpu['main_threads']
             self.write_json(out_file, self.v8stats)
 
     ##########################################################################
@@ -202,7 +204,7 @@ class Trace():
         # Do the post-processing on timeline events
         logging.debug("Processing timeline events")
         self.ProcessTimelineEvents()
-        logging.debug("Done processing trace events")
+        logging.debug("Done processing trace events")      
 
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
@@ -245,7 +247,7 @@ class Trace():
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
-        elif cat.find('v8') >= 0:
+        if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
 
     ##########################################################################
@@ -1134,28 +1136,26 @@ class Trace():
                     elif trace_event['ph'] == 'X' and 'dur' in trace_event:
                         duration = trace_event['dur']
                     if self.v8stats is None:
-                        self.v8stats = {"main_thread": self.cpu['main_thread'],
-                                        "main_threads": self.cpu['main_threads']}
-                    if thread not in self.v8stats:
-                        self.v8stats[thread] = {}
+                        self.v8stats = {'threads': {}}
+                    if thread not in self.v8stats['threads']:
+                        self.v8stats['threads'][thread] = {}
                     name = trace_event["name"]
-                    if name not in self.v8stats[thread]:
-                        self.v8stats[thread][name] = {"dur": 0.0, "events": {}}
-                    self.v8stats[thread][name]['dur'] += float(
-                        duration) / 1000.0
+                    if name not in self.v8stats['threads'][thread]:
+                        self.v8stats['threads'][thread][name] = {"dur": 0.0, "count": 0}
+                    self.v8stats['threads'][thread][name]['dur'] += float(duration) / 1000.0
+                    self.v8stats['threads'][thread][name]['count'] += 1
                     if 'args' in trace_event and 'runtime-call-stats' in trace_event["args"]:
                         for stat in trace_event["args"]["runtime-call-stats"]:
-                            if len(trace_event["args"]
-                                   ["runtime-call-stats"][stat]) == 2:
-                                if stat not in self.v8stats[thread][name]['events']:
-                                    self.v8stats[thread][name]['events'][stat] = {
-                                        "count": 0, "dur": 0.0}
-                                self.v8stats[thread][name]['events'][stat]["count"] += int(
-                                    trace_event["args"]["runtime-call-stats"][stat][0])
-                                self.v8stats[thread][name]['events'][stat]["dur"] += float(
-                                    trace_event["args"]["runtime-call-stats"][stat][1]) / 1000.0
+                            if len(trace_event["args"]["runtime-call-stats"][stat]) == 2:
+                                if 'breakdown' not in self.v8stats['threads'][thread][name]:
+                                    self.v8stats['threads'][thread][name]['breakdown'] = {}
+                                if stat not in self.v8stats['threads'][thread][name]['breakdown']:
+                                    self.v8stats['threads'][thread][name]['breakdown'][stat] = {"count": 0, "dur": 0.0}
+                                self.v8stats['threads'][thread][name]['breakdown'][stat]["count"] += int(trace_event["args"]["runtime-call-stats"][stat][0])
+                                self.v8stats['threads'][thread][name]['breakdown'][stat]["dur"] += float(trace_event["args"]["runtime-call-stats"][stat][1]) / 1000.0
         except BaseException:
             pass
+        pass
 
 
 ##########################################################################
