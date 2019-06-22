@@ -1251,17 +1251,16 @@ class DevToolsParser(object):
                         group = 'main_thread' if thread in main_threads else 'background'
                         for category in stats['threads'][thread]:
                             prefix = '' if category == 'V8.RuntimeStats' else '{0}.'.format(category)
-                            if 'dur' in stats['threads'][thread][category]:
+                            if 'dur' in stats['threads'][thread][category] and 'breakdown' in stats['threads'][thread][category]:
                                 remainder = stats['threads'][thread][category]['dur']
-                                if 'breakdown' in stats['threads'][thread][category]:
-                                    for event in stats['threads'][thread][category]['breakdown']:
-                                        detail = stats['threads'][thread][category]['breakdown'][event]
-                                        if 'dur' in detail:
-                                            name = '{0}{1}'.format(prefix, event)
-                                            if name not in page_data['v8Stats'][group]:
-                                                page_data['v8Stats'][group][name] = 0.0
-                                            page_data['v8Stats'][group][name] += detail['dur']
-                                            remainder -= detail['dur']
+                                for event in stats['threads'][thread][category]['breakdown']:
+                                    detail = stats['threads'][thread][category]['breakdown'][event]
+                                    if 'dur' in detail:
+                                        name = '{0}{1}'.format(prefix, event)
+                                        if name not in page_data['v8Stats'][group]:
+                                            page_data['v8Stats'][group][name] = 0.0
+                                        page_data['v8Stats'][group][name] += detail['dur']
+                                        remainder -= detail['dur']
                                 if remainder > 0.0:
                                     page_data['v8Stats'][group]['{0}unaccounted'.format(prefix)] = remainder
         except Exception:
