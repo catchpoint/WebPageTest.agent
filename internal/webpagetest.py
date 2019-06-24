@@ -461,7 +461,8 @@ class WebPageTest(object):
                     job['persistent_dir'] = self.persistent_dir
                     if 'throttle_cpu' in job:
                         throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
-                        throttle *= self.cpu_scale_multiplier
+                        if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
+                            throttle *= self.cpu_scale_multiplier
                         job['throttle_cpu_requested'] = job['throttle_cpu']
                         job['throttle_cpu'] = throttle
                 if job is None and len(locations) > 0:
