@@ -304,6 +304,10 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
 
+        # Optional imports
+        self.requires('brotli')
+        self.requires('fontTools', 'fonttools')
+
         # Try patching ws4py with a faster lib
         try:
             self.requires('wsaccel')
