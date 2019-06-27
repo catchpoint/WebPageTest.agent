@@ -319,14 +319,8 @@ class DevTools(object):
                 trace_config["includedCategories"].append("blink.user_timing")
             if "netlog" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("netlog")
-            if "net" not in trace_config["includedCategories"]:
-                trace_config["includedCategories"].append("net")
             if "disabled-by-default-netlog" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-netlog")
-            if "disabled-by-default-net" not in trace_config["includedCategories"]:
-                trace_config["includedCategories"].append("disabled-by-default-net")
-            if "disabled-by-default-network" not in trace_config["includedCategories"]:
-                trace_config["includedCategories"].append("disabled-by-default-network")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
             self.trace_enabled = True
