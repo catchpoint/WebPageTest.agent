@@ -29,16 +29,19 @@ class OptimizationChecks(object):
         self.gzip_thread = None
         self.image_thread = None
         self.progressive_thread = None
+        self.font_thread = None
         self.cdn_time = None
         self.hosting_time = None
         self.gzip_time = None
         self.image_time = None
         self.progressive_time = None
+        self.font_time = None
         self.cdn_results = {}
         self.hosting_results = {}
         self.gzip_results = {}
         self.image_results = {}
         self.progressive_results = {}
+        self.font_results = {}
         self.results = {}
         self.dns_lookup_queue = multiprocessing.JoinableQueue()
         self.dns_result_queue = multiprocessing.JoinableQueue()
@@ -268,11 +271,13 @@ class OptimizationChecks(object):
             self.gzip_thread = threading.Thread(target=self.check_gzip)
             self.image_thread = threading.Thread(target=self.check_images)
             self.progressive_thread = threading.Thread(target=self.check_progressive)
+            self.font_thread = threading.Thread(target=self.check_fonts)
             self.cdn_thread.start()
             self.hosting_thread.start()
             self.gzip_thread.start()
             self.image_thread.start()
             self.progressive_thread.start()
+            self.font_thread.start()
             # collect the miscellaneous results directly
             logging.debug('Checking keep-alive.')
             self.check_keep_alive()
@@ -296,6 +301,12 @@ class OptimizationChecks(object):
                 self.gzip_thread = None
             if self.gzip_time is not None:
                 logging.debug("gzip check took %0.3f seconds", self.gzip_time)
+            logging.debug('Waiting for font check to complete')
+            if self.font_thread is not None:
+                self.font_thread.join()
+                self.font_thread = None
+            if self.font_time is not None:
+                logging.debug("font check took %0.3f seconds", self.font_time)
             logging.debug('Waiting for image check to complete')
             if self.image_thread is not None:
                 self.image_thread.join()
@@ -331,6 +342,10 @@ class OptimizationChecks(object):
                 if request_id not in self.results:
                     self.results[request_id] = {}
                 self.results[request_id]['progressive'] = self.progressive_results[request_id]
+            for request_id in self.font_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['font'] = self.font_results[request_id]
             if self.task is not None and 'page_data' in self.task:
                 for name in self.hosting_results:
                     self.task['page_data'][name] = self.hosting_results[name]
@@ -916,6 +931,35 @@ class OptimizationChecks(object):
                 pass
         self.progressive_time = monotonic.monotonic() - start
 
+    def check_fonts(self):
+        """Check each request to extract metadata about fonts"""
+        start = monotonic.monotonic()
+        try:
+            from fontTools.ttLib import TTFont
+            for request_id in self.requests:
+                try:
+                    request = self.requests[request_id]
+                    if 'body' in request:
+                        sniff_type = self.sniff_file_content(request['body'])
+                        if sniff_type is not None and sniff_type in ['OTF', 'TTF', 'WOFF', 'WOFF2']:
+                            tables = None
+                            ttf = TTFont(request['body'], lazy=True)
+                            reader = ttf.reader
+                            tags = sorted(reader.keys())
+                            for tag in tags:
+                                entry = reader.tables[tag]
+                                if tables is None:
+                                    tables = {}
+                                tables[tag] = entry.length
+                            ttf.close()                            
+                            if tables is not None:
+                                self.font_results[request_id] = {'table_sizes': tables}
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        self.font_time = monotonic.monotonic() - start
+
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
         value = None
@@ -944,6 +988,12 @@ class OptimizationChecks(object):
             content_type = 'gif'
         elif raw_bytes[:4] == 'RIFF' and raw_bytes[8:14] == 'WEBPVP':
             content_type = 'webp'
+        elif raw_bytes[:4] == 'OTTO':
+            content_type = 'OTF'
+        elif raw_bytes[:4] == 'ttcf':
+            content_type = 'TTF'
+        elif raw_bytes[:4] == 'wOFF':
+            content_type = 'WOFF'
         elif raw_bytes[:4] == 'wOF2':
             content_type = 'WOFF2'
         # spell-checker: enable
