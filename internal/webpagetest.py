@@ -402,6 +402,10 @@ class WebPageTest(object):
             uptime = self.get_uptime_minutes()
             if uptime is not None:
                 url += '&upminutes={0:d}'.format(uptime)
+            if 'browser_versions' in self.options and \
+                    len(self.options.browser_versions):
+                versions = ','.join(self.options.browser_versions)
+                url += '&browsers={0}'.format(versions)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30, proxies=proxies)

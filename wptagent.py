@@ -734,6 +734,18 @@ def upgrade_pip_modules():
         pass
 
 
+def get_browser_versions(browsers):
+    """Get the version of the available browsers"""
+    versions = []
+    from internal.os_util import get_file_version
+    for browser in browsers:
+        if 'exe' in browsers[browser] and \
+                os.path.isfile(browsers[browser]['exe']):
+            exe = browsers[browser]['exe']
+            versions.append('{0}:{1}'.format(browser, get_file_version(exe)))
+    return versions
+
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -759,6 +771,8 @@ def main():
                         help="Log critical errors to the given file.")
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at startup.")
+    parser.add_argument('--collectversion', action='store_true', default=False,
+                        help="Collection browser versions and submit to controller.")                        
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -900,6 +914,11 @@ def main():
         if len(browsers) == 0:
             print "No browsers configured. Check that browsers.ini is present and correct."
             exit(1)
+
+    if options.collectversion and \
+            platform.system() == "Windows":
+        versions = get_browser_versions(browsers)
+        options.browser_versions = versions
 
     agent = WPTAgent(options, browsers)
     if agent.startup():
