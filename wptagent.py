@@ -95,7 +95,7 @@ class WPTAgent(object):
                     logging.error("Message server not responding, exiting")
                     break
                 if self.browsers.is_ready():
-                    self.job = self.wpt.get_test()
+                    self.job = self.wpt.get_test(self.browsers.browsers)
                     if self.job is not None:
                         self.job['image_magick'] = self.image_magick
                         self.job['message_server'] = message_server
@@ -736,14 +736,12 @@ def upgrade_pip_modules():
 
 def get_browser_versions(browsers):
     """Get the version of the available browsers"""
-    versions = []
     from internal.os_util import get_file_version
     for browser in browsers:
         if 'exe' in browsers[browser] and \
                 os.path.isfile(browsers[browser]['exe']):
             exe = browsers[browser]['exe']
-            versions.append('{0}:{1}'.format(browser, get_file_version(exe)))
-    return versions
+            browsers[browser]['version'] = get_file_version(exe)
 
 
 def main():
@@ -915,10 +913,8 @@ def main():
             print "No browsers configured. Check that browsers.ini is present and correct."
             exit(1)
 
-    if options.collectversion and \
-            platform.system() == "Windows":
-        versions = get_browser_versions(browsers)
-        options.browser_versions = versions
+    if options.collectversion and platform.system() == "Windows":
+        get_browser_versions(browsers)
 
     agent = WPTAgent(options, browsers)
     if agent.startup():
