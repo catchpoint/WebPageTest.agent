@@ -65,6 +65,8 @@ RUN apt-get update && \
     tornado \
     wsaccel \
     xvfbwrapper \
+    brotli \
+    fonttools \
     marionette_driver
 
 COPY wptagent.py /wptagent/wptagent.py
