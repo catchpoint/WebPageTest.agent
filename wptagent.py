@@ -642,6 +642,17 @@ def find_browsers():
                 browsers['Chrome Canary'] = {'exe': canary_path}
             if 'Canary' not in browsers:
                 browsers['Canary'] = {'exe': canary_path}
+        # Chromium
+        chromium_path = '/usr/lib/chromium-browser/chromium-browser'
+        if 'Chromium' not in browsers and os.path.isfile(chromium_path):
+            browsers['Chromium'] = {'exe': chromium_path}
+        if 'Chrome' not in browsers and os.path.isfile(chromium_path):
+            browsers['Chrome'] = {'exe': chromium_path}
+        chromium_path = '/usr/bin/chromium-browser'
+        if 'Chromium' not in browsers and os.path.isfile(chromium_path):
+            browsers['Chromium'] = {'exe': chromium_path}
+        if 'Chrome' not in browsers and os.path.isfile(chromium_path):
+            browsers['Chrome'] = {'exe': chromium_path}
         # Opera
         opera_path = '/usr/lib/x86_64-linux-gnu/opera/opera'
         if 'Opera' not in browsers and os.path.isfile(opera_path):
