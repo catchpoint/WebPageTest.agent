@@ -31,13 +31,14 @@ import logging.handlers as handlers
 
 __author__ = "Sylvain Hellegouarch"
 __version__ = "0.4.2.dev0"
-__all__ = ['WS_KEY', 'WS_VERSION', 'configure_logger', 'format_addresses']
+__all__ = ["WS_KEY", "WS_VERSION", "configure_logger", "format_addresses"]
 
 WS_KEY = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 WS_VERSION = (8, 13)
 
+
 def configure_logger(stdout=True, filepath=None, level=logging.INFO):
-    logger = logging.getLogger('ws4py')
+    logger = logging.getLogger("ws4py")
     logger.setLevel(level)
     logfmt = logging.Formatter("[%(asctime)s] %(levelname)s %(message)s")
 
@@ -49,6 +50,7 @@ def configure_logger(stdout=True, filepath=None, level=logging.INFO):
 
     if stdout:
         import sys
+
         h = logging.StreamHandler(sys.stdout)
         h.setLevel(level)
         h.setFormatter(logfmt)
@@ -56,12 +58,18 @@ def configure_logger(stdout=True, filepath=None, level=logging.INFO):
 
     return logger
 
+
 def format_addresses(ws):
     me = ws.local_address
     peer = ws.peer_address
     if isinstance(me, tuple) and isinstance(peer, tuple):
         me_ip, me_port = ws.local_address
         peer_ip, peer_port = ws.peer_address
-        return "[Local => %s:%d | Remote => %s:%d]" % (me_ip, me_port, peer_ip, peer_port)
+        return "[Local => %s:%d | Remote => %s:%d]" % (
+            me_ip,
+            me_port,
+            peer_ip,
+            peer_port,
+        )
 
     return "[Bound to '%s']" % me

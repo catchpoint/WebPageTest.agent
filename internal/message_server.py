@@ -33,39 +33,44 @@ body {background-color: white; margin: 0;}
 
 class TornadoRequestHandler(tornado.web.RequestHandler):
     """Request handler for when we are using tornado"""
+
     def get(self):
         """Handle GET requests"""
         import ujson as json
+
         response = None
-        content_type = 'text/plain'
-        if self.request.uri == '/ping':
-            response = 'pong'
-        elif self.request.uri == '/blank.html':
-            content_type = 'text/html'
+        content_type = "text/plain"
+        if self.request.uri == "/ping":
+            response = "pong"
+        elif self.request.uri == "/blank.html":
+            content_type = "text/html"
             response = BLANK_PAGE
-        elif self.request.uri == '/orange.html':
-            content_type = 'text/html'
+        elif self.request.uri == "/orange.html":
+            content_type = "text/html"
             response = ORANGE_PAGE
-        elif self.request.uri == '/config':
+        elif self.request.uri == "/config":
             # JSON config data
-            content_type = 'application/json'
-            response = '{}'
+            content_type = "application/json"
+            response = "{}"
             if MESSAGE_SERVER.config is not None:
                 response = json.dumps(MESSAGE_SERVER.config)
-        elif self.request.uri == '/config.html':
+        elif self.request.uri == "/config.html":
             # Orange HTML page that can be queried from the extension for config data
-            content_type = 'text/html'
+            content_type = "text/html"
             response = "<html><head>\n"
             response += "<style>\n"
             response += "body {background-color: white; margin: 0;}\n"
-            response += "#wptorange {width:100%; height: 100%; background-color: #DE640D;}\n"
+            response += (
+                "#wptorange {width:100%; height: 100%; background-color: #DE640D;}\n"
+            )
             response += "</style>\n"
             response += "</head><body><div id='wptorange'></div>\n"
             if MESSAGE_SERVER.config is not None:
                 import cgi
+
                 response += '<div id="wptagentConfig" style="display: none;">'
                 response += cgi.escape(json.dumps(MESSAGE_SERVER.config))
-                response += '</div>'
+                response += "</div>"
             response += "</body></html>"
 
         if response is not None:
@@ -77,18 +82,19 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
     def post(self):
         """Handle POST messages"""
         import ujson as json
+
         try:
             messages = self.request.body
             if messages is not None and len(messages):
-                if self.request.uri == '/log':
+                if self.request.uri == "/log":
                     logging.debug(messages)
                 else:
                     for line in messages.splitlines():
                         line = line.strip()
                         if len(line):
                             message = json.loads(line)
-                            if 'body' not in message and self.request.uri != '/etw':
-                                message['body'] = None
+                            if "body" not in message and self.request.uri != "/etw":
+                                message["body"] = None
                             MESSAGE_SERVER.handle_message(message)
         except Exception:
             pass
@@ -97,6 +103,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 
 class MessageServer(object):
     """Local HTTP server for interacting with the extension"""
+
     def __init__(self):
         global MESSAGE_SERVER
         MESSAGE_SERVER = self
@@ -147,13 +154,16 @@ class MessageServer(object):
         """Check that the server is responding and restart it if necessary"""
         import requests
         import monotonic
+
         end_time = monotonic.monotonic() + 30
         server_ok = False
         proxies = {"http": None, "https": None}
         while not server_ok and monotonic.monotonic() < end_time:
             try:
-                response = requests.get('http://127.0.0.1:8888/ping', timeout=10, proxies=proxies)
-                if response.text == 'pong':
+                response = requests.get(
+                    "http://127.0.0.1:8888/ping", timeout=10, proxies=proxies
+                )
+                if response.text == "pong":
                     server_ok = True
             except Exception:
                 pass
@@ -163,8 +173,8 @@ class MessageServer(object):
 
     def run(self):
         """Main server loop"""
-        logging.debug('Starting extension server on port 8888')
+        logging.debug("Starting extension server on port 8888")
         application = tornado.web.Application([(r"/.*", TornadoRequestHandler)])
-        application.listen(8888, '127.0.0.1')
+        application.listen(8888, "127.0.0.1")
         self.__is_started.set()
         tornado.ioloop.IOLoop.instance().start()
