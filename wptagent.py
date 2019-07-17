@@ -65,6 +65,22 @@ class WPTAgent(object):
                                 self.image_magick['compare'] = compare
                                 self.image_magick['mogrify'] = mogrify
                                 break
+                            convert = os.path.join(path, subdir, 'magick.exe')
+                            compare = os.path.join(path, subdir, 'magick.exe')
+                            mogrify = os.path.join(path, subdir, 'magick.exe')
+                            if os.path.isfile(convert) and \
+                                    os.path.isfile(compare) and \
+                                    os.path.isfile(mogrify):
+                                if convert.find(' ') >= 0:
+                                    convert = '"{0}" convert'.format(convert)
+                                if compare.find(' ') >= 0:
+                                    compare = '"{0}" compare'.format(compare)
+                                if mogrify.find(' ') >= 0:
+                                    mogrify = '"{0}" mogrify'.format(mogrify)
+                                self.image_magick['convert'] = convert
+                                self.image_magick['compare'] = compare
+                                self.image_magick['mogrify'] = mogrify
+                                break
 
     def run_testing(self):
         """Main testing flow"""
