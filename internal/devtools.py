@@ -806,6 +806,7 @@ class DevTools(object):
         if self.task['error'] is None and not self.main_thread_blocked:
             response = self.send_command("Runtime.evaluate",
                                          {'expression': script,
+                                          'awaitPromise': True,
                                           'returnByValue': True,
                                           'timeout': 30000},
                                          wait=True, timeout=30)
