@@ -361,7 +361,7 @@ class WebPageTest(object):
         else:
             subprocess.call(['sudo', 'reboot'])
 
-    def get_test(self):
+    def get_test(self, browsers):
         """Get a job from the server"""
         import requests
         proxies = {"http": None, "https": None}
@@ -402,6 +402,15 @@ class WebPageTest(object):
             uptime = self.get_uptime_minutes()
             if uptime is not None:
                 url += '&upminutes={0:d}'.format(uptime)
+            if 'collectversion' in self.options and \
+                    self.options.collectversion:
+                versions = []
+                for name in browsers.keys():
+                    if 'version' in browsers[name]:
+                        versions.append('{0}:{1}'.format(name, \
+                                browsers[name]['version']))
+                browsers = ','.join(versions)
+                url += '&browsers=' + urllib.quote_plus(browsers)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30, proxies=proxies)

@@ -10,7 +10,7 @@ done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
 sudo apt-get install -y python-software-properties
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper brotli fonttools marionette_driver
 do
     sleep 1
 done

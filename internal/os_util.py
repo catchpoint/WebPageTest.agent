@@ -114,3 +114,15 @@ def get_free_disk_space():
         stat = os.statvfs(path)
         return float(stat.f_bavail * stat.f_frsize / 1024 / 1024) / 1024.0
 # pylint: enable=E1101
+
+def get_file_version(filename):
+    version = 0.0
+    try:
+        from win32api import GetFileVersionInfo, LOWORD, HIWORD
+        info = GetFileVersionInfo (filename, "\\")
+        ms = info['FileVersionMS']
+        ls = info['FileVersionLS']
+        version = '{0}.{1}.{2}.{3}'.format(HIWORD(ms), LOWORD(ms), HIWORD(ls), LOWORD(ls))
+    except:
+        pass
+    return version
