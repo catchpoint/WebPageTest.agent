@@ -171,6 +171,7 @@ class OptimizationChecks(object):
             'Rocket CDN': ['.streamprovider.net'],
             'section.io': ['.squixa.net'],
             'SFR': ['cdn.sfr.net'],
+            'SwiftyCDN': ['.swiftycdn.net'],
             'Simple CDN': ['.simplecdn.net'],
             'Singular CDN': ['.singularcdn.net.br'],
             'StackPath': ['.stackpathdns.com'],
@@ -195,8 +196,7 @@ class OptimizationChecks(object):
                       '.yimg.',
                       '.yahooapis.com'],
             'Yottaa': ['.yottaa.net'],
-            'Zenedge': ['.zenedge.net'],
-            'SwiftyCDN': ['.swiftycdn.net']
+            'Zenedge': ['.zenedge.net']
         }
         self.cdn_headers = {
             'Airee': [{'Server': 'Airee'}],
