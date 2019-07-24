@@ -195,7 +195,8 @@ class OptimizationChecks(object):
                       '.yimg.',
                       '.yahooapis.com'],
             'Yottaa': ['.yottaa.net'],
-            'Zenedge': ['.zenedge.net']
+            'Zenedge': ['.zenedge.net'],
+            'SwiftyCDN': ['.swiftycdn.net']
         }
         self.cdn_headers = {
             'Airee': [{'Server': 'Airee'}],
@@ -255,7 +256,8 @@ class OptimizationChecks(object):
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
-            'Zenedge': [{'X-Cdn': 'Zenedge'}]
+            'Zenedge': [{'X-Cdn': 'Zenedge'}],
+            'SwiftyCDN': [{'X-CDN': 'SwiftyCDN'}]
         }
         # spell-checker: enable
 
