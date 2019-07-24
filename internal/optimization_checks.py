@@ -248,6 +248,7 @@ class OptimizationChecks(object):
             'Roast.io': [{'Server': 'Roast.io'}],
             'Rocket CDN': [{'x-rocket-node': ''}],
             'section.io': [{'section-io-id': ''}],
+            'SwiftyCDN': [{'X-CDN': 'SwiftyCDN'}],
             'Singular CDN': [{'Server': 'SingularCDN'}],
             'Sucuri Firewall': [{'Server': 'Sucuri/Cloudproxy'},
                                 {'x-sucuri-id': ''}],
@@ -256,8 +257,7 @@ class OptimizationChecks(object):
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
-            'Zenedge': [{'X-Cdn': 'Zenedge'}],
-            'SwiftyCDN': [{'X-CDN': 'SwiftyCDN'}]
+            'Zenedge': [{'X-Cdn': 'Zenedge'}]
         }
         # spell-checker: enable
 
