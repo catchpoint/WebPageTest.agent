@@ -52,6 +52,10 @@ ENABLE_CHROME_FEATURES = [
 DISABLE_CHROME_FEATURES = [
 ]
 
+ENABLE_BLINK_FEATURES = [
+    'LayoutInstabilityAPI'
+]
+
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
@@ -91,6 +95,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
         args.append('--enable-features=' + ','.join(features))
+        args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
 
         # Disable site isolation if emulating mobile. It is disabled on
         # actual mobile Chrome (and breaks CPU throttling on Windows)

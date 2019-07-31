@@ -48,6 +48,10 @@ ENABLE_CHROME_FEATURES = [
     'SecMetadata'
 ]
 
+ENABLE_BLINK_FEATURES = [
+    'LayoutInstabilityAPI'
+]
+
 """ Orange page
 <html>
 <head>
@@ -127,6 +131,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             features.append('NetworkService')
             features.append('NetworkServiceInProcess')
         args.append('--enable-features=' + ','.join(features))
+        args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
