@@ -275,15 +275,13 @@ class Trace():
             lcp_event = None
             for event in self.user_timing:
                 try:
-                    thread = '{0}:{1}'.format(event['pid'], event['tid'])
-                    if thread in self.cpu['main_threads']:
-                        if event['cat'].find('loading') >= 0 and 'name' in event and event['name'].startswith('NavStartToLargestContentfulPaint'):
-                            if event['name'].find('Invalidate') >= 0:
-                                lcp_event = None
-                            elif event['name'].find('Candidate') >= 0:
-                                lcp_event = dict(event)
-                        else:
-                            out.append(event)
+                    if event['cat'].find('loading') >= 0 and 'name' in event and event['name'].startswith('NavStartToLargestContentfulPaint'):
+                        if event['name'].find('Invalidate') >= 0:
+                            lcp_event = None
+                        elif event['name'].find('Candidate') >= 0:
+                            lcp_event = dict(event)
+                    else:
+                        out.append(event)
                 except Exception:
                     pass
             if lcp_event is not None:
