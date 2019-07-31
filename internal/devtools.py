@@ -932,7 +932,6 @@ class DevTools(object):
                             # Overriding to * is just a passthrough, don't actually modify anything
                             if self.task['overrideHosts'][host_match] != '*':
                                 headers = msg['params']['request']['headers']
-                                headers['Host'] = self.task['overrideHosts'][host_match]
                                 headers['x-Host'] = host
                                 params['headers'] = headers
                                 params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
