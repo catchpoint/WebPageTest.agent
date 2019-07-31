@@ -74,8 +74,10 @@ class Trace():
             logging.critical("Error writing to " + out_file)
 
     def WriteUserTiming(self, out_file):
-        self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
-        self.write_json(out_file, self.user_timing)
+        out = self.post_process_netlog_events()
+        out = self.post_process_user_timing()
+        if out is not None:
+            self.write_json(out_file, out)
 
     def WriteCPUSlices(self, out_file):
         self.write_json(out_file, self.cpu)
@@ -214,7 +216,12 @@ class Trace():
         if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
                 cat.find('loading') >= 0 or cat.find('navigation') >= 0:
             keep = False
-            if 'args' in trace_event and 'frame' in trace_event['args']:
+            if 'args' in trace_event and \
+                    'data' in trace_event['args'] and \
+                    'inMainFrame' in trace_event['args']['data'] and \
+                    trace_event['args']['data']['inMainFrame']:
+                keep = True
+            elif 'args' in trace_event and 'frame' in trace_event['args']:
                 keep = True
             elif 'name' in trace_event and trace_event['name'] in [
                     'navigationStart', 'unloadEventStart', 'redirectStart', 'domLoading']:
@@ -228,6 +235,13 @@ class Trace():
                     trace_event['name'] in ['navigationStart', 'fetchStart']:
                 thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
                 self.cpu['main_thread'] = thread
+                if thread not in self.cpu['main_threads']:
+                    self.cpu['main_threads'].append(thread)
+            if 'args' in trace_event and \
+                    'data' in trace_event['args'] and \
+                    'inMainFrame' in trace_event['args']['data'] and \
+                    trace_event['args']['data']['inMainFrame']:
+                thread = '{0}:{1}'.format(trace_event['pid'], trace_event['tid'])
                 if thread not in self.cpu['main_threads']:
                     self.cpu['main_threads'].append(thread)
         if cat == '__metadata' and 'name' in trace_event and \
@@ -252,6 +266,31 @@ class Trace():
             self.ProcessFeatureUsageEvent(trace_event)
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
+    
+    def post_process_user_timing(self):
+        out = None
+        if self.user_timing is not None:
+            self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
+            out = []
+            lcp_event = None
+            for event in self.user_timing:
+                try:
+                    thread = '{0}:{1}'.format(event['pid'], event['tid'])
+                    if thread in self.cpu['main_threads']:
+                        if event['cat'].find('loading') >= 0 and 'name' in event and event['name'].startswith('NavStartToLargestContentfulPaint'):
+                            if event['name'].find('Invalidate') >= 0:
+                                lcp_event = None
+                            elif event['name'].find('Candidate') >= 0:
+                                lcp_event = dict(event)
+                        else:
+                            out.append(event)
+                except Exception:
+                    pass
+            if lcp_event is not None:
+                lcp_event['name'] = 'LargestContentfulPaint'
+                out.append(lcp_event)
+            out.append({'startTime': self.start_time})
+        return out
 
     ##########################################################################
     #   Timeline
