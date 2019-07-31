@@ -85,7 +85,10 @@ class Trace():
             self.write_json(out_file, self.scripts)
 
     def WriteFeatureUsage(self, out_file):
-        self.write_json(out_file, self.feature_usage)
+        self.post_process_netlog_events()
+        out = self.post_process_feature_usage()
+        if out is not None:
+            self.write_json(out_file, out)
 
     def WriteInteractive(self, out_file):
         self.write_json(out_file, self.interactive)
@@ -577,35 +580,48 @@ class Trace():
             if self.feature_usage is None:
                 self.feature_usage = {
                     'Features': {}, 'CSSFeatures': {}, 'AnimatedCSSFeatures': {}}
-            if self.feature_usage_start_time is None:
-                if self.start_time is not None:
-                    self.feature_usage_start_time = self.start_time
-                else:
-                    self.feature_usage_start_time = trace_event['ts']
             id = '{0:d}'.format(trace_event['args']['feature'])
-            timestamp = float('{0:0.3f}'.format(
-                (trace_event['ts'] - self.feature_usage_start_time) / 1000.0))
             if trace_event['name'] == 'FeatureFirstUsed':
                 if id in BLINK_FEATURES:
                     name = BLINK_FEATURES[id]
                 else:
                     name = 'Feature_{0}'.format(id)
                 if name not in self.feature_usage['Features']:
-                    self.feature_usage['Features'][name] = timestamp
+                    self.feature_usage['Features'][name] = []
+                self.feature_usage['Features'][name].append(trace_event['ts'])
             elif trace_event['name'] == 'CSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
                 if name not in self.feature_usage['CSSFeatures']:
-                    self.feature_usage['CSSFeatures'][name] = timestamp
+                    self.feature_usage['CSSFeatures'][name] = []
+                self.feature_usage['CSSFeatures'][name].append(trace_event['ts'])
             elif trace_event['name'] == 'AnimatedCSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
                 if name not in self.feature_usage['AnimatedCSSFeatures']:
-                    self.feature_usage['AnimatedCSSFeatures'][name] = timestamp
+                    self.feature_usage['AnimatedCSSFeatures'][name] = []
+                self.feature_usage['AnimatedCSSFeatures'][name].append(trace_event['ts'])
+    
+    def post_process_feature_usage(self):
+        out = None
+        if self.feature_usage is not None and self.start_time is not None:
+            out = {}
+            for category in self.feature_usage:
+                out[category] = {}
+                for name in self.feature_usage[category]:
+                    feature_time = None
+                    for ts in self.feature_usage[category][name]:
+                        timestamp = float('{0:0.3f}'.format((ts - self.start_time) / 1000.0))
+                        if timestamp > 0:
+                            if feature_time is None or timestamp < feature_time:
+                                feature_time = timestamp
+                    if feature_time is not None:
+                        out[category][name] = feature_time
+        return out
 
     ##########################################################################
     #   Netlog
