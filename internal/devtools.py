@@ -315,6 +315,8 @@ class DevTools(object):
             # Add the required trace events
             if "rail" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("rail")
+            if "loading" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("blink.user_timing")
             if "netlog" not in trace_config["includedCategories"]:
