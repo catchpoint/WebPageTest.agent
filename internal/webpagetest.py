@@ -409,8 +409,8 @@ class WebPageTest(object):
                     if 'version' in browsers[name]:
                         versions.append('{0}:{1}'.format(name, \
                                 browsers[name]['version']))
-                browsers = ','.join(versions)
-                url += '&browsers=' + urllib.quote_plus(browsers)
+                browser_versions = ','.join(versions)
+                url += '&browsers=' + urllib.quote_plus(browser_versions)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30, proxies=proxies)
