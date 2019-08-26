@@ -10,10 +10,11 @@ done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
 sudo apt-get install -y python-software-properties
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper brotli fonttools marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper brotli marionette_driver
 do
     sleep 1
 done
+sudo pip install fonttools
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
