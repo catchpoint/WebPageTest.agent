@@ -993,7 +993,7 @@ class DevToolsParser(object):
             f_in.close()
             if user_timing_events:
                 user_timing_events.sort(key=lambda x: x['ts'] if 'ts' in x else 0)
-            main_frame = None
+            main_frames = []
             navigation_start = None
             names = [
                 'firstLayout',
@@ -1008,13 +1008,25 @@ class DevToolsParser(object):
                 'loadEventStart',
                 'loadEventEnd'
             ]
+            # see if there is an explicit start time
+            for event in user_timing_events:
+                if 'startTime' in event:
+                    navigation_start = event['startTime']
             for event in user_timing_events:
                 if 'args' in event and 'frame' in event['args'] and \
                         'name' in event and 'ts' in event:
-                    if main_frame is None:
+                    if not main_frames:
                         if event['name'] in ['navigationStart', 'fetchStart']:
-                            main_frame = event['args']['frame']
-                    if main_frame is not None and event['args']['frame'] == main_frame:
+                            main_frames.append(event['args']['frame'])
+                    if event['args']['frame'] not in main_frames:
+                        if 'data' in event['args']:
+                            if 'is_main_frame' in event['args']['data'] and \
+                                    event['args']['data']['is_main_frame']:
+                                main_frames.append(event['args']['frame'])
+                            elif 'isLoadingMainFrame' in event['args']['data'] and \
+                                    event['args']['data']['isLoadingMainFrame']:
+                                main_frames.append(event['args']['frame'])
+                    if event['args']['frame'] in main_frames:
                         if navigation_start is None:
                             if event['name'] in ['navigationStart', 'fetchStart']:
                                 navigation_start = event['ts']
