@@ -190,7 +190,7 @@ class DevTools(object):
                 if 'type' in target and 'targetId' in target:
                     if target['type'] == 'service_worker':
                         self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                      wait=True)
+                                          wait=True)
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -839,7 +839,7 @@ class DevTools(object):
     def clear_cache(self):
         """Clear the browser cache"""
         self.send_command('Network.clearBrowserCache', {}, wait=True)
-  
+
     def disable_cache(self, disable):
         """Disable the browser cache"""
         self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
@@ -1242,7 +1242,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
-            self.trace_parser.WriteLongTasks(self.path_base+'_long_tasks.json.gz')
+            self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
             elapsed = monotonic.monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
