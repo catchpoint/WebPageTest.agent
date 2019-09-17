@@ -190,7 +190,7 @@ class DevTools(object):
                 if 'type' in target and 'targetId' in target:
                     if target['type'] == 'service_worker':
                         self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                           wait=True)
+                                      wait=True)
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -271,10 +271,14 @@ class DevTools(object):
                 self.send_command('Profiler.start', {})
             trace_config = {"recordMode": "recordAsMuchAsPossible",
                             "includedCategories": []}
+            self.job['keep_toplevel'] = False
             if 'trace' in self.job and self.job['trace']:
                 self.job['keep_netlog'] = True
                 if 'traceCategories' in self.job:
                     categories = self.job['traceCategories'].split(',')
+                    # Only keep toplevel events if user explicitly adds 'toplevel' category when selecting trace.
+                    if 'toplevel' in self.job['traceCategories']:
+                        self.job['keep_toplevel'] = True
                     for category in categories:
                         if category.find("*") < 0 and category not in trace_config["includedCategories"]:
                             trace_config["includedCategories"].append(category)
@@ -297,6 +301,8 @@ class DevTools(object):
                     trace_config["includedCategories"].append("blink.console")
                 if "devtools.timeline" not in trace_config["includedCategories"]:
                     trace_config["includedCategories"].append("devtools.timeline")
+                if 'toplevel' not in trace_config['includedCategories']:
+                    trace_config['includedCategories'].append('toplevel')
                 trace_config["enableSampling"] = True
                 if 'timeline_fps' in self.job and self.job['timeline_fps']:
                     if "disabled-by-default-devtools.timeline" not in trace_config["includedCategories"]:
@@ -833,7 +839,7 @@ class DevTools(object):
     def clear_cache(self):
         """Clear the browser cache"""
         self.send_command('Network.clearBrowserCache', {}, wait=True)
-
+  
     def disable_cache(self, disable):
         """Disable the browser cache"""
         self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
@@ -1236,6 +1242,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
+            self.trace_parser.WriteLongTasks(self.path_base+'_long_tasks.json.gz')
             elapsed = monotonic.monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
@@ -1287,6 +1294,8 @@ class DevToolsClient(WebSocketClient):
                         self.trace_event_counts[trace_event['cat']] = 0
                     self.trace_event_counts[trace_event['cat']] += 1
                     if not self.job['keep_netlog'] and trace_event['cat'] == 'netlog':
+                        keep_event = False
+                    if not self.job['keep_toplevel'] and 'toplevel' in trace_event['cat']:
                         keep_event = False
                     if process_event and self.trace_parser is not None:
                         self.trace_parser.ProcessTraceEvent(trace_event)

@@ -44,6 +44,7 @@ class Trace():
         self.timeline_events = []
         self.trace_events = []
         self.interactive = []
+        self.long_tasks = []
         self.interactive_start = 0
         self.interactive_end = None
         self.start_time = None
@@ -94,6 +95,9 @@ class Trace():
 
     def WriteInteractive(self, out_file):
         self.write_json(out_file, self.interactive)
+
+    def WriteLongTasks(self, out_file):
+        self.write_json(out_file, self.long_tasks)
 
     def WriteNetlog(self, out_file):
         out = self.post_process_netlog_events()
@@ -264,6 +268,8 @@ class Trace():
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
+        elif cat.find('toplevel') >= 0:
+            self.ProcessTopLevelEventForLongTasks(trace_event)
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
@@ -380,6 +386,13 @@ class Trace():
                 else:
                     self.timeline_events.append(e)
 
+    def ProcessTopLevelEventForLongTasks(self, trace_event):       
+        if trace_event['dur'] > 50000 and trace_event['name'] == 'ThreadControllerImpl::RunTask' and \
+            self.cpu['main_thread'] is not None and \
+            '{0}:{1}'.format(trace_event['pid'],trace_event['tid']) == self.cpu['main_thread']:
+            self.long_tasks.append(
+                [int(math.floor(trace_event['ts'] - self.start_time)/1000),int(math.floor(trace_event['dur']/1000))])
+          
     def ProcessOldTimelineEvent(self, event, type):
         e = None
         thread = '0'
