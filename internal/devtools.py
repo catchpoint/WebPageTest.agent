@@ -190,7 +190,7 @@ class DevTools(object):
                 if 'type' in target and 'targetId' in target:
                     if target['type'] == 'service_worker':
                         self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                          wait=True)
+                                           wait=True)
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
