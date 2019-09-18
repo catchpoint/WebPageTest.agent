@@ -172,7 +172,10 @@ class DevtoolsBrowser(object):
     def on_stop_recording(self, task):
         """Stop recording"""
         if self.devtools is not None:
-            self.devtools.collect_trace()
+            run_time = 0
+            if 'run_start_time' in task and 'run_end_time' in task:
+                run_time = task['run_end_time'] - task['run_start_time']
+            self.devtools.collect_trace(run_time)
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
                     screen_shot = os.path.join(task['dir'],
@@ -205,6 +208,7 @@ class DevtoolsBrowser(object):
                 self.process_command(command)
                 if command['record']:
                     self.devtools.wait_for_page_load()
+                    task['run_end_time'] = monotonic.monotonic()
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_capture(task)
                         self.on_stop_recording(task)

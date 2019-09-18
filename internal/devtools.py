@@ -447,7 +447,7 @@ class DevTools(object):
                                                   self.start_timestamp, keep_timeline)
             self.send_command('Tracing.end', {})
 
-    def collect_trace(self):
+    def collect_trace(self, run_time):
         """Stop tracing and collect the results"""
         if self.trace_enabled:
             self.trace_enabled = False
@@ -474,7 +474,7 @@ class DevTools(object):
                             no_message_count += 1
                             time.sleep(1)
                             pass
-                self.websocket.stop_processing_trace()
+                self.websocket.stop_processing_trace(run_time)
             except Exception:
                 pass
             elapsed = monotonic.monotonic() - start
@@ -1206,7 +1206,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.keep_timeline = keep_timeline
 
-    def stop_processing_trace(self):
+    def stop_processing_trace(self, run_time):
         """All done"""
         if self.pending_image is not None and self.last_image is not None and\
                 self.pending_image["image"] != self.last_image["image"]:
@@ -1228,7 +1228,7 @@ class DevToolsClient(WebSocketClient):
             logging.debug("Post-Processing the trace netlog events")
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
-            self.trace_parser.ProcessTimelineEvents()
+            self.trace_parser.ProcessTimelineEvents(run_time)
             self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
             self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
             self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')

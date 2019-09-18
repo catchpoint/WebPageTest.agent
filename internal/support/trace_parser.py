@@ -436,7 +436,7 @@ class Trace():
                         e['c'].append(c)
         return e
 
-    def ProcessTimelineEvents(self):
+    def ProcessTimelineEvents(self, run_time = 0):
         if len(self.timeline_events) and self.end_time > self.start_time:
             # Figure out how big each slice should be in usecs. Size it to a
             # power of 10 where we have at least 2000 slices
@@ -468,6 +468,16 @@ class Trace():
                     self.interactive_start > 500000:
                 self.interactive.append([int(math.ceil(self.interactive_start / 1000.0)),
                                          int(math.floor(self.interactive_end / 1000.0))])
+
+            # Extend last interactive window to the end of the run
+            # Assuming that if there are no events past the last interactive window
+            # then the page was interactive for that time
+            if self.cpu['total_usecs'] == self.interactive_end and run_time > 0 and \
+                    len(self.interactive):
+                run_time_ms = int(math.floor(run_time * 1000.0))
+                last_window = self.interactive.pop()
+                last_window[1] = run_time_ms
+                self.interactive.append(last_window)
 
             # Go through all of the fractional times and convert the float
             # fractional times to integer usecs
