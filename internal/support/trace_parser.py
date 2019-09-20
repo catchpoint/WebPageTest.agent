@@ -387,11 +387,16 @@ class Trace():
                     self.timeline_events.append(e)
 
     def ProcessTopLevelEventForLongTasks(self, trace_event):       
-        if trace_event['dur'] > 50000 and trace_event['name'] == 'ThreadControllerImpl::RunTask' and \
-            self.cpu['main_thread'] is not None and \
-            '{0}:{1}'.format(trace_event['pid'],trace_event['tid']) == self.cpu['main_thread']:
-            self.long_tasks.append(
-                [int(math.floor(trace_event['ts'] - self.start_time)/1000),int(math.floor(trace_event['dur']/1000))])
+        try:
+            if 'dur' in trace_event and trace_event['dur'] > 50000 and \
+                trace_event['name'] == 'ThreadControllerImpl::RunTask' and \
+                self.cpu['main_thread'] is not None and \
+                '{0}:{1}'.format(trace_event['pid'],trace_event['tid']) == self.cpu['main_thread']:
+                self.long_tasks.append(
+                    [int(math.floor(trace_event['ts'] - self.start_time)/1000),int(math.floor(trace_event['dur']/1000))])
+        except Exception :
+            pass    
+
           
     def ProcessOldTimelineEvent(self, event, type):
         e = None
