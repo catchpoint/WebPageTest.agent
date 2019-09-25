@@ -112,7 +112,7 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Emulation.setScrollbarsHidden",
                                            {"hidden": True},
                                            wait=True)
-                if not self.options.throttle and 'throttle_cpu' in self.job:
+                if (task['running_lighthouse'] or not self.options.throttle) and 'throttle_cpu' in self.job:
                     logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                     if self.job['throttle_cpu'] > 1:
                         self.devtools.send_command("Emulation.setCPUThrottlingRate",
