@@ -671,7 +671,8 @@ class DevToolsParser(object):
         """Merge the data from the netlog requests file"""
         page_data = self.result['pageData']
         requests = self.result['requests']
-        mapping = {'dns_start': 'dns_start',
+        mapping = {'created': 'created',
+                   'dns_start': 'dns_start',
                    'dns_end': 'dns_end',
                    'connect_start': 'connect_start',
                    'connect_end': 'connect_end',
