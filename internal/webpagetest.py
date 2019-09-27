@@ -232,7 +232,7 @@ class WebPageTest(object):
         while not ok:
             try:
                 response = session.get(
-                    'http://169.254.169.254/computeMetadata/v1/instance/attributes/wpt_data',
+                    'http://metadata.google.internal/computeMetadata/v1/instance/attributes/wpt_data',
                     headers={'Metadata-Flavor': 'Google'},
                     timeout=30, proxies=proxies)
                 if len(response.text):
@@ -245,7 +245,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/computeMetadata/v1/instance/id',
+                response = session.get('http://metadata.google.internal/computeMetadata/v1/instance/id',
                                        headers={'Metadata-Flavor': 'Google'},
                                        timeout=30, proxies=proxies)
                 if len(response.text):
