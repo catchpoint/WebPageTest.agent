@@ -713,6 +713,8 @@ class DevToolsParser(object):
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
                                 entry['url'] == request['full_url']:
                             entry['claimed'] = True
+                            # Keep the protocol from devtools if we have it because it is more accurate
+                            protocol = request['protocol'] if 'protocol' in request else None
                             for key in mapping:
                                 try:
                                     if key in entry:
@@ -727,6 +729,8 @@ class DevToolsParser(object):
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
                                     pass
+                            if protocol is not None:
+                                request['protocol'] = protocol
                             if 'start' in entry:
                                 request['load_start_float'] = float(str(entry['start']).strip())
                             if 'certificates' in entry:
