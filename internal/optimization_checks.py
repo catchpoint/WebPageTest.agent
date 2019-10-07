@@ -258,7 +258,8 @@ class OptimizationChecks(object):
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
-            'Zenedge': [{'X-Cdn': 'Zenedge'}]
+            'Zenedge': [{'X-Cdn': 'Zenedge'}],
+            'Zycada Networks': [{'X-Zy-Server': ''}]
         }
         # spell-checker: enable
 
