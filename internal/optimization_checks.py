@@ -137,6 +137,7 @@ class OptimizationChecks(object):
             'Level 3': ['.footprint.net',
                         '.fpbns.net'],
             'Limelight': ['.llnwd.net',
+                          '.llnw.net',
                           '.llnwi.net',
                           '.lldns.net'],
             'MediaCloud': ['.cdncloud.net.au'],
