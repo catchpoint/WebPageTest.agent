@@ -162,6 +162,7 @@ class OptimizationChecks(object):
                       '.r.worldssl.net'],
             'Optimal CDN': ['.optimalcdn.com'],
             'PageRain': ['.pagerain.net'],
+            'Pressable CDN': ['.pressablecdn.com'],
             'PUSHR': ['.pushrcdn.com'],
             'Rackspace': ['.raxcdn.com'],
             'Reapleaf': ['.rlcdn.com'],
