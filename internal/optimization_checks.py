@@ -137,6 +137,7 @@ class OptimizationChecks(object):
             'Level 3': ['.footprint.net',
                         '.fpbns.net'],
             'Limelight': ['.llnwd.net',
+                          '.llnw.net',
                           '.llnwi.net',
                           '.lldns.net'],
             'MediaCloud': ['.cdncloud.net.au'],
@@ -161,6 +162,7 @@ class OptimizationChecks(object):
                       '.r.worldssl.net'],
             'Optimal CDN': ['.optimalcdn.com'],
             'PageRain': ['.pagerain.net'],
+            'Pressable CDN': ['.pressablecdn.com'],
             'PUSHR': ['.pushrcdn.com'],
             'Rackspace': ['.raxcdn.com'],
             'Reapleaf': ['.rlcdn.com'],
@@ -258,7 +260,8 @@ class OptimizationChecks(object):
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
-            'Zenedge': [{'X-Cdn': 'Zenedge'}]
+            'Zenedge': [{'X-Cdn': 'Zenedge'}],
+            'Zycada Networks': [{'X-Zy-Server': ''}]
         }
         # spell-checker: enable
 

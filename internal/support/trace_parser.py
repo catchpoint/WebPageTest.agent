@@ -681,8 +681,12 @@ class Trace():
                     self.ProcessNetlogStreamJobEvent(trace_event)
                 elif event_type == 'HTTP2_SESSION':
                     self.ProcessNetlogHttp2SessionEvent(trace_event)
+                elif event_type == 'QUIC_SESSION':
+                    self.ProcessNetlogQuicSessionEvent(trace_event)
                 elif event_type == 'SOCKET':
                     self.ProcessNetlogSocketEvent(trace_event)
+                elif event_type == 'UDP_SOCKET':
+                    self.ProcessNetlogUdpSocketEvent(trace_event)
                 elif event_type == 'URL_REQUEST':
                     self.ProcessNetlogUrlRequestEvent(trace_event)
             except Exception:
@@ -967,6 +971,8 @@ class Trace():
                 stream['bytes_in'] += params['size']
                 stream['chunks'].append({'ts': trace_event['ts'], 'bytes': params['size']})
             if name == 'HTTP2_SESSION_SEND_HEADERS':
+                if 'start' not in stream:
+                    stream['start'] = trace_event['ts']
                 if 'headers' in params:
                     stream['request_headers'] = params['headers']
             if name == 'HTTP2_SESSION_RECV_HEADERS':
@@ -1035,6 +1041,52 @@ class Trace():
                 if 'server_settings' not in entry:
                     entry['server_settings'] = {}
                 entry['server_settings'][setting_id] = params['value']
+
+    def ProcessNetlogQuicSessionEvent(self, trace_event):
+        """Raw QUIC session information (linked to sockets and requests)"""
+        if 'quic_session' not in self.netlog:
+            self.netlog['quic_session'] = {}
+        session_id = trace_event['id']
+        if session_id not in self.netlog['quic_session']:
+            self.netlog['quic_session'][session_id] = {'stream': {}}
+        params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
+        entry = self.netlog['quic_session'][session_id]
+        name = trace_event['name']
+        if 'host' not in entry and 'host' in params:
+            entry['host'] = params['host']
+        if 'port' not in entry and 'port' in params:
+            entry['port'] = params['port']
+        if 'version' not in entry and 'version' in params:
+            entry['version'] = params['version']
+        if 'peer_address' not in entry and 'peer_address' in params:
+            entry['peer_address'] = params['peer_address']
+        if 'self_address' not in entry and 'self_address' in params:
+            entry['self_address'] = params['self_address']
+        if name == 'QUIC_SESSION_PACKET_SENT' and 'connect_start' not in entry:
+            entry['connect_start'] = trace_event['ts']
+        if name == 'QUIC_SESSION_VERSION_NEGOTIATED' and 'connect_end' not in entry:
+            entry['connect_end'] = trace_event['ts']
+        if name == 'CERT_VERIFIER_REQUEST' and 'connect_end' in entry:
+            if 'tls_start' not in entry:
+                entry['tls_start'] = entry['connect_end']
+            if 'tls_end' not in entry:
+                entry['tls_end'] = trace_event['ts']
+        if 'quic_stream_id' in params:
+            stream_id = params['quic_stream_id']
+            if stream_id not in entry['stream']:
+                entry['stream'][stream_id] = {'bytes_in': 0, 'chunks': []}
+            stream = entry['stream'][stream_id]
+            if name == 'QUIC_CHROMIUM_CLIENT_STREAM_SEND_REQUEST_HEADERS':
+                if 'start' not in stream:
+                    stream['start'] = trace_event['ts']
+                if 'headers' in params:
+                    stream['request_headers'] = params['headers']
+            if name == 'QUIC_CHROMIUM_CLIENT_STREAM_READ_RESPONSE_HEADERS':
+                if 'first_byte' not in stream:
+                    stream['first_byte'] = trace_event['ts']
+                stream['end'] = trace_event['ts']
+                if 'headers' in params:
+                    stream['response_headers'] = params['headers']
 
     def ProcessNetlogDnsEvent(self, trace_event):
         if 'dns' not in self.netlog:
@@ -1110,6 +1162,32 @@ class Trace():
                 entry['certificates'] = []
             entry['certificates'].extend(params['certificates'])
 
+    def ProcessNetlogUdpSocketEvent(self, trace_event):
+        if 'socket' not in self.netlog:
+            self.netlog['socket'] = {}
+        request_id = trace_event['id']
+        if request_id not in self.netlog['socket']:
+            self.netlog['socket'][request_id] = {'bytes_out': 0, 'bytes_in': 0,
+                                                 'chunks_out': [], 'chunks_in': []}
+        params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
+        entry = self.netlog['socket'][request_id]
+        name = trace_event['name']
+        if name == 'UDP_CONNECT' and 'address' in params:
+            entry['address'] = params['address']
+        if name == 'UDP_LOCAL_ADDRESS' and 'address' in params:
+            entry['source_address'] = params['address']
+        if 'connect_start' not in entry and name == 'UDP_CONNECT' and \
+                trace_event['ph'] == 'b':
+            entry['connect_start'] = trace_event['ts']
+        if name == 'UDP_CONNECT' and trace_event['ph'] == 'e':
+            entry['connect_end'] = trace_event['ts']
+        if name == 'UDP_BYTES_SENT' and 'byte_count' in params:
+            entry['bytes_out'] += params['byte_count']
+            entry['chunks_out'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
+        if name == 'UDP_BYTES_RECEIVED' and 'byte_count' in params:
+            entry['bytes_in'] += params['byte_count']
+            entry['chunks_in'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
+
     def ProcessNetlogUrlRequestEvent(self, trace_event):
         if 'url_request' not in self.netlog:
             self.netlog['url_request'] = {}
@@ -1140,6 +1218,14 @@ class Trace():
             else:
                 entry['request_headers'] = params['headers']
             entry['protocol'] = 'HTTP/2'
+        if 'headers' in params and name == 'HTTP_TRANSACTION_QUIC_SEND_REQUEST_HEADERS':
+            if isinstance(params['headers'], dict):
+                entry['request_headers'] = []
+                for key in params['headers']:
+                    entry['request_headers'].append('{0}: {1}'.format(key, params['headers'][key]))
+            else:
+                entry['request_headers'] = params['headers']
+            entry['protocol'] = 'QUIC'
         if 'headers' in params and name == 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS':
             entry['response_headers'] = params['headers']
             if 'first_byte' not in entry:
