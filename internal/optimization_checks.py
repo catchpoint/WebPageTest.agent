@@ -161,6 +161,7 @@ class OptimizationChecks(object):
             'OnApp': ['.r.worldcdn.net',
                       '.r.worldssl.net'],
             'Optimal CDN': ['.optimalcdn.com'],
+	    'Orange CDN': ['.woopic.com'],
             'PageRain': ['.pagerain.net'],
             'Pressable CDN': ['.pressablecdn.com'],
             'PUSHR': ['.pushrcdn.com'],
