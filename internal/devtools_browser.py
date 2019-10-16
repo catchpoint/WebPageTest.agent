@@ -605,21 +605,6 @@ class DevtoolsBrowser(object):
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
                     with gzip.open(audits_gzip, 'wb', 7) as f_out:
                         json.dump(audits, f_out)
-            if os.path.isfile(html_file):
-                # Remove the raw screenshots if they were stored with the file
-                with open(html_file, 'rb') as f_in:
-                    lh_report = f_in.read()
-                    start = lh_report.find('\n    &quot;screenshots')
-                    if start >= 0:
-                        end = lh_report.find('\n    },', start)
-                        if end >= 0:
-                            lh_report = lh_report[:start] + lh_report[end + 7:]
-                    with gzip.open(html_gzip, 'wb', 7) as f_out:
-                        f_out.write(lh_report)
-                try:
-                    os.remove(html_file)
-                except Exception:
-                    pass
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
