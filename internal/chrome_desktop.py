@@ -50,6 +50,7 @@ ENABLE_CHROME_FEATURES = [
 ]
 
 DISABLE_CHROME_FEATURES = [
+    'InterestFeedContentSuggestions'
 ]
 
 ENABLE_BLINK_FEATURES = [
@@ -103,8 +104,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             disable_features.extend(['NetworkService',
                                      'IsolateOrigins',
                                      'site-per-process'])
-        if disable_features:
-            args.append('--disable-features=' + ','.join(disable_features))
+        args.append('--disable-features=' + ','.join(disable_features))
 
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)

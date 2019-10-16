@@ -44,6 +44,10 @@ HOST_RULES = [
     '"MAP clients1.google.com 127.0.0.1"'
 ]
 
+DISABLE_CHROME_FEATURES = [
+    'InterestFeedContentSuggestions'
+]
+
 ENABLE_CHROME_FEATURES = [
     'SecMetadata'
 ]
@@ -118,6 +122,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         """Launch the browser"""
         args = list(CHROME_COMMAND_LINE_OPTIONS)
         features = list(ENABLE_CHROME_FEATURES)
+        disable_features = list(DISABLE_CHROME_FEATURES)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
             host_rules.extend(task['host_rules'])
@@ -132,6 +137,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             features.append('NetworkServiceInProcess')
         args.append('--enable-features=' + ','.join(features))
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        args.append('--disable-features=' + ','.join(disable_features))
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
             command_line += ' ' + job['addCmdLine']
