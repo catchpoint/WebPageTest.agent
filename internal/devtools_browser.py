@@ -486,6 +486,8 @@ class DevtoolsBrowser(object):
                        '--output-path', '"{0}"'.format(output_path)]
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
+            if not self.job['keep_lighthouse_screenshots']:
+                command.extend(['--skip-audits', 'screenshot-thumbnails'])
             if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
                 command.extend(['--emulated-form-factor', 'none'])
                 if 'user_agent_string' in self.job:
@@ -539,22 +541,10 @@ class DevtoolsBrowser(object):
                 except Exception:
                     pass
             if os.path.isfile(json_file):
-                # Remove the raw screenshots if they were stored with the file
                 lh_report = None
                 with open(json_file, 'rb') as f_in:
                     lh_report = json.load(f_in)
-                modified = False
-                if lh_report is not None and 'audits' in lh_report:
-                    if 'screenshots' in lh_report['audits']:
-                        del lh_report['audits']['screenshots']
-                        modified = True
-                    if 'screenshot-thumbnails' in lh_report['audits']:
-                        del lh_report['audits']['screenshot-thumbnails']
-                        modified = True
-                if modified:
-                    with gzip.open(json_gzip, 'wb', 7) as f_out:
-                        json.dump(lh_report, f_out)
-                else:
+                if lh_report is None or 'audits' not in lh_report:
                     with open(json_file, 'rb') as f_in:
                         with gzip.open(json_gzip, 'wb', 7) as f_out:
                             shutil.copyfileobj(f_in, f_out)
