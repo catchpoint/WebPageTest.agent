@@ -475,6 +475,7 @@ class DevtoolsBrowser(object):
             time_limit = min(int(task['time_limit']), 80)
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
+                       '--channel', 'wpt',
                        '--disable-network-throttling',
                        '--disable-cpu-throttling',
                        '--throttling-method', 'provided',
