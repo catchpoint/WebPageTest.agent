@@ -606,6 +606,15 @@ class DevtoolsBrowser(object):
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
                     with gzip.open(audits_gzip, 'wb', 7) as f_out:
                         json.dump(audits, f_out)
+            # Compress the HTML lighthouse report
+            if os.path.isfile(html_file):
+                try:
+                    with open(html_file, 'rb') as f_in:
+                        with gzip.open(html_gzip, 'wb', 7) as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                    os.remove(html_file)
+                except Exception:
+                    pass
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
