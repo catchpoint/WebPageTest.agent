@@ -597,11 +597,13 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
                 command.extend(['--skip-audits', 'screenshot-thumbnails'])
-            if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
+            if self.options.android:
                 command.extend(['--emulated-form-factor', 'none'])
                 if 'user_agent_string' in self.job:
                     sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                     command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
+            elif 'mobile' not in self.job or not self.job['mobile']:
+                command.extend(['--emulated-form-factor', 'desktop'])
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
