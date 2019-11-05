@@ -45,7 +45,8 @@ HOST_RULES = [
 ]
 
 DISABLE_CHROME_FEATURES = [
-    'InterestFeedContentSuggestions'
+    'InterestFeedContentSuggestions',
+    'CalculateNativeWinOcclusion'
 ]
 
 ENABLE_CHROME_FEATURES = [

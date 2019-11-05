@@ -50,7 +50,8 @@ ENABLE_CHROME_FEATURES = [
 ]
 
 DISABLE_CHROME_FEATURES = [
-    'InterestFeedContentSuggestions'
+    'InterestFeedContentSuggestions',
+    'CalculateNativeWinOcclusion'
 ]
 
 ENABLE_BLINK_FEATURES = [
