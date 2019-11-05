@@ -545,10 +545,10 @@ class DevtoolsBrowser(object):
                 lh_report = None
                 with open(json_file, 'rb') as f_in:
                     lh_report = json.load(f_in)
-                if lh_report is None or 'audits' not in lh_report:
-                    with open(json_file, 'rb') as f_in:
-                        with gzip.open(json_gzip, 'wb', 7) as f_out:
-                            shutil.copyfileobj(f_in, f_out)
+
+                with open(json_file, 'rb') as f_in:
+                    with gzip.open(json_gzip, 'wb', 7) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
                 try:
                     os.remove(json_file)
                 except Exception:
