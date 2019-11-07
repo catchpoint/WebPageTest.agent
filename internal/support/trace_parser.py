@@ -272,21 +272,36 @@ class Trace():
         if self.user_timing is not None:
             self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
             out = []
+            candidates = {}
             lcp_event = None
             for event in self.user_timing:
                 try:
-                    if event['cat'].find('loading') >= 0 and 'name' in event and event['name'].startswith('NavStartToLargestContentfulPaint'):
-                        if event['name'].find('Invalidate') >= 0:
-                            lcp_event = None
-                        elif event['name'].find('Candidate') >= 0:
-                            lcp_event = dict(event)
-                    else:
+                    consumed = False
+                    if event['cat'].find('loading') >= 0 and 'name' in event:
+                        if event['name'].startswith('NavStartToLargestContentfulPaint'):
+                            consumed = True
+                            if event['name'].find('Invalidate') >= 0:
+                                lcp_event = None
+                            elif event['name'].find('Candidate') >= 0:
+                                lcp_event = dict(event)
+                        elif event['name'].find('::') >= 0:
+                            consumed = True
+                            (name, trigger) = event['name'].split('::', 1)
+                            name = name[:1].upper() + name[1:]
+                            event['name'] = name
+                            if trigger == 'Candidate':
+                                candidates[name] = dict(event)
+                            elif trigger == 'Invalidate' and name in candidates:
+                                del candidates[name]
+                    if not consumed:
                         out.append(event)
                 except Exception:
                     pass
-            if lcp_event is not None:
+            if lcp_event is not None and 'LargestContentfulPaint' not in candidates:
                 lcp_event['name'] = 'LargestContentfulPaint'
                 out.append(lcp_event)
+            for name in candidates:
+                out.append(candidates[name])
             out.append({'startTime': self.start_time})
         return out
 
