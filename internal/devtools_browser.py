@@ -126,12 +126,16 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Emulation.setScrollbarsHidden",
                                            {"hidden": True},
                                            wait=True)
-                if (task['running_lighthouse'] or not self.options.throttle) and 'throttle_cpu' in self.job:
-                    logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
-                    if self.job['throttle_cpu'] > 1:
-                        self.devtools.send_command("Emulation.setCPUThrottlingRate",
-                                                   {"rate": self.job['throttle_cpu']},
-                                                   wait=True)
+
+            # DevTools-based CPU throttling for desktop and emulated mobile tests
+            if not self.options.android and \
+                    (task['running_lighthouse'] or not self.options.throttle) and \
+                    'throttle_cpu' in self.job:
+                logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+                if self.job['throttle_cpu'] > 1:
+                    self.devtools.send_command("Emulation.setCPUThrottlingRate",
+                                                {"rate": self.job['throttle_cpu']},
+                                                wait=True)
 
             # Location
             if 'lat' in self.job and 'lng' in self.job:
