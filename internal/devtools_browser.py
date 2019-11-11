@@ -112,11 +112,14 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Emulation.setScrollbarsHidden",
                                            {"hidden": True},
                                            wait=True)
-            if (task['running_lighthouse'] or not self.options.throttle) and 'throttle_cpu' in self.job:
-                logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
-                if self.job['throttle_cpu'] > 1:
+            if (task['running_lighthouse'] or not self.options.throttle) and ('throttle_cpu' in self.job or 'throttle_cpu_lighthouse' in self.job):
+                throttle_cpu = self.job['throttle_cpu']
+                if task['running_lighthouse'] and 'throttle_cpu_lighthouse' in self.job:
+                    throttle_cpu = self.job['throttle_cpu_lighthouse']
+                logging.debug('CPU Throttle target: %0.3fx', throttle_cpu)
+                if throttle_cpu > 1:
                     self.devtools.send_command("Emulation.setCPUThrottlingRate",
-                                                {"rate": self.job['throttle_cpu']},
+                                                {"rate": throttle_cpu},
                                                 wait=True)
 
             # Location

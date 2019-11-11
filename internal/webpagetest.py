@@ -476,6 +476,12 @@ class WebPageTest(object):
                             throttle *= self.cpu_scale_multiplier
                         job['throttle_cpu_requested'] = job['throttle_cpu']
                         job['throttle_cpu'] = throttle
+                    if 'throttle_cpu_lighthouse' in job:
+                        lighthouse_throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu_lighthouse'])).group())
+                        if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
+                            lighthouse_throttle *= self.cpu_scale_multiplier
+                        job['throttle_cpu_lighthouse_requested'] = job['throttle_cpu_lighthouse']
+                        job['throttle_cpu_lighthouse'] = lighthouse_throttle
                 if job is None and len(locations) > 0:
                     location = str(locations.pop(0))
                     retry = True
