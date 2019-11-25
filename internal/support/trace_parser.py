@@ -476,8 +476,14 @@ class Trace():
                     len(self.interactive):
                 run_time_ms = int(math.floor(run_time * 1000.0))
                 last_window = self.interactive.pop()
-                last_window[1] = run_time_ms
-                self.interactive.append(last_window)
+                if last_window[1] != self.cpu['total_usecs']:
+                    new_window = [int(math.ceil(self.cpu['total_usecs'] / 1000.0)),
+                                  int(math.floor(run_time_ms /1000.0))]
+                    self.interactive.append(last_window)    
+                    self.interactive.append(new_window)
+                else:
+                    last_window[1] = run_time_ms
+                    self.interactive.append(last_window)
 
             # Go through all of the fractional times and convert the float
             # fractional times to integer usecs
