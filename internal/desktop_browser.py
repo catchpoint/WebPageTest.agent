@@ -64,6 +64,7 @@ class DesktopBrowser(BaseBrowser):
         self.stopping = False
         self.is_chrome = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
+        self.block_domains = []
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -117,6 +118,8 @@ class DesktopBrowser(BaseBrowser):
                     hosts_text += "\n"
                     for pair in hosts:
                         hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
+                    for domain in self.block_domains:
+                        hosts_text += "{0}    127.0.0.1\n".format(domain)
                     with open(hosts_tmp, 'w') as f_out:
                         f_out.write(hosts_text)
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])

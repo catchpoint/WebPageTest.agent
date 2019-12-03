@@ -48,6 +48,9 @@ class Firefox(DesktopBrowser):
         self.last_activity = monotonic.monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.start_page = 'http://127.0.0.1:8888/orange.html'
+        self.block_domains = [
+            "tracking-protection.cdn.mozilla.net",
+            "shavar.services.mozilla.com"]
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""

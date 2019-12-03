@@ -605,12 +605,16 @@ class WebPageTest(object):
                         task['host_rules'] = []
                     if 'block_domains' not in task:
                         task['block_domains'] = []
+                    if 'dns_override' not in task:
+                        task['dns_override'] = []
                     domains = re.split('[, ]', job['blockDomains'])
                     for domain in domains:
                         domain = domain.strip()
                         if len(domain) and domain.find('"') == -1:
                             task['block_domains'].append(domain)
                             task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
+                            if re.match(r'^[a-zA-Z0-9\-\.]+$', domain):
+                                task['dns_override'].append([domain, "127.0.0.1"])
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
@@ -743,12 +747,16 @@ class WebPageTest(object):
                                 task['block_domains'] = []
                             if 'host_rules' not in task:
                                 task['host_rules'] = []
+                            if 'dns_override' not in task:
+                                task['dns_override'] = []
                             domains = re.split('[, ]', target)
                             for domain in domains:
                                 domain = domain.strip()
                                 if len(domain) and domain.find('"') == -1:
                                     task['block_domains'].append(domain)
                                     task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
+                                    if re.match(r'^[a-zA-Z0-9\-\.]+$', domain):
+                                        task['dns_override'].append([domain, "127.0.0.1"])
                     elif command == 'blockdomainsexcept':
                         keep = False
                         if target is not None:
