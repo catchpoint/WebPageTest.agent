@@ -20,7 +20,7 @@ until sudo apt-get install -y nodejs
 do
     sleep 1
 done
-until sudo npm install -g lighthouse
+until sudo npm install -g lighthouse lighthouse-plugin-greenhouse
 do
     sleep 1
 done
