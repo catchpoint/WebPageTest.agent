@@ -35,7 +35,10 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
     """Request handler for when we are using tornado"""
     def get(self):
         """Handle GET requests"""
-        import ujson as json
+        try:
+            import ujson as json
+        except BaseException:
+            import json
         response = None
         content_type = 'text/plain'
         if self.request.uri == '/ping':
@@ -76,7 +79,10 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 
     def post(self):
         """Handle POST messages"""
-        import ujson as json
+        try:
+            import ujson as json
+        except BaseException:
+            import json
         try:
             messages = self.request.body
             if messages is not None and len(messages):

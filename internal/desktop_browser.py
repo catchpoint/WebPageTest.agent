@@ -14,7 +14,10 @@ import subprocess
 import threading
 import time
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 from .base_browser import BaseBrowser
 
 SET_ORANGE = "(function() {" \

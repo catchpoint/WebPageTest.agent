@@ -14,7 +14,10 @@ import subprocess
 import time
 import urlparse
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 from .desktop_browser import DesktopBrowser
 
 

@@ -13,7 +13,10 @@ import time
 import zipfile
 from urlparse import urlsplit
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 from ws4py.client.threadedclient import WebSocketClient
 
 

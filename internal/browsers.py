@@ -9,7 +9,10 @@ import os
 class Browsers(object):
     """Controller for handling several browsers"""
     def __init__(self, options, browsers, adb, ios):
-        import ujson as json
+        try:
+            import ujson as json
+        except BaseException:
+            import json
         self.options = options
         self.browsers = None
         if browsers is not None:

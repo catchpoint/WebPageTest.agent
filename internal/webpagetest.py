@@ -18,7 +18,10 @@ import urllib
 import zipfile
 import psutil
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 DEFAULT_JPEG_QUALITY = 30
 

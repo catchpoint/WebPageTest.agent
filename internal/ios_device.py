@@ -12,7 +12,10 @@ import shutil
 import subprocess
 import threading
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 
 class iOSDevice(object):

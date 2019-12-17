@@ -12,7 +12,10 @@ import subprocess
 import threading
 import time
 import monotonic
-import ujson as json
+try:
+    import ujson as json
+except BaseException:
+    import json
 from .optimization_checks import OptimizationChecks
 
 
