@@ -5,6 +5,7 @@ RUN apt-get update && \
   apt-get install -y \
     wget \
     curl \
+    git \
     python \
     python-pip \
     xvfb \
@@ -61,7 +62,7 @@ RUN apt-get update && \
     pillow \
     psutil \
     requests \
-    ujson \
+    git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes \
     tornado \
     wsaccel \
     xvfbwrapper \
