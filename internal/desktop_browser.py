@@ -122,7 +122,7 @@ class DesktopBrowser(BaseBrowser):
                     for pair in hosts:
                         hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
                     for domain in self.block_domains:
-                        hosts_text += "{0}    127.0.0.1\n".format(domain)
+                        hosts_text += "127.0.0.1    {0}\n".format(domain)
                     with open(hosts_tmp, 'w') as f_out:
                         f_out.write(hosts_text)
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])

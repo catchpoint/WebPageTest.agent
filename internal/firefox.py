@@ -1006,6 +1006,7 @@ class Firefox(DesktopBrowser):
         """Populate a request object from the log request values"""
         request['load_start'] = int(log_request['start'] * 1000)
         request['startTime'] = log_request['start'] * 1000.0
+        request['created'] = log_request['start'] * 1000.0
         if 'status' in log_request:
             request['responseCode'] = log_request['status']
         if 'dns_start' in log_request and log_request['dns_start'] >= 0:
