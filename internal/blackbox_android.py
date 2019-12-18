@@ -6,7 +6,10 @@ import logging
 import os
 import re
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
@@ -104,7 +107,7 @@ class BlackBoxAndroid(AndroidBrowser):
     def run_task(self, task):
         """Skip anything that isn't a navigate command"""
         logging.debug("Running test")
-        end_time = monotonic.monotonic() + task['test_time_limit']
+        end_time = monotonic() + task['test_time_limit']
         task['log_data'] = True
         task['current_step'] = 1
         task['prefix'] = task['task_prefix']
@@ -112,9 +115,9 @@ class BlackBoxAndroid(AndroidBrowser):
         if self.job['video']:
             task['video_directories'].append(task['video_subdirectory'])
         task['step_name'] = 'Navigate'
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         self.on_start_recording(task)
-        while len(task['script']) and monotonic.monotonic() < end_time:
+        while len(task['script']) and monotonic() < end_time:
             command = task['script'].pop(0)
             if command['command'] == 'navigate':
                 task['page_data']['URL'] = command['target']
@@ -211,10 +214,10 @@ class BlackBoxAndroid(AndroidBrowser):
     def wait_for_network_idle(self):
         """Wait for 5 one-second intervals that receive less than 1KB"""
         logging.debug('Waiting for network idle')
-        end_time = monotonic.monotonic() + 60
+        end_time = monotonic() + 60
         self.adb.get_bytes_rx()
         idle_count = 0
-        while idle_count < 5 and monotonic.monotonic() < end_time:
+        while idle_count < 5 and monotonic() < end_time:
             time.sleep(1)
             bytes_rx = self.adb.get_bytes_rx()
             logging.debug("Bytes received: %d", bytes_rx)
@@ -227,12 +230,12 @@ class BlackBoxAndroid(AndroidBrowser):
         """Once the video starts growing, wait for it to stop"""
         logging.debug('Waiting for the page to load')
         # Wait for the video to start (up to 30 seconds)
-        end_startup = monotonic.monotonic() + 30
-        end_time = monotonic.monotonic() + self.task['time_limit']
+        end_startup = monotonic() + 30
+        end_time = monotonic() + self.task['time_limit']
         last_size = self.adb.get_video_size()
         video_started = False
         bytes_rx = self.adb.get_bytes_rx()
-        while not video_started and monotonic.monotonic() < end_startup:
+        while not video_started and monotonic() < end_startup:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()
@@ -243,7 +246,7 @@ class BlackBoxAndroid(AndroidBrowser):
                 video_started = True
         # Wait for the activity to stop
         video_idle_count = 0
-        while video_idle_count <= 3 and monotonic.monotonic() < end_time:
+        while video_idle_count <= 3 and monotonic() < end_time:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()

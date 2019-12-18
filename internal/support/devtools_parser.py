@@ -81,7 +81,7 @@ class DevToolsParser(object):
                     except Exception:
                         pass
         elif isinstance(data, list):
-            for key in xrange(len(data)):
+            for key in range(len(data)):
                 entry = data[key]
                 if isinstance(entry, dict) or isinstance(entry, list):
                     self.make_utf8(entry)
@@ -1230,7 +1230,7 @@ class DevToolsParser(object):
                         page_data['cpuTimesDoc'][name] = 0
                         slices = all_slices[name]
                         last_slice = min(int(math.ceil((end * 1000) / usecs)), len(slices))
-                        for index in xrange(last_slice):
+                        for index in range(last_slice):
                             slice_time = float(slices[index]) / 1000.0
                             page_data['cpuTimes'][name] += slice_time
                             busy += slice_time

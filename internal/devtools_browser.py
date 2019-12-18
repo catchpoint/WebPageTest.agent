@@ -11,7 +11,10 @@ import shutil
 import subprocess
 import threading
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -156,7 +159,7 @@ class DevtoolsBrowser(object):
         """Start recording"""
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
@@ -195,11 +198,11 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:

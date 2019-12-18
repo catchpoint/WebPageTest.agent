@@ -42,7 +42,7 @@ class Traceroute(object):
                         f_out.write('-1,{0},0,{1}\n'.format(results[0]['addr'], hostname))
                     else:
                         f_out.write('-1,,0,{0}\n'.format(hostname))
-                    for hop in xrange(1, last_hop + 1):
+                    for hop in range(1, last_hop + 1):
                         if hop in results:
                             entry = results[hop]
                             f_out.write('{0:d},{1},{2},{3}\n'.format(hop, entry['addr'],

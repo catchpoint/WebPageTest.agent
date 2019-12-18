@@ -12,7 +12,10 @@ import subprocess
 import time
 import zipfile
 from urlparse import urlsplit
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -36,7 +39,7 @@ class DevTools(object):
         self.main_frame = None
         self.response_started = False
         self.is_navigating = False
-        self.last_activity = monotonic.monotonic()
+        self.last_activity = monotonic()
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_enabled = False
@@ -105,15 +108,15 @@ class DevTools(object):
         import requests
         proxies = {"http": None, "https": None}
         ret = False
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time:
             try:
                 response = requests.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if len(tabs):
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
                                     tabs[index]['type'] == 'page' and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
@@ -131,8 +134,8 @@ class DevTools(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         ret = False
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time:
             try:
                 response = session.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
@@ -140,7 +143,7 @@ class DevTools(object):
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if len(tabs):
                         websocket_url = None
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
                                     tabs[index]['type'] == 'page' and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
@@ -332,7 +335,7 @@ class DevTools(object):
             self.send_command('Tracing.start',
                               {'traceConfig': trace_config},
                               wait=True)
-        now = monotonic.monotonic()
+        now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
         if self.page_loaded is not None:
@@ -454,7 +457,7 @@ class DevTools(object):
         """Stop tracing and collect the results"""
         if self.trace_enabled:
             self.trace_enabled = False
-            start = monotonic.monotonic()
+            start = monotonic()
             try:
                 # Keep pumping messages until we get tracingComplete or
                 # we get a gap of 30 seconds between messages
@@ -462,7 +465,7 @@ class DevTools(object):
                     logging.info('Collecting trace events')
                     done = False
                     no_message_count = 0
-                    elapsed = monotonic.monotonic() - start
+                    elapsed = monotonic() - start
                     while not done and no_message_count < 30 and elapsed < 60:
                         try:
                             raw = self.websocket.get_message(1)
@@ -480,7 +483,7 @@ class DevTools(object):
                 self.websocket.stop_processing_trace()
             except Exception:
                 pass
-            elapsed = monotonic.monotonic() - start
+            elapsed = monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
 
@@ -665,7 +668,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             if wait:
                 self.pending_commands.append(command_id)
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
             self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
                               wait=True, timeout=timeout)
@@ -674,7 +677,7 @@ class DevTools(object):
                     ret = self.command_responses[command_id]
                     del self.command_responses[command_id]
                 else:
-                    while ret is None and monotonic.monotonic() < end_time:
+                    while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
@@ -697,8 +700,8 @@ class DevTools(object):
                 logging.debug("Sending: %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
-                    end_time = monotonic.monotonic() + timeout
-                    while ret is None and monotonic.monotonic() < end_time:
+                    end_time = monotonic() + timeout
+                    while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
@@ -717,7 +720,7 @@ class DevTools(object):
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
         if self.websocket:
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
@@ -733,7 +736,7 @@ class DevTools(object):
                 except Exception:
                     # ignore timeouts when we're in a polling read loop
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
                     done = True
@@ -760,7 +763,7 @@ class DevTools(object):
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if not self.main_thread_blocked:
-            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
+            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
             if response is not None and 'result' in response and 'data' in response['result']:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
@@ -791,7 +794,7 @@ class DevTools(object):
         """See if 2 given pixels are of similar color"""
         similar = True
         delta_sum = 0
-        for value in xrange(3):
+        for value in range(3):
             delta = abs(color1[value] - color2[value])
             delta_sum += delta
             if delta > threshold:
@@ -871,14 +874,14 @@ class DevTools(object):
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
         if event == 'loadEventFired':
-            self.page_loaded = monotonic.monotonic()
+            self.page_loaded = monotonic()
         elif event == 'frameStartedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.is_navigating and self.main_frame is None:
                 self.is_navigating = False
                 self.main_frame = msg['params']['frameId']
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 self.page_loaded = None
         elif event == 'frameNavigated' and 'params' in msg and \
                 'frame' in msg['params'] and 'id' in msg['params']['frame']:
@@ -897,7 +900,7 @@ class DevTools(object):
                         self.task['page_data']['result'] = self.nav_error_code
                     else:
                         self.task['page_data']['result'] = 12999
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
         elif event == 'javascriptDialogOpening':
             result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
             if result is not None and 'error' in result:
@@ -1033,7 +1036,7 @@ class DevTools(object):
             else:
                 ignore_activity = True
             if not self.task['stop_at_onload'] and not ignore_activity:
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
@@ -1111,7 +1114,7 @@ class DevTools(object):
             else:
                 # count the whole lines between the partial start and end lines
                 if end_line > start_line + 1:
-                    for row in xrange(start_line + 1, end_line):
+                    for row in range(start_line + 1, end_line):
                         byte_count += len(lines[row])
                 byte_count += len(lines[start_line][start_column:])
                 byte_count += end_column
@@ -1161,7 +1164,7 @@ class DevToolsClient(WebSocketClient):
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
                 compare = message[:50]
                 if self.path_base is not None and compare.find('"Tracing.dataCollected') > -1:
-                    now = monotonic.monotonic()
+                    now = monotonic()
                     msg = json.loads(message)
                     message = None
                     if msg is not None:
@@ -1227,7 +1230,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.last_image = None
         if self.trace_parser is not None and self.path_base is not None:
-            start = monotonic.monotonic()
+            start = monotonic()
             logging.debug("Post-Processing the trace netlog events")
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
@@ -1239,7 +1242,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
-            elapsed = monotonic.monotonic() - start
+            elapsed = monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
         self.path_base = None

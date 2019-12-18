@@ -17,7 +17,10 @@ import time
 import urllib
 import zipfile
 import psutil
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -152,11 +155,13 @@ class WebPageTest(object):
             hash_val = hashlib.sha256()
             with open(__file__, 'rb') as f_in:
                 hash_data = f_in.read(4096)
-            start = monotonic.monotonic()
+            start = monotonic()
             # 106k iterations takes ~1 second on the reference machine
-            for _ in xrange(106000):
+            iteration = 0
+            while iteration < 106000:
                 hash_val.update(hash_data)
-            elapsed = monotonic.monotonic() - start
+                iteration += 1
+            elapsed = monotonic() - start
             self.cpu_scale_multiplier = 1.0 / elapsed
             logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
                           elapsed, self.cpu_scale_multiplier)
@@ -485,7 +490,7 @@ class WebPageTest(object):
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
-                now = monotonic.monotonic()
+                now = monotonic()
                 if self.first_failure is None:
                     self.first_failure = now
                 # Reboot if we haven't been able to reach the server for 30 minutes
@@ -633,7 +638,7 @@ class WebPageTest(object):
                 task['time_limit'] = job['timeout']
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
-                task['run_start_time'] = monotonic.monotonic()
+                task['run_start_time'] = monotonic()
                 # Keep the full resolution video frames if the browser window is smaller than 600px
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
@@ -1003,7 +1008,7 @@ class WebPageTest(object):
                 logging.debug("Fetching bodies for %d requests", count)
                 threads = []
                 thread_count = min(count, 10)
-                for _ in xrange(thread_count):
+                for _ in range(thread_count):
                     thread = threading.Thread(target=self.body_fetch_thread)
                     thread.daemon = True
                     thread.start()

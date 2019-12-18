@@ -9,7 +9,10 @@ import re
 import subprocess
 from threading import Timer
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 
 # cSpell:ignore vpndialogs, sysctl, iptables, ifconfig, dstaddr, clientidbase, nsecs
 
@@ -33,7 +36,7 @@ class Adb(object):
         self.simplert_path = None
         self.simplert = None
         self.no_network_count = 0
-        self.last_network_ok = monotonic.monotonic()
+        self.last_network_ok = monotonic()
         self.needs_exit = False
         self.rebooted = False
         self.vpn_forwarder = None
@@ -305,7 +308,7 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
-        start = monotonic.monotonic()
+        start = monotonic()
         # Simulate pressing the home button to dismiss any UI
         self.shell(['input', 'keyevent', '3'])
         # Clear notifications
@@ -343,7 +346,7 @@ class Adb(object):
         if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
             self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
         # reboot the phone and exit the agent if it is running EXTREMELY slowly
-        elapsed = monotonic.monotonic() - start
+        elapsed = monotonic() - start
         if elapsed > 300:
             logging.debug("Cleanup took %0.3f seconds. Rebooting the phone and restarting agent",
                           elapsed)
@@ -506,8 +509,8 @@ class Adb(object):
             self.su('setprop sys.usb.config adb')
             self.adb(['wait-for-device'])
             # wait up to 30 seconds for the interface to come up
-            end_time = monotonic.monotonic() + 30
-            while not is_ready and monotonic.monotonic() < end_time:
+            end_time = monotonic() + 30
+            while not is_ready and monotonic() < end_time:
                 time.sleep(1)
                 self.dismiss_vpn_dialog()
                 is_ready = self.is_tun_interface_available()
@@ -608,8 +611,8 @@ class Adb(object):
             self.dismiss_vpn_dialog()
             # Simulate pressing the home button to dismiss any UI
             self.shell(['input', 'keyevent', '3'])
-            end = monotonic.monotonic() + 30
-            while not is_ready and monotonic.monotonic() < end:
+            end = monotonic() + 30
+            while not is_ready and monotonic() < end:
                 if self.is_tun_interface_available():
                     is_ready = True
                 else:
@@ -672,7 +675,7 @@ class Adb(object):
             net_ok = False
             if self.ping(self.ping_address) is not None:
                 self.no_network_count = 0
-                self.last_network_ok = monotonic.monotonic()
+                self.last_network_ok = monotonic()
                 self.rebooted = False
                 net_ok = True
             else:
@@ -714,7 +717,7 @@ class Adb(object):
                 is_ready = False
         if not is_ready:
             needs_kick = False
-            elapsed = monotonic.monotonic() - self.last_network_ok
+            elapsed = monotonic() - self.last_network_ok
             if self.no_network_count > 20:
                 needs_kick = True
             elif self.no_network_count > 1 and elapsed > 1800:

@@ -8,7 +8,10 @@ import os
 import re
 import shutil
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
@@ -252,9 +255,9 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def get_devtools_socket(self):
         """Get the socket name of the remote devtools socket. @..._devtools_remote"""
         socket_name = None
-        end_time = monotonic.monotonic() + 120
+        end_time = monotonic() + 120
         time.sleep(1)
-        while socket_name is None and monotonic.monotonic() < end_time:
+        while socket_name is None and monotonic() < end_time:
             out = self.adb.shell(['cat', '/proc/net/unix'])
             if out is not None:
                 for line in out.splitlines():

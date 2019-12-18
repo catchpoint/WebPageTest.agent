@@ -13,7 +13,10 @@ import signal
 import subprocess
 import threading
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -331,15 +334,15 @@ class DesktopBrowser(BaseBrowser):
         if cpu_count > 0:
             target_pct = 50. / float(cpu_count)
             idle_start = None
-            end_time = monotonic.monotonic() + self.START_BROWSER_TIME_LIMIT
+            end_time = monotonic() + self.START_BROWSER_TIME_LIMIT
             idle = False
-            while not idle and monotonic.monotonic() < end_time:
-                check_start = monotonic.monotonic()
+            while not idle and monotonic() < end_time:
+                check_start = monotonic()
                 pct = psutil.cpu_percent(interval=0.1)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic.monotonic() - idle_start >= 0.4:
+                    if monotonic() - idle_start >= 0.4:
                         idle = True
                 else:
                     idle_start = None
@@ -347,8 +350,8 @@ class DesktopBrowser(BaseBrowser):
     def clear_profile(self, task):
         """Delete the browser profile directory"""
         if os.path.isdir(task['profile']):
-            end_time = monotonic.monotonic() + 30
-            while monotonic.monotonic() < end_time:
+            end_time = monotonic() + 30
+            while monotonic() < end_time:
                 try:
                     shutil.rmtree(task['profile'])
                 except Exception:
@@ -413,9 +416,9 @@ class DesktopBrowser(BaseBrowser):
                     logging.debug(' '.join(args))
                     self.tcpdump = subprocess.Popen(args)
                 # Wait for the capture file to start growing
-                end_time = monotonic.monotonic() + 5
+                end_time = monotonic() + 5
                 started = False
-                while not started and monotonic.monotonic() < end_time:
+                while not started and monotonic() < end_time:
                     if os.path.isfile(self.pcap_file):
                         started = True
                     time.sleep(0.1)
@@ -469,10 +472,10 @@ class DesktopBrowser(BaseBrowser):
                     else:
                         self.ffmpeg = subprocess.Popen(args)
                     # Wait up to 5 seconds for something to be captured
-                    end_time = monotonic.monotonic() + 5
+                    end_time = monotonic() + 5
                     started = False
                     initial_size = None
-                    while not started and monotonic.monotonic() < end_time:
+                    while not started and monotonic() < end_time:
                         if os.path.isfile(task['video_file']):
                             video_size = os.path.getsize(task['video_file'])
                             if initial_size == None:
@@ -645,7 +648,7 @@ class DesktopBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
@@ -692,14 +695,14 @@ class DesktopBrowser(BaseBrowser):
     def background_thread(self):
         """Background thread for monitoring CPU and bandwidth usage"""
         import psutil
-        last_time = start_time = monotonic.monotonic()
+        last_time = start_time = monotonic()
         last_bytes = self.get_net_bytes()
         snapshot = {'time': 0, 'cpu': 0.0, 'bw': 0}
         self.usage_queue.put(snapshot)
         while self.recording:
             snapshot = {'bw': 0}
             snapshot['cpu'] = psutil.cpu_percent(interval=0.1)
-            now = monotonic.monotonic()
+            now = monotonic()
             snapshot['time'] = int((now - start_time) * 1000)
             # calculate the bandwidth over the last interval in Kbps
             bytes_in = self.get_net_bytes()

@@ -152,11 +152,14 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
-        import monotonic
-        end_time = monotonic.monotonic() + 30
+        try:
+            from monotonic import monotonic
+        except BaseException:
+            from time import monotonic
+        end_time = monotonic() + 30
         server_ok = False
         proxies = {"http": None, "https": None}
-        while not server_ok and monotonic.monotonic() < end_time:
+        while not server_ok and monotonic() < end_time:
             try:
                 response = requests.get('http://127.0.0.1:8888/ping', timeout=10, proxies=proxies)
                 if response.text == 'pong':

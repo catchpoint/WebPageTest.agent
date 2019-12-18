@@ -14,7 +14,10 @@ import subprocess
 import time
 import urlparse
 import zipfile
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -57,7 +60,7 @@ class iWptBrowser(BaseBrowser):
         self.bodies_zip_file = None
         self.body_fail_count = 0
         self.body_index = 0
-        self.last_activity = monotonic.monotonic()
+        self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.path_base = None
         self.websocket = None
@@ -164,8 +167,8 @@ class iWptBrowser(BaseBrowser):
         proxies = {"http": None, "https": None}
         ret = False
         self.default_target = None
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time:
             try:
                 response = requests.get("http://localhost:9222/json", timeout=timeout, proxies=proxies)
                 if response.text:
@@ -173,7 +176,7 @@ class iWptBrowser(BaseBrowser):
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if tabs:
                         websocket_url = None
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'webSocketDebuggerUrl' in tabs[index]:
                                 websocket_url = tabs[index]['webSocketDebuggerUrl']
                                 break
@@ -229,11 +232,11 @@ class iWptBrowser(BaseBrowser):
         if self.connected:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while task['script'] and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -262,7 +265,7 @@ class iWptBrowser(BaseBrowser):
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
         if self.connected:
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
@@ -273,7 +276,7 @@ class iWptBrowser(BaseBrowser):
                     self.process_message(self.messages.get(timeout=interval))
                 except Exception:
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
                     done = True
@@ -426,7 +429,7 @@ class iWptBrowser(BaseBrowser):
         if 'start' not in self.page and 'params' in msg and 'timestamp' in msg['params']:
             self.page['start'] = msg['params']['timestamp']
         if event == 'loadEventFired':
-            self.page_loaded = monotonic.monotonic()
+            self.page_loaded = monotonic()
             self.page['loaded'] = msg['params']['timestamp']
         elif event == 'domContentEventFired':
             self.page['DOMContentLoaded'] = msg['params']['timestamp']
@@ -436,7 +439,7 @@ class iWptBrowser(BaseBrowser):
                 self.main_frame = msg['params']['frameId']
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 self.page_loaded = None
         elif event == 'frameStoppedLoading':
             if self.main_frame is not None and \
@@ -447,7 +450,7 @@ class iWptBrowser(BaseBrowser):
                     logging.debug("Page load failed: %s", self.nav_error)
                     if self.nav_error_code is not None:
                         self.task['page_data']['result'] = self.nav_error_code
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
@@ -634,7 +637,7 @@ class iWptBrowser(BaseBrowser):
             else:
                 ignore_activity = True
             if not self.task['stop_at_onload'] and not ignore_activity:
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
@@ -822,7 +825,7 @@ class iWptBrowser(BaseBrowser):
         self.wpt_result = None
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         self.flush_messages()
         self.enable_safari_events()
         if self.task['log_data']:
@@ -854,7 +857,7 @@ class iWptBrowser(BaseBrowser):
                 task['page_data']['browserVersion'] = self.ios_version
                 task['page_data']['browser_version'] = self.ios_version
         self.recording = True
-        now = monotonic.monotonic()
+        now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
         if self.page_loaded is not None:
@@ -961,13 +964,13 @@ class iWptBrowser(BaseBrowser):
                     json.dump(self.console_log, f_out)
             # Process the timeline data
             if self.trace_parser is not None and self.path_base is not None:
-                start = monotonic.monotonic()
+                start = monotonic()
                 logging.debug("Processing the trace timeline events")
                 self.trace_parser.ProcessTimelineEvents()
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
                 self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
-                elapsed = monotonic.monotonic() - start
+                elapsed = monotonic() - start
                 logging.debug("Done processing the trace events: %0.3fs", elapsed)
             self.trace_parser = None
             # Calculate the request and page stats
@@ -1008,7 +1011,7 @@ class iWptBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                        int(round((monotonic() - task['run_start_time']) * 1000.0))
             if self.path_base is not None:
                 path = self.path_base + '_page_data.json.gz'
                 json_page_data = json.dumps(task['page_data'])
@@ -1029,7 +1032,7 @@ class iWptBrowser(BaseBrowser):
             msg = {'id': command_id, 'method': method, 'params': params}
             if wait:
                 self.pending_commands.append(command_id)
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
             self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
                               wait=True, timeout=timeout)
@@ -1038,7 +1041,7 @@ class iWptBrowser(BaseBrowser):
                     ret = self.command_responses[command_id]
                     del self.command_responses[command_id]
                 else:
-                    while ret is None and monotonic.monotonic() < end_time:
+                    while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
                             if raw is not None and len(raw):
@@ -1061,8 +1064,8 @@ class iWptBrowser(BaseBrowser):
                 logging.debug("Sending: %s", out)
                 self.websocket.send(out)
                 if wait:
-                    end_time = monotonic.monotonic() + timeout
-                    while ret is None and monotonic.monotonic() < end_time:
+                    end_time = monotonic() + timeout
+                    while ret is None and monotonic() < end_time:
                         try:
                             msg = self.messages.get(timeout=1)
                             if msg:

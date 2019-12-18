@@ -573,7 +573,7 @@ class Trace():
             slice_usecs = self.cpu['slice_usecs']
             first_slice = int(float(start) / float(slice_usecs))
             last_slice = int(float(end) / float(slice_usecs))
-            for slice_number in xrange(first_slice, last_slice + 1):
+            for slice_number in range(first_slice, last_slice + 1):
                 slice_start = slice_number * slice_usecs
                 slice_end = slice_start + slice_usecs
                 used_start = max(slice_start, start)

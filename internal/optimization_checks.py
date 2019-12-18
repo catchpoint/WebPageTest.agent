@@ -13,7 +13,10 @@ import struct
 import subprocess
 import threading
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -495,7 +498,7 @@ class OptimizationChecks(object):
 
     def check_hosting(self):
         """Pull the data needed to determine the hosting"""
-        start = monotonic.monotonic()
+        start = monotonic()
         self.hosting_results['base_page_ip_ptr'] = ''
         self.hosting_results['base_page_cname'] = ''
         self.hosting_results['base_page_dns_server'] = ''
@@ -550,12 +553,12 @@ class OptimizationChecks(object):
                         domain = None
             except Exception:
                 pass
-        self.hosting_time = monotonic.monotonic() - start
+        self.hosting_time = monotonic() - start
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
         from urlparse import urlparse
-        start = monotonic.monotonic()
+        start = monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}
         domains = {}
@@ -583,7 +586,7 @@ class OptimizationChecks(object):
         if count:
             thread_count = min(10, count)
             threads = []
-            for _ in xrange(thread_count):
+            for _ in range(thread_count):
                 thread = threading.Thread(target=self.dns_worker)
                 thread.start()
                 threads.append(thread)
@@ -614,7 +617,7 @@ class OptimizationChecks(object):
                         check['score'] = 100
                         check['provider'] = provider
                 self.cdn_results[request_id] = check
-        self.cdn_time = monotonic.monotonic() - start
+        self.cdn_time = monotonic() - start
 
     def find_dns_cdn(self, domain, depth=0):
         """Recursively check a CNAME chain"""
@@ -703,7 +706,7 @@ class OptimizationChecks(object):
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -765,11 +768,11 @@ class OptimizationChecks(object):
                     self.gzip_results[request_id] = check
             except Exception:
                 pass
-        self.gzip_time = monotonic.monotonic() - start
+        self.gzip_time = monotonic() - start
 
     def check_images(self):
         """Check each request to see if images can be compressed better"""
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -885,12 +888,12 @@ class OptimizationChecks(object):
                         self.image_results[request_id] = check
             except Exception:
                 pass
-        self.image_time = monotonic.monotonic() - start
+        self.image_time = monotonic() - start
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
         from PIL import Image
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -947,11 +950,11 @@ class OptimizationChecks(object):
                         self.progressive_results[request_id] = check
             except Exception:
                 pass
-        self.progressive_time = monotonic.monotonic() - start
+        self.progressive_time = monotonic() - start
 
     def check_fonts(self):
         """Check each request to extract metadata about fonts"""
-        start = monotonic.monotonic()
+        start = monotonic()
         try:
             from fontTools.ttLib import TTFont
             for request_id in self.requests:
@@ -976,7 +979,7 @@ class OptimizationChecks(object):
                     pass
         except Exception:
             pass
-        self.font_time = monotonic.monotonic() - start
+        self.font_time = monotonic() - start
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""

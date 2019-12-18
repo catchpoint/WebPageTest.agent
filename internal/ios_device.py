@@ -11,7 +11,10 @@ import select
 import shutil
 import subprocess
 import threading
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -32,7 +35,7 @@ class iOSDevice(object):
         self.video_file = None
         self.last_video_data = None
         self.video_size = 0
-        self.last_restart = monotonic.monotonic()
+        self.last_restart = monotonic()
 
     def check_install(self):
         """Check to make sure usbmux is installed and the device is available"""
@@ -45,9 +48,9 @@ class iOSDevice(object):
             if os.path.exists('/var/run/usbmuxd'):
                 ret = True
             else:
-                print "usbmuxd is not available, please try installing it manually"
+                print("usbmuxd is not available, please try installing it manually")
         else:
-            print "iOS is only supported on Mac and Linux"
+            print("iOS is only supported on Mac and Linux")
         return ret
 
     def startup(self):
@@ -218,10 +221,10 @@ class iOSDevice(object):
                             break
         except Exception:
             # If the app isn't running restart the device (no more than every 10 minutes)
-            if connecting and monotonic.monotonic() - self.last_restart > 600:
+            if connecting and monotonic() - self.last_restart > 600:
                 needs_restart = True
         if needs_restart:
-            self.last_restart = monotonic.monotonic()
+            self.last_restart = monotonic()
             try:
                 subprocess.call(['idevicediagnostics', 'restart'])
             except Exception:
@@ -255,8 +258,8 @@ class iOSDevice(object):
             try:
                 self.socket.send(msg + "\n")
                 if wait:
-                    end = monotonic.monotonic() + timeout
-                    while response is None and monotonic.monotonic() < end:
+                    end = monotonic() + timeout
+                    while response is None and monotonic() < end:
                         try:
                             msg = self.messages.get(timeout=1)
                             self.messages.task_done()
@@ -348,7 +351,7 @@ class iOSDevice(object):
     def process_message(self, msg):
         """Handle a single decoded message"""
         if msg['msg'] == 'VideoData' and 'data' in msg:
-            now = monotonic.monotonic()
+            now = monotonic()
             self.video_size += len(msg['data'])
             if self.last_video_data is None or now - self.last_video_data >= 0.5:
                 logging.debug('<<< Video data (current size: %d)', self.video_size)
@@ -372,10 +375,10 @@ class iOSDevice(object):
 def install_main():
     """Main entry-point when running as an installer (under sudo permissions)"""
     if os.getuid() != 0:
-        print "Must run as sudo"
+        print("Must run as sudo")
         exit(1)
     if not os.path.exists('/var/run/usbmuxd') and platform.system() == "Linux":
-        print "Installing usbmuxd"
+        print("Installing usbmuxd")
         if os.uname()[4].startswith('arm'):
             src_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'support', 'ios', 'arm')
@@ -394,12 +397,12 @@ def install_main():
                 elif filename.find('.so') >= 0:
                     dest = os.path.join('/usr/local/lib', filename)
                 if dest is not None and not os.path.isfile(dest):
-                    print "Copying {0} to {1}".format(filename, dest)
+                    print("Copying {0} to {1}".format(filename, dest))
                     shutil.copy(src, dest)
         # Update the library cache
         subprocess.call(['ldconfig'])
         # Start and initialize usbmuxd
-        print "Starting usbmuxd"
+        print("Starting usbmuxd")
         subprocess.call(['/usr/local/sbin/usbmuxd'])
         subprocess.call(['/usr/local/bin/ideviceinfo'])
 

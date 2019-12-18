@@ -68,8 +68,11 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
-        import monotonic
-        start_time = monotonic.monotonic()
+        try:
+            from monotonic import monotonic
+        except BaseException:
+            from time import monotonic
+        start_time = monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
         message_server = None
@@ -103,7 +106,7 @@ class WPTAgent(object):
                         self.job['shaper'] = self.shaper
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
-                            start = monotonic.monotonic()
+                            start = monotonic()
                             try:
                                 self.task['running_lighthouse'] = False
                                 if self.job['type'] != 'lighthouse':
@@ -120,7 +123,7 @@ class WPTAgent(object):
                                         self.task['running_lighthouse'] = True
                                         self.wpt.running_another_test(self.task)
                                         self.run_single_test()
-                                elapsed = monotonic.monotonic() - start
+                                elapsed = monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
                                 msg = ''
@@ -151,7 +154,7 @@ class WPTAgent(object):
                     browser.on_stop_recording(None)
                     browser = None
             if self.options.exit > 0:
-                run_time = (monotonic.monotonic() - start_time) / 60.0
+                run_time = (monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
                     break
             # Exit if adb is having issues (will cause a reboot after several tries)
@@ -203,9 +206,9 @@ class WPTAgent(object):
         if self.must_exit:
             exit(1)
         if self.job is None:
-            print "Exiting..."
+            print("Exiting...")
         else:
-            print "Will exit after test completes.  Hit Ctrl+C again to exit immediately"
+            print("Will exit after test completes.  Hit Ctrl+C again to exit immediately")
         self.must_exit = True
 
     def cleanup(self):
@@ -228,23 +231,26 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
-        import monotonic
+        try:
+            from monotonic import monotonic
+        except BaseException:
+            from time import monotonic
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
             target_pct = 50. / float(cpu_count)
             idle_start = None
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
             idle = False
-            while not idle and monotonic.monotonic() < end_time:
+            while not idle and monotonic() < end_time:
                 self.alive()
-                check_start = monotonic.monotonic()
+                check_start = monotonic()
                 pct = psutil.cpu_percent(interval=0.5)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic.monotonic() - idle_start > 2:
+                    if monotonic() - idle_start > 2:
                         idle = True
                 else:
                     idle_start = None
@@ -278,7 +284,7 @@ class WPTAgent(object):
             except ImportError:
                 pass
         if not ret:
-            print "Missing {0} module. Please run 'pip install {1}'".format(module, module_name)
+            print("Missing {0} module. Please run 'pip install {1}'".format(module, module_name))
         return ret
 
     def startup(self):
@@ -318,21 +324,19 @@ class WPTAgent(object):
         try:
             subprocess.check_output(['python', '--version'])
         except Exception:
-            print "Make sure python 2.7 is available in the path."
+            print("Make sure python 2.7 is available in the path.")
             ret = False
 
         try:
             subprocess.check_output('{0} -version'.format(self.image_magick['convert']), shell=True)
         except Exception:
-            print "Missing convert utility. Please install ImageMagick " \
-                  "and make sure it is in the path."
+            print("Missing convert utility. Please install ImageMagick and make sure it is in the path.")
             ret = False
 
         try:
             subprocess.check_output('{0} -version'.format(self.image_magick['mogrify']), shell=True)
         except Exception:
-            print "Missing mogrify utility. Please install ImageMagick " \
-                  "and make sure it is in the path."
+            print("Missing mogrify utility. Please install ImageMagick and make sure it is in the path.")
             ret = False
 
         if platform.system() == "Linux":
@@ -374,7 +378,7 @@ class WPTAgent(object):
             try:
                 subprocess.check_output('sudo cgset -h', shell=True)
             except Exception:
-                print "Missing cgroups, make sure cgroup-tools is installed."
+                print("Missing cgroups, make sure cgroup-tools is installed.")
                 ret = False
 
         # Fix Lighthouse install permissions
@@ -406,14 +410,14 @@ class WPTAgent(object):
             self.wait_for_idle(300)
         if self.adb is not None:
             if not self.adb.start():
-                print "Error configuring adb. Make sure it is installed and in the path."
+                print("Error configuring adb. Make sure it is installed and in the path.")
                 ret = False
         self.shaper.remove()
         if not self.shaper.install():
             if platform.system() == "Windows":
-                print "Error configuring traffic shaping, make sure secure boot is disabled."
+                print("Error configuring traffic shaping, make sure secure boot is disabled.")
             else:
-                print "Error configuring traffic shaping, make sure it is installed."
+                print("Error configuring traffic shaping, make sure it is installed.")
             ret = False
 
         # Update the Windows root certs
@@ -786,7 +790,7 @@ def main():
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
-    parser.add_argument('--fps', type=int, choices=xrange(1, 61), default=10,
+    parser.add_argument('--fps', type=int, choices=range(1, 61), default=10,
                         help='Video capture frame rate (defaults to 10). '
                              'Valid range is 1-60 (Linux only).')
 
@@ -868,23 +872,24 @@ def main():
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
-    if platform.system() == "Windows":
-        if sys.version_info[0] != 2 or \
-                sys.version_info[1] != 7 or \
-                sys.version_info[2] < 11:
-            print "Requires python 2.7.11 (or later)"
+    if sys.version_info[0] < 3:
+        if platform.system() == "Windows":
+            if sys.version_info[0] != 2 or \
+                    sys.version_info[1] != 7 or \
+                    sys.version_info[2] < 11:
+                print("Requires python 2.7.11 (or later)")
+                exit(1)
+        elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
+            print("Requires python 2.7")
             exit(1)
-    elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
-        print "Requires python 2.7"
-        exit(1)
 
     if options.list:
         from internal.ios_device import iOSDevice
         ios = iOSDevice()
         devices = ios.get_devices()
-        print "Available iOS devices:"
+        print("Available iOS devices:")
         for device in devices:
-            print device
+            print(device)
         exit(1)
 
     # Set up logging
@@ -921,7 +926,7 @@ def main():
     if not options.android and not options.iOS:
         browsers = find_browsers()
         if len(browsers) == 0:
-            print "No browsers configured. Check that browsers.ini is present and correct."
+            print("No browsers configured. Check that browsers.ini is present and correct.")
             exit(1)
 
     if options.collectversion and platform.system() == "Windows":
@@ -930,9 +935,9 @@ def main():
     agent = WPTAgent(options, browsers)
     if agent.startup():
         # Create a work directory relative to where we are running
-        print "Running agent, hit Ctrl+C to exit"
+        print("Running agent, hit Ctrl+C to exit")
         agent.run_testing()
-        print "Done"
+        print("Done")
 
 
 if __name__ == '__main__':

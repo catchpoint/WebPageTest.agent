@@ -9,7 +9,10 @@ import os
 import shutil
 import subprocess
 import time
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -281,7 +284,7 @@ class AndroidBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)

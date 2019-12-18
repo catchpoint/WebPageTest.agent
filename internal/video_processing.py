@@ -61,7 +61,7 @@ class VideoProcessing(object):
             count = len(files)
             if count > 1:
                 baseline = files[0]
-                for index in xrange(1, count):
+                for index in range(1, count):
                     if self.frames_match(baseline, files[index], crop, 1, 0):
                         logging.debug('Removing similar frame %s', os.path.basename(files[index]))
                         try:

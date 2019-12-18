@@ -20,7 +20,10 @@ import logging
 import os
 import re
 import urlparse
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -33,7 +36,7 @@ class FirefoxLogParser(object):
         self.start_day = None
         self.unique_id = 0
         self.int_map = {}
-        for val in xrange(0, 100):
+        for val in range(0, 100):
             self.int_map['{0:02d}'.format(val)] = float(val)
         self.dns = {}
         self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}, 'streams': {}}
@@ -118,7 +121,7 @@ class FirefoxLogParser(object):
     def process_log_file(self, path):
         """Process a single log file"""
         logging.debug("Processing %s", path)
-        start = monotonic.monotonic()
+        start = monotonic()
         _, ext = os.path.splitext(path)
         line_count = 0
         if ext.lower() == '.gz':
@@ -130,7 +133,7 @@ class FirefoxLogParser(object):
             line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
-        elapsed = monotonic.monotonic() - start
+        elapsed = monotonic() - start
         logging.debug("%0.3f s to process %s (%d lines)", elapsed, path, line_count)
 
     def process_log_line(self, line):

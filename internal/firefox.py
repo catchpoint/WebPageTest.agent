@@ -13,7 +13,10 @@ import shutil
 import subprocess
 import time
 import urlparse
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -48,7 +51,7 @@ class Firefox(DesktopBrowser):
             self.log_level = job['browser_info']['log_level']
         self.page = {}
         self.requests = {}
-        self.last_activity = monotonic.monotonic()
+        self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.block_domains = [
@@ -281,11 +284,11 @@ class Firefox(DesktopBrowser):
         if self.marionette is not None and self.connected:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -320,8 +323,8 @@ class Firefox(DesktopBrowser):
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
-            end_time = monotonic.monotonic() + 30
-            while monotonic.monotonic() < end_time:
+            end_time = monotonic() + 30
+            while monotonic() < end_time:
                 try:
                     self.job['message_server'].get_message(1)
                     logging.debug('Extension started')
@@ -333,7 +336,7 @@ class Firefox(DesktopBrowser):
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
         if self.job['message_server'] is not None and self.connected:
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
@@ -344,7 +347,7 @@ class Firefox(DesktopBrowser):
                     self.process_message(self.job['message_server'].get_message(interval))
                 except Exception:
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 # Allow up to 5 seconds after a navigation for a re-navigation to happen
                 # (bizarre sequence Firefox seems to do)
@@ -449,7 +452,7 @@ class Firefox(DesktopBrowser):
         """Process a message from the extension"""
         logging.debug(message)
         if self.recording:
-            self.last_activity = monotonic.monotonic()
+            self.last_activity = monotonic()
             try:
                 # Make all of the timestamps relative to the test start to match the log events
                 if 'timeStamp' in message['body']:
@@ -495,7 +498,7 @@ class Firefox(DesktopBrowser):
                     self.page['DOMContentLoaded'] = evt['timeStamp']
             elif message == 'onCompleted':
                 if 'frameId' in evt and evt['frameId'] == 0:
-                    self.page_loaded = monotonic.monotonic()
+                    self.page_loaded = monotonic()
                     logging.debug("Page loaded")
                     if 'timeStamp' in evt:
                         self.page['loaded'] = evt['timeStamp']
@@ -504,7 +507,7 @@ class Firefox(DesktopBrowser):
                     logging.debug("Possible navigation error")
                     err_msg = evt['error'] if 'error' in evt else 'Navigation failed'
                     self.possible_navigation_error = {
-                        'time': monotonic.monotonic(),
+                        'time': monotonic(),
                         'error': err_msg
                     }
 
@@ -593,7 +596,7 @@ class Firefox(DesktopBrowser):
         self.requests = {}
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
@@ -604,7 +607,7 @@ class Firefox(DesktopBrowser):
             for path in files:
                 self.log_pos[path] = os.path.getsize(path)
         self.recording = True
-        now = monotonic.monotonic()
+        now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
         if self.page_loaded is not None:

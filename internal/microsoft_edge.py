@@ -12,7 +12,10 @@ import shutil
 import subprocess
 import time
 import urlparse
-import monotonic
+try:
+    from monotonic import monotonic
+except BaseException:
+    from time import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -261,11 +264,11 @@ class Edge(DesktopBrowser):
         if self.driver is not None and self.extension_loaded:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -300,8 +303,8 @@ class Edge(DesktopBrowser):
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
-            end_time = monotonic.monotonic()  + 30
-            while monotonic.monotonic() < end_time:
+            end_time = monotonic()  + 30
+            while monotonic() < end_time:
                 try:
                     message = self.job['message_server'].get_message(1)
                     logging.debug(message)
@@ -315,7 +318,7 @@ class Edge(DesktopBrowser):
         """Wait for the onload event from the extension"""
         if self.job['message_server'] is not None:
             logging.debug("Waiting for page load...")
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             self.last_activity = None
@@ -324,7 +327,7 @@ class Edge(DesktopBrowser):
                     self.process_message(self.job['message_server'].get_message(1))
                 except Exception:
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
                     done = True
@@ -387,7 +390,7 @@ class Edge(DesktopBrowser):
                     self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 if 'start' not in self.page:
                     logging.debug("Navigation started")
                     self.page['start'] = message['ts']
@@ -409,7 +412,7 @@ class Edge(DesktopBrowser):
                         if 'loadEventStart' not in self.page:
                             self.page['loadEventStart'] = elapsed
                         logging.debug("Page Loaded")
-                        self.page_loaded = monotonic.monotonic()
+                        self.page_loaded = monotonic()
                 if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
                     self.page['domContentLoadedEventStart'] = elapsed
                 elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
@@ -419,7 +422,7 @@ class Edge(DesktopBrowser):
                 elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
                     self.page['loadEventEnd'] = elapsed
                     logging.debug("Page loadEventEnd")
-                    self.page_loaded = monotonic.monotonic()
+                    self.page_loaded = monotonic()
 
     def process_ieframe_message(self, message):
         """Handle IEFRAME trace events"""
@@ -428,13 +431,13 @@ class Edge(DesktopBrowser):
             if message['Event'] == 'Shdocvw_BaseBrowser_DocumentComplete':
                 self.page['loadEventStart'] = elapsed
                 self.page['loadEventEnd'] = elapsed
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
                 logging.debug("Page loaded (Document Complete)")
 
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
         if 'Activity' in message:
-            self.last_activity = monotonic.monotonic()
+            self.last_activity = monotonic()
             self.process_dns_message(message)
             self.process_socket_message(message)
             self.process_request_message(message)
@@ -720,9 +723,9 @@ class Edge(DesktopBrowser):
                     outfile.write(json.dumps(hero_elements))
         # Wait for the interactive periods to be written
         if self.supports_interactive:
-            end_time = monotonic.monotonic() + 10
+            end_time = monotonic() + 10
             interactive = None
-            while interactive is None and monotonic.monotonic() < end_time:
+            while interactive is None and monotonic() < end_time:
                 interactive = self.execute_js(
                     'return document.getElementById("wptagentLongTasks").innerText;')
                 if interactive is None:
@@ -757,7 +760,7 @@ class Edge(DesktopBrowser):
         self.reset()
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
@@ -765,7 +768,7 @@ class Edge(DesktopBrowser):
             task['page_data']['browser_version'] = self.browser_version
         self.recording = True
         self.navigating = True
-        now = monotonic.monotonic()
+        now = monotonic()
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
@@ -953,7 +956,7 @@ class Edge(DesktopBrowser):
                     first_request = None
                     first_request_time = None
                     count = len(self.sockets[event_id]['requests'])
-                    for i in xrange(0, count):
+                    for i in range(0, count):
                         rid = self.sockets[event_id]['requests'][i]
                         if rid in self.requests and 'start' in self.requests[rid]:
                             if first_request is None or \
