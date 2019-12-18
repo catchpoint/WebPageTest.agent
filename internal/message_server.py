@@ -1,6 +1,10 @@
 # Copyright 2017 Google Inc. All rights reserved.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
+try:
+    import asyncio
+except Exception:
+    pass
 from multiprocessing import JoinableQueue
 import logging
 import threading
@@ -173,6 +177,10 @@ class MessageServer(object):
     def run(self):
         """Main server loop"""
         logging.debug('Starting extension server on port 8888')
+        try:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+        except Exception:
+            pass
         application = tornado.web.Application([(r"/.*", TornadoRequestHandler)])
         application.listen(8888, '127.0.0.1')
         self.__is_started.set()

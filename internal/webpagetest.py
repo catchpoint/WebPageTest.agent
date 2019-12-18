@@ -15,7 +15,10 @@ import subprocess
 import sys
 import threading
 import time
-import urllib
+try:
+    from urllib import quote_plus
+except BaseException:
+    from urllib.parse import quote_plus
 import zipfile
 import psutil
 try:
@@ -393,14 +396,14 @@ class WebPageTest(object):
             retry = False
             count += 1
             url = self.url + "getwork.php?f=json&shards=1&reboot=1"
-            url += "&location=" + urllib.quote_plus(location)
-            url += "&pc=" + urllib.quote_plus(self.pc_name)
+            url += "&location=" + quote_plus(location)
+            url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
-                url += "&key=" + urllib.quote_plus(self.key)
+                url += "&key=" + quote_plus(self.key)
             if self.instance_id is not None:
-                url += "&ec2=" + urllib.quote_plus(self.instance_id)
+                url += "&ec2=" + quote_plus(self.instance_id)
             if self.zone is not None:
-                url += "&ec2zone=" + urllib.quote_plus(self.zone)
+                url += "&ec2zone=" + quote_plus(self.zone)
             if self.options.android:
                 url += '&apk=1'
             url += '&version={0}'.format(self.version)
@@ -421,7 +424,7 @@ class WebPageTest(object):
                         versions.append('{0}:{1}'.format(name, \
                                 browsers[name]['version']))
                 browser_versions = ','.join(versions)
-                url += '&browsers=' + urllib.quote_plus(browser_versions)
+                url += '&browsers=' + quote_plus(browser_versions)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30, proxies=proxies)
@@ -1169,7 +1172,7 @@ class WebPageTest(object):
         url += "?"
         for key in data:
             if data[key] != None:
-                url += key + '=' + urllib.quote_plus(data[key]) + '&'
+                url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
