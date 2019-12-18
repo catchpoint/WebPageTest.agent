@@ -12,6 +12,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib
@@ -125,8 +126,10 @@ class WebPageTest(object):
         self.version = '19.04'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            out = subprocess.check_output('git log -1 --format=%cd --date=raw',
-                                          shell=True, cwd=directory)
+            if (sys.version_info > (3, 0)):
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory, encoding='UTF-8')
+            else:
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory)
             if out is not None:
                 matches = re.search(r'^(\d+)', out)
                 if matches:

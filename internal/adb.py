@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 from threading import Timer
 import time
 try:
@@ -138,7 +139,10 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                stdout = subprocess.check_output(['ps', 'ax'])
+                if (sys.version_info > (3, 0)):
+                    stdout = subprocess.check_output(['ps', 'ax'], encoding='UTF-8')
+                else:
+                    stdout = subprocess.check_output(['ps', 'ax'])
                 if stdout.find('simple-rt ') > -1:
                     running = True
                     logging.debug('simple-rt is already running')

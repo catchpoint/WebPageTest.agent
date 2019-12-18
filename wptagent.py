@@ -430,7 +430,10 @@ class WPTAgent(object):
         """Get the installed version of Node.js"""
         version = 0
         try:
-            stdout = subprocess.check_output(['node', '--version'])
+            if (sys.version_info > (3, 0)):
+                stdout = subprocess.check_output(['node', '--version'], encoding='UTF-8')
+            else:
+                stdout = subprocess.check_output(['node', '--version'])
             matches = re.match(r'^v(\d+\.\d+)', stdout)
             if matches:
                 version = float(matches.group(1))
@@ -463,10 +466,15 @@ class WPTAgent(object):
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
-    import ConfigParser
     ret = None
     if os.path.isfile(ini):
-        parser = ConfigParser.SafeConfigParser()
+        parser = None
+        try:
+            import ConfigParser
+            parser = ConfigParser.SafeConfigParser()
+        except BaseException:
+            import configparser
+            parser = configparser.ConfigParser()
         parser.read(ini)
         ret = {}
         for section in parser.sections():
@@ -738,8 +746,10 @@ def upgrade_pip_modules():
         from internal.os_util import run_elevated
         subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
         run_elevated(sys.executable, '-m pip install --upgrade pip')
-        out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
-                                       '--outdated', '--format', 'freeze'])
+        if (sys.version_info > (3, 0)):
+            out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'], encoding='UTF-8')
+        else:
+            out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'])
         for line in out.splitlines():
             separator = line.find('==')
             if separator > 0:

@@ -11,6 +11,7 @@ import platform
 import shutil
 import signal
 import subprocess
+import sys
 import threading
 import time
 try:
@@ -666,7 +667,10 @@ class DesktopBrowser(BaseBrowser):
             cmd = ['python', pcap_parser, '--json', '-i', pcap_file, '-d', slices_file]
             logging.debug(cmd)
             try:
-                stdout = subprocess.check_output(cmd)
+                if (sys.version_info > (3, 0)):
+                    stdout = subprocess.check_output(cmd, encoding='UTF-8')
+                else:
+                    stdout = subprocess.check_output(cmd)
                 if stdout is not None:
                     result = json.loads(stdout)
                     if result:

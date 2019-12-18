@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import time
 
 class TrafficShaper(object):
@@ -391,7 +392,10 @@ class NetEm(object):
         # Figure out the default interface
         try:
             if self.interface is None:
-                out = subprocess.check_output(['route'])
+                if (sys.version_info > (3, 0)):
+                    out = subprocess.check_output(['route'], encoding='UTF-8')
+                else:
+                    out = subprocess.check_output(['route'])
                 routes = out.splitlines()
                 match = re.compile(r'^([^\s]+)\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+'\
                                 r'[^\s]+\s+[^\s]+\s+[^\s]+\s+([^\s]+)')

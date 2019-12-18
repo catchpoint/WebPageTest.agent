@@ -8,6 +8,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import urlparse
 
 
@@ -57,7 +58,10 @@ class Traceroute(object):
         last_hop = 0
         command = ['tracert', '-h', '30', '-w', '500', hostname]
         logging.debug(' '.join(command))
-        out = subprocess.check_output(command)
+        if (sys.version_info > (3, 0)):
+            out = subprocess.check_output(command, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command)
         lines = out.splitlines()
         dest = re.compile(r'^Tracing route to.*\[([\d\.]+)\]')
         timeout = re.compile(r'^\s*(\d+).*Request timed out')
@@ -125,7 +129,10 @@ class Traceroute(object):
         last_hop = 0
         command = ['traceroute', '-m', '30', '-w', '0.5', hostname]
         logging.debug(' '.join(command))
-        out = subprocess.check_output(command)
+        if (sys.version_info > (3, 0)):
+            out = subprocess.check_output(command, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command)
         lines = out.splitlines()
         dest = re.compile(r'^traceroute to [^\(]+\(([\d\.]+)\)')
         timeout = re.compile(r'^\s*(\d+)\s+\*\s+\*\s+\*')
