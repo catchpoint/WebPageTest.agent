@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """WebPageTest cross-platform agent"""

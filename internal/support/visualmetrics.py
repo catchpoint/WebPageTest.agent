@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """
+Copyright 2019 WebPageTest LLC.
 Copyright (c) 2014, Google Inc.
 All rights reserved.
 
