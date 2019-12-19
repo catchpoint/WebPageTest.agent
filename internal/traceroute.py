@@ -10,7 +10,10 @@ import platform
 import re
 import subprocess
 import sys
-import urlparse
+if (sys.version_info > (3, 0)):
+    from urllib.parse import urlparse # pylint: disable=import-error
+else:
+    from urlparse import urlparse # pylint: disable=import-error
 
 
 class Traceroute(object):
@@ -31,7 +34,7 @@ class Traceroute(object):
         """Run an individual test"""
         if 'url' in self.job:
             results = None
-            hostname = urlparse.urlparse(self.job['url']).hostname
+            hostname = urlparse(self.job['url']).hostname
             if platform.system() == 'Windows':
                 last_hop, results = self.windows_traceroute(hostname)
             else:

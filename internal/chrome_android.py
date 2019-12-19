@@ -8,11 +8,12 @@ import logging
 import os
 import re
 import shutil
+import sys
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
@@ -179,7 +180,6 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def setup_prefs(self):
         """Install our base set of preferences"""
         # Crashes chrome on the Moto G4's so disabled for now
-        return
         """
         src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                            'support', 'chrome', 'prefs.json')
@@ -196,6 +196,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.adb.shell(['rm', remote_prefs])
         self.adb.su('chmod 777 {0}'.format(dest))
         """
+        return
 
     def configure_prefs(self):
         """Configure browser-specific shared_prefs"""

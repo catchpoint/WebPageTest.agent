@@ -15,10 +15,10 @@ import subprocess
 import sys
 import threading
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -192,7 +192,7 @@ class DesktopBrowser(BaseBrowser):
                                               window_title, window_class)
                                 win32api.TerminateProcess(handle, 0)
                             win32api.CloseHandle(handle)
-        except Exception as err:
+        except Exception:
             pass
 
     def close_top_dialog(self, hwnd, _):
@@ -383,7 +383,7 @@ class DesktopBrowser(BaseBrowser):
         if self.device_pixel_ratio is None:
             self.device_pixel_ratio = 1.0
             try:
-                ratio = self.execute_js('window.devicePixelRatio')
+                ratio = self.execute_js('window.devicePixelRatio') #pylint: disable=assignment-from-none
                 if ratio is not None:
                     self.device_pixel_ratio = max(1.0, float(ratio))
             except Exception:
@@ -432,12 +432,12 @@ class DesktopBrowser(BaseBrowser):
                     time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
-                    from win32api import GetSystemMetrics
+                    from win32api import GetSystemMetrics #pylint: disable=import-error
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 elif platform.system() == 'Darwin':
                     try:
-                        from AppKit import NSScreen
+                        from AppKit import NSScreen #pylint: disable=import-error
                         self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                         self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                     except Exception:
@@ -504,7 +504,7 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Stopping tcpdump')
             from .os_util import kill_all
             if platform.system() == 'Windows':
-                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT)
+                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
                 kill_all('WinDump', False)
             else:
                 subprocess.call(['sudo', 'killall', 'tcpdump'])
@@ -513,7 +513,7 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Stopping video capture')
             self.video_capture_running = False
             if platform.system() == 'Windows':
-                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
             else:
                 self.ffmpeg.terminate()
 
@@ -726,7 +726,7 @@ class DesktopBrowser(BaseBrowser):
                     logging.debug('Stopping video capture - File is too big: %d', video_size)
                     self.video_capture_running = False
                     if platform.system() == 'Windows':
-                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
                     else:
                         self.ffmpeg.terminate()
 

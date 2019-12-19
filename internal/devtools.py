@@ -10,13 +10,15 @@ import multiprocessing
 import os
 import re
 import subprocess
+import sys
 import time
 import zipfile
-from urlparse import urlsplit
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
 try:
     import ujson as json
 except BaseException:
@@ -417,7 +419,7 @@ class DevTools(object):
                                         summary[url]['{0}_bytes_used'.format(category)] = used_bytes
                                         summary[url]['{0}_percent_used'.format(category)] = used_pct
                         path = self.path_base + '_coverage.json.gz'
-                        with gzip.open(path, 'wb', 7) as f_out:
+                        with gzip.open(path, 'w', 7) as f_out:
                             json.dump(summary, f_out)
                     self.send_command('CSS.disable', {})
                     self.send_command('DOM.disable', {})

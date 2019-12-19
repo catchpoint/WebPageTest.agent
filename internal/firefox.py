@@ -12,12 +12,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import time
-import urlparse
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
 try:
     import ujson as json
 except BaseException:
@@ -120,7 +122,7 @@ class Firefox(DesktopBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
                 command_line = 'eatmydata ' + command_line
-            except Exception as err:
+            except Exception:
                 pass
         return command_line
 
@@ -838,12 +840,12 @@ class Firefox(DesktopBrowser):
         result['requests'] = self.merge_requests(request_timings)
         result['pageData'] = self.calculate_page_stats(result['requests'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'wb', 7) as f_out:
+        with gzip.open(devtools_file, 'w', 7) as f_out:
             json.dump(result, f_out)
 
     def get_empty_request(self, request_id, url):
         """Return and empty, initialized request"""
-        parts = urlparse.urlsplit(url)
+        parts = urlsplit(url)
         request = {'type': 3,
                    'id': request_id,
                    'request_id': request_id,

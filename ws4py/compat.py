@@ -33,8 +33,8 @@ if sys.version_info >= (3, 0):
         return _ord(c)
 else:
     py3k = False
-    from urlparse import urlsplit
-    range = xrange
+    from urlparse import urlsplit # pylint: disable=import-error
+    range = xrange  # pylint: disable=undefined-variable
     unicode = unicode
     basestring = basestring
     ord = ord

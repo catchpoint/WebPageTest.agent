@@ -11,11 +11,12 @@ import platform
 import select
 import shutil
 import subprocess
+import sys
 import threading
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:

@@ -44,9 +44,9 @@ class Pcap():
   def SaveStats(self, out):
     file_name, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wb')
+      f = gzip.open(out, 'w')
     else:
-      f = open(out, 'wb')
+      f = open(out, 'w')
     try:
       result = {"bytes": self.bytes}
       json.dump(result, f)
@@ -59,9 +59,9 @@ class Pcap():
   def SaveDetails(self, out):
     file_name, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wb')
+      f = gzip.open(out, 'w')
     else:
-      f = open(out, 'wb')
+      f = open(out, 'w')
     try:
       json.dump(self.slices, f)
       logging.info('Result details written to {0}'.format(out))

@@ -12,12 +12,13 @@ import re
 import shutil
 import struct
 import subprocess
+import sys
 import threading
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -383,7 +384,11 @@ class OptimizationChecks(object):
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
-        from urlparse import urlsplit
+        if (sys.version_info > (3, 0)):
+            from urllib.parse import urlsplit # pylint: disable=import-error
+        else:
+            from urlparse import urlsplit # pylint: disable=import-error
+            
         # build a list of origins and how many requests were issued to each
         origins = {}
         for request_id in self.requests:
@@ -558,7 +563,10 @@ class OptimizationChecks(object):
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
-        from urlparse import urlparse
+        if (sys.version_info > (3, 0)):
+            from urllib.parse import urlparse # pylint: disable=import-error
+        else:
+            from urlparse import urlparse # pylint: disable=import-error
         start = monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}

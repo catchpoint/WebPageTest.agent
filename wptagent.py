@@ -69,10 +69,10 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
-        try:
-            from monotonic import monotonic
-        except BaseException:
+        if (sys.version_info > (3, 0)):
             from time import monotonic
+        else:
+            from monotonic import monotonic
         start_time = monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
@@ -232,10 +232,10 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
-        try:
-            from monotonic import monotonic
-        except BaseException:
+        if (sys.version_info > (3, 0)):
             from time import monotonic
+        else:
+            from monotonic import monotonic
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()

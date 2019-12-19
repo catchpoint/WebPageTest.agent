@@ -6,11 +6,12 @@
 import logging
 import os
 import re
+import sys
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
@@ -181,7 +182,7 @@ class BlackBoxAndroid(AndroidBrowser):
     def ensure_xml_setting(self, settings, key, value):
         """Make sure the provided setting exists in the setting string"""
         if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
-            modified = True
+            self.modified = True
             settings = re.sub(r'name=\"{0}\" value=\"[^\"]\"'.format(key),
                               'name="{0}" value="{1}"'.format(key, value), settings)
             if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:

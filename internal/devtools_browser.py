@@ -10,12 +10,14 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    unicode = str
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -219,7 +221,7 @@ class DevtoolsBrowser(object):
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
-                        self.step_complete(task)
+                        self.step_complete(task) #pylint: disable=no-member
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
@@ -364,7 +366,7 @@ class DevtoolsBrowser(object):
             self.task['page_data']['URL'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
-            script = self.prepare_script_for_record(script)
+            script = self.prepare_script_for_record(script) #pylint: disable=no-member
             self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'logdata':
@@ -383,7 +385,7 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'exec':
             script = command['target']
             if command['record']:
-                script = self.prepare_script_for_record(script)
+                script = self.prepare_script_for_record(script) #pylint: disable=no-member
                 self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'sleep':
@@ -507,7 +509,7 @@ class DevtoolsBrowser(object):
                     command.extend(['--blocked-url-patterns', pattern])
             if 'headers' in task:
                 headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
-                with open(headers_file, 'wb') as f_out:
+                with open(headers_file, 'w') as f_out:
                     json.dump(task['headers'], f_out)
                 command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
             cmd = ' '.join(command)
@@ -611,7 +613,7 @@ class DevtoolsBrowser(object):
                                 elif 'numericValue' in audit:
                                     audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
-                    with gzip.open(audits_gzip, 'wb', 7) as f_out:
+                    with gzip.open(audits_gzip, 'w', 7) as f_out:
                         json.dump(audits, f_out)
             # Compress the HTML lighthouse report
             if os.path.isfile(html_file):

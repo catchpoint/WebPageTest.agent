@@ -20,8 +20,13 @@ import logging
 import math
 import os
 import re
+import sys
 import time
-import urlparse
+if (sys.version_info > (3, 0)):
+    from urllib.parse import urlparse # pylint: disable=import-error
+    unicode = str
+else:
+    from urlparse import urlparse # pylint: disable=import-error
 
 # try a fast json parser if it is installed
 try:
@@ -66,7 +71,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(out_file)
             if ext.lower() == '.gz':
-                with gzip.open(out_file, 'wb') as f:
+                with gzip.open(out_file, 'w') as f:
                     json.dump(json_data, f)
             else:
                 with open(out_file, 'w') as f:
@@ -721,7 +726,7 @@ class Trace():
                         not request['url'].startswith('http://192.168.10.'):
                     # Match orphaned request streams with their h2 sessions
                     if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
-                        request_host = urlparse.urlparse(request['url']).hostname
+                        request_host = urlparse(request['url']).hostname
                         for h2_session_id in self.netlog['h2_session']:
                             h2_session = self.netlog['h2_session'][h2_session_id]
                             if 'host' in h2_session:
@@ -841,7 +846,7 @@ class Trace():
                     # Go through the requests and assign the DNS lookups as needed
                     for request in requests:
                         if 'connect_start' in request:
-                            hostname = urlparse.urlparse(request['url']).hostname
+                            hostname = urlparse(request['url']).hostname
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
@@ -1335,7 +1340,7 @@ def main():
                         help="Output list of interactive times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
-    options, unknown = parser.parse_known_args()
+    options, _ = parser.parse_known_args()
 
     # Set up logging
     log_level = logging.CRITICAL

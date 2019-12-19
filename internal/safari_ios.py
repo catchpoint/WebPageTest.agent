@@ -12,13 +12,15 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import time
-import urlparse
 import zipfile
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
 try:
     import ujson as json
 except BaseException:
@@ -841,7 +843,7 @@ class iWptBrowser(BaseBrowser):
             if 'timeline' in self.job and self.job['timeline']:
                 if self.path_base is not None:
                     timeline_path = self.path_base + '_devtools.json.gz'
-                    self.timeline = gzip.open(timeline_path, 'wb', 7)
+                    self.timeline = gzip.open(timeline_path, 'w', 7)
                     if self.timeline:
                         self.timeline.write('[\n')
                 from internal.support.trace_parser import Trace
@@ -961,7 +963,7 @@ class iWptBrowser(BaseBrowser):
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'
-                with gzip.open(log_file, 'wb', 7) as f_out:
+                with gzip.open(log_file, 'w', 7) as f_out:
                     json.dump(self.console_log, f_out)
             # Process the timeline data
             if self.trace_parser is not None and self.path_base is not None:
@@ -998,7 +1000,7 @@ class iWptBrowser(BaseBrowser):
                                               self.wpt_result['requests'], opt)
             if self.path_base is not None:
                 devtools_file = self.path_base + '_devtools_requests.json.gz'
-                with gzip.open(devtools_file, 'wb', 7) as f_out:
+                with gzip.open(devtools_file, 'w', 7) as f_out:
                     json.dump(self.wpt_result, f_out)
 
     def step_complete(self, task):
@@ -1193,7 +1195,7 @@ class iWptBrowser(BaseBrowser):
 
     def get_empty_request(self, request_id, url):
         """Return and empty, initialized request"""
-        parts = urlparse.urlsplit(url)
+        parts = urlsplit(url)
         request = {'type': 3,
                    'id': request_id,
                    'request_id': request_id,

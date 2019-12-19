@@ -16,16 +16,14 @@ import subprocess
 import sys
 import threading
 import time
-try:
-    from urllib import quote_plus
-except BaseException:
-    from urllib.parse import quote_plus
 import zipfile
 import psutil
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import quote_plus # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
 try:
     import ujson as json
 except BaseException:
@@ -90,14 +88,14 @@ class WebPageTest(object):
                 self.screen_height = 1200
             elif platform.system() == 'Windows':
                 try:
-                    from win32api import GetSystemMetrics
+                    from win32api import GetSystemMetrics # pylint: disable=import-error
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 except Exception:
                     pass
             elif platform.system() == 'Darwin':
                 try:
-                    from AppKit import NSScreen
+                    from AppKit import NSScreen # pylint: disable=import-error
                     self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                 except Exception:
@@ -893,7 +891,7 @@ class WebPageTest(object):
                 if not os.path.isdir(self.persistent_dir):
                     os.makedirs(self.persistent_dir)
                 margins_file = os.path.join(self.persistent_dir, 'margins.json')
-                with open(margins_file, 'wb') as f_out:
+                with open(margins_file, 'w') as f_out:
                     json.dump(self.margins, f_out)
 
     def body_fetch_thread(self):

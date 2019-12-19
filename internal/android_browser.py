@@ -9,15 +9,17 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:
     import json
+
 from .base_browser import BaseBrowser
 
 

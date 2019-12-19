@@ -19,8 +19,13 @@ import gzip
 import logging
 import os
 import re
+import sys
 import time
-import urlparse
+if (sys.version_info > (3, 0)):
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+else:
+    from urlparse import urlsplit # pylint: disable=import-error
 
 # try a fast json parser if it is installed
 try:
@@ -99,7 +104,7 @@ class DevToolsParser(object):
                 try:
                     _, ext = os.path.splitext(self.out_file)
                     if ext.lower() == '.gz':
-                        with gzip.open(self.out_file, 'wb') as f_out:
+                        with gzip.open(self.out_file, 'w') as f_out:
                             json.dump(self.result, f_out)
                     else:
                         with open(self.out_file, 'w') as f_out:
@@ -124,7 +129,6 @@ class DevToolsParser(object):
                 ('params' in x and 'timestamp' in x['params']) else 9999999)
         f_in.close()
         if raw_events is not None and len(raw_events):
-            end_timestamp = None
             first_timestamp = None
             raw_requests = {}
             id_map = {}
@@ -396,7 +400,7 @@ class DevToolsParser(object):
         for raw_request in raw_requests:
             if 'url' in raw_request:
                 url = raw_request['url'].split('#', 1)[0]
-                parts = urlparse.urlsplit(url)
+                parts = urlsplit(url)
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
                 request['full_url'] = url
@@ -709,7 +713,6 @@ class DevToolsParser(object):
                 if 'request_id' not in request and 'id' in request:
                     request['request_id'] = request['id']
                 if 'full_url' in request:
-                    matched = False
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
                                 entry['url'] == request['full_url']:
@@ -795,7 +798,7 @@ class DevToolsParser(object):
                 if 'claimed' not in entry and 'url' in entry and 'start' in entry:
                     index += 1
                     request = {'type': 3, 'full_url': entry['url']}
-                    parts = urlparse.urlsplit(entry['url'])
+                    parts = urlsplit(entry['url'])
                     request['id'] = '99999.99999.{0:d}'.format(index)
                     request['is_secure'] = 1 if parts.scheme == 'https' else 0
                     request['host'] = parts.netloc

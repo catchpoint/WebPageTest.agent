@@ -8,6 +8,7 @@ except Exception:
     pass
 from multiprocessing import JoinableQueue
 import logging
+import sys
 import threading
 import time
 import tornado.ioloop
@@ -157,10 +158,10 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
-        try:
-            from monotonic import monotonic
-        except BaseException:
+        if (sys.version_info > (3, 0)):
             from time import monotonic
+        else:
+            from monotonic import monotonic
         end_time = monotonic() + 30
         server_ok = False
         proxies = {"http": None, "https": None}

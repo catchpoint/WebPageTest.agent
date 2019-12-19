@@ -11,10 +11,10 @@ import subprocess
 import sys
 from threading import Timer
 import time
-try:
-    from monotonic import monotonic
-except BaseException:
+if (sys.version_info > (3, 0)):
     from time import monotonic
+else:
+    from monotonic import monotonic
 
 # cSpell:ignore vpndialogs, sysctl, iptables, ifconfig, dstaddr, clientidbase, nsecs
 
@@ -590,7 +590,6 @@ class Adb(object):
         if self.is_tun_interface_available():
             is_ready = True
         elif self.gnirehtet_exe is not None:
-            interface, dns_server = self.options.gnirehtet.split(',', 1)
             if self.gnirehtet is not None:
                 try:
                     subprocess.call([self.gnirehtet_exe, 'stop'])

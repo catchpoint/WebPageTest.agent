@@ -20,11 +20,13 @@ import gzip
 import logging
 import os
 import re
-import urlparse
-try:
-    from monotonic import monotonic
-except BaseException:
+import sys
+if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
 try:
     import ujson as json
 except BaseException:
@@ -94,7 +96,7 @@ class FirefoxLogParser(object):
         for domain in self.dns:
             if 'claimed' not in self.dns[domain]:
                 for request in requests:
-                    host = urlparse.urlsplit(request['url']).hostname
+                    host = urlsplit(request['url']).hostname
                     if host == domain:
                         self.dns[domain]['claimed'] = True
                         if 'start' in self.dns[domain]:

@@ -1092,7 +1092,7 @@ def calculate_histograms(directory, histograms_file, force):
                                  'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
-                f = gzip.open(histograms_file, 'wb')
+                f = gzip.open(histograms_file, 'w')
                 json.dump(histograms, f)
                 f.close()
             else:
@@ -1325,9 +1325,9 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
         if progress and progress_file is not None:
             file_name, ext = os.path.splitext(progress_file)
             if ext.lower() == '.gz':
-                f = gzip.open(progress_file, 'wb', 7)
+                f = gzip.open(progress_file, 'w', 7)
             else:
-                f = open(progress_file, 'wb')
+                f = open(progress_file, 'w')
             json.dump(progress, f)
             f.close()
         if len(histograms) > 1:
@@ -1367,7 +1367,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    with gzip.open(hero_elements_file, 'wb', 7) as hero_f_out:
+                    with gzip.open(hero_elements_file, 'w', 7) as hero_f_out:
                         json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
