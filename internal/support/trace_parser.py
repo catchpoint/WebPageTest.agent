@@ -71,7 +71,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(out_file)
             if ext.lower() == '.gz':
-                with gzip.open(out_file, 'w') as f:
+                with gzip.open(out_file, 'wt') as f:
                     json.dump(json_data, f)
             else:
                 with open(out_file, 'w') as f:
@@ -123,7 +123,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
-                f = gzip.open(trace, 'rb')
+                f = gzip.open(trace, 'rt')
             else:
                 f = open(trace, 'r')
             for line in f:
@@ -152,7 +152,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(timeline)
             if ext.lower() == '.gz':
-                f = gzip.open(timeline, 'rb')
+                f = gzip.open(timeline, 'rt')
             else:
                 f = open(timeline, 'r')
             events = json.load(f)

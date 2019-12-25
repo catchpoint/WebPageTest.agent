@@ -80,7 +80,7 @@ class Edge(DesktopBrowser):
         if not os.path.isdir(self.bodies_path):
             os.makedirs(self.bodies_path)
         try:
-            import _winreg
+            import _winreg # pylint: disable=import-error
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
             self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
             if not task['cached']:
@@ -112,7 +112,7 @@ class Edge(DesktopBrowser):
 
     def get_driver(self, task):
         """Get the webdriver instance"""
-        from selenium import webdriver
+        from selenium import webdriver # pylint: disable=import-error
         from .os_util import run_elevated
         path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'support', 'edge')
@@ -211,7 +211,7 @@ class Edge(DesktopBrowser):
                 except Exception:
                     pass
         try:
-            import _winreg
+            import _winreg # pylint: disable=import-error
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
             _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, self.edge_registry_key_value)
             _winreg.CloseKey(registry_key)        
@@ -665,7 +665,7 @@ class Edge(DesktopBrowser):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with open(script_file_path, 'r') as script_file:
                 script = script_file.read()
         if script is not None:
             try:
@@ -687,7 +687,7 @@ class Edge(DesktopBrowser):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -708,7 +708,7 @@ class Edge(DesktopBrowser):
                 except Exception:
                     pass
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -716,13 +716,13 @@ class Edge(DesktopBrowser):
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, 'wt', 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
         # Wait for the interactive periods to be written
         if self.supports_interactive:
@@ -736,7 +736,7 @@ class Edge(DesktopBrowser):
             if interactive is not None and len(interactive):
                 interactive_file = os.path.join(task['dir'],
                                                 task['prefix'] + '_interactive.json.gz')
-                with gzip.open(interactive_file, 'wb', 7) as f_out:
+                with gzip.open(interactive_file, 'wt', 7) as f_out:
                     f_out.write(interactive)
 
     def prepare_task(self, task):
@@ -873,7 +873,7 @@ class Edge(DesktopBrowser):
                         except Exception:
                             pass
                         try:
-                            import win32inet
+                            import win32inet # pylint: disable=import-error
                             cookie_string = cookie
                             if cookie.find('xpires') == -1:
                                 expires = datetime.utcnow() + timedelta(days=30)
@@ -933,7 +933,7 @@ class Edge(DesktopBrowser):
         result['pageData'] = self.calculate_page_stats(result['requests'])
         self.check_optimization(task, result['requests'], result['pageData'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'w', 7) as f_out:
+        with gzip.open(devtools_file, 'wt', 7) as f_out:
             json.dump(result, f_out)
 
     def process_sockets(self):
@@ -1225,7 +1225,7 @@ class Edge(DesktopBrowser):
         optimization_file = os.path.join(self.task['dir'], self.task['prefix']) + \
                             '_optimization.json.gz'
         if os.path.isfile(optimization_file):
-            with gzip.open(optimization_file, 'rb') as f_in:
+            with gzip.open(optimization_file, 'r') as f_in:
                 optimization_results = json.load(f_in)
             page_data['score_cache'] = -1
             page_data['score_cdn'] = -1

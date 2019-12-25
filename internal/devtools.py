@@ -16,6 +16,7 @@ import zipfile
 if (sys.version_info > (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
 else:
     from monotonic import monotonic
     from urlparse import urlsplit # pylint: disable=import-error
@@ -419,7 +420,7 @@ class DevTools(object):
                                         summary[url]['{0}_bytes_used'.format(category)] = used_bytes
                                         summary[url]['{0}_percent_used'.format(category)] = used_pct
                         path = self.path_base + '_coverage.json.gz'
-                        with gzip.open(path, 'w', 7) as f_out:
+                        with gzip.open(path, 'wt', 7) as f_out:
                             json.dump(summary, f_out)
                     self.send_command('CSS.disable', {})
                     self.send_command('DOM.disable', {})
@@ -547,33 +548,36 @@ class DevTools(object):
                             logging.warning('Missing response body for request %s',
                                             request_id)
                         elif len(response['result']['body']):
-                            self.body_fail_count = 0
-                            # Write the raw body to a file (all bodies)
-                            if 'base64Encoded' in response['result'] and \
-                                    response['result']['base64Encoded']:
-                                body = base64.b64decode(response['result']['body'])
-                                # Run a sanity check to make sure it isn't binary
-                                if self.bodies_zip_file is not None and is_text:
-                                    try:
-                                        json.loads('"' + body.replace('"', '\\"') + '"')
-                                    except Exception:
-                                        is_text = False
-                            else:
-                                body = response['result']['body'].encode('utf-8')
-                                is_text = True
-                            # Add text bodies to the zip archive
-                            store_body = self.all_bodies
-                            if self.html_body and request_id == self.main_request:
-                                store_body = True
-                            if store_body and self.bodies_zip_file is not None and is_text:
-                                self.body_index += 1
-                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                                self.bodies_zip_file.writestr(name, body)
-                                logging.debug('%s: Stored body in zip', request_id)
-                            logging.debug('%s: Body length: %d', request_id, len(body))
-                            self.response_bodies[request_id] = body
-                            with open(body_file_path, 'wb') as body_file:
-                                body_file.write(body)
+                            try:
+                                self.body_fail_count = 0
+                                # Write the raw body to a file (all bodies)
+                                if 'base64Encoded' in response['result'] and \
+                                        response['result']['base64Encoded']:
+                                    body = base64.b64decode(response['result']['body'])
+                                    # Run a sanity check to make sure it isn't binary
+                                    if self.bodies_zip_file is not None and is_text:
+                                        try:
+                                            json.loads('"' + body.replace('"', '\\"') + '"')
+                                        except Exception:
+                                            is_text = False
+                                else:
+                                    body = unicode(response['result']['body'])
+                                    is_text = True
+                                # Add text bodies to the zip archive
+                                store_body = self.all_bodies
+                                if self.html_body and request_id == self.main_request:
+                                    store_body = True
+                                if store_body and self.bodies_zip_file is not None and is_text:
+                                    self.body_index += 1
+                                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                    self.bodies_zip_file.writestr(name, body)
+                                    logging.debug('%s: Stored body in zip', request_id)
+                                logging.debug('%s: Body length: %d', request_id, len(body))
+                                self.response_bodies[request_id] = body
+                                with open(body_file_path, 'w') as body_file:
+                                    body_file.write(body)
+                            except Exception:
+                                logging.Exception('Exception retrieving body')
                         else:
                             self.body_fail_count = 0
                             self.response_bodies[request_id] = response['result']['body']
@@ -1079,7 +1083,7 @@ class DevTools(object):
         if self.task['log_data']:
             if self.dev_tools_file is None:
                 path = self.path_base + '_devtools.json.gz'
-                self.dev_tools_file = gzip.open(path, 'wb', 7)
+                self.dev_tools_file = gzip.open(path, 'wt', 7)
                 self.dev_tools_file.write("[{}")
             if self.dev_tools_file is not None:
                 self.dev_tools_file.write(",\n")
@@ -1259,7 +1263,7 @@ class DevToolsClient(WebSocketClient):
         if 'params' in msg and 'value' in msg['params'] and len(msg['params']['value']):
             if self.trace_file is None and self.keep_timeline:
                 self.trace_file = gzip.open(self.path_base + '_trace.json.gz',
-                                            'wb', compresslevel=7)
+                                            'wt', compresslevel=7)
                 self.trace_file.write('{"traceEvents":[{}')
             if self.trace_parser is None:
                 from internal.support.trace_parser import Trace

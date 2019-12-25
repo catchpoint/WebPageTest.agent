@@ -958,7 +958,7 @@ def get_timeline_offset(timeline_file):
     try:
         file_name, ext = os.path.splitext(timeline_file)
         if ext.lower() == '.gz':
-            f = gzip.open(timeline_file, 'rb')
+            f = gzip.open(timeline_file, 'rt')
         else:
             f = open(timeline_file, 'r')
         timeline = json.load(f)
@@ -1092,7 +1092,7 @@ def calculate_histograms(directory, histograms_file, force):
                                  'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
-                f = gzip.open(histograms_file, 'w')
+                f = gzip.open(histograms_file, 'wt')
                 json.dump(histograms, f)
                 f.close()
             else:
@@ -1325,7 +1325,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
         if progress and progress_file is not None:
             file_name, ext = os.path.splitext(progress_file)
             if ext.lower() == '.gz':
-                f = gzip.open(progress_file, 'w', 7)
+                f = gzip.open(progress_file, 'wt', 7)
             else:
                 f = open(progress_file, 'w')
             json.dump(progress, f)
@@ -1345,7 +1345,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
                 logging.debug('Calculating hero element times')
                 hero_data = None
-                with gzip.open(hero_elements_file, 'rb') as hero_f_in:
+                with gzip.open(hero_elements_file, 'rt') as hero_f_in:
                     try:
                         hero_data = json.load(hero_f_in)
                     except Exception as e:
@@ -1367,7 +1367,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    with gzip.open(hero_elements_file, 'w', 7) as hero_f_out:
+                    with gzip.open(hero_elements_file, 'wt', 7) as hero_f_out:
                         json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
@@ -1480,7 +1480,7 @@ def calculate_speed_index(progress):
 
 
 def calculate_perceptual_speed_index(progress, directory):
-    from ssim import compute_ssim
+    from ssim import compute_ssim # pylint: disable=import-error
     x = len(progress)
     dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
     first_paint_frame = os.path.join(
@@ -1632,7 +1632,7 @@ def check_config():
         ok = False
 
     try:
-        from ssim import compute_ssim
+        from ssim import compute_ssim # pylint: disable=import-error
 
         print('SSIM:    OK')
     except BaseException:

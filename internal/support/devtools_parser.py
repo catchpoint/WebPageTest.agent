@@ -104,7 +104,7 @@ class DevToolsParser(object):
                 try:
                     _, ext = os.path.splitext(self.out_file)
                     if ext.lower() == '.gz':
-                        with gzip.open(self.out_file, 'w') as f_out:
+                        with gzip.open(self.out_file, 'wt') as f_out:
                             json.dump(self.result, f_out)
                     else:
                         with open(self.out_file, 'w') as f_out:
@@ -119,7 +119,7 @@ class DevToolsParser(object):
         page_data = {'endTime': 0}
         _, ext = os.path.splitext(self.devtools_file)
         if ext.lower() == '.gz':
-            f_in = gzip.open(self.devtools_file, 'rb')
+            f_in = gzip.open(self.devtools_file, 'rt')
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
@@ -504,7 +504,7 @@ class DevToolsParser(object):
                     # Add the socket timing (always assigned to the first request on a connection)
                     if request['socket'] != -1 and request['socket'] not in connections:
                         connections[request['socket']] = timing
-                        if 'dnsStart' in timing and 'dnsStart' >= 0:
+                        if 'dnsStart' in timing and timing['dnsStart'] >= 0:
                             dns_key = request['host']
                             if dns_key not in dns_times:
                                 dns_times[dns_key] = True
@@ -564,7 +564,7 @@ class DevToolsParser(object):
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
                     for line in raw_request['response']['requestHeadersText'].splitlines():
-                        line = line.encode('utf-8').strip()
+                        line = unicode(line.encode('utf-8')).strip()
                         if len(line):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
@@ -572,8 +572,8 @@ class DevToolsParser(object):
                         for value in raw_request['response']['requestHeaders'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
                                 pass
                 elif 'headers' in raw_request:
@@ -581,13 +581,13 @@ class DevToolsParser(object):
                         for value in raw_request['headers'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
                                 pass
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
-                        line = line.encode('utf-8').strip()
+                        line = unicode(line.encode('utf-8')).strip()
                         if len(line):
                             request['headers']['response'].append(line)
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
@@ -595,11 +595,11 @@ class DevToolsParser(object):
                         for value in raw_request['response']['headers'][key].splitlines():
                             try:
                                 request['headers']['response'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
                                 pass
-                request['bytesOut'] = len("\r\n".join(request['headers']['request']))
+                request['bytesOut'] = len("\r\n".join(str(request['headers']['request'])))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
                 request['score_gzip'] = -1
@@ -703,7 +703,7 @@ class DevToolsParser(object):
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.netlog_requests_file, 'rb')
+                f_in = gzip.open(self.netlog_requests_file, 'rt')
             else:
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
@@ -995,7 +995,7 @@ class DevToolsParser(object):
         if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
             _, ext = os.path.splitext(self.user_timing_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.user_timing_file, 'rb')
+                f_in = gzip.open(self.user_timing_file, 'rt')
             else:
                 f_in = open(self.user_timing_file, 'r')
             user_timing_events = json.load(f_in)
@@ -1055,7 +1055,7 @@ class DevToolsParser(object):
         if self.optimization is not None and os.path.isfile(self.optimization):
             _, ext = os.path.splitext(self.optimization)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.optimization, 'rb')
+                f_in = gzip.open(self.optimization, 'rt')
             else:
                 f_in = open(self.optimization, 'r')
             optimization_results = json.load(f_in)
@@ -1167,7 +1167,7 @@ class DevToolsParser(object):
             if self.coverage is not None and os.path.isfile(self.coverage):
                 _, ext = os.path.splitext(self.coverage)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.coverage, 'rb')
+                    f_in = gzip.open(self.coverage, 'rt')
                 else:
                     f_in = open(self.coverage, 'r')
                 coverage = json.load(f_in)
@@ -1216,7 +1216,7 @@ class DevToolsParser(object):
             if end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times):
                 _, ext = os.path.splitext(self.cpu_times)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.cpu_times, 'rb')
+                    f_in = gzip.open(self.cpu_times, 'rt')
                 else:
                     f_in = open(self.cpu_times, 'r')
                 cpu = json.load(f_in)
@@ -1262,7 +1262,7 @@ class DevToolsParser(object):
             if os.path.isfile(self.v8_stats):
                 _, ext = os.path.splitext(self.v8_stats)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.v8_stats, 'rb')
+                    f_in = gzip.open(self.v8_stats, 'rt')
                 else:
                     f_in = open(self.v8_stats, 'r')
                 stats = json.load(f_in)

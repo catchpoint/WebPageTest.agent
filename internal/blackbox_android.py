@@ -88,7 +88,7 @@ class BlackBoxAndroid(AndroidBrowser):
         remote_command_line = '/data/local/tmp/chrome-command-line'
         root_command_line = '/data/local/chrome-command-line'
         logging.debug(command_line)
-        with open(local_command_line, 'wb') as f_out:
+        with open(local_command_line, 'w') as f_out:
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             os.remove(local_command_line)
@@ -130,7 +130,7 @@ class BlackBoxAndroid(AndroidBrowser):
                 local_intent = os.path.join(task['dir'], 'wpt_intent.sh')
                 remote_intent = '/data/local/tmp/wpt_intent.sh'
                 self.adb.shell(['rm', remote_intent])
-                with open(local_intent, 'wb') as f_out:
+                with open(local_intent, 'w') as f_out:
                     f_out.write(cmd)
                 if self.adb.adb(['push', local_intent, remote_intent]):
                     os.remove(local_intent)
@@ -206,7 +206,7 @@ class BlackBoxAndroid(AndroidBrowser):
         if settings != original_settings:
             local_settings = os.path.join(self.task['dir'], 'user_settings.xml')
             remote_temp = '/data/local/tmp/user_settings.xml'
-            with open(local_settings, 'wb') as f_out:
+            with open(local_settings, 'w') as f_out:
                 f_out.write(settings)
             if self.adb.adb(['push', local_settings, remote_temp]):
                 self.adb.su('chmod 666 /data/local/tmp/user_settings.xml')

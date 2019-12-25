@@ -397,7 +397,7 @@ class Firefox(DesktopBrowser):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with open(script_file_path, 'r') as script_file:
                 script = script_file.read()
         if script is not None:
             try:
@@ -414,7 +414,7 @@ class Firefox(DesktopBrowser):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -434,7 +434,7 @@ class Firefox(DesktopBrowser):
                 except Exception:
                     pass
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -442,13 +442,13 @@ class Firefox(DesktopBrowser):
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, 'wt', 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
     def process_message(self, message):
@@ -640,7 +640,7 @@ class Firefox(DesktopBrowser):
         interactive = self.execute_js('window.wrappedJSObject.wptagentGetInteractivePeriods();')
         if interactive is not None and len(interactive):
             interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
-            with gzip.open(interactive_file, 'wb', 7) as f_out:
+            with gzip.open(interactive_file, 'wt', 7) as f_out:
                 f_out.write(interactive)
         # Close the browser if we are done testing (helps flush logs)
         if not len(task['script']):
@@ -840,7 +840,7 @@ class Firefox(DesktopBrowser):
         result['requests'] = self.merge_requests(request_timings)
         result['pageData'] = self.calculate_page_stats(result['requests'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'w', 7) as f_out:
+        with gzip.open(devtools_file, 'wt', 7) as f_out:
             json.dump(result, f_out)
 
     def get_empty_request(self, request_id, url):

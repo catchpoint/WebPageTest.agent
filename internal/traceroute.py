@@ -41,7 +41,7 @@ class Traceroute(object):
                 last_hop, results = self.unix_traceroute(hostname)
             if last_hop > 0 and results is not None and len(results):
                 out_file = os.path.join(task['dir'], task['prefix']) + '_traceroute.txt.gz'
-                with gzip.open(out_file, 'wb', 7) as f_out:
+                with gzip.open(out_file, 'wt', 7) as f_out:
                     f_out.write('Hop,IP,ms,FQDN\n')
                     if 0 in results:
                         f_out.write('-1,{0},0,{1}\n'.format(results[0]['addr'], hostname))

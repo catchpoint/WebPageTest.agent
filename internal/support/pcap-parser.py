@@ -44,7 +44,7 @@ class Pcap():
   def SaveStats(self, out):
     file_name, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'w')
+      f = gzip.open(out, 'wt')
     else:
       f = open(out, 'w')
     try:
@@ -59,7 +59,7 @@ class Pcap():
   def SaveDetails(self, out):
     file_name, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'w')
+      f = gzip.open(out, 'wt')
     else:
       f = open(out, 'w')
     try:

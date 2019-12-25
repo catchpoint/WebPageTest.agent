@@ -22,7 +22,7 @@ class Browsers(object):
         self.ios = ios
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
-        with open(android_file, 'rb') as f_in:
+        with open(android_file, 'r') as f_in:
             self.android_browsers = {k.lower(): v for k, v in json.load(f_in).items()}
 
     def is_ready(self):

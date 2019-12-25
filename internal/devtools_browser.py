@@ -316,7 +316,7 @@ class DevtoolsBrowser(object):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with open(script_file_path, 'r') as script_file:
                 script = script_file.read()
         if script is not None:
             ret = self.devtools.execute_js(script)
@@ -327,7 +327,7 @@ class DevtoolsBrowser(object):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
@@ -340,21 +340,21 @@ class DevtoolsBrowser(object):
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.devtools.execute_js(script)
             if hero_elements is not None:
                 logging.debug('Hero Elements: %s', json.dumps(hero_elements))
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, 'wt', 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
 
@@ -530,12 +530,12 @@ class DevtoolsBrowser(object):
                     lh_trace_src = os.path.join(task['dir'], 'lighthouse-0.trace.json')
                     if os.path.isfile(lh_trace_src):
                         # read the JSON in and re-write it line by line to match the other traces
-                        with open(lh_trace_src, 'rb') as f_in:
+                        with open(lh_trace_src, 'r') as f_in:
                             trace = json.load(f_in)
                             if trace is not None and 'traceEvents' in trace:
                                 lighthouse_trace = os.path.join(task['dir'],
                                                                 'lighthouse_trace.json.gz')
-                            with gzip.open(lighthouse_trace, 'wb', 7) as f_out:
+                            with gzip.open(lighthouse_trace, 'wt', 7) as f_out:
                                 f_out.write('{"traceEvents":[{}')
                                 for trace_event in trace['traceEvents']:
                                     f_out.write(",\n")
@@ -552,7 +552,7 @@ class DevtoolsBrowser(object):
                     pass
             if os.path.isfile(json_file):
                 lh_report = None
-                with open(json_file, 'rb') as f_in:
+                with open(json_file, 'r') as f_in:
                     lh_report = json.load(f_in)
 
                 with open(json_file, 'rb') as f_in:
@@ -613,7 +613,7 @@ class DevtoolsBrowser(object):
                                 elif 'numericValue' in audit:
                                     audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
-                    with gzip.open(audits_gzip, 'w', 7) as f_out:
+                    with gzip.open(audits_gzip, 'wt', 7) as f_out:
                         json.dump(audits, f_out)
             # Compress the HTML lighthouse report
             if os.path.isfile(html_file):

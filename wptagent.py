@@ -180,7 +180,7 @@ class WPTAgent(object):
                         pass
                     if self.task['lighthouse_log']:
                         log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
-                        with gzip.open(log_file, 'wb', 7) as f_out:
+                        with gzip.open(log_file, 'wt', 7) as f_out:
                             f_out.write(self.task['lighthouse_log'])
                 else:
                     browser.run_task(self.task)

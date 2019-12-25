@@ -71,7 +71,7 @@ class AndroidBrowser(BaseBrowser):
                                              self.config['package'] + '.md5')
             last_md5 = None
             if os.path.isfile(last_install_file):
-                with open(last_install_file, 'rb') as f_in:
+                with open(last_install_file, 'r') as f_in:
                     last_md5 = f_in.read()
             if last_md5 is None or last_md5 != self.config['md5']:
                 valid = False
@@ -106,7 +106,7 @@ class AndroidBrowser(BaseBrowser):
                             self.adb.adb(['uninstall', self.config['package']])
                         logging.debug('Installing browser APK')
                         self.adb.adb(['install', '-rg', tmp_file])
-                        with open(last_install_file, 'wb') as f_out:
+                        with open(last_install_file, 'w') as f_out:
                             f_out.write(md5)
                     else:
                         logging.error('Error downloading browser APK')
@@ -291,7 +291,7 @@ class AndroidBrowser(BaseBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json_page_data)
 
     def screenshot(self, task):

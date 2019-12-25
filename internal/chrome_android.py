@@ -152,7 +152,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
         root_command_line = '/data/local/' + self.config['command_line_file']
         logging.debug(command_line)
-        with open(local_command_line, 'wb') as f_out:
+        with open(local_command_line, 'w') as f_out:
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             os.remove(local_command_line)
@@ -244,7 +244,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if modified:
             local = os.path.join(self.task['dir'], 'pref.xml')
             remote = '/data/local/tmp/pref.xml'
-            with open(local, 'wb') as f_out:
+            with open(local, 'w') as f_out:
                 f_out.write(out)
             if os.path.isfile(local):
                 self.adb.shell(['rm', remote])

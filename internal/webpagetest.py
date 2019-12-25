@@ -144,7 +144,7 @@ class WebPageTest(object):
         self.margins = {}
         margins_file = os.path.join(self.persistent_dir, 'margins.json')
         if os.path.isfile(margins_file):
-            with open(margins_file, 'rb') as f_in:
+            with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
         # Override the public webpagetest server automatically
         if self.url is not None and self.url.find('www.webpagetest.org') >= 0:
@@ -950,7 +950,7 @@ class WebPageTest(object):
             path = os.path.join(task['dir'], 'bodies')
             requests = []
             devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-            with gzip.open(devtools_file, 'rb') as f_in:
+            with gzip.open(devtools_file, 'rt') as f_in:
                 requests = json.load(f_in)
             count = 0
             bodies_zip = path_base + '_bodies.zip'
@@ -1029,7 +1029,7 @@ class WebPageTest(object):
                             # check to see if it is text or utf-8 data
                             try:
                                 data = ''
-                                with open(task['file'], 'rb') as f_in:
+                                with open(task['file'], 'r') as f_in:
                                     data = f_in.read()
                                 json.loads('"' + data.replace('"', '\\"') + '"')
                                 body_index += 1
