@@ -24,8 +24,12 @@ import time
 if (sys.version_info > (3, 0)):
     from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
 else:
     from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -104,7 +108,7 @@ class DevToolsParser(object):
                 try:
                     _, ext = os.path.splitext(self.out_file)
                     if ext.lower() == '.gz':
-                        with gzip.open(self.out_file, 'wt') as f_out:
+                        with gzip.open(self.out_file, GZIP_TEXT) as f_out:
                             json.dump(self.result, f_out)
                     else:
                         with open(self.out_file, 'w') as f_out:
@@ -119,7 +123,7 @@ class DevToolsParser(object):
         page_data = {'endTime': 0}
         _, ext = os.path.splitext(self.devtools_file)
         if ext.lower() == '.gz':
-            f_in = gzip.open(self.devtools_file, 'rt')
+            f_in = gzip.open(self.devtools_file, GZIP_READ_TEXT)
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
@@ -703,7 +707,7 @@ class DevToolsParser(object):
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.netlog_requests_file, 'rt')
+                f_in = gzip.open(self.netlog_requests_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
@@ -995,7 +999,7 @@ class DevToolsParser(object):
         if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
             _, ext = os.path.splitext(self.user_timing_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.user_timing_file, 'rt')
+                f_in = gzip.open(self.user_timing_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.user_timing_file, 'r')
             user_timing_events = json.load(f_in)
@@ -1055,7 +1059,7 @@ class DevToolsParser(object):
         if self.optimization is not None and os.path.isfile(self.optimization):
             _, ext = os.path.splitext(self.optimization)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.optimization, 'rt')
+                f_in = gzip.open(self.optimization, GZIP_READ_TEXT)
             else:
                 f_in = open(self.optimization, 'r')
             optimization_results = json.load(f_in)
@@ -1167,7 +1171,7 @@ class DevToolsParser(object):
             if self.coverage is not None and os.path.isfile(self.coverage):
                 _, ext = os.path.splitext(self.coverage)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.coverage, 'rt')
+                    f_in = gzip.open(self.coverage, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.coverage, 'r')
                 coverage = json.load(f_in)
@@ -1216,7 +1220,7 @@ class DevToolsParser(object):
             if end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times):
                 _, ext = os.path.splitext(self.cpu_times)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.cpu_times, 'rt')
+                    f_in = gzip.open(self.cpu_times, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.cpu_times, 'r')
                 cpu = json.load(f_in)
@@ -1262,7 +1266,7 @@ class DevToolsParser(object):
             if os.path.isfile(self.v8_stats):
                 _, ext = os.path.splitext(self.v8_stats)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.v8_stats, 'rt')
+                    f_in = gzip.open(self.v8_stats, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.v8_stats, 'r')
                 stats = json.load(f_in)

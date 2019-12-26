@@ -16,8 +16,10 @@ import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
     unicode = str
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -327,7 +329,7 @@ class DevtoolsBrowser(object):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
@@ -340,7 +342,7 @@ class DevtoolsBrowser(object):
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -354,7 +356,7 @@ class DevtoolsBrowser(object):
             if hero_elements is not None:
                 logging.debug('Hero Elements: %s', json.dumps(hero_elements))
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wt', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
 
@@ -535,7 +537,7 @@ class DevtoolsBrowser(object):
                             if trace is not None and 'traceEvents' in trace:
                                 lighthouse_trace = os.path.join(task['dir'],
                                                                 'lighthouse_trace.json.gz')
-                            with gzip.open(lighthouse_trace, 'wt', 7) as f_out:
+                            with gzip.open(lighthouse_trace, GZIP_TEXT, 7) as f_out:
                                 f_out.write('{"traceEvents":[{}')
                                 for trace_event in trace['traceEvents']:
                                     f_out.write(",\n")
@@ -613,7 +615,7 @@ class DevtoolsBrowser(object):
                                 elif 'numericValue' in audit:
                                     audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
-                    with gzip.open(audits_gzip, 'wt', 7) as f_out:
+                    with gzip.open(audits_gzip, GZIP_TEXT, 7) as f_out:
                         json.dump(audits, f_out)
             # Compress the HTML lighthouse report
             if os.path.isfile(html_file):

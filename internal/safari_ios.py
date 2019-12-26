@@ -19,9 +19,11 @@ if (sys.version_info > (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
     from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -357,7 +359,7 @@ class iWptBrowser(BaseBrowser):
         logging.debug(user_timing)
         if user_timing is not None and self.path_base is not None:
             path = self.path_base + '_timed_events.json.gz'
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -379,7 +381,7 @@ class iWptBrowser(BaseBrowser):
                     pass
             if  self.path_base is not None:
                 path = self.path_base + '_metrics.json.gz'
-                with gzip.open(path, 'wt', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -393,7 +395,7 @@ class iWptBrowser(BaseBrowser):
             hero_elements = self.ios.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wt', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
     def process_message(self, msg, target_id=None):
@@ -844,7 +846,7 @@ class iWptBrowser(BaseBrowser):
             if 'timeline' in self.job and self.job['timeline']:
                 if self.path_base is not None:
                     timeline_path = self.path_base + '_devtools.json.gz'
-                    self.timeline = gzip.open(timeline_path, 'wt', 7)
+                    self.timeline = gzip.open(timeline_path, GZIP_TEXT, 7)
                     if self.timeline:
                         self.timeline.write('[\n')
                 from internal.support.trace_parser import Trace
@@ -964,7 +966,7 @@ class iWptBrowser(BaseBrowser):
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'
-                with gzip.open(log_file, 'wt', 7) as f_out:
+                with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
                     json.dump(self.console_log, f_out)
             # Process the timeline data
             if self.trace_parser is not None and self.path_base is not None:
@@ -1001,7 +1003,7 @@ class iWptBrowser(BaseBrowser):
                                               self.wpt_result['requests'], opt)
             if self.path_base is not None:
                 devtools_file = self.path_base + '_devtools_requests.json.gz'
-                with gzip.open(devtools_file, 'wt', 7) as f_out:
+                with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:
                     json.dump(self.wpt_result, f_out)
 
     def step_complete(self, task):
@@ -1020,7 +1022,7 @@ class iWptBrowser(BaseBrowser):
                 path = self.path_base + '_page_data.json.gz'
                 json_page_data = json.dumps(task['page_data'])
                 logging.debug('Page Data: %s', json_page_data)
-                with gzip.open(path, 'wt', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json_page_data)
 
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):

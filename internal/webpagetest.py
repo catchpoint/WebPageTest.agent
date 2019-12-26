@@ -21,9 +21,11 @@ import psutil
 if (sys.version_info > (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
+    GZIP_READ_TEXT = 'rt'
 else:
     from monotonic import monotonic
     from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
+    GZIP_READ_TEXT = 'r'
 try:
     import ujson as json
 except BaseException:
@@ -950,7 +952,7 @@ class WebPageTest(object):
             path = os.path.join(task['dir'], 'bodies')
             requests = []
             devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-            with gzip.open(devtools_file, 'rt') as f_in:
+            with gzip.open(devtools_file, GZIP_READ_TEXT) as f_in:
                 requests = json.load(f_in)
             count = 0
             bodies_zip = path_base + '_bodies.zip'

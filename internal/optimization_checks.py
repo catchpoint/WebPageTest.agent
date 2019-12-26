@@ -17,8 +17,10 @@ import threading
 import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -375,7 +377,7 @@ class OptimizationChecks(object):
             # Save the results
             if self.results:
                 path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
-                gz_file = gzip.open(path, 'wt', 7)
+                gz_file = gzip.open(path, GZIP_TEXT, 7)
                 if gz_file:
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
