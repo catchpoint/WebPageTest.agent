@@ -17,9 +17,11 @@ import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
     from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -689,7 +691,7 @@ class Edge(DesktopBrowser):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -710,7 +712,7 @@ class Edge(DesktopBrowser):
                 except Exception:
                     logging.exception('Error collecting custom metric')
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -724,7 +726,7 @@ class Edge(DesktopBrowser):
             hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wt', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
         # Wait for the interactive periods to be written
         if self.supports_interactive:
@@ -738,7 +740,7 @@ class Edge(DesktopBrowser):
             if interactive is not None and len(interactive):
                 interactive_file = os.path.join(task['dir'],
                                                 task['prefix'] + '_interactive.json.gz')
-                with gzip.open(interactive_file, 'wt', 7) as f_out:
+                with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
                     f_out.write(interactive)
 
     def prepare_task(self, task):
@@ -935,7 +937,7 @@ class Edge(DesktopBrowser):
         result['pageData'] = self.calculate_page_stats(result['requests'])
         self.check_optimization(task, result['requests'], result['pageData'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'wt', 7) as f_out:
+        with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:
             json.dump(result, f_out)
 
     def process_sockets(self):

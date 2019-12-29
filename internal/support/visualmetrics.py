@@ -40,6 +40,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+if (sys.version_info > (3, 0)):
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # Globals
 options = None
@@ -960,7 +966,7 @@ def get_timeline_offset(timeline_file):
     try:
         file_name, ext = os.path.splitext(timeline_file)
         if ext.lower() == '.gz':
-            f = gzip.open(timeline_file, 'rt')
+            f = gzip.open(timeline_file, GZIP_READ_TEXT)
         else:
             f = open(timeline_file, 'r')
         timeline = json.load(f)
@@ -1094,7 +1100,7 @@ def calculate_histograms(directory, histograms_file, force):
                                  'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
-                f = gzip.open(histograms_file, 'wt')
+                f = gzip.open(histograms_file, GZIP_TEXT)
                 json.dump(histograms, f)
                 f.close()
             else:
@@ -1327,7 +1333,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
         if progress and progress_file is not None:
             file_name, ext = os.path.splitext(progress_file)
             if ext.lower() == '.gz':
-                f = gzip.open(progress_file, 'wt', 7)
+                f = gzip.open(progress_file, GZIP_TEXT, 7)
             else:
                 f = open(progress_file, 'w')
             json.dump(progress, f)
@@ -1347,7 +1353,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
                 logging.debug('Calculating hero element times')
                 hero_data = None
-                with gzip.open(hero_elements_file, 'rt') as hero_f_in:
+                with gzip.open(hero_elements_file, GZIP_READ_TEXT) as hero_f_in:
                     try:
                         hero_data = json.load(hero_f_in)
                     except Exception:
@@ -1368,7 +1374,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    with gzip.open(hero_elements_file, 'wt', 7) as hero_f_out:
+                    with gzip.open(hero_elements_file, GZIP_TEXT, 7) as hero_f_out:
                         json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))

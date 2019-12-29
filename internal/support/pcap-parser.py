@@ -21,7 +21,12 @@ import logging
 import math
 import os
 import struct
+import sys
 import time
+if (sys.version_info > (3, 0)):
+    GZIP_TEXT = 'wt'
+else:
+    GZIP_TEXT = 'w'
 
 #Globals
 options = None
@@ -44,7 +49,7 @@ class Pcap():
   def SaveStats(self, out):
     _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wt')
+      f = gzip.open(out, GZIP_TEXT)
     else:
       f = open(out, 'w')
     try:
@@ -59,7 +64,7 @@ class Pcap():
   def SaveDetails(self, out):
     _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wt')
+      f = gzip.open(out, GZIP_TEXT)
     else:
       f = open(out, 'w')
     try:

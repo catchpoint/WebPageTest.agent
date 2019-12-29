@@ -25,8 +25,12 @@ import time
 if (sys.version_info > (3, 0)):
     from urllib.parse import urlparse # pylint: disable=import-error
     unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
 else:
     from urlparse import urlparse # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -71,7 +75,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(out_file)
             if ext.lower() == '.gz':
-                with gzip.open(out_file, 'wt') as f:
+                with gzip.open(out_file, GZIP_TEXT) as f:
                     json.dump(json_data, f)
             else:
                 with open(out_file, 'w') as f:
@@ -123,7 +127,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
-                f = gzip.open(trace, 'rt')
+                f = gzip.open(trace, GZIP_READ_TEXT)
             else:
                 f = open(trace, 'r')
             for line in f:
@@ -152,7 +156,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(timeline)
             if ext.lower() == '.gz':
-                f = gzip.open(timeline, 'rt')
+                f = gzip.open(timeline, GZIP_READ_TEXT)
             else:
                 f = open(timeline, 'r')
             events = json.load(f)

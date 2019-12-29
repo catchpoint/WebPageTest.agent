@@ -128,7 +128,7 @@ class FirefoxLogParser(object):
         _, ext = os.path.splitext(path)
         line_count = 0
         if ext.lower() == '.gz':
-            f_in = gzip.open(path, 'rt')
+            f_in = gzip.open(path, GZIP_READ_TEXT)
         else:
             f_in = open(path, 'r')
         for line in f_in:

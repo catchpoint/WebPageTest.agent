@@ -13,8 +13,10 @@ import sys
 import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -291,7 +293,7 @@ class AndroidBrowser(BaseBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wt', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 
     def screenshot(self, task):
