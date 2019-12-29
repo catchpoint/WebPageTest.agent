@@ -275,7 +275,7 @@ class DesktopBrowser(BaseBrowser):
                         for interface in remove:
                             del self.interfaces[interface]
         except Exception:
-            pass
+            logging.exception('Error finding default interface')
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
@@ -489,7 +489,7 @@ class DesktopBrowser(BaseBrowser):
                             time.sleep(0.1)
                     self.video_capture_running = True
                 except Exception:
-                    pass
+                    logging.exception('Error starting video capture')
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = multiprocessing.JoinableQueue()
@@ -682,7 +682,7 @@ class DesktopBrowser(BaseBrowser):
                         if 'in_dup' in result:
                             self.task['page_data']['pcapBytesInDup'] = result['in_dup']
             except Exception:
-                pass
+                logging.exception('Error processing tcpdump')
 
     def get_net_bytes(self):
         """Get the bytes received, ignoring the loopback interface"""
@@ -753,7 +753,7 @@ class DesktopBrowser(BaseBrowser):
                 subprocess.check_call(cmd)
                 command_line = 'cgexec -g cpu:wptagent ' + command_line
             except Exception as err:
-                logging.critical("Exception enabling throttling: %s", err.__str__())
+                logging.exception("Exception enabling throttling: %s", err.__str__())
             self.throttling_cpu = True
         return command_line
 
@@ -765,7 +765,7 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error disabling throttling')
 
     def start_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
@@ -780,7 +780,7 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error starting throttling')
 
     def stop_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
@@ -790,4 +790,4 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error stopping throttling')

@@ -77,7 +77,7 @@ class Trace():
                 with open(out_file, 'w') as f:
                     json.dump(json_data, f)
         except BaseException:
-            logging.critical("Error writing to " + out_file)
+            logging.exception("Error writing to " + out_file)
 
     def WriteUserTiming(self, out_file):
         out = self.post_process_netlog_events()
@@ -136,9 +136,9 @@ class Trace():
                         line_mode = True
                         self.FilterTraceEvent(trace_event)
                 except BaseException:
-                    pass
+                    logging.exception('Error processing trace line')
         except BaseException:
-            logging.critical("Error processing trace " + trace)
+            logging.exception("Error processing trace " + trace)
         if f is not None:
             f.close()
         self.ProcessTraceEvents()
@@ -179,7 +179,7 @@ class Trace():
                                     self.timeline_events.append(e)
                 self.ProcessTimelineEvents()
         except BaseException:
-            logging.critical("Error processing timeline " + timeline)
+            logging.exception("Error processing timeline " + timeline)
         if f is not None:
             f.close()
 
@@ -302,7 +302,7 @@ class Trace():
                     if not consumed:
                         out.append(event)
                 except Exception:
-                    pass
+                    logging.exception('Error processing user timing event')
             if lcp_event is not None and 'LargestContentfulPaint' not in candidates:
                 lcp_event['name'] = 'LargestContentfulPaint'
                 out.append(lcp_event)
@@ -517,7 +517,7 @@ class Trace():
                             main_thread = thread
                             main_thread_cpu = thread_cpu
                 except Exception:
-                    pass
+                    logging.exception('Error processing thread')
             if main_thread is not None:
                 self.cpu['main_thread'] = main_thread
 
@@ -624,7 +624,7 @@ class Trace():
                     self.cpu['slices'][thread]['total'][slice_number] = min(
                         1.0, max(0.0, 1.0 - available))
         except BaseException:
-            pass
+            logging.exception('Error adjusting timeline slice')
 
     ##########################################################################
     #   Blink Features
@@ -711,7 +711,7 @@ class Trace():
                 elif event_type == 'URL_REQUEST':
                     self.ProcessNetlogUrlRequestEvent(trace_event)
             except Exception:
-                pass
+                logging.exception('Error processing netlog event')
 
     def post_process_netlog_events(self):
         """Post-process the raw netlog events into request data"""
@@ -1314,8 +1314,7 @@ class Trace():
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["count"] += int(trace_event["args"]["runtime-call-stats"][stat][0])
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["dur"] += float(trace_event["args"]["runtime-call-stats"][stat][1]) / 1000.0
         except BaseException:
-            pass
-        pass
+            logging.exception('Error processing V8 event')
 
 
 ##########################################################################

@@ -307,7 +307,8 @@ def find_image_viewport(file):
             'width': (right - left),
             'height': (bottom - top)}
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error calculating viewport')
         viewport = None
     
     if im is not None:
@@ -379,7 +380,7 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                             bottom -
                             top)}
                 except Exception:
-                    pass
+                    logging.exception('Error finding vieport pixels')
 
                 if im is not None:
                     try:
@@ -393,7 +394,8 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                 viewport = {'x': 0, 'y': 0, 'width': width, 'height': height}
             os.remove(frame)
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error finding viewport')
         viewport = None
 
     return viewport
@@ -757,7 +759,7 @@ def get_decimate_filter():
                 decimate = m.groupdict().get('filter')
                 break
     except BaseException:
-        logging.critical('Error checking ffmpeg filters for decimate')
+        logging.exception('Error checking ffmpeg filters for decimate')
         decimate = None
     return decimate
 
@@ -804,14 +806,14 @@ def is_color_frame(file, color_file):
                           ).format(image_magick['convert'], color_file, file, crop,
                                    image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-                out, err = compare.communicate()
+                _, err = compare.communicate()
                 if re.match('^[0-9]+$', err):
                     different_pixels = int(err)
                     if different_pixels < 100:
                         match = True
                         break
         except Exception:
-            pass
+            logging.exception('Error checking frame color')
     if file not in frame_cache:
         frame_cache[file] = {}
     frame_cache[file][color_file] = bool(match)
@@ -984,7 +986,7 @@ def get_timeline_offset(timeline_file):
             logging.info(
                 "Trimming {0:d}ms from the start of the video based on timeline synchronization".format(offset))
     except BaseException:
-        logging.critical("Error processing timeline file " + timeline_file)
+        logging.exception("Error processing timeline file " + timeline_file)
 
     return offset
 
@@ -1126,7 +1128,7 @@ def calculate_image_histogram(file):
                     histogram['g'][pixel[1]] += count
                     histogram['b'][pixel[2]] += count
             except Exception:
-                pass
+                logging.exception('Error processing histogram pixel')
         colors = None
     except Exception:
         histogram = None
@@ -1232,7 +1234,7 @@ def render_video(directory, video_file):
                     proc.stdin.close()
                     proc.communicate()
             except Exception:
-                pass
+                logging.exception('Error rendering video')
 
 
 ##########################################################################
@@ -1348,9 +1350,8 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                 with gzip.open(hero_elements_file, 'rt') as hero_f_in:
                     try:
                         hero_data = json.load(hero_f_in)
-                    except Exception as e:
+                    except Exception:
                         logging.exception('Could not load hero elements data')
-                        logging.exception(e)
 
                 if hero_data is not None and hero_data['heroes'] is not None and \
                         hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:

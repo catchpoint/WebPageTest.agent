@@ -86,7 +86,7 @@ def run_elevated(command, args, wait=True):
             logging.debug('sudo ' + command + ' ' + args)
             ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
     except Exception:
-        pass
+        logging.exception('Error running elevated command: %s', command)
     return ret
 
 def wait_for_elevated_process(process_info):
@@ -125,5 +125,5 @@ def get_file_version(filename):
         ls = info['FileVersionLS']
         version = '{0}.{1}.{2}.{3}'.format(HIWORD(ms), LOWORD(ms), HIWORD(ls), LOWORD(ls))
     except:
-        pass
+        logging.exception('Error getting file version for %s', filename)
     return version

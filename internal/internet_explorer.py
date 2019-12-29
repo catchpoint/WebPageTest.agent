@@ -52,7 +52,7 @@ class InternetExplorer(Edge):
                     values.append(value[0])
                     index += 1
             except Exception:
-                pass
+                logging.exception('Error processing registry')
             for value in values:
                 _winreg.DeleteValue(key, value)
             if 'AppendUA' in task and len(task['AppendUA']):

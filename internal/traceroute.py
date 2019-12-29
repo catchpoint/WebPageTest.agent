@@ -122,7 +122,7 @@ class Traceroute(object):
                             if fields:
                                 ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
             except Exception:
-                pass
+                logging.exception('Error processing traceroute')
         return last_hop, ret
 
     def unix_traceroute(self, hostname):
@@ -172,7 +172,7 @@ class Traceroute(object):
                         if fields:
                             ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
             except Exception:
-                pass
+                logging.exception('Error processing traceroute')
         return last_hop, ret
 
     def run_lighthouse_test(self, task):

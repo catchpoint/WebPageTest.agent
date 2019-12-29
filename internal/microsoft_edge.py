@@ -6,6 +6,7 @@
 from datetime import datetime, timedelta
 import glob
 import gzip
+import io
 import logging
 import os
 import re
@@ -134,7 +135,7 @@ class Edge(DesktopBrowser):
                 if os.path.isfile(src):
                     shutil.copy(src, extension_dir)
             except Exception:
-                pass
+                logging.exception('Error copying extension')
         capabilities['extensionPaths'] = [extension_dir]
         capabilities['ms:extensionPaths'] = [extension_dir]
         driver = webdriver.Edge(executable_path=self.path, capabilities=capabilities)
@@ -187,6 +188,7 @@ class Edge(DesktopBrowser):
             else:
                 task['error'] = 'Error waiting for wpt-etw to start. Make sure .net is installed'
         except Exception as err:
+            logging.exception('Error starting browser')
             task['error'] = 'Error starting browser: {0}'.format(err.__str__())
 
     def stop(self, job, task):
@@ -196,7 +198,7 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.quit()
             except Exception:
-                pass
+                logging.exception('Error quitting webdriver')
             self.driver = None
         DesktopBrowser.stop(self, job, task)
         if self.wpt_etw_proc is not None:
@@ -300,7 +302,7 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.get('about:blank')
             except Exception:
-                logging.debug('Webdriver exception navigating to about:blank after the test')
+                logging.exception('Webdriver exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
@@ -377,7 +379,7 @@ class Edge(DesktopBrowser):
                         if message['pid'] == self.pid:
                             self.process_ieframe_message(message)
             except Exception:
-                pass
+                logging.exception('Error processing message')
 
     def process_ie_message(self, message):
         """Handle IE trace events"""
@@ -656,7 +658,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 ret = self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error executing script')
         return ret
 
     def run_js_file(self, file_name):
@@ -672,7 +674,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 ret = self.driver.execute_script('return ' + script)
             except Exception:
-                pass
+                logging.exception('Error executing script file')
             if ret is not None:
                 logging.debug(ret)
         return ret
@@ -706,7 +708,7 @@ class Edge(DesktopBrowser):
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
-                    pass
+                    logging.exception('Error collecting custom metric')
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
@@ -716,7 +718,7 @@ class Edge(DesktopBrowser):
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
+            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.execute_js(script)
@@ -818,7 +820,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error navigating')
             self.page_loaded = None
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
@@ -841,7 +843,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error executing script command')
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
@@ -871,7 +873,7 @@ class Edge(DesktopBrowser):
                         try:
                             self.driver.add_cookie({'url': url, 'name': name, 'value': value})
                         except Exception:
-                            pass
+                            logging.exception('Error adding cookie')
                         try:
                             import win32inet # pylint: disable=import-error
                             cookie_string = cookie
@@ -890,7 +892,7 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.get(url)
             except Exception as err:
-                logging.debug("Error navigating Edge: %s", str(err))
+                logging.exception("Error navigating Edge: %s", str(err))
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
@@ -923,7 +925,7 @@ class Edge(DesktopBrowser):
                             except Exception:
                                 pass
             except Exception as err:
-                logging.debug('Exception grabbing screen shot: %s', str(err))
+                logging.exception('Exception grabbing screen shot: %s', str(err))
 
     def process_requests(self, task):
         """Convert all of the request and page events into the format needed for WPT"""
@@ -987,7 +989,7 @@ class Edge(DesktopBrowser):
                                     self.requests[first_request]['dnsEnd'] = \
                                         self.dns[event_id]['end']
             except Exception:
-                pass
+                logging.exception('Error processing request timings')
 
     def get_empty_request(self, request_id, url):
         """Return and empty, initialized request"""
@@ -1193,7 +1195,7 @@ class Edge(DesktopBrowser):
                                           request['id'], request['url'])
                     requests.append(request)
             except Exception:
-                pass
+                logging.exception('Error processing request')
         if bodies_zip_file is not None:
             bodies_zip_file.close()
         requests.sort(key=lambda x: x['load_start'])

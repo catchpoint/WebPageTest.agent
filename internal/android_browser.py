@@ -97,7 +97,7 @@ class AndroidBrowser(BaseBrowser):
                         if md5 == self.config['md5']:
                             valid = True
                 except Exception:
-                    pass
+                    logging.exception('Error downloading browser update')
                 if os.path.isfile(tmp_file):
                     if valid:
                         # Uninstall the previous install of the same package if we are installing a custom browser.
@@ -275,7 +275,7 @@ class AndroidBrowser(BaseBrowser):
                     if self.tcpdump_file is not None:
                         os.remove(self.tcpdump_file)
             except Exception:
-                pass
+                logging.exception('Error processing tcpdump')
 
     def step_complete(self, task):
         """All of the processing for the current test step is complete"""

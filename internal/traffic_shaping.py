@@ -430,7 +430,7 @@ class NetEm(object):
             else:
                 logging.critical("Unable to identify default interface using 'route'")
         except Exception as err:
-            logging.debug("Error configuring netem: %s", err.__str__())
+            logging.exception("Error configuring netem: %s", err.__str__())
         return ret
 
     def remove(self):

@@ -6,6 +6,7 @@
 from datetime import datetime, timedelta
 import glob
 import gzip
+import io
 import logging
 import os
 import platform
@@ -82,7 +83,7 @@ class Firefox(DesktopBrowser):
                     shutil.rmtree(task['profile'])
                 shutil.copytree(profile_template, task['profile'])
             except Exception:
-                pass
+                logging.exception('Error copying Firefox profile')
         # Delete any unsent crash reports
         crash_dir = None
         if platform.system() == 'Windows':
@@ -188,7 +189,7 @@ class Firefox(DesktopBrowser):
                         logging.debug('Setting location: %s', location_uri)
                         self.set_pref('geo.wifi.uri', location_uri)
                     except Exception:
-                        pass
+                        logging.exception('Error overriding location')
                 # Figure out the native viewport size
                 size = self.execute_js("[window.innerWidth, window.innerHeight]")
                 logging.debug(size)
@@ -240,7 +241,7 @@ class Firefox(DesktopBrowser):
             try:
                 self.marionette.set_prefs(prefs, True)
             except Exception:
-                pass
+                logging.exception('Error setting prefs through marionette')
 
     def close_browser(self, job, task):
         """Terminate the browser but don't do all of the cleanup that stop does"""
@@ -248,14 +249,14 @@ class Firefox(DesktopBrowser):
             try:
                 self.addons.uninstall(self.extension_id)
             except Exception:
-                pass
+                logging.exception('Error removing addons')
             self.extension_id = None
             self.addons = None
         if self.marionette is not None:
             try:
                 self.marionette.close()
             except Exception:
-                pass
+                logging.exception('Error closing marionette')
             self.marionette = None
         DesktopBrowser.close_browser(self, job, task)
         # make SURE the Firefox processes are gone
@@ -320,7 +321,7 @@ class Firefox(DesktopBrowser):
             try:
                 self.marionette.navigate('about:blank')
             except Exception:
-                logging.debug('Marionette exception navigating to about:blank after the test')
+                logging.exception('Marionette exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
@@ -347,7 +348,11 @@ class Firefox(DesktopBrowser):
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
-                    self.process_message(self.job['message_server'].get_message(interval))
+                    message = self.job['message_server'].get_message(interval)
+                    try:
+                        self.process_message(message)
+                    except Exception:
+                        logging.exception('Error processing message')
                 except Exception:
                     pass
                 now = monotonic()
@@ -388,7 +393,7 @@ class Firefox(DesktopBrowser):
             try:
                 ret = self.marionette.execute_script('return ' + script, script_timeout=30)
             except Exception:
-                pass
+                logging.exception('Error executing script')
         return ret
 
     def run_js_file(self, file_name):
@@ -403,7 +408,7 @@ class Firefox(DesktopBrowser):
             try:
                 ret = self.marionette.execute_script('return ' + script, script_timeout=30)
             except Exception:
-                pass
+                logging.exception('Error executing script file')
             if ret is not None:
                 logging.debug(ret)
         return ret
@@ -432,7 +437,7 @@ class Firefox(DesktopBrowser):
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
-                    pass
+                    logging.exception('Error collecting custom metrics')
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, 'wt', 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
@@ -442,7 +447,7 @@ class Firefox(DesktopBrowser):
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
+            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.execute_js(script)
@@ -473,7 +478,7 @@ class Firefox(DesktopBrowser):
                     elif cat == 'webRequest':
                         self.process_web_request(msg, message['body'])
             except Exception:
-                pass
+                logging.exception('Error processing message')
 
     def process_web_navigation(self, message, evt):
         """Handle webNavigation.*"""
@@ -495,7 +500,7 @@ class Firefox(DesktopBrowser):
                         self.marionette.execute_script(self.job['injectScript'],
                                                        script_timeout=30)
                     except Exception:
-                        pass
+                        logging.exception('Error injecting script')
             elif message == 'onDOMContentLoaded':
                 if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0:
                     self.page['DOMContentLoaded'] = evt['timeStamp']
@@ -670,7 +675,7 @@ class Firefox(DesktopBrowser):
                                     f_out.write(buff)
                                     length -= read_bytes
                 except Exception:
-                    pass
+                    logging.exception('Error copying log files')
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
@@ -781,7 +786,7 @@ class Firefox(DesktopBrowser):
                     logging.debug('Setting location: %s', location_uri)
                     self.set_pref('geo.wifi.uri', location_uri)
             except Exception:
-                pass
+                logging.exception('Error setting location')
 
     def navigate(self, url):
         """Navigate to the given URL"""
@@ -789,7 +794,7 @@ class Firefox(DesktopBrowser):
             try:
                 self.marionette.navigate(url)
             except Exception as err:
-                logging.debug("Error navigating Firefox: %s", str(err))
+                logging.exception("Error navigating Firefox: %s", str(err))
 
     def set_pref(self, key, value_str):
         """Set an individual pref value"""
@@ -799,7 +804,7 @@ class Firefox(DesktopBrowser):
                 logging.debug('Setting Pref "%s" to %s', key, value_str)
                 self.marionette.set_pref(key, value)
             except Exception:
-                pass
+                logging.exception('Error setting pref')
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
@@ -832,7 +837,7 @@ class Firefox(DesktopBrowser):
                             except Exception:
                                 pass
             except Exception as err:
-                logging.debug('Exception grabbing screen shot: %s', str(err))
+                logging.exception('Exception grabbing screen shot: %s', str(err))
 
     def process_requests(self, request_timings, task):
         """Convert all of the request and page events into the format needed for WPT"""
@@ -949,7 +954,7 @@ class Firefox(DesktopBrowser):
                                     request['bytesIn'] += len(header_text) + 2
                                     request['headers']['response'].append(header_text)
                                 except Exception:
-                                    pass
+                                    logging.exception('Error appending response header')
                     if 'created' in req:
                         request['created'] = req['created']
                     request['load_start'] = int(round(req['start'] * 1000.0))
@@ -965,7 +970,7 @@ class Firefox(DesktopBrowser):
                         request['bytesIn'] += int(re.search(r'\d+', str(size)).group())
                     requests.append(request)
             except Exception:
-                pass
+                logging.exception('Error merging request')
         # Overwrite them with the same requests from the logs
         for request in requests:
             for req in request_timings:
@@ -975,7 +980,7 @@ class Firefox(DesktopBrowser):
                         req['claimed'] = True
                         self.populate_request(request, req)
                 except Exception:
-                    pass
+                    logging.exception('Error populating request')
         # Add any events from the logs that weren't reported by the extension
         for req in request_timings:
             try:
@@ -984,7 +989,7 @@ class Firefox(DesktopBrowser):
                     self.populate_request(request, req)
                     requests.append(request)
             except Exception:
-                pass
+                logging.exception('Error adding request from logs')
         # parse values out of the headers
         for request in requests:
             try:
@@ -1004,7 +1009,7 @@ class Firefox(DesktopBrowser):
                 if value:
                     request['objectSize'] = value
             except Exception:
-                pass
+                logging.exception('Error processing headers')
         requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
         return requests
 

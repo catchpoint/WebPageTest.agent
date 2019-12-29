@@ -85,7 +85,7 @@ class DevToolsParser(object):
                     try:
                         data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
         elif isinstance(data, list):
             for key in range(len(data)):
                 entry = data[key]
@@ -95,7 +95,7 @@ class DevToolsParser(object):
                     try:
                         data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
 
     def write(self):
         """Write out the resulting json data"""
@@ -110,7 +110,7 @@ class DevToolsParser(object):
                         with open(self.out_file, 'w') as f_out:
                             json.dump(self.result, f_out)
                 except Exception:
-                    logging.critical("Error writing to " + self.out_file)
+                    logging.exception("Error writing to " + self.out_file)
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
@@ -575,7 +575,7 @@ class DevToolsParser(object):
                                     u'{0}: {1}'.format(unicode(key.encode('utf-8')),
                                                        unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing response headers')
                 elif 'headers' in raw_request:
                     for key in raw_request['headers']:
                         for value in raw_request['headers'][key].splitlines():
@@ -584,7 +584,7 @@ class DevToolsParser(object):
                                     u'{0}: {1}'.format(unicode(key.encode('utf-8')),
                                                        unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing request headers')
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
                         line = unicode(line.encode('utf-8')).strip()
@@ -598,7 +598,7 @@ class DevToolsParser(object):
                                     u'{0}: {1}'.format(unicode(key.encode('utf-8')),
                                                        unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing response headers')
                 request['bytesOut'] = len("\r\n".join(str(request['headers']['request'])))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
@@ -732,7 +732,7 @@ class DevToolsParser(object):
                                         else:
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
-                                    pass
+                                    logging.exception('Error copying request key %s', key)
                             if protocol is not None:
                                 request['protocol'] = protocol
                             if 'start' in entry:
@@ -851,7 +851,7 @@ class DevToolsParser(object):
                                 else:
                                     request[mapping[key]] = str(entry[key])
                         except Exception:
-                            pass
+                            logging.exception('Error processing request key %s', key)
                     if 'first_byte' in entry:
                         request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                        entry['start']))
@@ -1203,7 +1203,7 @@ class DevToolsParser(object):
                                         / page_coverage[total]) / 100.0
                         page_data['code_coverage'] = dict(page_coverage)
         except Exception:
-            pass
+            logging.exception('Error processing code coverage')
 
     def process_cpu_times(self):
         """Calculate the main thread CPU times from the time slices file"""
@@ -1253,7 +1253,7 @@ class DevToolsParser(object):
                         page_data[entry] = page_data['cpuTimes'][name]
                     pass
         except Exception:
-            pass
+            logging.exception('Error processing CPU times')
 
     def process_v8_stats(self):
         """Add the v8 stats to the page data"""
@@ -1287,8 +1287,7 @@ class DevToolsParser(object):
                                 if remainder > 0.0:
                                     page_data['v8Stats'][group]['{0}unaccounted'.format(prefix)] = remainder
         except Exception:
-            pass
-        pass
+            logging.exception('Error processing V8 stats')
 
 def main():
     """Main entry point"""

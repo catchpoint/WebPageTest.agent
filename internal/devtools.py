@@ -128,7 +128,7 @@ class DevTools(object):
                                 ret = True
                                 logging.debug('Dev tools interface is available')
             except Exception as err:
-                logging.debug("Connect to dev tools Error: %s", err.__str__())
+                logging.exception("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
         return ret
 
@@ -161,15 +161,14 @@ class DevTools(object):
                                         session.get(self.url + '/close/' + tabs[index]['id'],
                                                     proxies=proxies)
                                     except Exception:
-                                        pass
+                                        logging.exception('Error closing tabs')
                         if websocket_url is not None:
                             try:
                                 self.websocket = DevToolsClient(websocket_url)
                                 self.websocket.connect()
                                 ret = True
                             except Exception as err:
-                                logging.debug("Connect to dev tools websocket Error: %s",
-                                              err.__str__())
+                                logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                             if not ret:
                                 # try connecting to 127.0.0.1 instead of localhost
                                 try:
@@ -178,8 +177,7 @@ class DevTools(object):
                                     self.websocket.connect()
                                     ret = True
                                 except Exception as err:
-                                    logging.debug("Connect to dev tools websocket Error: %s",
-                                                  err.__str__())
+                                    logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
@@ -208,7 +206,7 @@ class DevTools(object):
             try:
                 self.websocket.close()
             except Exception:
-                pass
+                logging.exception('Error closing websocket')
             self.websocket = None
         if close_tab and self.tab_id is not None:
             import requests
@@ -216,7 +214,7 @@ class DevTools(object):
             try:
                 requests.get(self.url + '/close/' + self.tab_id, proxies=proxies)
             except Exception:
-                pass
+                logging.exception('Error closing tab')
         self.tab_id = None
 
     def start_recording(self):
@@ -235,7 +233,7 @@ class DevTools(object):
                 self.grab_screenshot(tmp_file)
                 os.remove(tmp_file)
             except Exception:
-                pass
+                logging.exception('Error grabbing screenshot')
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
@@ -424,8 +422,8 @@ class DevTools(object):
                             json.dump(summary, f_out)
                     self.send_command('CSS.disable', {})
                     self.send_command('DOM.disable', {})
-                except Exception as err:
-                    logging.exception(err)
+                except Exception:
+                    logging.exception('Error stopping devtools')
         self.recording = False
         self.flush_pending_messages()
         if self.task['log_data']:
@@ -473,20 +471,24 @@ class DevTools(object):
                     while not done and no_message_count < 30 and elapsed < 60:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                no_message_count = 0
-                                msg = json.loads(raw)
-                                if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
-                                    done = True
-                            else:
+                            try:
+                                if raw is not None and len(raw):
+                                    no_message_count = 0
+                                    msg = json.loads(raw)
+                                    if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
+                                        done = True
+                                else:
+                                    no_message_count += 1
+                            except Exception:
                                 no_message_count += 1
+                                logging.exception('Error processing devtools message')
                         except Exception:
                             no_message_count += 1
                             time.sleep(1)
                             pass
                 self.websocket.stop_processing_trace()
             except Exception:
-                pass
+                logging.exception('Error processing trace events')
             elapsed = monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
@@ -561,7 +563,7 @@ class DevTools(object):
                                         except Exception:
                                             is_text = False
                                 else:
-                                    body = unicode(response['result']['body'])
+                                    body = response['result']['body'].encode('utf-8')
                                     is_text = True
                                 # Add text bodies to the zip archive
                                 store_body = self.all_bodies
@@ -574,10 +576,10 @@ class DevTools(object):
                                     logging.debug('%s: Stored body in zip', request_id)
                                 logging.debug('%s: Body length: %d', request_id, len(body))
                                 self.response_bodies[request_id] = body
-                                with open(body_file_path, 'w') as body_file:
+                                with open(body_file_path, 'wb') as body_file:
                                     body_file.write(body)
                             except Exception:
-                                logging.Exception('Exception retrieving body')
+                                logging.exception('Exception retrieving body')
                         else:
                             self.body_fail_count = 0
                             self.response_bodies[request_id] = response['result']['body']
@@ -656,13 +658,16 @@ class DevTools(object):
             try:
                 while True:
                     raw = self.websocket.get_message(0)
-                    if raw is not None and len(raw):
-                        if self.recording:
-                            logging.debug(raw[:200])
-                            msg = json.loads(raw)
-                            self.process_message(msg)
-                    if not raw:
-                        break
+                    try:
+                        if raw is not None and len(raw):
+                            if self.recording:
+                                logging.debug(raw[:200])
+                                msg = json.loads(raw)
+                                self.process_message(msg)
+                        if not raw:
+                            break
+                    except Exception:
+                        logging.exception('Error flushing websocket messages')
             except Exception:
                 pass
 
@@ -687,13 +692,16 @@ class DevTools(object):
                     while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                logging.debug(raw[:200])
-                                msg = json.loads(raw)
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            try:
+                                if raw is not None and len(raw):
+                                    logging.debug(raw[:200])
+                                    msg = json.loads(raw)
+                                    self.process_message(msg)
+                                    if command_id in self.command_responses:
+                                        ret = self.command_responses[command_id]
+                                        del self.command_responses[command_id]
+                            except Exception:
+                                logging.exception('Error processing websocket message')
                         except Exception:
                             pass
         elif self.websocket:
@@ -711,17 +719,20 @@ class DevTools(object):
                     while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                logging.debug(raw[:200])
-                                msg = json.loads(raw)
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            try:
+                                if raw is not None and len(raw):
+                                    logging.debug(raw[:200])
+                                    msg = json.loads(raw)
+                                    self.process_message(msg)
+                                    if command_id in self.command_responses:
+                                        ret = self.command_responses[command_id]
+                                        del self.command_responses[command_id]
+                            except Exception as err:
+                                logging.error('Error processing websocket message: %s', err.__str__())
                         except Exception:
                             pass
             except Exception as err:
-                logging.debug("Websocket send error: %s", err.__str__())
+                logging.exception("Websocket send error: %s", err.__str__())
         return ret
 
     def wait_for_page_load(self):
@@ -736,10 +747,13 @@ class DevTools(object):
                     interval = 0.1
                 try:
                     raw = self.websocket.get_message(interval)
-                    if raw is not None and len(raw):
-                        logging.debug(raw[:200])
-                        msg = json.loads(raw)
-                        self.process_message(msg)
+                    try:
+                        if raw is not None and len(raw):
+                            logging.debug(raw[:200])
+                            msg = json.loads(raw)
+                            self.process_message(msg)
+                    except Exception:
+                        logging.exception('Error processing message while waiting for page load')
                 except Exception:
                     # ignore timeouts when we're in a polling read loop
                     pass
@@ -952,7 +966,7 @@ class DevTools(object):
                                 params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
                             break
                 except Exception:
-                    pass
+                    logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
@@ -1126,7 +1140,7 @@ class DevTools(object):
                 byte_count += len(lines[start_line][start_column:])
                 byte_count += end_column
         except Exception:
-            pass
+            logging.exception('Error in bytes_from_range')
         return byte_count
 
 
@@ -1190,7 +1204,7 @@ class DevToolsClient(WebSocketClient):
                 if message is not None:
                     self.messages.put(message)
         except Exception:
-            pass
+            logging.exception('Error processing received websocket message')
 
     def get_message(self, timeout):
         """Wait for and return a message from the queue"""

@@ -177,7 +177,7 @@ class WPTAgent(object):
                     try:
                         browser.run_lighthouse_test(self.task)
                     except Exception:
-                        pass
+                        logging.exception('Error running lighthouse test')
                     if self.task['lighthouse_log']:
                         log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
                         with gzip.open(log_file, 'wt', 7) as f_out:

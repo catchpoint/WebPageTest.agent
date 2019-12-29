@@ -42,7 +42,7 @@ class Pcap():
 
 
   def SaveStats(self, out):
-    file_name, ext = os.path.splitext(out)
+    _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
       f = gzip.open(out, 'wt')
     else:
@@ -52,12 +52,12 @@ class Pcap():
       json.dump(result, f)
       logging.info('Result stats written to {0}'.format(out))
     except:
-      logging.critical('Error writing result stats to {0}'.format(out))
+      logging.exception('Error writing result stats to {0}'.format(out))
     f.close()
 
 
   def SaveDetails(self, out):
-    file_name, ext = os.path.splitext(out)
+    _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
       f = gzip.open(out, 'wt')
     else:
@@ -66,7 +66,7 @@ class Pcap():
       json.dump(self.slices, f)
       logging.info('Result details written to {0}'.format(out))
     except:
-      logging.critical('Error writing result details to {0}'.format(out))
+      logging.exception('Error writing result details to {0}'.format(out))
     f.close()
 
 
@@ -144,12 +144,12 @@ class Pcap():
             if len(packet_data) >= self.linklen:
               try:
                 self.ProcessPacket(packet_data, packet_info)
-              except Exception as e:
-                print(e)
+              except Exception:
+                logging.exception('Error processing packet')
       else:
         logging.critical("Invalid pcap file " + pcap)
     except:
-      logging.critical("Error processing pcap " + pcap)
+      logging.exception("Error processing pcap " + pcap)
 
     if f is not None:
       f.close()

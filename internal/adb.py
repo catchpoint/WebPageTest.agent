@@ -226,7 +226,7 @@ class Adb(object):
                                           '/data/local/tmp/wpt_video.mp4'])
             self.screenrecord = subprocess.Popen(cmd)
         except Exception:
-            pass
+            logging.exception('Error starting screenrecord')
 
     def stop_screenrecord(self, local_file):
         """Stop a screen record and download the video to local_file"""
@@ -256,7 +256,7 @@ class Adb(object):
             logging.debug(' '.join(cmd))
             self.tcpdump = subprocess.Popen(cmd)
         except Exception:
-            pass
+            logging.exception('Error starting tcpdump')
 
     def stop_tcpdump(self, local_file):
         """Stop a tcpdump capture and download to local_file"""

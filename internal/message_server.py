@@ -103,7 +103,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
                                 message['body'] = None
                             MESSAGE_SERVER.handle_message(message)
         except Exception:
-            pass
+            logging.exception('Error processing POST message')
         self.set_status(200)
 
 

@@ -5,6 +5,7 @@
 """Base class support for browsers that speak the dev tools protocol"""
 import glob
 import gzip
+import io
 import logging
 import os
 import re
@@ -138,7 +139,7 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': 0})
                 except Exception:
-                    pass
+                    logging.exception('Error overriding location')
 
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
@@ -316,7 +317,7 @@ class DevtoolsBrowser(object):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'r') as script_file:
+            with io.open(script_file_path, 'r', encoding='utf-8') as script_file:
                 script = script_file.read()
         if script is not None:
             ret = self.devtools.execute_js(script)
@@ -347,7 +348,7 @@ class DevtoolsBrowser(object):
             custom_hero_selectors = {}
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'r') as script_file:
+            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.devtools.execute_js(script)
@@ -430,7 +431,7 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': accuracy})
             except Exception:
-                pass
+                logging.exception('Error setting location')
         elif command['command'] == 'addheader':
             self.devtools.set_header(command['target'])
         elif command['command'] == 'setheader':
@@ -465,10 +466,11 @@ class DevtoolsBrowser(object):
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         for line in iter(proc.stderr.readline, b''):
             try:
+                line = unicode(line)
                 logging.debug(line.rstrip())
                 self.task['lighthouse_log'] += line
             except Exception:
-                pass
+                logging.exception('Error recording lighthouse log')
         proc.communicate()
 
     def run_lighthouse_test(self, task):
@@ -509,7 +511,7 @@ class DevtoolsBrowser(object):
                     command.extend(['--blocked-url-patterns', pattern])
             if 'headers' in task:
                 headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
-                with open(headers_file, 'w') as f_out:
+                with io.open(headers_file, 'w', encoding='utf-8') as f_out:
                     json.dump(task['headers'], f_out)
                 command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
             cmd = ' '.join(command)
@@ -520,7 +522,7 @@ class DevtoolsBrowser(object):
                 lh_thread.start()
                 lh_thread.join(600)
             except Exception:
-                pass
+                logging.exception('Error running lighthouse audits')
             from .os_util import kill_all
             kill_all('node', True)
             self.job['shaper'].reset()
@@ -530,7 +532,7 @@ class DevtoolsBrowser(object):
                     lh_trace_src = os.path.join(task['dir'], 'lighthouse-0.trace.json')
                     if os.path.isfile(lh_trace_src):
                         # read the JSON in and re-write it line by line to match the other traces
-                        with open(lh_trace_src, 'r') as f_in:
+                        with io.open(lh_trace_src, 'r', encoding='utf-8') as f_in:
                             trace = json.load(f_in)
                             if trace is not None and 'traceEvents' in trace:
                                 lighthouse_trace = os.path.join(task['dir'],
@@ -542,7 +544,7 @@ class DevtoolsBrowser(object):
                                     f_out.write(json.dumps(trace_event))
                                 f_out.write("\n]}")
                 except Exception:
-                    pass
+                    logging.exception('Error processing lighthouse trace')
             # Delete all the left-over lighthouse assets
             files = glob.glob(os.path.join(task['dir'], 'lighthouse-*'))
             for file_path in files:
@@ -552,7 +554,7 @@ class DevtoolsBrowser(object):
                     pass
             if os.path.isfile(json_file):
                 lh_report = None
-                with open(json_file, 'r') as f_in:
+                with io.open(json_file, 'r', encoding='utf-8') as f_in:
                     lh_report = json.load(f_in)
 
                 with open(json_file, 'rb') as f_in:
@@ -623,7 +625,7 @@ class DevtoolsBrowser(object):
                             shutil.copyfileobj(f_in, f_out)
                     os.remove(html_file)
                 except Exception:
-                    pass
+                    logging.exception('Error compressing lighthouse report')
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
@@ -699,5 +701,5 @@ class DevtoolsBrowser(object):
                         script = script.replace('%JSON%', json_data)
                         script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
         except Exception:
-            pass
+            logging.exception('Error building wappalyzer script')
         return script

@@ -62,7 +62,7 @@ class iOSDevice(object):
                 from .support.ios.usbmux import USBMux
                 self.mux = USBMux()
             except Exception:
-                logging.critical("Error initializing usbmux")
+                logging.exception("Error initializing usbmux")
 
     def get_devices(self):
         """Get a list of available devices"""
@@ -131,7 +131,7 @@ class iOSDevice(object):
         try:
             ret = json.loads(ret)
         except Exception:
-            pass
+            logging.exception('Error running script')
         return ret
 
     def set_user_agent(self, ua_string):
@@ -222,6 +222,7 @@ class iOSDevice(object):
                             self.message_thread.start()
                             break
         except Exception:
+            logging.exception('Error connecting to device')
             # If the app isn't running restart the device (no more than every 10 minutes)
             if connecting and monotonic() - self.last_restart > 600:
                 needs_restart = True
@@ -230,7 +231,7 @@ class iOSDevice(object):
             try:
                 subprocess.call(['idevicediagnostics', 'restart'])
             except Exception:
-                pass
+                logging.exception('Error restarting device')
         return self.socket is not None
 
     def disconnect(self):
@@ -264,22 +265,26 @@ class iOSDevice(object):
                     while response is None and monotonic() < end:
                         try:
                             msg = self.messages.get(timeout=1)
-                            self.messages.task_done()
-                            if msg:
-                                if msg['msg'] == 'disconnected':
-                                    self.disconnect()
-                                    self.connect()
-                                elif 'id' in msg and msg['id'] == str(message_id):
-                                    if msg['msg'] == 'OK':
-                                        if 'data' in msg:
-                                            response = msg['data']
+                            try:
+                                self.messages.task_done()
+                                if msg:
+                                    if msg['msg'] == 'disconnected':
+                                        self.disconnect()
+                                        self.connect()
+                                    elif 'id' in msg and msg['id'] == str(message_id):
+                                        if msg['msg'] == 'OK':
+                                            if 'data' in msg:
+                                                response = msg['data']
+                                            else:
+                                                response = True
                                         else:
-                                            response = True
-                                    else:
-                                        break
+                                            break
+                            except Exception:
+                                logging.exception('Error processing message')
                         except Exception:
                             pass
             except Exception:
+                logging.exception('Error sending message')
                 self.disconnect()
         return response
 
@@ -298,25 +303,28 @@ class iOSDevice(object):
         try:
             while not self.must_disconnect and self.socket != None:
                 rlo, _, xlo = select.select([self.socket], [], [self.socket])
-                if xlo:
-                    logging.debug("iWptBrowser disconnected")
-                    self.messages.put({"msg": "disconnected"})
-                    return
-                if rlo:
-                    data_in = self.socket.recv(8192)
-                    if not data_in:
+                try:
+                    if xlo:
                         logging.debug("iWptBrowser disconnected")
                         self.messages.put({"msg": "disconnected"})
                         return
-                    buff += data_in
-                    pos = 0
-                    while pos >= 0:
-                        pos = buff.find("\n")
-                        if pos >= 0:
-                            message = buff[:pos].strip()
-                            buff = buff[pos + 1:]
-                            if message:
-                                self.process_raw_message(message)
+                    if rlo:
+                        data_in = self.socket.recv(8192)
+                        if not data_in:
+                            logging.debug("iWptBrowser disconnected")
+                            self.messages.put({"msg": "disconnected"})
+                            return
+                        buff += data_in
+                        pos = 0
+                        while pos >= 0:
+                            pos = buff.find("\n")
+                            if pos >= 0:
+                                message = buff[:pos].strip()
+                                buff = buff[pos + 1:]
+                                if message:
+                                    self.process_raw_message(message)
+                except Exception:
+                    logging.exception('Error pumping message')
         except Exception:
             pass
 
@@ -365,13 +373,13 @@ class iOSDevice(object):
             try:
                 self.messages.put(msg)
             except Exception:
-                pass
+                logging.exception('Error adding message to queue')
         elif self.notification_queue is not None:
             logging.debug('<<< %s', msg['msg'])
             try:
                 self.notification_queue.put(msg)
             except Exception:
-                pass
+                logging.exception('Error adding message to notification queue')
 
 
 def install_main():

@@ -92,14 +92,14 @@ class WebPageTest(object):
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
             elif platform.system() == 'Darwin':
                 try:
                     from AppKit import NSScreen # pylint: disable=import-error
                     self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()
@@ -193,8 +193,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/user-data',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/user-data', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -205,8 +204,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/meta-data/instance-id',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/instance-id', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
                     ok = True
@@ -217,9 +215,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get(
-                    'http://169.254.169.254/latest/meta-data/placement/availability-zone',
-                    timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/placement/availability-zone', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.zone = response.text.strip()
                     if not len(self.test_locations):
@@ -340,7 +336,7 @@ class WebPageTest(object):
                     elif key == 'fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
-                pass
+                logging.exception('Error parsing metadata')
 
     # pylint: disable=E1101
     def get_uptime_minutes(self):
@@ -819,7 +815,7 @@ class WebPageTest(object):
                                                 addr = sockaddr[0]
                                                 break
                             except Exception:
-                                pass
+                                logging.exception('Error resolving DNS for %s', value)
                             if addr is not None and target.find('"') == -1:
                                 if 'dns_override' not in task:
                                     task['dns_override'] = []
@@ -970,7 +966,7 @@ class WebPageTest(object):
                                 body_index = index
                             bodies.append(request_id)
                 except Exception:
-                    pass
+                    logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
                             'responseCode' in request \
@@ -1036,7 +1032,7 @@ class WebPageTest(object):
                                 file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
                                 bodies.append({'name': file_name, 'file': task['file']})
                             except Exception:
-                                pass
+                                logging.exception('Error appending bodies')
                         self.fetch_result_queue.task_done()
                 except Exception:
                     pass
@@ -1046,7 +1042,7 @@ class WebPageTest(object):
                         for body in bodies:
                             zip_file.write(body['file'], body['name'])
         except Exception:
-            pass
+            logging.exception('Error backfilling bodies')
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""

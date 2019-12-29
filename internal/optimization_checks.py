@@ -418,7 +418,7 @@ class OptimizationChecks(object):
                         self.results[request_id] = {}
                     self.results[request_id]['keep_alive'] = check
             except Exception:
-                pass
+                logging.exception('Error checking keep-alive')
 
     def get_time_remaining(self, request):
         """See if a request is static and how long it can be cached for"""
@@ -476,7 +476,7 @@ class OptimizationChecks(object):
                                 if time_remaining < 0:
                                     is_static = False
         except Exception:
-            pass
+            logging.exception('Error calculating time remaining')
         return is_static, time_remaining
 
     def check_cache_static(self):
@@ -500,7 +500,7 @@ class OptimizationChecks(object):
                         self.results[request_id] = {}
                     self.results[request_id]['cache'] = check
             except Exception:
-                pass
+                logging.exception('Error checking cache static')
 
     def check_hosting(self):
         """Pull the data needed to determine the hosting"""
@@ -558,7 +558,7 @@ class OptimizationChecks(object):
                     else:
                         domain = None
             except Exception:
-                pass
+                logging.exception('Error checking hosting')
         self.hosting_time = monotonic() - start
 
     def check_cdn(self):
@@ -670,9 +670,12 @@ class OptimizationChecks(object):
         try:
             while True:
                 domain = self.dns_lookup_queue.get_nowait()
-                provider = self.find_dns_cdn(domain)
-                if provider is not None:
-                    self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                try:
+                    provider = self.find_dns_cdn(domain)
+                    if provider is not None:
+                        self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                except Exception:
+                    logging.debug('Error in dns worker')
                 self.dns_lookup_queue.task_done()
         except Exception:
             pass
@@ -706,7 +709,7 @@ class OptimizationChecks(object):
                             break
                 if all_match:
                     matched_cdns.append(cdn)
-                    break;
+                    break
 
         if not len(matched_cdns):
             return None
@@ -719,8 +722,9 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if 'objectSize' in request:
                     content_length = request['objectSize']
                 elif content_length is not None:
@@ -776,7 +780,7 @@ class OptimizationChecks(object):
                 if check['score'] >= 0:
                     self.gzip_results[request_id] = check
             except Exception:
-                pass
+                logging.exception('Error checking gzip')
         self.gzip_time = monotonic() - start
 
     def check_images(self):
@@ -785,8 +789,9 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
@@ -896,7 +901,7 @@ class OptimizationChecks(object):
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
             except Exception:
-                pass
+                logging.exception('Error checking images')
         self.image_time = monotonic() - start
 
     def check_progressive(self):
@@ -955,10 +960,10 @@ class OptimizationChecks(object):
                                         block_size = block_size[0] * 256 + block_size[1] - 2
                                         pos += block_size
                             except Exception:
-                                pass
+                                logging.exception('Error scanning JPEG')
                         self.progressive_results[request_id] = check
             except Exception:
-                pass
+                logging.exception('Error checking progressive')
         self.progressive_time = monotonic() - start
 
     def check_fonts(self):
@@ -985,7 +990,7 @@ class OptimizationChecks(object):
                             if tables is not None:
                                 self.font_results[request_id] = {'table_sizes': tables}
                 except Exception:
-                    pass
+                    logging.exception('Error checking font')
         except Exception:
             pass
         self.font_time = monotonic() - start
