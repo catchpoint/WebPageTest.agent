@@ -18,6 +18,7 @@ import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
     GZIP_TEXT = 'wt'
+    unicode = str
 else:
     from monotonic import monotonic
     GZIP_TEXT = 'w'
@@ -1015,23 +1016,23 @@ class OptimizationChecks(object):
     def sniff_content(self, raw_bytes):
         """Check the beginning of the file to see if it is a known image type"""
         content_type = None
-        hex_bytes = binascii.hexlify(raw_bytes[:14]).lower()
+        hex_bytes = binascii.hexlify(raw_bytes[:14])
         # spell-checker: disable
-        if hex_bytes[0:6] == 'ffd8ff':
+        if hex_bytes[0:6] == b'ffd8ff':
             content_type = 'jpeg'
-        elif hex_bytes[0:16] == '89504e470d0a1a0a':
+        elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif raw_bytes[:6] == 'GIF87a' or raw_bytes[:6] == 'GIF89a':
+        elif raw_bytes[:6] == b'GIF87a' or raw_bytes[:6] == b'GIF89a':
             content_type = 'gif'
-        elif raw_bytes[:4] == 'RIFF' and raw_bytes[8:14] == 'WEBPVP':
+        elif raw_bytes[:4] == b'RIFF' and raw_bytes[8:14] == b'WEBPVP':
             content_type = 'webp'
-        elif raw_bytes[:4] == 'OTTO':
+        elif raw_bytes[:4] == b'OTTO':
             content_type = 'OTF'
-        elif raw_bytes[:4] == 'ttcf':
+        elif raw_bytes[:4] == b'ttcf':
             content_type = 'TTF'
-        elif raw_bytes[:4] == 'wOFF':
+        elif raw_bytes[:4] == b'wOFF':
             content_type = 'WOFF'
-        elif raw_bytes[:4] == 'wOF2':
+        elif raw_bytes[:4] == b'wOF2':
             content_type = 'WOFF2'
         # spell-checker: enable
         return content_type
