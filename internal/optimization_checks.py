@@ -835,9 +835,9 @@ class OptimizationChecks(object):
                             check['score'] = 100
                         else:
                             # spell-checker: disable
-                            image_chunks = ["iCCP", "tIME", "gAMA", "PLTE", "acTL", "IHDR", "cHRM",
-                                            "bKGD", "tRNS", "sBIT", "sRGB", "pHYs", "hIST", "vpAg",
-                                            "oFFs", "fcTL", "fdAT", "IDAT"]
+                            image_chunks = [b"iCCP", b"tIME", b"gAMA", b"PLTE", b"acTL", b"IHDR", b"cHRM",
+                                            b"bKGD", b"tRNS", b"sBIT", b"sRGB", b"pHYs", b"hIST", b"vpAg",
+                                            b"oFFs", b"fcTL", b"fdAT", b"IDAT"]
                             # spell-checker: enable
                             body = request['response_body']
                             image_size = len(body)
