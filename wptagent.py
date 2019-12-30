@@ -276,7 +276,7 @@ class WPTAgent(object):
             ret = True
         except ImportError:
             pass
-        if not ret:
+        if not ret and sys.version_info < (3, 0):
             from internal.os_util import run_elevated
             logging.debug('Trying to install %s...', module_name)
             subprocess.call([sys.executable, '-m', 'pip', 'uninstall', '-y', module_name])
@@ -289,7 +289,10 @@ class WPTAgent(object):
             except ImportError:
                 pass
         if not ret:
-            print("Missing {0} module. Please run 'pip install {1}'".format(module, module_name))
+            if (sys.version_info > (3, 0)):
+                print("Missing {0} module. Please run 'pip3 install {1}'".format(module, module_name))
+            else:
+                print("Missing {0} module. Please run 'pip install {1}'".format(module, module_name))
         return ret
 
     def startup(self):
@@ -324,7 +327,7 @@ class WPTAgent(object):
             import wsaccel
             wsaccel.patch_ws4py()
         except Exception:
-            pass
+            logging.debug('wsaccel not installed, Chrome debug interface will be slower than it could be')
 
         try:
             subprocess.check_output(['python', '--version'])
@@ -387,7 +390,7 @@ class WPTAgent(object):
                 ret = False
 
         # Fix Lighthouse install permissions
-        if platform.system() != "Windows":
+        if platform.system() != "Windows" and sys.version_info < (3, 0):
             from internal.os_util import run_elevated
             run_elevated('chmod', '-R 777 ~/.config/configstore/')
             try:
@@ -733,7 +736,7 @@ def find_browsers():
     logging.debug('Detected Browsers:')
     for browser in browsers:
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
-    if 'Firefox' in browsers:
+    if 'Firefox' in browsers and sys.version_info < (3, 0):
         try:
             # make sure marionette is up to date
             from internal.os_util import run_elevated
