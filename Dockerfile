@@ -67,7 +67,7 @@ RUN apt-get update && \
     wsaccel \
     xvfbwrapper \
     brotli \
-    fonttools \
+    'fonttools>=3.44.0,<4.0.0' \
     marionette_driver
 
 COPY wptagent.py /wptagent/wptagent.py

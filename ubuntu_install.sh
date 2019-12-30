@@ -14,7 +14,7 @@ until sudo pip install dnspython monotonic pillow psutil requests git+git://gith
 do
     sleep 1
 done
-sudo pip install fonttools
+sudo pip install 'fonttools>=3.44.0,<4.0.0'
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
