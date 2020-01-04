@@ -3,7 +3,7 @@ until sudo apt-get update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git
+until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
 do
     sleep 1
 done
@@ -15,7 +15,7 @@ do
     sleep 1
 done
 sudo pip install 'fonttools>=3.44.0,<4.0.0'
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
     sleep 1

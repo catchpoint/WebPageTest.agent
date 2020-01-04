@@ -403,8 +403,8 @@ class WPTAgent(object):
         if self.get_node_version() < 10.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
-                logging.debug('Updating Node.js to 10.x')
-                subprocess.call('curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -',
+                logging.debug('Updating Node.js to 12.x')
+                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -',
                                 shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
             if self.get_node_version() < 10.0:
