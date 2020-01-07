@@ -36,7 +36,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
     '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeCookiesAndCredentials'
+    '--net-log-capture-mode=IncludeSensitive'
 ]
 
 HOST_RULES = [
