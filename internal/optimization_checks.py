@@ -145,6 +145,7 @@ class OptimizationChecks(object):
                          '.kinxcdn.net'],
             'LeaseWeb CDN': ['.lswcdn.net',
                              '.lswcdn.eu'],
+            'IzHost CDN': ['.hostedcdn.net',
             'Level 3': ['.footprint.net',
                         '.fpbns.net'],
             'Limelight': ['.llnwd.net',
