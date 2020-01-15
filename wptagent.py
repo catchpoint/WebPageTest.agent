@@ -623,7 +623,7 @@ def find_browsers():
                 browsers['Edge'] = dict(edge)
         # Microsoft Edge (Chromium)
         paths = [program_files, program_files_x86, local_appdata]
-        channels = ['Edge Dev']
+        channels = ['Edge', 'Edge Dev']
         for channel in channels:
             for path in paths:
                 if path is not None and channel not in browsers:
