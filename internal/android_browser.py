@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for android browsers"""
@@ -8,12 +9,19 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
     import json
+
 from .base_browser import BaseBrowser
 
 
@@ -65,7 +73,7 @@ class AndroidBrowser(BaseBrowser):
                                              self.config['package'] + '.md5')
             last_md5 = None
             if os.path.isfile(last_install_file):
-                with open(last_install_file, 'rb') as f_in:
+                with open(last_install_file, 'r') as f_in:
                     last_md5 = f_in.read()
             if last_md5 is None or last_md5 != self.config['md5']:
                 valid = False
@@ -91,7 +99,7 @@ class AndroidBrowser(BaseBrowser):
                         if md5 == self.config['md5']:
                             valid = True
                 except Exception:
-                    pass
+                    logging.exception('Error downloading browser update')
                 if os.path.isfile(tmp_file):
                     if valid:
                         # Uninstall the previous install of the same package if we are installing a custom browser.
@@ -100,7 +108,7 @@ class AndroidBrowser(BaseBrowser):
                             self.adb.adb(['uninstall', self.config['package']])
                         logging.debug('Installing browser APK')
                         self.adb.adb(['install', '-rg', tmp_file])
-                        with open(last_install_file, 'wb') as f_out:
+                        with open(last_install_file, 'w') as f_out:
                             f_out.write(md5)
                     else:
                         logging.error('Error downloading browser APK')
@@ -269,7 +277,7 @@ class AndroidBrowser(BaseBrowser):
                     if self.tcpdump_file is not None:
                         os.remove(self.tcpdump_file)
             except Exception:
-                pass
+                logging.exception('Error processing tcpdump')
 
     def step_complete(self, task):
         """All of the processing for the current test step is complete"""
@@ -281,11 +289,11 @@ class AndroidBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 
     def screenshot(self, task):

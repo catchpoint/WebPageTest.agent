@@ -1,12 +1,17 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Chrome browser on Android"""
 import logging
 import os
 import re
+import sys
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
@@ -83,7 +88,7 @@ class BlackBoxAndroid(AndroidBrowser):
         remote_command_line = '/data/local/tmp/chrome-command-line'
         root_command_line = '/data/local/chrome-command-line'
         logging.debug(command_line)
-        with open(local_command_line, 'wb') as f_out:
+        with open(local_command_line, 'w') as f_out:
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             os.remove(local_command_line)
@@ -104,7 +109,7 @@ class BlackBoxAndroid(AndroidBrowser):
     def run_task(self, task):
         """Skip anything that isn't a navigate command"""
         logging.debug("Running test")
-        end_time = monotonic.monotonic() + task['test_time_limit']
+        end_time = monotonic() + task['test_time_limit']
         task['log_data'] = True
         task['current_step'] = 1
         task['prefix'] = task['task_prefix']
@@ -112,9 +117,9 @@ class BlackBoxAndroid(AndroidBrowser):
         if self.job['video']:
             task['video_directories'].append(task['video_subdirectory'])
         task['step_name'] = 'Navigate'
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         self.on_start_recording(task)
-        while len(task['script']) and monotonic.monotonic() < end_time:
+        while len(task['script']) and monotonic() < end_time:
             command = task['script'].pop(0)
             if command['command'] == 'navigate':
                 task['page_data']['URL'] = command['target']
@@ -125,7 +130,7 @@ class BlackBoxAndroid(AndroidBrowser):
                 local_intent = os.path.join(task['dir'], 'wpt_intent.sh')
                 remote_intent = '/data/local/tmp/wpt_intent.sh'
                 self.adb.shell(['rm', remote_intent])
-                with open(local_intent, 'wb') as f_out:
+                with open(local_intent, 'w') as f_out:
                     f_out.write(cmd)
                 if self.adb.adb(['push', local_intent, remote_intent]):
                     os.remove(local_intent)
@@ -177,7 +182,7 @@ class BlackBoxAndroid(AndroidBrowser):
     def ensure_xml_setting(self, settings, key, value):
         """Make sure the provided setting exists in the setting string"""
         if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
-            modified = True
+            self.modified = True
             settings = re.sub(r'name=\"{0}\" value=\"[^\"]\"'.format(key),
                               'name="{0}" value="{1}"'.format(key, value), settings)
             if settings.find('name="{0}" value="{1}"'.format(key, value)) == -1:
@@ -201,7 +206,7 @@ class BlackBoxAndroid(AndroidBrowser):
         if settings != original_settings:
             local_settings = os.path.join(self.task['dir'], 'user_settings.xml')
             remote_temp = '/data/local/tmp/user_settings.xml'
-            with open(local_settings, 'wb') as f_out:
+            with open(local_settings, 'w') as f_out:
                 f_out.write(settings)
             if self.adb.adb(['push', local_settings, remote_temp]):
                 self.adb.su('chmod 666 /data/local/tmp/user_settings.xml')
@@ -211,10 +216,10 @@ class BlackBoxAndroid(AndroidBrowser):
     def wait_for_network_idle(self):
         """Wait for 5 one-second intervals that receive less than 1KB"""
         logging.debug('Waiting for network idle')
-        end_time = monotonic.monotonic() + 60
+        end_time = monotonic() + 60
         self.adb.get_bytes_rx()
         idle_count = 0
-        while idle_count < 5 and monotonic.monotonic() < end_time:
+        while idle_count < 5 and monotonic() < end_time:
             time.sleep(1)
             bytes_rx = self.adb.get_bytes_rx()
             logging.debug("Bytes received: %d", bytes_rx)
@@ -227,12 +232,12 @@ class BlackBoxAndroid(AndroidBrowser):
         """Once the video starts growing, wait for it to stop"""
         logging.debug('Waiting for the page to load')
         # Wait for the video to start (up to 30 seconds)
-        end_startup = monotonic.monotonic() + 30
-        end_time = monotonic.monotonic() + self.task['time_limit']
+        end_startup = monotonic() + 30
+        end_time = monotonic() + self.task['time_limit']
         last_size = self.adb.get_video_size()
         video_started = False
         bytes_rx = self.adb.get_bytes_rx()
-        while not video_started and monotonic.monotonic() < end_startup:
+        while not video_started and monotonic() < end_startup:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()
@@ -243,7 +248,7 @@ class BlackBoxAndroid(AndroidBrowser):
                 video_started = True
         # Wait for the activity to stop
         video_idle_count = 0
-        while video_idle_count <= 3 and monotonic.monotonic() < end_time:
+        while video_idle_count <= 3 and monotonic() < end_time:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()

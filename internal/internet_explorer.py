@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Microsoft Internet Explorer testing (based on the Edge support)"""
@@ -51,7 +52,7 @@ class InternetExplorer(Edge):
                     values.append(value[0])
                     index += 1
             except Exception:
-                pass
+                logging.exception('Error processing registry')
             for value in values:
                 _winreg.DeleteValue(key, value)
             if 'AppendUA' in task and len(task['AppendUA']):

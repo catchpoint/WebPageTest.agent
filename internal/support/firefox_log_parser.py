@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +20,13 @@ import gzip
 import logging
 import os
 import re
-import urlparse
-import monotonic
+import sys
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
 try:
     import ujson as json
 except BaseException:
@@ -33,7 +39,7 @@ class FirefoxLogParser(object):
         self.start_day = None
         self.unique_id = 0
         self.int_map = {}
-        for val in xrange(0, 100):
+        for val in range(0, 100):
             self.int_map['{0:02d}'.format(val)] = float(val)
         self.dns = {}
         self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}, 'streams': {}}
@@ -59,7 +65,7 @@ class FirefoxLogParser(object):
             try:
                 self.process_log_file(path)
             except Exception:
-                pass
+                logging.exception('Error processing log file')
         return self.finish_processing()
 
     def finish_processing(self):
@@ -90,7 +96,7 @@ class FirefoxLogParser(object):
         for domain in self.dns:
             if 'claimed' not in self.dns[domain]:
                 for request in requests:
-                    host = urlparse.urlsplit(request['url']).hostname
+                    host = urlsplit(request['url']).hostname
                     if host == domain:
                         self.dns[domain]['claimed'] = True
                         if 'start' in self.dns[domain]:
@@ -118,11 +124,11 @@ class FirefoxLogParser(object):
     def process_log_file(self, path):
         """Process a single log file"""
         logging.debug("Processing %s", path)
-        start = monotonic.monotonic()
+        start = monotonic()
         _, ext = os.path.splitext(path)
         line_count = 0
         if ext.lower() == '.gz':
-            f_in = gzip.open(path, 'rb')
+            f_in = gzip.open(path, GZIP_READ_TEXT)
         else:
             f_in = open(path, 'r')
         for line in f_in:
@@ -130,7 +136,7 @@ class FirefoxLogParser(object):
             line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
-        elapsed = monotonic.monotonic() - start
+        elapsed = monotonic() - start
         logging.debug("%0.3f s to process %s (%d lines)", elapsed, path, line_count)
 
     def process_log_line(self, line):
@@ -176,7 +182,7 @@ class FirefoxLogParser(object):
                             elif msg['category'] == 'nsHostResolver':
                                 self.dns_entry(msg)
             except Exception:
-                pass
+                logging.exception('Error processing log line')
 
     def main_thread_http_entry(self, msg):
         """Process a single HTTP log line from the main thread"""

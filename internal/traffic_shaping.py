@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Cross-platform support for traffic-shaping"""
@@ -7,6 +8,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import time
 
 class TrafficShaper(object):
@@ -160,12 +162,12 @@ class WinShaper(object):
     def configure(self, in_bps, out_bps, rtt, plr):
         """Enable traffic-shaping"""
         return self.shaper(['set',
-                            'inbps={0:d}'.format(in_bps),
-                            'outbps={0:d}'.format(out_bps),
-                            'rtt={0:d}'.format(rtt),
-                            'plr={0:.2f}'.format(plr),
-                            'inbuff={0:d}'.format(self.in_buff),
-                            'outbuff={0:d}'.format(self.out_buff)])
+                            'inbps={0:d}'.format(int(in_bps)),
+                            'outbps={0:d}'.format(int(out_bps)),
+                            'rtt={0:d}'.format(int(rtt)),
+                            'plr={0:.2f}'.format(float(plr)),
+                            'inbuff={0:d}'.format(int(self.in_buff)),
+                            'outbuff={0:d}'.format(int(self.out_buff))])
 
 #
 # Dummynet
@@ -229,18 +231,18 @@ class Dummynet(object):
             in_latency += 1
         in_command = ['pipe', self.in_pipe, 'config']
         if in_kbps > 0:
-            in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(int(in_kbps))])
         if in_latency >= 0:
-            in_command.extend(['delay', '{0:d}ms'.format(in_latency)])
+            in_command.extend(['delay', '{0:d}ms'.format(int(in_latency))])
 
         # outbound connection
         out_kbps = int(out_bps / 1000)
         out_latency = rtt / 2
         out_command = ['pipe', self.out_pipe, 'config']
         if out_kbps > 0:
-            out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(int(out_kbps))])
         if out_latency >= 0:
-            out_command.extend(['delay', '{0:d}ms'.format(out_latency)])
+            out_command.extend(['delay', '{0:d}ms'.format(int(out_latency))])
 
         # Packet loss get applied to the queues
         plr = plr / 100.0
@@ -248,8 +250,8 @@ class Dummynet(object):
         out_queue_command = ['queue', self.out_pipe, 'config', 'pipe', self.out_pipe,
                              'queue', '100']
         if plr > 0.0 and plr <= 1.0:
-            in_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
-            out_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
+            in_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])
+            out_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])
         in_queue_command.extend(['mask', 'dst-port', '0xffff'])
         out_queue_command.extend(['mask', 'dst-port', '0xffff'])
 
@@ -316,24 +318,24 @@ class MacDummynet(Dummynet):
             in_latency += 1
         in_command = ['pipe', self.in_pipe, 'config']
         if in_kbps > 0:
-            in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(int(in_kbps))])
         if in_latency >= 0:
-            in_command.extend(['delay', '{0:d}ms'.format(in_latency)])
+            in_command.extend(['delay', '{0:d}ms'.format(int(in_latency))])
 
         # outbound connection
         out_kbps = int(out_bps / 1000)
         out_latency = rtt / 2
         out_command = ['pipe', self.out_pipe, 'config']
         if out_kbps > 0:
-            out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(int(out_kbps))])
         if out_latency >= 0:
-            out_command.extend(['delay', '{0:d}ms'.format(out_latency)])
+            out_command.extend(['delay', '{0:d}ms'.format(int(out_latency))])
 
         # Packet loss get applied to the queues
         plr = plr / 100.0
         if plr > 0.0 and plr <= 1.0:
-            in_command.extend(['plr', '{0:.4f}'.format(plr)])
-            out_command.extend(['plr', '{0:.4f}'.format(plr)])
+            in_command.extend(['plr', '{0:.4f}'.format(float(plr))])
+            out_command.extend(['plr', '{0:.4f}'.format(float(plr))])
 
         return self.dnctl(in_command) and\
                self.dnctl(out_command)
@@ -391,7 +393,10 @@ class NetEm(object):
         # Figure out the default interface
         try:
             if self.interface is None:
-                out = subprocess.check_output(['route'])
+                if (sys.version_info > (3, 0)):
+                    out = subprocess.check_output(['route'], encoding='UTF-8')
+                else:
+                    out = subprocess.check_output(['route'])
                 routes = out.splitlines()
                 match = re.compile(r'^([^\s]+)\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+'\
                                 r'[^\s]+\s+[^\s]+\s+[^\s]+\s+([^\s]+)')
@@ -425,7 +430,7 @@ class NetEm(object):
             else:
                 logging.critical("Unable to identify default interface using 'route'")
         except Exception as err:
-            logging.debug("Error configuring netem: %s", err.__str__())
+            logging.exception("Error configuring netem: %s", err.__str__())
         return ret
 
     def remove(self):
@@ -461,12 +466,12 @@ class NetEm(object):
         """Configure traffic-shaping for a single interface"""
         ret = False
         args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root',
-                'netem', 'delay', '{0:d}ms'.format(latency)]
+                'netem', 'delay', '{0:d}ms'.format(int(latency))]
         if bps > 0:
             kbps = int(bps / 1000)
-            args.extend(['rate', '{0:d}kbit'.format(kbps)])
+            args.extend(['rate', '{0:d}kbit'.format(int(kbps))])
         if plr > 0:
-            args.extend(['loss', '{0:.2f}%'.format(plr)])
+            args.extend(['loss', '{0:.2f}%'.format(float(plr))])
         logging.debug(' '.join(args))
         ret = subprocess.call(args) == 0
         return ret

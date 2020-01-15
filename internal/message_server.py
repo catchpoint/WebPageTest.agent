@@ -1,8 +1,14 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
+try:
+    import asyncio
+except Exception:
+    pass
 from multiprocessing import JoinableQueue
 import logging
+import sys
 import threading
 import time
 import tornado.ioloop
@@ -97,7 +103,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
                                 message['body'] = None
                             MESSAGE_SERVER.handle_message(message)
         except Exception:
-            pass
+            logging.exception('Error processing POST message')
         self.set_status(200)
 
 
@@ -152,11 +158,14 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
-        import monotonic
-        end_time = monotonic.monotonic() + 30
+        if (sys.version_info > (3, 0)):
+            from time import monotonic
+        else:
+            from monotonic import monotonic
+        end_time = monotonic() + 30
         server_ok = False
         proxies = {"http": None, "https": None}
-        while not server_ok and monotonic.monotonic() < end_time:
+        while not server_ok and monotonic() < end_time:
             try:
                 response = requests.get('http://127.0.0.1:8888/ping', timeout=10, proxies=proxies)
                 if response.text == 'pong':
@@ -170,6 +179,10 @@ class MessageServer(object):
     def run(self):
         """Main server loop"""
         logging.debug('Starting extension server on port 8888')
+        try:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+        except Exception:
+            pass
         application = tornado.web.Application([(r"/.*", TornadoRequestHandler)])
         application.listen(8888, '127.0.0.1')
         self.__is_started.set()

@@ -1,17 +1,26 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for browsers that speak the dev tools protocol"""
 import glob
 import gzip
+import io
 import logging
 import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    unicode = str
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -132,7 +141,7 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': 0})
                 except Exception:
-                    pass
+                    logging.exception('Error overriding location')
 
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
@@ -156,7 +165,7 @@ class DevtoolsBrowser(object):
         """Start recording"""
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
@@ -195,11 +204,11 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -215,7 +224,7 @@ class DevtoolsBrowser(object):
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
-                        self.step_complete(task)
+                        self.step_complete(task) #pylint: disable=no-member
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
@@ -310,7 +319,7 @@ class DevtoolsBrowser(object):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with io.open(script_file_path, 'r', encoding='utf-8') as script_file:
                 script = script_file.read()
         if script is not None:
             ret = self.devtools.execute_js(script)
@@ -321,7 +330,7 @@ class DevtoolsBrowser(object):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
@@ -334,21 +343,21 @@ class DevtoolsBrowser(object):
                          '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.devtools.execute_js(script)
             if hero_elements is not None:
                 logging.debug('Hero Elements: %s', json.dumps(hero_elements))
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
 
@@ -360,7 +369,7 @@ class DevtoolsBrowser(object):
             self.task['page_data']['URL'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
-            script = self.prepare_script_for_record(script)
+            script = self.prepare_script_for_record(script) #pylint: disable=no-member
             self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'logdata':
@@ -379,7 +388,7 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'exec':
             script = command['target']
             if command['record']:
-                script = self.prepare_script_for_record(script)
+                script = self.prepare_script_for_record(script) #pylint: disable=no-member
                 self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'sleep':
@@ -424,7 +433,7 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': accuracy})
             except Exception:
-                pass
+                logging.exception('Error setting location')
         elif command['command'] == 'addheader':
             self.devtools.set_header(command['target'])
         elif command['command'] == 'setheader':
@@ -459,10 +468,11 @@ class DevtoolsBrowser(object):
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         for line in iter(proc.stderr.readline, b''):
             try:
+                line = unicode(line)
                 logging.debug(line.rstrip())
                 self.task['lighthouse_log'] += line
             except Exception:
-                pass
+                logging.exception('Error recording lighthouse log')
         proc.communicate()
 
     def run_lighthouse_test(self, task):
@@ -503,7 +513,7 @@ class DevtoolsBrowser(object):
                     command.extend(['--blocked-url-patterns', pattern])
             if 'headers' in task:
                 headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
-                with open(headers_file, 'wb') as f_out:
+                with io.open(headers_file, 'w', encoding='utf-8') as f_out:
                     json.dump(task['headers'], f_out)
                 command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
             cmd = ' '.join(command)
@@ -514,7 +524,7 @@ class DevtoolsBrowser(object):
                 lh_thread.start()
                 lh_thread.join(600)
             except Exception:
-                pass
+                logging.exception('Error running lighthouse audits')
             from .os_util import kill_all
             kill_all('node', True)
             self.job['shaper'].reset()
@@ -524,19 +534,19 @@ class DevtoolsBrowser(object):
                     lh_trace_src = os.path.join(task['dir'], 'lighthouse-0.trace.json')
                     if os.path.isfile(lh_trace_src):
                         # read the JSON in and re-write it line by line to match the other traces
-                        with open(lh_trace_src, 'rb') as f_in:
+                        with io.open(lh_trace_src, 'r', encoding='utf-8') as f_in:
                             trace = json.load(f_in)
                             if trace is not None and 'traceEvents' in trace:
                                 lighthouse_trace = os.path.join(task['dir'],
                                                                 'lighthouse_trace.json.gz')
-                            with gzip.open(lighthouse_trace, 'wb', 7) as f_out:
+                            with gzip.open(lighthouse_trace, GZIP_TEXT, 7) as f_out:
                                 f_out.write('{"traceEvents":[{}')
                                 for trace_event in trace['traceEvents']:
                                     f_out.write(",\n")
                                     f_out.write(json.dumps(trace_event))
                                 f_out.write("\n]}")
                 except Exception:
-                    pass
+                    logging.exception('Error processing lighthouse trace')
             # Delete all the left-over lighthouse assets
             files = glob.glob(os.path.join(task['dir'], 'lighthouse-*'))
             for file_path in files:
@@ -546,7 +556,7 @@ class DevtoolsBrowser(object):
                     pass
             if os.path.isfile(json_file):
                 lh_report = None
-                with open(json_file, 'rb') as f_in:
+                with io.open(json_file, 'r', encoding='utf-8') as f_in:
                     lh_report = json.load(f_in)
 
                 with open(json_file, 'rb') as f_in:
@@ -607,7 +617,7 @@ class DevtoolsBrowser(object):
                                 elif 'numericValue' in audit:
                                     audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
-                    with gzip.open(audits_gzip, 'wb', 7) as f_out:
+                    with gzip.open(audits_gzip, GZIP_TEXT, 7) as f_out:
                         json.dump(audits, f_out)
             # Compress the HTML lighthouse report
             if os.path.isfile(html_file):
@@ -617,7 +627,7 @@ class DevtoolsBrowser(object):
                             shutil.copyfileobj(f_in, f_out)
                     os.remove(html_file)
                 except Exception:
-                    pass
+                    logging.exception('Error compressing lighthouse report')
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
@@ -693,5 +703,5 @@ class DevtoolsBrowser(object):
                         script = script.replace('%JSON%', json_data)
                         script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
         except Exception:
-            pass
+            logging.exception('Error building wappalyzer script')
         return script

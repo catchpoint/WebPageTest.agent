@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for controlling browsers"""
@@ -21,7 +22,7 @@ class Browsers(object):
         self.ios = ios
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
-        with open(android_file, 'rb') as f_in:
+        with open(android_file, 'r') as f_in:
             self.android_browsers = {k.lower(): v for k, v in json.load(f_in).items()}
 
     def is_ready(self):

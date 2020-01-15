@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """ADB command-line interface"""
@@ -7,9 +8,13 @@ import os
 import platform
 import re
 import subprocess
+import sys
 from threading import Timer
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 
 # cSpell:ignore vpndialogs, sysctl, iptables, ifconfig, dstaddr, clientidbase, nsecs
 
@@ -33,7 +38,7 @@ class Adb(object):
         self.simplert_path = None
         self.simplert = None
         self.no_network_count = 0
-        self.last_network_ok = monotonic.monotonic()
+        self.last_network_ok = monotonic()
         self.needs_exit = False
         self.rebooted = False
         self.vpn_forwarder = None
@@ -135,7 +140,10 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                stdout = subprocess.check_output(['ps', 'ax'])
+                if (sys.version_info > (3, 0)):
+                    stdout = subprocess.check_output(['ps', 'ax'], encoding='UTF-8')
+                else:
+                    stdout = subprocess.check_output(['ps', 'ax'])
                 if stdout.find('simple-rt ') > -1:
                     running = True
                     logging.debug('simple-rt is already running')
@@ -218,7 +226,7 @@ class Adb(object):
                                           '/data/local/tmp/wpt_video.mp4'])
             self.screenrecord = subprocess.Popen(cmd)
         except Exception:
-            pass
+            logging.exception('Error starting screenrecord')
 
     def stop_screenrecord(self, local_file):
         """Stop a screen record and download the video to local_file"""
@@ -248,7 +256,7 @@ class Adb(object):
             logging.debug(' '.join(cmd))
             self.tcpdump = subprocess.Popen(cmd)
         except Exception:
-            pass
+            logging.exception('Error starting tcpdump')
 
     def stop_tcpdump(self, local_file):
         """Stop a tcpdump capture and download to local_file"""
@@ -305,7 +313,7 @@ class Adb(object):
 
     def cleanup_device(self):
         """Do some device-level cleanup"""
-        start = monotonic.monotonic()
+        start = monotonic()
         # Simulate pressing the home button to dismiss any UI
         self.shell(['input', 'keyevent', '3'])
         # Clear notifications
@@ -343,7 +351,7 @@ class Adb(object):
         if out.find('com.motorola.ccc.ota/com.motorola.ccc.ota.ui.DownloadActivity') >= 0:
             self.shell(['am', 'force-stop', 'com.motorola.ccc.ota'])
         # reboot the phone and exit the agent if it is running EXTREMELY slowly
-        elapsed = monotonic.monotonic() - start
+        elapsed = monotonic() - start
         if elapsed > 300:
             logging.debug("Cleanup took %0.3f seconds. Rebooting the phone and restarting agent",
                           elapsed)
@@ -506,8 +514,8 @@ class Adb(object):
             self.su('setprop sys.usb.config adb')
             self.adb(['wait-for-device'])
             # wait up to 30 seconds for the interface to come up
-            end_time = monotonic.monotonic() + 30
-            while not is_ready and monotonic.monotonic() < end_time:
+            end_time = monotonic() + 30
+            while not is_ready and monotonic() < end_time:
                 time.sleep(1)
                 self.dismiss_vpn_dialog()
                 is_ready = self.is_tun_interface_available()
@@ -582,7 +590,6 @@ class Adb(object):
         if self.is_tun_interface_available():
             is_ready = True
         elif self.gnirehtet_exe is not None:
-            interface, dns_server = self.options.gnirehtet.split(',', 1)
             if self.gnirehtet is not None:
                 try:
                     subprocess.call([self.gnirehtet_exe, 'stop'])
@@ -608,8 +615,8 @@ class Adb(object):
             self.dismiss_vpn_dialog()
             # Simulate pressing the home button to dismiss any UI
             self.shell(['input', 'keyevent', '3'])
-            end = monotonic.monotonic() + 30
-            while not is_ready and monotonic.monotonic() < end:
+            end = monotonic() + 30
+            while not is_ready and monotonic() < end:
                 if self.is_tun_interface_available():
                     is_ready = True
                 else:
@@ -672,7 +679,7 @@ class Adb(object):
             net_ok = False
             if self.ping(self.ping_address) is not None:
                 self.no_network_count = 0
-                self.last_network_ok = monotonic.monotonic()
+                self.last_network_ok = monotonic()
                 self.rebooted = False
                 net_ok = True
             else:
@@ -714,7 +721,7 @@ class Adb(object):
                 is_ready = False
         if not is_ready:
             needs_kick = False
-            elapsed = monotonic.monotonic() - self.last_network_ok
+            elapsed = monotonic() - self.last_network_ok
             if self.no_network_count > 20:
                 needs_kick = True
             elif self.no_network_count > 1 and elapsed > 1800:

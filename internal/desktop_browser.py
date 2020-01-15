@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Base class support for desktop browsers"""
@@ -11,9 +12,15 @@ import platform
 import shutil
 import signal
 import subprocess
+import sys
 import threading
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -187,7 +194,7 @@ class DesktopBrowser(BaseBrowser):
                                               window_title, window_class)
                                 win32api.TerminateProcess(handle, 0)
                             win32api.CloseHandle(handle)
-        except Exception as err:
+        except Exception:
             pass
 
     def close_top_dialog(self, hwnd, _):
@@ -270,7 +277,7 @@ class DesktopBrowser(BaseBrowser):
                         for interface in remove:
                             del self.interfaces[interface]
         except Exception:
-            pass
+            logging.exception('Error finding default interface')
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
@@ -331,15 +338,15 @@ class DesktopBrowser(BaseBrowser):
         if cpu_count > 0:
             target_pct = 50. / float(cpu_count)
             idle_start = None
-            end_time = monotonic.monotonic() + self.START_BROWSER_TIME_LIMIT
+            end_time = monotonic() + self.START_BROWSER_TIME_LIMIT
             idle = False
-            while not idle and monotonic.monotonic() < end_time:
-                check_start = monotonic.monotonic()
+            while not idle and monotonic() < end_time:
+                check_start = monotonic()
                 pct = psutil.cpu_percent(interval=0.1)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic.monotonic() - idle_start >= 0.4:
+                    if monotonic() - idle_start >= 0.4:
                         idle = True
                 else:
                     idle_start = None
@@ -347,8 +354,8 @@ class DesktopBrowser(BaseBrowser):
     def clear_profile(self, task):
         """Delete the browser profile directory"""
         if os.path.isdir(task['profile']):
-            end_time = monotonic.monotonic() + 30
-            while monotonic.monotonic() < end_time:
+            end_time = monotonic() + 30
+            while monotonic() < end_time:
                 try:
                     shutil.rmtree(task['profile'])
                 except Exception:
@@ -378,7 +385,7 @@ class DesktopBrowser(BaseBrowser):
         if self.device_pixel_ratio is None:
             self.device_pixel_ratio = 1.0
             try:
-                ratio = self.execute_js('window.devicePixelRatio')
+                ratio = self.execute_js('window.devicePixelRatio') #pylint: disable=assignment-from-none
                 if ratio is not None:
                     self.device_pixel_ratio = max(1.0, float(ratio))
             except Exception:
@@ -413,9 +420,9 @@ class DesktopBrowser(BaseBrowser):
                     logging.debug(' '.join(args))
                     self.tcpdump = subprocess.Popen(args)
                 # Wait for the capture file to start growing
-                end_time = monotonic.monotonic() + 5
+                end_time = monotonic() + 5
                 started = False
-                while not started and monotonic.monotonic() < end_time:
+                while not started and monotonic() < end_time:
                     if os.path.isfile(self.pcap_file):
                         started = True
                     time.sleep(0.1)
@@ -427,12 +434,12 @@ class DesktopBrowser(BaseBrowser):
                     time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
-                    from win32api import GetSystemMetrics
+                    from win32api import GetSystemMetrics #pylint: disable=import-error
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 elif platform.system() == 'Darwin':
                     try:
-                        from AppKit import NSScreen
+                        from AppKit import NSScreen #pylint: disable=import-error
                         self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                         self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                     except Exception:
@@ -469,10 +476,10 @@ class DesktopBrowser(BaseBrowser):
                     else:
                         self.ffmpeg = subprocess.Popen(args)
                     # Wait up to 5 seconds for something to be captured
-                    end_time = monotonic.monotonic() + 5
+                    end_time = monotonic() + 5
                     started = False
                     initial_size = None
-                    while not started and monotonic.monotonic() < end_time:
+                    while not started and monotonic() < end_time:
                         if os.path.isfile(task['video_file']):
                             video_size = os.path.getsize(task['video_file'])
                             if initial_size == None:
@@ -484,7 +491,7 @@ class DesktopBrowser(BaseBrowser):
                             time.sleep(0.1)
                     self.video_capture_running = True
                 except Exception:
-                    pass
+                    logging.exception('Error starting video capture')
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = multiprocessing.JoinableQueue()
@@ -499,7 +506,7 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Stopping tcpdump')
             from .os_util import kill_all
             if platform.system() == 'Windows':
-                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT)
+                os.kill(self.tcpdump.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
                 kill_all('WinDump', False)
             else:
                 subprocess.call(['sudo', 'killall', 'tcpdump'])
@@ -508,7 +515,7 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Stopping video capture')
             self.video_capture_running = False
             if platform.system() == 'Windows':
-                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
             else:
                 self.ffmpeg.terminate()
 
@@ -532,7 +539,7 @@ class DesktopBrowser(BaseBrowser):
         # record the CPU/Bandwidth/memory info
         if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
             file_path = os.path.join(task['dir'], task['prefix']) + '_progress.csv.gz'
-            gzfile = gzip.open(file_path, 'wb', 7)
+            gzfile = gzip.open(file_path, GZIP_TEXT, 7)
             if gzfile:
                 gzfile.write("Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n")
                 while not self.usage_queue.empty():
@@ -645,11 +652,11 @@ class DesktopBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 
     def process_pcap(self):
@@ -663,7 +670,10 @@ class DesktopBrowser(BaseBrowser):
             cmd = ['python', pcap_parser, '--json', '-i', pcap_file, '-d', slices_file]
             logging.debug(cmd)
             try:
-                stdout = subprocess.check_output(cmd)
+                if (sys.version_info > (3, 0)):
+                    stdout = subprocess.check_output(cmd, encoding='UTF-8')
+                else:
+                    stdout = subprocess.check_output(cmd)
                 if stdout is not None:
                     result = json.loads(stdout)
                     if result:
@@ -674,7 +684,7 @@ class DesktopBrowser(BaseBrowser):
                         if 'in_dup' in result:
                             self.task['page_data']['pcapBytesInDup'] = result['in_dup']
             except Exception:
-                pass
+                logging.exception('Error processing tcpdump')
 
     def get_net_bytes(self):
         """Get the bytes received, ignoring the loopback interface"""
@@ -692,14 +702,14 @@ class DesktopBrowser(BaseBrowser):
     def background_thread(self):
         """Background thread for monitoring CPU and bandwidth usage"""
         import psutil
-        last_time = start_time = monotonic.monotonic()
+        last_time = start_time = monotonic()
         last_bytes = self.get_net_bytes()
         snapshot = {'time': 0, 'cpu': 0.0, 'bw': 0}
         self.usage_queue.put(snapshot)
         while self.recording:
             snapshot = {'bw': 0}
             snapshot['cpu'] = psutil.cpu_percent(interval=0.1)
-            now = monotonic.monotonic()
+            now = monotonic()
             snapshot['time'] = int((now - start_time) * 1000)
             # calculate the bandwidth over the last interval in Kbps
             bytes_in = self.get_net_bytes()
@@ -718,7 +728,7 @@ class DesktopBrowser(BaseBrowser):
                     logging.debug('Stopping video capture - File is too big: %d', video_size)
                     self.video_capture_running = False
                     if platform.system() == 'Windows':
-                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT)
+                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
                     else:
                         self.ffmpeg.terminate()
 
@@ -745,7 +755,7 @@ class DesktopBrowser(BaseBrowser):
                 subprocess.check_call(cmd)
                 command_line = 'cgexec -g cpu:wptagent ' + command_line
             except Exception as err:
-                logging.critical("Exception enabling throttling: %s", err.__str__())
+                logging.exception("Exception enabling throttling: %s", err.__str__())
             self.throttling_cpu = True
         return command_line
 
@@ -757,7 +767,7 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error disabling throttling')
 
     def start_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
@@ -772,7 +782,7 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error starting throttling')
 
     def stop_cpu_throttling(self):
         """Start the CPU throttling if necessary"""
@@ -782,4 +792,4 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug(' '.join(cmd))
                 subprocess.check_call(cmd)
             except Exception:
-                pass
+                logging.exception('Error stopping throttling')

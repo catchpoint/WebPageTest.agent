@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Logic for controlling a desktop Chrome browser"""
@@ -182,7 +183,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             os.makedirs(dest_dir)
             shutil.copy(src, os.path.join(dest_dir, 'Preferences'))
         except Exception:
-            pass
+            logging.exception('Error copying prefs file')
 
     def install_policy(self):
         """Install the required policy list (Linux only right now)"""

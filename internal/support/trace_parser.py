@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +20,17 @@ import logging
 import math
 import os
 import re
+import sys
 import time
-import urlparse
+if (sys.version_info > (3, 0)):
+    from urllib.parse import urlparse # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    from urlparse import urlparse # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -65,13 +75,13 @@ class Trace():
         try:
             _, ext = os.path.splitext(out_file)
             if ext.lower() == '.gz':
-                with gzip.open(out_file, 'wb') as f:
+                with gzip.open(out_file, GZIP_TEXT) as f:
                     json.dump(json_data, f)
             else:
                 with open(out_file, 'w') as f:
                     json.dump(json_data, f)
         except BaseException:
-            logging.critical("Error writing to " + out_file)
+            logging.exception("Error writing to " + out_file)
 
     def WriteUserTiming(self, out_file):
         out = self.post_process_netlog_events()
@@ -117,7 +127,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
-                f = gzip.open(trace, 'rb')
+                f = gzip.open(trace, GZIP_READ_TEXT)
             else:
                 f = open(trace, 'r')
             for line in f:
@@ -130,9 +140,9 @@ class Trace():
                         line_mode = True
                         self.FilterTraceEvent(trace_event)
                 except BaseException:
-                    pass
+                    logging.exception('Error processing trace line')
         except BaseException:
-            logging.critical("Error processing trace " + trace)
+            logging.exception("Error processing trace " + trace)
         if f is not None:
             f.close()
         self.ProcessTraceEvents()
@@ -146,7 +156,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(timeline)
             if ext.lower() == '.gz':
-                f = gzip.open(timeline, 'rb')
+                f = gzip.open(timeline, GZIP_READ_TEXT)
             else:
                 f = open(timeline, 'r')
             events = json.load(f)
@@ -173,7 +183,7 @@ class Trace():
                                     self.timeline_events.append(e)
                 self.ProcessTimelineEvents()
         except BaseException:
-            logging.critical("Error processing timeline " + timeline)
+            logging.exception("Error processing timeline " + timeline)
         if f is not None:
             f.close()
 
@@ -296,7 +306,7 @@ class Trace():
                     if not consumed:
                         out.append(event)
                 except Exception:
-                    pass
+                    logging.exception('Error processing user timing event')
             if lcp_event is not None and 'LargestContentfulPaint' not in candidates:
                 lcp_event['name'] = 'LargestContentfulPaint'
                 out.append(lcp_event)
@@ -511,7 +521,7 @@ class Trace():
                             main_thread = thread
                             main_thread_cpu = thread_cpu
                 except Exception:
-                    pass
+                    logging.exception('Error processing thread')
             if main_thread is not None:
                 self.cpu['main_thread'] = main_thread
 
@@ -573,7 +583,7 @@ class Trace():
             slice_usecs = self.cpu['slice_usecs']
             first_slice = int(float(start) / float(slice_usecs))
             last_slice = int(float(end) / float(slice_usecs))
-            for slice_number in xrange(first_slice, last_slice + 1):
+            for slice_number in range(first_slice, last_slice + 1):
                 slice_start = slice_number * slice_usecs
                 slice_end = slice_start + slice_usecs
                 used_start = max(slice_start, start)
@@ -618,7 +628,7 @@ class Trace():
                     self.cpu['slices'][thread]['total'][slice_number] = min(
                         1.0, max(0.0, 1.0 - available))
         except BaseException:
-            pass
+            logging.exception('Error adjusting timeline slice')
 
     ##########################################################################
     #   Blink Features
@@ -705,7 +715,7 @@ class Trace():
                 elif event_type == 'URL_REQUEST':
                     self.ProcessNetlogUrlRequestEvent(trace_event)
             except Exception:
-                pass
+                logging.exception('Error processing netlog event')
 
     def post_process_netlog_events(self):
         """Post-process the raw netlog events into request data"""
@@ -720,7 +730,7 @@ class Trace():
                         not request['url'].startswith('http://192.168.10.'):
                     # Match orphaned request streams with their h2 sessions
                     if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
-                        request_host = urlparse.urlparse(request['url']).hostname
+                        request_host = urlparse(request['url']).hostname
                         for h2_session_id in self.netlog['h2_session']:
                             h2_session = self.netlog['h2_session'][h2_session_id]
                             if 'host' in h2_session:
@@ -840,7 +850,7 @@ class Trace():
                     # Go through the requests and assign the DNS lookups as needed
                     for request in requests:
                         if 'connect_start' in request:
-                            hostname = urlparse.urlparse(request['url']).hostname
+                            hostname = urlparse(request['url']).hostname
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
@@ -1308,8 +1318,7 @@ class Trace():
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["count"] += int(trace_event["args"]["runtime-call-stats"][stat][0])
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["dur"] += float(trace_event["args"]["runtime-call-stats"][stat][1]) / 1000.0
         except BaseException:
-            pass
-        pass
+            logging.exception('Error processing V8 event')
 
 
 ##########################################################################
@@ -1334,7 +1343,7 @@ def main():
                         help="Output list of interactive times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
-    options, unknown = parser.parse_known_args()
+    options, _ = parser.parse_known_args()
 
     # Set up logging
     log_level = logging.CRITICAL

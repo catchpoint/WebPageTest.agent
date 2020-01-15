@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
@@ -9,10 +10,18 @@ import multiprocessing
 import os
 import re
 import subprocess
+import sys
 import time
 import zipfile
-from urlparse import urlsplit
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -36,7 +45,7 @@ class DevTools(object):
         self.main_frame = None
         self.response_started = False
         self.is_navigating = False
-        self.last_activity = monotonic.monotonic()
+        self.last_activity = monotonic()
         self.dev_tools_file = None
         self.trace_file = None
         self.trace_enabled = False
@@ -105,15 +114,15 @@ class DevTools(object):
         import requests
         proxies = {"http": None, "https": None}
         ret = False
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time:
             try:
                 response = requests.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
                     tabs = response.json()
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if len(tabs):
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
                                     tabs[index]['type'] == 'page' and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
@@ -121,7 +130,7 @@ class DevTools(object):
                                 ret = True
                                 logging.debug('Dev tools interface is available')
             except Exception as err:
-                logging.debug("Connect to dev tools Error: %s", err.__str__())
+                logging.exception("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
         return ret
 
@@ -131,8 +140,8 @@ class DevTools(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         ret = False
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time:
             try:
                 response = session.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
@@ -140,7 +149,7 @@ class DevTools(object):
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if len(tabs):
                         websocket_url = None
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
                                     tabs[index]['type'] == 'page' and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
@@ -154,15 +163,14 @@ class DevTools(object):
                                         session.get(self.url + '/close/' + tabs[index]['id'],
                                                     proxies=proxies)
                                     except Exception:
-                                        pass
+                                        logging.exception('Error closing tabs')
                         if websocket_url is not None:
                             try:
                                 self.websocket = DevToolsClient(websocket_url)
                                 self.websocket.connect()
                                 ret = True
                             except Exception as err:
-                                logging.debug("Connect to dev tools websocket Error: %s",
-                                              err.__str__())
+                                logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                             if not ret:
                                 # try connecting to 127.0.0.1 instead of localhost
                                 try:
@@ -171,8 +179,7 @@ class DevTools(object):
                                     self.websocket.connect()
                                     ret = True
                                 except Exception as err:
-                                    logging.debug("Connect to dev tools websocket Error: %s",
-                                                  err.__str__())
+                                    logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
@@ -201,7 +208,7 @@ class DevTools(object):
             try:
                 self.websocket.close()
             except Exception:
-                pass
+                logging.exception('Error closing websocket')
             self.websocket = None
         if close_tab and self.tab_id is not None:
             import requests
@@ -209,7 +216,7 @@ class DevTools(object):
             try:
                 requests.get(self.url + '/close/' + self.tab_id, proxies=proxies)
             except Exception:
-                pass
+                logging.exception('Error closing tab')
         self.tab_id = None
 
     def start_recording(self):
@@ -228,7 +235,7 @@ class DevTools(object):
                 self.grab_screenshot(tmp_file)
                 os.remove(tmp_file)
             except Exception:
-                pass
+                logging.exception('Error grabbing screenshot')
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
@@ -332,7 +339,7 @@ class DevTools(object):
             self.send_command('Tracing.start',
                               {'traceConfig': trace_config},
                               wait=True)
-        now = monotonic.monotonic()
+        now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
         if self.page_loaded is not None:
@@ -413,12 +420,12 @@ class DevTools(object):
                                         summary[url]['{0}_bytes_used'.format(category)] = used_bytes
                                         summary[url]['{0}_percent_used'.format(category)] = used_pct
                         path = self.path_base + '_coverage.json.gz'
-                        with gzip.open(path, 'wb', 7) as f_out:
+                        with gzip.open(path, GZIP_TEXT, 7) as f_out:
                             json.dump(summary, f_out)
                     self.send_command('CSS.disable', {})
                     self.send_command('DOM.disable', {})
-                except Exception as err:
-                    logging.exception(err)
+                except Exception:
+                    logging.exception('Error stopping devtools')
         self.recording = False
         self.flush_pending_messages()
         if self.task['log_data']:
@@ -454,7 +461,7 @@ class DevTools(object):
         """Stop tracing and collect the results"""
         if self.trace_enabled:
             self.trace_enabled = False
-            start = monotonic.monotonic()
+            start = monotonic()
             try:
                 # Keep pumping messages until we get tracingComplete or
                 # we get a gap of 30 seconds between messages
@@ -462,25 +469,29 @@ class DevTools(object):
                     logging.info('Collecting trace events')
                     done = False
                     no_message_count = 0
-                    elapsed = monotonic.monotonic() - start
+                    elapsed = monotonic() - start
                     while not done and no_message_count < 30 and elapsed < 60:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                no_message_count = 0
-                                msg = json.loads(raw)
-                                if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
-                                    done = True
-                            else:
+                            try:
+                                if raw is not None and len(raw):
+                                    no_message_count = 0
+                                    msg = json.loads(raw)
+                                    if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
+                                        done = True
+                                else:
+                                    no_message_count += 1
+                            except Exception:
                                 no_message_count += 1
+                                logging.exception('Error processing devtools message')
                         except Exception:
                             no_message_count += 1
                             time.sleep(1)
                             pass
                 self.websocket.stop_processing_trace()
             except Exception:
-                pass
-            elapsed = monotonic.monotonic() - start
+                logging.exception('Error processing trace events')
+            elapsed = monotonic() - start
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
 
@@ -541,33 +552,36 @@ class DevTools(object):
                             logging.warning('Missing response body for request %s',
                                             request_id)
                         elif len(response['result']['body']):
-                            self.body_fail_count = 0
-                            # Write the raw body to a file (all bodies)
-                            if 'base64Encoded' in response['result'] and \
-                                    response['result']['base64Encoded']:
-                                body = base64.b64decode(response['result']['body'])
-                                # Run a sanity check to make sure it isn't binary
-                                if self.bodies_zip_file is not None and is_text:
-                                    try:
-                                        json.loads('"' + body.replace('"', '\\"') + '"')
-                                    except Exception:
-                                        is_text = False
-                            else:
-                                body = response['result']['body'].encode('utf-8')
-                                is_text = True
-                            # Add text bodies to the zip archive
-                            store_body = self.all_bodies
-                            if self.html_body and request_id == self.main_request:
-                                store_body = True
-                            if store_body and self.bodies_zip_file is not None and is_text:
-                                self.body_index += 1
-                                name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                                self.bodies_zip_file.writestr(name, body)
-                                logging.debug('%s: Stored body in zip', request_id)
-                            logging.debug('%s: Body length: %d', request_id, len(body))
-                            self.response_bodies[request_id] = body
-                            with open(body_file_path, 'wb') as body_file:
-                                body_file.write(body)
+                            try:
+                                self.body_fail_count = 0
+                                # Write the raw body to a file (all bodies)
+                                if 'base64Encoded' in response['result'] and \
+                                        response['result']['base64Encoded']:
+                                    body = base64.b64decode(response['result']['body'])
+                                    # Run a sanity check to make sure it isn't binary
+                                    if self.bodies_zip_file is not None and is_text:
+                                        try:
+                                            json.loads('"' + body.replace('"', '\\"') + '"')
+                                        except Exception:
+                                            is_text = False
+                                else:
+                                    body = response['result']['body'].encode('utf-8')
+                                    is_text = True
+                                # Add text bodies to the zip archive
+                                store_body = self.all_bodies
+                                if self.html_body and request_id == self.main_request:
+                                    store_body = True
+                                if store_body and self.bodies_zip_file is not None and is_text:
+                                    self.body_index += 1
+                                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                                    self.bodies_zip_file.writestr(name, body)
+                                    logging.debug('%s: Stored body in zip', request_id)
+                                logging.debug('%s: Body length: %d', request_id, len(body))
+                                self.response_bodies[request_id] = body
+                                with open(body_file_path, 'wb') as body_file:
+                                    body_file.write(body)
+                            except Exception:
+                                logging.exception('Exception retrieving body')
                         else:
                             self.body_fail_count = 0
                             self.response_bodies[request_id] = response['result']['body']
@@ -646,13 +660,16 @@ class DevTools(object):
             try:
                 while True:
                     raw = self.websocket.get_message(0)
-                    if raw is not None and len(raw):
-                        if self.recording:
-                            logging.debug(raw[:200])
-                            msg = json.loads(raw)
-                            self.process_message(msg)
-                    if not raw:
-                        break
+                    try:
+                        if raw is not None and len(raw):
+                            if self.recording:
+                                logging.debug(raw[:200])
+                                msg = json.loads(raw)
+                                self.process_message(msg)
+                        if not raw:
+                            break
+                    except Exception:
+                        logging.exception('Error flushing websocket messages')
             except Exception:
                 pass
 
@@ -665,7 +682,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             if wait:
                 self.pending_commands.append(command_id)
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
             self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
                               wait=True, timeout=timeout)
@@ -674,16 +691,19 @@ class DevTools(object):
                     ret = self.command_responses[command_id]
                     del self.command_responses[command_id]
                 else:
-                    while ret is None and monotonic.monotonic() < end_time:
+                    while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                logging.debug(raw[:200])
-                                msg = json.loads(raw)
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            try:
+                                if raw is not None and len(raw):
+                                    logging.debug(raw[:200])
+                                    msg = json.loads(raw)
+                                    self.process_message(msg)
+                                    if command_id in self.command_responses:
+                                        ret = self.command_responses[command_id]
+                                        del self.command_responses[command_id]
+                            except Exception:
+                                logging.exception('Error processing websocket message')
                         except Exception:
                             pass
         elif self.websocket:
@@ -697,27 +717,30 @@ class DevTools(object):
                 logging.debug("Sending: %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
-                    end_time = monotonic.monotonic() + timeout
-                    while ret is None and monotonic.monotonic() < end_time:
+                    end_time = monotonic() + timeout
+                    while ret is None and monotonic() < end_time:
                         try:
                             raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                logging.debug(raw[:200])
-                                msg = json.loads(raw)
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            try:
+                                if raw is not None and len(raw):
+                                    logging.debug(raw[:200])
+                                    msg = json.loads(raw)
+                                    self.process_message(msg)
+                                    if command_id in self.command_responses:
+                                        ret = self.command_responses[command_id]
+                                        del self.command_responses[command_id]
+                            except Exception as err:
+                                logging.error('Error processing websocket message: %s', err.__str__())
                         except Exception:
                             pass
             except Exception as err:
-                logging.debug("Websocket send error: %s", err.__str__())
+                logging.exception("Websocket send error: %s", err.__str__())
         return ret
 
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
         if self.websocket:
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
@@ -726,14 +749,17 @@ class DevTools(object):
                     interval = 0.1
                 try:
                     raw = self.websocket.get_message(interval)
-                    if raw is not None and len(raw):
-                        logging.debug(raw[:200])
-                        msg = json.loads(raw)
-                        self.process_message(msg)
+                    try:
+                        if raw is not None and len(raw):
+                            logging.debug(raw[:200])
+                            msg = json.loads(raw)
+                            self.process_message(msg)
+                    except Exception:
+                        logging.exception('Error processing message while waiting for page load')
                 except Exception:
                     # ignore timeouts when we're in a polling read loop
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
                     done = True
@@ -760,7 +786,7 @@ class DevTools(object):
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if not self.main_thread_blocked:
-            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=10)
+            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
             if response is not None and 'result' in response and 'data' in response['result']:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
@@ -791,7 +817,7 @@ class DevTools(object):
         """See if 2 given pixels are of similar color"""
         similar = True
         delta_sum = 0
-        for value in xrange(3):
+        for value in range(3):
             delta = abs(color1[value] - color2[value])
             delta_sum += delta
             if delta > threshold:
@@ -871,14 +897,14 @@ class DevTools(object):
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
         if event == 'loadEventFired':
-            self.page_loaded = monotonic.monotonic()
+            self.page_loaded = monotonic()
         elif event == 'frameStartedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.is_navigating and self.main_frame is None:
                 self.is_navigating = False
                 self.main_frame = msg['params']['frameId']
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 self.page_loaded = None
         elif event == 'frameNavigated' and 'params' in msg and \
                 'frame' in msg['params'] and 'id' in msg['params']['frame']:
@@ -897,7 +923,7 @@ class DevTools(object):
                         self.task['page_data']['result'] = self.nav_error_code
                     else:
                         self.task['page_data']['result'] = 12999
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
         elif event == 'javascriptDialogOpening':
             result = self.send_command("Page.handleJavaScriptDialog", {"accept": False}, wait=True)
             if result is not None and 'error' in result:
@@ -942,7 +968,7 @@ class DevTools(object):
                                 params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
                             break
                 except Exception:
-                    pass
+                    logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
@@ -1033,7 +1059,7 @@ class DevTools(object):
             else:
                 ignore_activity = True
             if not self.task['stop_at_onload'] and not ignore_activity:
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
@@ -1073,7 +1099,7 @@ class DevTools(object):
         if self.task['log_data']:
             if self.dev_tools_file is None:
                 path = self.path_base + '_devtools.json.gz'
-                self.dev_tools_file = gzip.open(path, 'wb', 7)
+                self.dev_tools_file = gzip.open(path, GZIP_TEXT, 7)
                 self.dev_tools_file.write("[{}")
             if self.dev_tools_file is not None:
                 self.dev_tools_file.write(",\n")
@@ -1111,12 +1137,12 @@ class DevTools(object):
             else:
                 # count the whole lines between the partial start and end lines
                 if end_line > start_line + 1:
-                    for row in xrange(start_line + 1, end_line):
+                    for row in range(start_line + 1, end_line):
                         byte_count += len(lines[row])
                 byte_count += len(lines[start_line][start_column:])
                 byte_count += end_column
         except Exception:
-            pass
+            logging.exception('Error in bytes_from_range')
         return byte_count
 
 
@@ -1161,7 +1187,7 @@ class DevToolsClient(WebSocketClient):
                 message = raw.data.decode(raw.encoding) if raw.encoding is not None else raw.data
                 compare = message[:50]
                 if self.path_base is not None and compare.find('"Tracing.dataCollected') > -1:
-                    now = monotonic.monotonic()
+                    now = monotonic()
                     msg = json.loads(message)
                     message = None
                     if msg is not None:
@@ -1180,7 +1206,7 @@ class DevToolsClient(WebSocketClient):
                 if message is not None:
                     self.messages.put(message)
         except Exception:
-            pass
+            logging.exception('Error processing received websocket message')
 
     def get_message(self, timeout):
         """Wait for and return a message from the queue"""
@@ -1227,7 +1253,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.last_image = None
         if self.trace_parser is not None and self.path_base is not None:
-            start = monotonic.monotonic()
+            start = monotonic()
             logging.debug("Post-Processing the trace netlog events")
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
@@ -1239,7 +1265,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
-            elapsed = monotonic.monotonic() - start
+            elapsed = monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
         self.trace_parser = None
         self.path_base = None
@@ -1253,7 +1279,7 @@ class DevToolsClient(WebSocketClient):
         if 'params' in msg and 'value' in msg['params'] and len(msg['params']['value']):
             if self.trace_file is None and self.keep_timeline:
                 self.trace_file = gzip.open(self.path_base + '_trace.json.gz',
-                                            'wb', compresslevel=7)
+                                            GZIP_TEXT, compresslevel=7)
                 self.trace_file.write('{"traceEvents":[{}')
             if self.trace_parser is None:
                 from internal.support.trace_parser import Trace

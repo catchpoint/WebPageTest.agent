@@ -1,18 +1,27 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Microsoft Edge testing"""
 from datetime import datetime, timedelta
 import glob
 import gzip
+import io
 import logging
 import os
 import re
 import shutil
 import subprocess
+import sys
 import time
-import urlparse
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -74,7 +83,7 @@ class Edge(DesktopBrowser):
         if not os.path.isdir(self.bodies_path):
             os.makedirs(self.bodies_path)
         try:
-            import _winreg
+            import _winreg # pylint: disable=import-error
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_READ | _winreg.KEY_WRITE)
             self.edge_registry_key_value = _winreg.QueryValueEx(registry_key, "ClearBrowsingHistoryOnExit")[0]
             if not task['cached']:
@@ -106,7 +115,7 @@ class Edge(DesktopBrowser):
 
     def get_driver(self, task):
         """Get the webdriver instance"""
-        from selenium import webdriver
+        from selenium import webdriver # pylint: disable=import-error
         from .os_util import run_elevated
         path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'support', 'edge')
@@ -128,7 +137,7 @@ class Edge(DesktopBrowser):
                 if os.path.isfile(src):
                     shutil.copy(src, extension_dir)
             except Exception:
-                pass
+                logging.exception('Error copying extension')
         capabilities['extensionPaths'] = [extension_dir]
         capabilities['ms:extensionPaths'] = [extension_dir]
         driver = webdriver.Edge(executable_path=self.path, capabilities=capabilities)
@@ -181,6 +190,7 @@ class Edge(DesktopBrowser):
             else:
                 task['error'] = 'Error waiting for wpt-etw to start. Make sure .net is installed'
         except Exception as err:
+            logging.exception('Error starting browser')
             task['error'] = 'Error starting browser: {0}'.format(err.__str__())
 
     def stop(self, job, task):
@@ -190,7 +200,7 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.quit()
             except Exception:
-                pass
+                logging.exception('Error quitting webdriver')
             self.driver = None
         DesktopBrowser.stop(self, job, task)
         if self.wpt_etw_proc is not None:
@@ -205,7 +215,7 @@ class Edge(DesktopBrowser):
                 except Exception:
                     pass
         try:
-            import _winreg
+            import _winreg # pylint: disable=import-error
             registry_key = _winreg.CreateKeyEx(_winreg.HKEY_CURRENT_USER, self.edge_registry_path, 0, _winreg.KEY_WRITE)
             _winreg.SetValueEx(registry_key, "ClearBrowsingHistoryOnExit", 0, _winreg.REG_DWORD, self.edge_registry_key_value)
             _winreg.CloseKey(registry_key)        
@@ -261,11 +271,11 @@ class Edge(DesktopBrowser):
         if self.driver is not None and self.extension_loaded:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
             while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+                    monotonic() < end_time:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -294,14 +304,14 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.get('about:blank')
             except Exception:
-                logging.debug('Webdriver exception navigating to about:blank after the test')
+                logging.exception('Webdriver exception navigating to about:blank after the test')
             self.task = None
 
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
-            end_time = monotonic.monotonic()  + 30
-            while monotonic.monotonic() < end_time:
+            end_time = monotonic()  + 30
+            while monotonic() < end_time:
                 try:
                     message = self.job['message_server'].get_message(1)
                     logging.debug(message)
@@ -315,7 +325,7 @@ class Edge(DesktopBrowser):
         """Wait for the onload event from the extension"""
         if self.job['message_server'] is not None:
             logging.debug("Waiting for page load...")
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             self.last_activity = None
@@ -324,7 +334,7 @@ class Edge(DesktopBrowser):
                     self.process_message(self.job['message_server'].get_message(1))
                 except Exception:
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
                 if self.nav_error is not None:
                     done = True
@@ -371,7 +381,7 @@ class Edge(DesktopBrowser):
                         if message['pid'] == self.pid:
                             self.process_ieframe_message(message)
             except Exception:
-                pass
+                logging.exception('Error processing message')
 
     def process_ie_message(self, message):
         """Handle IE trace events"""
@@ -387,7 +397,7 @@ class Edge(DesktopBrowser):
                     self.pageContexts.append(message['data']['EventContextId'])
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 if 'start' not in self.page:
                     logging.debug("Navigation started")
                     self.page['start'] = message['ts']
@@ -409,7 +419,7 @@ class Edge(DesktopBrowser):
                         if 'loadEventStart' not in self.page:
                             self.page['loadEventStart'] = elapsed
                         logging.debug("Page Loaded")
-                        self.page_loaded = monotonic.monotonic()
+                        self.page_loaded = monotonic()
                 if message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Start/Start':
                     self.page['domContentLoadedEventStart'] = elapsed
                 elif message['Event'] == 'Mshtml_CMarkup_DOMContentLoadedEvent_Stop/Stop':
@@ -419,7 +429,7 @@ class Edge(DesktopBrowser):
                 elif message['Event'] == 'Mshtml_CMarkup_LoadEvent_Stop/Stop':
                     self.page['loadEventEnd'] = elapsed
                     logging.debug("Page loadEventEnd")
-                    self.page_loaded = monotonic.monotonic()
+                    self.page_loaded = monotonic()
 
     def process_ieframe_message(self, message):
         """Handle IEFRAME trace events"""
@@ -428,13 +438,13 @@ class Edge(DesktopBrowser):
             if message['Event'] == 'Shdocvw_BaseBrowser_DocumentComplete':
                 self.page['loadEventStart'] = elapsed
                 self.page['loadEventEnd'] = elapsed
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
                 logging.debug("Page loaded (Document Complete)")
 
     def process_wininet_message(self, message):
         """Handle WinInet trace events"""
         if 'Activity' in message:
-            self.last_activity = monotonic.monotonic()
+            self.last_activity = monotonic()
             self.process_dns_message(message)
             self.process_socket_message(message)
             self.process_request_message(message)
@@ -650,7 +660,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 ret = self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error executing script')
         return ret
 
     def run_js_file(self, file_name):
@@ -659,14 +669,14 @@ class Edge(DesktopBrowser):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with open(script_file_path, 'r') as script_file:
                 script = script_file.read()
         if script is not None:
             try:
                 self.driver.set_script_timeout(30)
                 ret = self.driver.execute_script('return ' + script)
             except Exception:
-                pass
+                logging.exception('Error executing script file')
             if ret is not None:
                 logging.debug(ret)
         return ret
@@ -681,7 +691,7 @@ class Edge(DesktopBrowser):
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -700,9 +710,9 @@ class Edge(DesktopBrowser):
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
-                    pass
+                    logging.exception('Error collecting custom metric')
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
@@ -710,19 +720,19 @@ class Edge(DesktopBrowser):
             if 'heroElements' in self.job:
                 custom_hero_selectors = self.job['heroElements']
             logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
+            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
             hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
         # Wait for the interactive periods to be written
         if self.supports_interactive:
-            end_time = monotonic.monotonic() + 10
+            end_time = monotonic() + 10
             interactive = None
-            while interactive is None and monotonic.monotonic() < end_time:
+            while interactive is None and monotonic() < end_time:
                 interactive = self.execute_js(
                     'return document.getElementById("wptagentLongTasks").innerText;')
                 if interactive is None:
@@ -730,7 +740,7 @@ class Edge(DesktopBrowser):
             if interactive is not None and len(interactive):
                 interactive_file = os.path.join(task['dir'],
                                                 task['prefix'] + '_interactive.json.gz')
-                with gzip.open(interactive_file, 'wb', 7) as f_out:
+                with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
                     f_out.write(interactive)
 
     def prepare_task(self, task):
@@ -757,7 +767,7 @@ class Edge(DesktopBrowser):
         self.reset()
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
@@ -765,7 +775,7 @@ class Edge(DesktopBrowser):
             task['page_data']['browser_version'] = self.browser_version
         self.recording = True
         self.navigating = True
-        now = monotonic.monotonic()
+        now = monotonic()
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
@@ -812,7 +822,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error navigating')
             self.page_loaded = None
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
@@ -835,7 +845,7 @@ class Edge(DesktopBrowser):
                 self.driver.set_script_timeout(30)
                 self.driver.execute_script(script)
             except Exception:
-                pass
+                logging.exception('Error executing script command')
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
@@ -865,9 +875,9 @@ class Edge(DesktopBrowser):
                         try:
                             self.driver.add_cookie({'url': url, 'name': name, 'value': value})
                         except Exception:
-                            pass
+                            logging.exception('Error adding cookie')
                         try:
-                            import win32inet
+                            import win32inet # pylint: disable=import-error
                             cookie_string = cookie
                             if cookie.find('xpires') == -1:
                                 expires = datetime.utcnow() + timedelta(days=30)
@@ -884,7 +894,7 @@ class Edge(DesktopBrowser):
             try:
                 self.driver.get(url)
             except Exception as err:
-                logging.debug("Error navigating Edge: %s", str(err))
+                logging.exception("Error navigating Edge: %s", str(err))
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
@@ -917,7 +927,7 @@ class Edge(DesktopBrowser):
                             except Exception:
                                 pass
             except Exception as err:
-                logging.debug('Exception grabbing screen shot: %s', str(err))
+                logging.exception('Exception grabbing screen shot: %s', str(err))
 
     def process_requests(self, task):
         """Convert all of the request and page events into the format needed for WPT"""
@@ -927,7 +937,7 @@ class Edge(DesktopBrowser):
         result['pageData'] = self.calculate_page_stats(result['requests'])
         self.check_optimization(task, result['requests'], result['pageData'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-        with gzip.open(devtools_file, 'wb', 7) as f_out:
+        with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:
             json.dump(result, f_out)
 
     def process_sockets(self):
@@ -953,7 +963,7 @@ class Edge(DesktopBrowser):
                     first_request = None
                     first_request_time = None
                     count = len(self.sockets[event_id]['requests'])
-                    for i in xrange(0, count):
+                    for i in range(0, count):
                         rid = self.sockets[event_id]['requests'][i]
                         if rid in self.requests and 'start' in self.requests[rid]:
                             if first_request is None or \
@@ -981,11 +991,11 @@ class Edge(DesktopBrowser):
                                     self.requests[first_request]['dnsEnd'] = \
                                         self.dns[event_id]['end']
             except Exception:
-                pass
+                logging.exception('Error processing request timings')
 
     def get_empty_request(self, request_id, url):
         """Return and empty, initialized request"""
-        parts = urlparse.urlsplit(url)
+        parts = urlsplit(url)
         request = {'type': 3,
                    'id': request_id,
                    'request_id': request_id,
@@ -1187,7 +1197,7 @@ class Edge(DesktopBrowser):
                                           request['id'], request['url'])
                     requests.append(request)
             except Exception:
-                pass
+                logging.exception('Error processing request')
         if bodies_zip_file is not None:
             bodies_zip_file.close()
         requests.sort(key=lambda x: x['load_start'])
@@ -1219,7 +1229,7 @@ class Edge(DesktopBrowser):
         optimization_file = os.path.join(self.task['dir'], self.task['prefix']) + \
                             '_optimization.json.gz'
         if os.path.isfile(optimization_file):
-            with gzip.open(optimization_file, 'rb') as f_in:
+            with gzip.open(optimization_file, 'r') as f_in:
                 optimization_results = json.load(f_in)
             page_data['score_cache'] = -1
             page_data['score_cdn'] = -1

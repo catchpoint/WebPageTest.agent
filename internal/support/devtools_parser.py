@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +19,17 @@ import gzip
 import logging
 import os
 import re
+import sys
 import time
-import urlparse
+if (sys.version_info > (3, 0)):
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -79,9 +89,9 @@ class DevToolsParser(object):
                     try:
                         data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
         elif isinstance(data, list):
-            for key in xrange(len(data)):
+            for key in range(len(data)):
                 entry = data[key]
                 if isinstance(entry, dict) or isinstance(entry, list):
                     self.make_utf8(entry)
@@ -89,7 +99,7 @@ class DevToolsParser(object):
                     try:
                         data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
 
     def write(self):
         """Write out the resulting json data"""
@@ -98,13 +108,13 @@ class DevToolsParser(object):
                 try:
                     _, ext = os.path.splitext(self.out_file)
                     if ext.lower() == '.gz':
-                        with gzip.open(self.out_file, 'wb') as f_out:
+                        with gzip.open(self.out_file, GZIP_TEXT) as f_out:
                             json.dump(self.result, f_out)
                     else:
                         with open(self.out_file, 'w') as f_out:
                             json.dump(self.result, f_out)
                 except Exception:
-                    logging.critical("Error writing to " + self.out_file)
+                    logging.exception("Error writing to " + self.out_file)
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
@@ -113,7 +123,7 @@ class DevToolsParser(object):
         page_data = {'endTime': 0}
         _, ext = os.path.splitext(self.devtools_file)
         if ext.lower() == '.gz':
-            f_in = gzip.open(self.devtools_file, 'rb')
+            f_in = gzip.open(self.devtools_file, GZIP_READ_TEXT)
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
@@ -123,7 +133,6 @@ class DevToolsParser(object):
                 ('params' in x and 'timestamp' in x['params']) else 9999999)
         f_in.close()
         if raw_events is not None and len(raw_events):
-            end_timestamp = None
             first_timestamp = None
             raw_requests = {}
             id_map = {}
@@ -395,7 +404,7 @@ class DevToolsParser(object):
         for raw_request in raw_requests:
             if 'url' in raw_request:
                 url = raw_request['url'].split('#', 1)[0]
-                parts = urlparse.urlsplit(url)
+                parts = urlsplit(url)
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
                 request['full_url'] = url
@@ -499,7 +508,7 @@ class DevToolsParser(object):
                     # Add the socket timing (always assigned to the first request on a connection)
                     if request['socket'] != -1 and request['socket'] not in connections:
                         connections[request['socket']] = timing
-                        if 'dnsStart' in timing and 'dnsStart' >= 0:
+                        if 'dnsStart' in timing and timing['dnsStart'] >= 0:
                             dns_key = request['host']
                             if dns_key not in dns_times:
                                 dns_times[dns_key] = True
@@ -559,7 +568,7 @@ class DevToolsParser(object):
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
                     for line in raw_request['response']['requestHeadersText'].splitlines():
-                        line = line.encode('utf-8').strip()
+                        line = unicode(line.encode('utf-8')).strip()
                         if len(line):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
@@ -567,22 +576,22 @@ class DevToolsParser(object):
                         for value in raw_request['response']['requestHeaders'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing response headers')
                 elif 'headers' in raw_request:
                     for key in raw_request['headers']:
                         for value in raw_request['headers'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing request headers')
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
-                        line = line.encode('utf-8').strip()
+                        line = unicode(line.encode('utf-8')).strip()
                         if len(line):
                             request['headers']['response'].append(line)
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
@@ -590,11 +599,11 @@ class DevToolsParser(object):
                         for value in raw_request['response']['headers'][key].splitlines():
                             try:
                                 request['headers']['response'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                       unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
-                request['bytesOut'] = len("\r\n".join(request['headers']['request']))
+                                logging.exception('Error processing response headers')
+                request['bytesOut'] = len("\r\n".join(str(request['headers']['request'])))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
                 request['score_gzip'] = -1
@@ -698,7 +707,7 @@ class DevToolsParser(object):
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.netlog_requests_file, 'rb')
+                f_in = gzip.open(self.netlog_requests_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
@@ -708,7 +717,6 @@ class DevToolsParser(object):
                 if 'request_id' not in request and 'id' in request:
                     request['request_id'] = request['id']
                 if 'full_url' in request:
-                    matched = False
                     for entry in netlog:
                         if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
                                 entry['url'] == request['full_url']:
@@ -728,7 +736,7 @@ class DevToolsParser(object):
                                         else:
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
-                                    pass
+                                    logging.exception('Error copying request key %s', key)
                             if protocol is not None:
                                 request['protocol'] = protocol
                             if 'start' in entry:
@@ -794,7 +802,7 @@ class DevToolsParser(object):
                 if 'claimed' not in entry and 'url' in entry and 'start' in entry:
                     index += 1
                     request = {'type': 3, 'full_url': entry['url']}
-                    parts = urlparse.urlsplit(entry['url'])
+                    parts = urlsplit(entry['url'])
                     request['id'] = '99999.99999.{0:d}'.format(index)
                     request['is_secure'] = 1 if parts.scheme == 'https' else 0
                     request['host'] = parts.netloc
@@ -847,7 +855,7 @@ class DevToolsParser(object):
                                 else:
                                     request[mapping[key]] = str(entry[key])
                         except Exception:
-                            pass
+                            logging.exception('Error processing request key %s', key)
                     if 'first_byte' in entry:
                         request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                        entry['start']))
@@ -991,7 +999,7 @@ class DevToolsParser(object):
         if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
             _, ext = os.path.splitext(self.user_timing_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.user_timing_file, 'rb')
+                f_in = gzip.open(self.user_timing_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.user_timing_file, 'r')
             user_timing_events = json.load(f_in)
@@ -1051,7 +1059,7 @@ class DevToolsParser(object):
         if self.optimization is not None and os.path.isfile(self.optimization):
             _, ext = os.path.splitext(self.optimization)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.optimization, 'rb')
+                f_in = gzip.open(self.optimization, GZIP_READ_TEXT)
             else:
                 f_in = open(self.optimization, 'r')
             optimization_results = json.load(f_in)
@@ -1163,7 +1171,7 @@ class DevToolsParser(object):
             if self.coverage is not None and os.path.isfile(self.coverage):
                 _, ext = os.path.splitext(self.coverage)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.coverage, 'rb')
+                    f_in = gzip.open(self.coverage, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.coverage, 'r')
                 coverage = json.load(f_in)
@@ -1199,7 +1207,7 @@ class DevToolsParser(object):
                                         / page_coverage[total]) / 100.0
                         page_data['code_coverage'] = dict(page_coverage)
         except Exception:
-            pass
+            logging.exception('Error processing code coverage')
 
     def process_cpu_times(self):
         """Calculate the main thread CPU times from the time slices file"""
@@ -1212,7 +1220,7 @@ class DevToolsParser(object):
             if end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times):
                 _, ext = os.path.splitext(self.cpu_times)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.cpu_times, 'rb')
+                    f_in = gzip.open(self.cpu_times, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.cpu_times, 'r')
                 cpu = json.load(f_in)
@@ -1230,7 +1238,7 @@ class DevToolsParser(object):
                         page_data['cpuTimesDoc'][name] = 0
                         slices = all_slices[name]
                         last_slice = min(int(math.ceil((end * 1000) / usecs)), len(slices))
-                        for index in xrange(last_slice):
+                        for index in range(last_slice):
                             slice_time = float(slices[index]) / 1000.0
                             page_data['cpuTimes'][name] += slice_time
                             busy += slice_time
@@ -1249,7 +1257,7 @@ class DevToolsParser(object):
                         page_data[entry] = page_data['cpuTimes'][name]
                     pass
         except Exception:
-            pass
+            logging.exception('Error processing CPU times')
 
     def process_v8_stats(self):
         """Add the v8 stats to the page data"""
@@ -1258,7 +1266,7 @@ class DevToolsParser(object):
             if os.path.isfile(self.v8_stats):
                 _, ext = os.path.splitext(self.v8_stats)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.v8_stats, 'rb')
+                    f_in = gzip.open(self.v8_stats, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.v8_stats, 'r')
                 stats = json.load(f_in)
@@ -1283,8 +1291,7 @@ class DevToolsParser(object):
                                 if remainder > 0.0:
                                     page_data['v8Stats'][group]['{0}unaccounted'.format(prefix)] = remainder
         except Exception:
-            pass
-        pass
+            logging.exception('Error processing V8 stats')
 
 def main():
     """Main entry point"""

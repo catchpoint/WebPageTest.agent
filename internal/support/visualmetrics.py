@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """
+Copyright 2019 WebPageTest LLC.
 Copyright (c) 2014, Google Inc.
 All rights reserved.
 
@@ -37,7 +38,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
+if (sys.version_info > (3, 0)):
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # Globals
 options = None
@@ -305,7 +313,8 @@ def find_image_viewport(file):
             'width': (right - left),
             'height': (bottom - top)}
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error calculating viewport')
         viewport = None
     
     if im is not None:
@@ -377,7 +386,7 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                             bottom -
                             top)}
                 except Exception:
-                    pass
+                    logging.exception('Error finding vieport pixels')
 
                 if im is not None:
                     try:
@@ -391,7 +400,8 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                 viewport = {'x': 0, 'y': 0, 'width': width, 'height': height}
             os.remove(frame)
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error finding viewport')
         viewport = None
 
     return viewport
@@ -446,7 +456,7 @@ def find_first_frame(directory, white_file):
             count = len(files)
             if count > 1:
                 from PIL import Image
-                for i in xrange(count):
+                for i in range(count):
                     if is_white_frame(files[i], white_file):
                         break
                     else:
@@ -474,7 +484,7 @@ def find_first_frame(directory, white_file):
                 first_frame = None
                 if white_file is None:
                     found_white_frame = True
-                for i in xrange(count):
+                for i in range(count):
                     if not found_first_change:
                         different = not frames_match(
                             files[i], files[i + 1], 5, 100, crop, None)
@@ -513,7 +523,7 @@ def find_last_frame(directory, white_file):
             if count > 2:
                 found_end = False
                 from PIL import Image
-                for i in xrange(2, count):
+                for i in range(2, count):
                     if found_end:
                         logging.debug(
                             'Removing frame {0} from the end'.format(
@@ -582,7 +592,7 @@ def find_render_start(directory, orange_file, gray_file):
                     top += client_viewport['y']
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(
                     width, height, left, top)
-                for i in xrange(1, count):
+                for i in range(1, count):
                     if frames_match(first, files[i], 10, 0, crop, mask):
                         logging.debug('Removing pre-render frame %s', files[i])
                         os.remove(files[i])
@@ -641,7 +651,7 @@ def eliminate_duplicate_frames(directory):
             # for up to a 10% per-pixel difference for noise in the white
             # field.
             count = len(files)
-            for i in xrange(1, count):
+            for i in range(1, count):
                 if frames_match(blank, files[i], 10, 0, crop, None):
                     logging.debug(
                         'Removing duplicate frame {0} from the beginning'.format(
@@ -660,7 +670,7 @@ def eliminate_duplicate_frames(directory):
                 files.reverse()
                 baseline = files[0]
                 previous_frame = baseline
-                for i in xrange(1, count):
+                for i in range(1, count):
                     if frames_match(baseline, files[i], 10, 0, crop, None):
                         if previous_frame is baseline:
                             duplicates.append(previous_frame)
@@ -694,7 +704,7 @@ def eliminate_similar_frames(directory):
                     crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(client_viewport['width'], client_viewport['height'],
                                                             client_viewport['x'], client_viewport['y'])
                 baseline = files[1]
-                for i in xrange(2, count - 1):
+                for i in range(2, count - 1):
                     if frames_match(baseline, files[i], 1, 0, crop, None):
                         logging.debug(
                             'Removing similar frame {0}'.format(
@@ -730,7 +740,7 @@ def crop_viewport(directory):
             if count > 0:
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(client_viewport['width'], client_viewport['height'],
                                                         client_viewport['x'], client_viewport['y'])
-                for i in xrange(count):
+                for i in range(count):
                     command = '{0} "{1}" -crop {2} "{1}"'.format(
                         image_magick['convert'], files[i], crop)
                     subprocess.call(command, shell=True)
@@ -742,8 +752,10 @@ def crop_viewport(directory):
 def get_decimate_filter():
     decimate = None
     try:
-        filters = subprocess.check_output(
-            ['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
+        if (sys.version_info > (3, 0)):
+            filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT, encoding='UTF-8')
+        else:
+            filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
         lines = filters.split("\n")
         match = re.compile(
             r'(?P<filter>[\w]*decimate).*V->V.*Remove near-duplicate frames')
@@ -753,7 +765,7 @@ def get_decimate_filter():
                 decimate = m.groupdict().get('filter')
                 break
     except BaseException:
-        logging.critical('Error checking ffmpeg filters for decimate')
+        logging.exception('Error checking ffmpeg filters for decimate')
         decimate = None
     return decimate
 
@@ -800,14 +812,14 @@ def is_color_frame(file, color_file):
                           ).format(image_magick['convert'], color_file, file, crop,
                                    image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-                out, err = compare.communicate()
+                _, err = compare.communicate()
                 if re.match('^[0-9]+$', err):
                     different_pixels = int(err)
                     if different_pixels < 100:
                         match = True
                         break
         except Exception:
-            pass
+            logging.exception('Error checking frame color')
     if file not in frame_cache:
         frame_cache[file] = {}
     frame_cache[file][color_file] = bool(match)
@@ -847,7 +859,7 @@ def is_white_frame(file, white_file):
 def colors_are_similar(a, b, threshold=15):
     similar = True
     sum = 0
-    for x in xrange(3):
+    for x in range(3):
         delta = abs(a[x] - b[x])
         sum += delta
         if delta > threshold:
@@ -954,7 +966,7 @@ def get_timeline_offset(timeline_file):
     try:
         file_name, ext = os.path.splitext(timeline_file)
         if ext.lower() == '.gz':
-            f = gzip.open(timeline_file, 'rb')
+            f = gzip.open(timeline_file, GZIP_READ_TEXT)
         else:
             f = open(timeline_file, 'r')
         timeline = json.load(f)
@@ -980,7 +992,7 @@ def get_timeline_offset(timeline_file):
             logging.info(
                 "Trimming {0:d}ms from the start of the video based on timeline synchronization".format(offset))
     except BaseException:
-        logging.critical("Error processing timeline file " + timeline_file)
+        logging.exception("Error processing timeline file " + timeline_file)
 
     return offset
 
@@ -1088,7 +1100,7 @@ def calculate_histograms(directory, histograms_file, force):
                                  'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
-                f = gzip.open(histograms_file, 'wb')
+                f = gzip.open(histograms_file, GZIP_TEXT)
                 json.dump(histograms, f)
                 f.close()
             else:
@@ -1108,9 +1120,9 @@ def calculate_image_histogram(file):
         im = Image.open(file)
         width, height = im.size
         colors = im.getcolors(width * height)
-        histogram = {'r': [0 for i in xrange(256)],
-                     'g': [0 for i in xrange(256)],
-                     'b': [0 for i in xrange(256)]}
+        histogram = {'r': [0 for i in range(256)],
+                     'g': [0 for i in range(256)],
+                     'b': [0 for i in range(256)]}
         for entry in colors:
             try:
                 count = entry[0]
@@ -1122,7 +1134,7 @@ def calculate_image_histogram(file):
                     histogram['g'][pixel[1]] += count
                     histogram['b'][pixel[2]] += count
             except Exception:
-                pass
+                logging.exception('Error processing histogram pixel')
         colors = None
     except Exception:
         histogram = None
@@ -1223,12 +1235,12 @@ def render_video(directory, video_file):
                         current_frame += 1
                     # hold the end frame for one second so it's actually
                     # visible
-                    for i in xrange(30):
+                    for i in range(30):
                         proc.stdin.write(current_image)
                     proc.stdin.close()
                     proc.communicate()
             except Exception:
-                pass
+                logging.exception('Error rendering video')
 
 
 ##########################################################################
@@ -1321,9 +1333,9 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
         if progress and progress_file is not None:
             file_name, ext = os.path.splitext(progress_file)
             if ext.lower() == '.gz':
-                f = gzip.open(progress_file, 'wb', 7)
+                f = gzip.open(progress_file, GZIP_TEXT, 7)
             else:
-                f = open(progress_file, 'wb')
+                f = open(progress_file, 'w')
             json.dump(progress, f)
             f.close()
         if len(histograms) > 1:
@@ -1341,12 +1353,11 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if hero_elements_file is not None and os.path.isfile(hero_elements_file):
                 logging.debug('Calculating hero element times')
                 hero_data = None
-                with gzip.open(hero_elements_file, 'rb') as hero_f_in:
+                with gzip.open(hero_elements_file, GZIP_READ_TEXT) as hero_f_in:
                     try:
                         hero_data = json.load(hero_f_in)
-                    except Exception as e:
+                    except Exception:
                         logging.exception('Could not load hero elements data')
-                        logging.exception(e)
 
                 if hero_data is not None and hero_data['heroes'] is not None and \
                         hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:
@@ -1363,7 +1374,7 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
                     hero_data['timings'] = hero_timings
                     metrics += hero_timings
 
-                    with gzip.open(hero_elements_file, 'wb', 7) as hero_f_out:
+                    with gzip.open(hero_elements_file, GZIP_TEXT, 7) as hero_f_out:
                         json.dump(hero_data, hero_f_out)
             else:
                 logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
@@ -1432,16 +1443,16 @@ def calculate_frame_progress(histogram, start, final):
         channel_total = 0
         channel_matched = 0
         buckets = 256
-        available = [0 for i in xrange(buckets)]
-        for i in xrange(buckets):
+        available = [0 for i in range(buckets)]
+        for i in range(buckets):
             available[i] = abs(histogram[channel][i] - start[channel][i])
-        for i in xrange(buckets):
+        for i in range(buckets):
             target = abs(final[channel][i] - start[channel][i])
             if (target):
                 channel_total += target
                 low = max(0, i - slop)
                 high = min(buckets, i + slop)
-                for j in xrange(low, high):
+                for j in range(low, high):
                     this_match = min(target, available[j])
                     available[j] -= this_match
                     channel_matched += this_match
@@ -1476,7 +1487,7 @@ def calculate_speed_index(progress):
 
 
 def calculate_perceptual_speed_index(progress, directory):
-    from ssim import compute_ssim
+    from ssim import compute_ssim # pylint: disable=import-error
     x = len(progress)
     dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
     first_paint_frame = os.path.join(
@@ -1492,7 +1503,6 @@ def calculate_perceptual_speed_index(progress, directory):
     ssim = ssim_1
     for p in progress[1:]:
         elapsed = p['time'] - last_ms
-        # print '*******elapsed %f'%elapsed
         # Full Path of the Current Frame
         current_frame = os.path.join(dir, "ms_{0:06d}.png".format(p["time"]))
         logging.debug("Current Image is %s" % current_frame)
@@ -1602,43 +1612,38 @@ def calculate_hero_time(progress, directory, hero, viewport):
 def check_config():
     ok = True
 
-    print 'ffmpeg:  ',
     if get_decimate_filter() is not None:
-        print 'OK'
+        print('ffmpeg:  OK')
     else:
-        print 'FAIL'
+        print('ffmpeg:  FAIL')
         ok = False
 
-    print 'convert: ',
     if check_process('{0} -version'.format(image_magick['convert']), 'ImageMagick'):
-        print 'OK'
+        print('convert: OK')
     else:
-        print 'FAIL'
+        print('convert: FAIL')
         ok = False
 
-    print 'compare: ',
     if check_process('{0} -version'.format(image_magick['compare']), 'ImageMagick'):
-        print 'OK'
+        print('compare: OK')
     else:
-        print 'FAIL'
+        print('compare: FAIL')
         ok = False
 
-    print 'Pillow:  ',
     try:
         from PIL import Image, ImageDraw
 
-        print 'OK'
+        print('Pillow:  OK')
     except BaseException:
-        print 'FAIL'
+        print('Pillow:  FAIL')
         ok = False
 
-    print 'SSIM:    ',
     try:
-        from ssim import compute_ssim
+        from ssim import compute_ssim # pylint: disable=import-error
 
-        print 'OK'
+        print('SSIM:    OK')
     except BaseException:
-        print 'FAIL'
+        print('SSIM:    FAIL')
         ok = False
 
     return ok
@@ -1647,8 +1652,10 @@ def check_config():
 def check_process(command, output):
     ok = False
     try:
-        out = subprocess.check_output(
-            command, stderr=subprocess.STDOUT, shell=True)
+        if (sys.version_info > (3, 0)):
+            out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         if out.find(output) > -1:
             ok = True
     except BaseException:
@@ -1878,10 +1885,10 @@ def main():
                         for metric in metrics:
                             data[metric['name'].replace(
                                 ' ', '')] = metric['value']
-                        print json.dumps(data)
+                        print(json.dumps(data))
                     else:
                         for metric in metrics:
-                            print "{0}: {1}".format(metric['name'], metric['value'])
+                            print("{0}: {1}".format(metric['name'], metric['value']))
         else:
             ok = check_config()
     except Exception as e:

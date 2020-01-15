@@ -3,19 +3,19 @@ until sudo apt-get update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools
+until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
 do
     sleep 1
 done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
 sudo apt-get install -y python-software-properties
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado wsaccel xvfbwrapper brotli marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes tornado wsaccel xvfbwrapper brotli marionette_driver
 do
     sleep 1
 done
-sudo pip install fonttools
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo pip install 'fonttools>=3.44.0,<4.0.0'
+curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
     sleep 1

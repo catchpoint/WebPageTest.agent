@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Main entry point for interfacing with WebPageTest server"""
@@ -12,12 +13,19 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 import time
-import urllib
 import zipfile
 import psutil
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    from urllib.parse import quote_plus # pylint: disable=import-error
+    GZIP_READ_TEXT = 'rt'
+else:
+    from monotonic import monotonic
+    from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
+    GZIP_READ_TEXT = 'r'
 try:
     import ujson as json
 except BaseException:
@@ -82,18 +90,18 @@ class WebPageTest(object):
                 self.screen_height = 1200
             elif platform.system() == 'Windows':
                 try:
-                    from win32api import GetSystemMetrics
+                    from win32api import GetSystemMetrics # pylint: disable=import-error
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
             elif platform.system() == 'Darwin':
                 try:
-                    from AppKit import NSScreen
+                    from AppKit import NSScreen # pylint: disable=import-error
                     self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()
@@ -122,8 +130,10 @@ class WebPageTest(object):
         self.version = '19.04'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            out = subprocess.check_output('git log -1 --format=%cd --date=raw',
-                                          shell=True, cwd=directory)
+            if (sys.version_info > (3, 0)):
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory, encoding='UTF-8')
+            else:
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory)
             if out is not None:
                 matches = re.search(r'^(\d+)', out)
                 if matches:
@@ -136,7 +146,7 @@ class WebPageTest(object):
         self.margins = {}
         margins_file = os.path.join(self.persistent_dir, 'margins.json')
         if os.path.isfile(margins_file):
-            with open(margins_file, 'rb') as f_in:
+            with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
         # Override the public webpagetest server automatically
         if self.url is not None and self.url.find('www.webpagetest.org') >= 0:
@@ -152,11 +162,13 @@ class WebPageTest(object):
             hash_val = hashlib.sha256()
             with open(__file__, 'rb') as f_in:
                 hash_data = f_in.read(4096)
-            start = monotonic.monotonic()
+            start = monotonic()
             # 106k iterations takes ~1 second on the reference machine
-            for _ in xrange(106000):
+            iteration = 0
+            while iteration < 106000:
                 hash_val.update(hash_data)
-            elapsed = monotonic.monotonic() - start
+                iteration += 1
+            elapsed = monotonic() - start
             self.cpu_scale_multiplier = 1.0 / elapsed
             logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
                           elapsed, self.cpu_scale_multiplier)
@@ -183,8 +195,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/user-data',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/user-data', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -195,8 +206,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/meta-data/instance-id',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/instance-id', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
                     ok = True
@@ -207,9 +217,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get(
-                    'http://169.254.169.254/latest/meta-data/placement/availability-zone',
-                    timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/placement/availability-zone', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.zone = response.text.strip()
                     if not len(self.test_locations):
@@ -330,7 +338,7 @@ class WebPageTest(object):
                     elif key == 'fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
-                pass
+                logging.exception('Error parsing metadata')
 
     # pylint: disable=E1101
     def get_uptime_minutes(self):
@@ -385,14 +393,14 @@ class WebPageTest(object):
             retry = False
             count += 1
             url = self.url + "getwork.php?f=json&shards=1&reboot=1"
-            url += "&location=" + urllib.quote_plus(location)
-            url += "&pc=" + urllib.quote_plus(self.pc_name)
+            url += "&location=" + quote_plus(location)
+            url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
-                url += "&key=" + urllib.quote_plus(self.key)
+                url += "&key=" + quote_plus(self.key)
             if self.instance_id is not None:
-                url += "&ec2=" + urllib.quote_plus(self.instance_id)
+                url += "&ec2=" + quote_plus(self.instance_id)
             if self.zone is not None:
-                url += "&ec2zone=" + urllib.quote_plus(self.zone)
+                url += "&ec2zone=" + quote_plus(self.zone)
             if self.options.android:
                 url += '&apk=1'
             url += '&version={0}'.format(self.version)
@@ -413,7 +421,7 @@ class WebPageTest(object):
                         versions.append('{0}:{1}'.format(name, \
                                 browsers[name]['version']))
                 browser_versions = ','.join(versions)
-                url += '&browsers=' + urllib.quote_plus(browser_versions)
+                url += '&browsers=' + quote_plus(browser_versions)
             logging.info("Checking for work: %s", url)
             try:
                 response = self.session.get(url, timeout=30, proxies=proxies)
@@ -485,7 +493,7 @@ class WebPageTest(object):
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
                 retry = True
-                now = monotonic.monotonic()
+                now = monotonic()
                 if self.first_failure is None:
                     self.first_failure = now
                 # Reboot if we haven't been able to reach the server for 30 minutes
@@ -633,7 +641,7 @@ class WebPageTest(object):
                 task['time_limit'] = job['timeout']
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
-                task['run_start_time'] = monotonic.monotonic()
+                task['run_start_time'] = monotonic()
                 # Keep the full resolution video frames if the browser window is smaller than 600px
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
@@ -809,7 +817,7 @@ class WebPageTest(object):
                                                 addr = sockaddr[0]
                                                 break
                             except Exception:
-                                pass
+                                logging.exception('Error resolving DNS for %s', value)
                             if addr is not None and target.find('"') == -1:
                                 if 'dns_override' not in task:
                                     task['dns_override'] = []
@@ -881,7 +889,7 @@ class WebPageTest(object):
                 if not os.path.isdir(self.persistent_dir):
                     os.makedirs(self.persistent_dir)
                 margins_file = os.path.join(self.persistent_dir, 'margins.json')
-                with open(margins_file, 'wb') as f_out:
+                with open(margins_file, 'w') as f_out:
                     json.dump(self.margins, f_out)
 
     def body_fetch_thread(self):
@@ -940,7 +948,7 @@ class WebPageTest(object):
             path = os.path.join(task['dir'], 'bodies')
             requests = []
             devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-            with gzip.open(devtools_file, 'rb') as f_in:
+            with gzip.open(devtools_file, GZIP_READ_TEXT) as f_in:
                 requests = json.load(f_in)
             count = 0
             bodies_zip = path_base + '_bodies.zip'
@@ -960,7 +968,7 @@ class WebPageTest(object):
                                 body_index = index
                             bodies.append(request_id)
                 except Exception:
-                    pass
+                    logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
                             'responseCode' in request \
@@ -1003,7 +1011,7 @@ class WebPageTest(object):
                 logging.debug("Fetching bodies for %d requests", count)
                 threads = []
                 thread_count = min(count, 10)
-                for _ in xrange(thread_count):
+                for _ in range(thread_count):
                     thread = threading.Thread(target=self.body_fetch_thread)
                     thread.daemon = True
                     thread.start()
@@ -1019,14 +1027,14 @@ class WebPageTest(object):
                             # check to see if it is text or utf-8 data
                             try:
                                 data = ''
-                                with open(task['file'], 'rb') as f_in:
+                                with open(task['file'], 'r') as f_in:
                                     data = f_in.read()
                                 json.loads('"' + data.replace('"', '\\"') + '"')
                                 body_index += 1
                                 file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
                                 bodies.append({'name': file_name, 'file': task['file']})
                             except Exception:
-                                pass
+                                logging.exception('Error appending bodies')
                         self.fetch_result_queue.task_done()
                 except Exception:
                     pass
@@ -1036,7 +1044,7 @@ class WebPageTest(object):
                         for body in bodies:
                             zip_file.write(body['file'], body['name'])
         except Exception:
-            pass
+            logging.exception('Error backfilling bodies')
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
@@ -1161,7 +1169,7 @@ class WebPageTest(object):
         url += "?"
         for key in data:
             if data[key] != None:
-                url += key + '=' + urllib.quote_plus(data[key]) + '&'
+                url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):

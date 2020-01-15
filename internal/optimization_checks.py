@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
 # Use of this source code is governed by the Apache 2.0 license that can be
 # found in the LICENSE file.
 """Run the various optimization checks"""
@@ -11,9 +12,16 @@ import re
 import shutil
 import struct
 import subprocess
+import sys
 import threading
 import time
-import monotonic
+if (sys.version_info > (3, 0)):
+    from time import monotonic
+    GZIP_TEXT = 'wt'
+    unicode = str
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -370,7 +378,7 @@ class OptimizationChecks(object):
             # Save the results
             if self.results:
                 path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
-                gz_file = gzip.open(path, 'wb', 7)
+                gz_file = gzip.open(path, GZIP_TEXT, 7)
                 if gz_file:
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
@@ -379,7 +387,11 @@ class OptimizationChecks(object):
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
-        from urlparse import urlsplit
+        if (sys.version_info > (3, 0)):
+            from urllib.parse import urlsplit # pylint: disable=import-error
+        else:
+            from urlparse import urlsplit # pylint: disable=import-error
+            
         # build a list of origins and how many requests were issued to each
         origins = {}
         for request_id in self.requests:
@@ -409,7 +421,7 @@ class OptimizationChecks(object):
                         self.results[request_id] = {}
                     self.results[request_id]['keep_alive'] = check
             except Exception:
-                pass
+                logging.exception('Error checking keep-alive')
 
     def get_time_remaining(self, request):
         """See if a request is static and how long it can be cached for"""
@@ -467,7 +479,7 @@ class OptimizationChecks(object):
                                 if time_remaining < 0:
                                     is_static = False
         except Exception:
-            pass
+            logging.exception('Error calculating time remaining')
         return is_static, time_remaining
 
     def check_cache_static(self):
@@ -491,11 +503,11 @@ class OptimizationChecks(object):
                         self.results[request_id] = {}
                     self.results[request_id]['cache'] = check
             except Exception:
-                pass
+                logging.exception('Error checking cache static')
 
     def check_hosting(self):
         """Pull the data needed to determine the hosting"""
-        start = monotonic.monotonic()
+        start = monotonic()
         self.hosting_results['base_page_ip_ptr'] = ''
         self.hosting_results['base_page_cname'] = ''
         self.hosting_results['base_page_dns_server'] = ''
@@ -549,13 +561,16 @@ class OptimizationChecks(object):
                     else:
                         domain = None
             except Exception:
-                pass
-        self.hosting_time = monotonic.monotonic() - start
+                logging.exception('Error checking hosting')
+        self.hosting_time = monotonic() - start
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
-        from urlparse import urlparse
-        start = monotonic.monotonic()
+        if (sys.version_info > (3, 0)):
+            from urllib.parse import urlparse # pylint: disable=import-error
+        else:
+            from urlparse import urlparse # pylint: disable=import-error
+        start = monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}
         domains = {}
@@ -583,7 +598,7 @@ class OptimizationChecks(object):
         if count:
             thread_count = min(10, count)
             threads = []
-            for _ in xrange(thread_count):
+            for _ in range(thread_count):
                 thread = threading.Thread(target=self.dns_worker)
                 thread.start()
                 threads.append(thread)
@@ -614,7 +629,7 @@ class OptimizationChecks(object):
                         check['score'] = 100
                         check['provider'] = provider
                 self.cdn_results[request_id] = check
-        self.cdn_time = monotonic.monotonic() - start
+        self.cdn_time = monotonic() - start
 
     def find_dns_cdn(self, domain, depth=0):
         """Recursively check a CNAME chain"""
@@ -658,9 +673,12 @@ class OptimizationChecks(object):
         try:
             while True:
                 domain = self.dns_lookup_queue.get_nowait()
-                provider = self.find_dns_cdn(domain)
-                if provider is not None:
-                    self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                try:
+                    provider = self.find_dns_cdn(domain)
+                    if provider is not None:
+                        self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                except Exception:
+                    logging.debug('Error in dns worker')
                 self.dns_lookup_queue.task_done()
         except Exception:
             pass
@@ -694,7 +712,7 @@ class OptimizationChecks(object):
                             break
                 if all_match:
                     matched_cdns.append(cdn)
-                    break;
+                    break
 
         if not len(matched_cdns):
             return None
@@ -703,12 +721,13 @@ class OptimizationChecks(object):
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if 'objectSize' in request:
                     content_length = request['objectSize']
                 elif content_length is not None:
@@ -764,17 +783,18 @@ class OptimizationChecks(object):
                 if check['score'] >= 0:
                     self.gzip_results[request_id] = check
             except Exception:
-                pass
-        self.gzip_time = monotonic.monotonic() - start
+                logging.exception('Error checking gzip')
+        self.gzip_time = monotonic() - start
 
     def check_images(self):
         """Check each request to see if images can be compressed better"""
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
@@ -815,9 +835,9 @@ class OptimizationChecks(object):
                             check['score'] = 100
                         else:
                             # spell-checker: disable
-                            image_chunks = ["iCCP", "tIME", "gAMA", "PLTE", "acTL", "IHDR", "cHRM",
-                                            "bKGD", "tRNS", "sBIT", "sRGB", "pHYs", "hIST", "vpAg",
-                                            "oFFs", "fcTL", "fdAT", "IDAT"]
+                            image_chunks = [b"iCCP", b"tIME", b"gAMA", b"PLTE", b"acTL", b"IHDR", b"cHRM",
+                                            b"bKGD", b"tRNS", b"sBIT", b"sRGB", b"pHYs", b"hIST", b"vpAg",
+                                            b"oFFs", b"fcTL", b"fdAT", b"IDAT"]
                             # spell-checker: enable
                             body = request['response_body']
                             image_size = len(body)
@@ -884,13 +904,13 @@ class OptimizationChecks(object):
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
             except Exception:
-                pass
-        self.image_time = monotonic.monotonic() - start
+                logging.exception('Error checking images')
+        self.image_time = monotonic() - start
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
         from PIL import Image
-        start = monotonic.monotonic()
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -943,15 +963,15 @@ class OptimizationChecks(object):
                                         block_size = block_size[0] * 256 + block_size[1] - 2
                                         pos += block_size
                             except Exception:
-                                pass
+                                logging.exception('Error scanning JPEG')
                         self.progressive_results[request_id] = check
             except Exception:
-                pass
-        self.progressive_time = monotonic.monotonic() - start
+                logging.exception('Error checking progressive')
+        self.progressive_time = monotonic() - start
 
     def check_fonts(self):
         """Check each request to extract metadata about fonts"""
-        start = monotonic.monotonic()
+        start = monotonic()
         try:
             from fontTools.ttLib import TTFont
             for request_id in self.requests:
@@ -973,10 +993,10 @@ class OptimizationChecks(object):
                             if tables is not None:
                                 self.font_results[request_id] = {'table_sizes': tables}
                 except Exception:
-                    pass
+                    logging.exception('Error checking font')
         except Exception:
             pass
-        self.font_time = monotonic.monotonic() - start
+        self.font_time = monotonic() - start
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
@@ -996,23 +1016,23 @@ class OptimizationChecks(object):
     def sniff_content(self, raw_bytes):
         """Check the beginning of the file to see if it is a known image type"""
         content_type = None
-        hex_bytes = binascii.hexlify(raw_bytes[:14]).lower()
+        hex_bytes = binascii.hexlify(raw_bytes[:14])
         # spell-checker: disable
-        if hex_bytes[0:6] == 'ffd8ff':
+        if hex_bytes[0:6] == b'ffd8ff':
             content_type = 'jpeg'
-        elif hex_bytes[0:16] == '89504e470d0a1a0a':
+        elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif raw_bytes[:6] == 'GIF87a' or raw_bytes[:6] == 'GIF89a':
+        elif raw_bytes[:6] == b'GIF87a' or raw_bytes[:6] == b'GIF89a':
             content_type = 'gif'
-        elif raw_bytes[:4] == 'RIFF' and raw_bytes[8:14] == 'WEBPVP':
+        elif raw_bytes[:4] == b'RIFF' and raw_bytes[8:14] == b'WEBPVP':
             content_type = 'webp'
-        elif raw_bytes[:4] == 'OTTO':
+        elif raw_bytes[:4] == b'OTTO':
             content_type = 'OTF'
-        elif raw_bytes[:4] == 'ttcf':
+        elif raw_bytes[:4] == b'ttcf':
             content_type = 'TTF'
-        elif raw_bytes[:4] == 'wOFF':
+        elif raw_bytes[:4] == b'wOFF':
             content_type = 'WOFF'
-        elif raw_bytes[:4] == 'wOF2':
+        elif raw_bytes[:4] == b'wOF2':
             content_type = 'WOFF2'
         # spell-checker: enable
         return content_type
