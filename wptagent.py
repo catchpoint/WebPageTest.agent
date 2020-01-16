@@ -626,17 +626,15 @@ def find_browsers():
         channels = ['Edge', 'Edge Dev']
         for channel in channels:
             for path in paths:
-                if path is not None and channel not in browsers:
-                    edge_path = os.path.join(path, 'Microsoft', channel,
-                                             'Application', 'msedge.exe')
-                    if os.path.isfile(edge_path):
-                        browser_name = 'Microsoft {0} (Chromium)'.format(channel)
-                        if browser_name not in browsers:
-                            browsers[browser_name] = {'exe': edge_path}
-                            if channel == 'Edge' and 'Edgium' not in browsers:
-                                browsers['Edgium'] = {'exe': edge_path}
-                            elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
-                                browsers['Edgium Dev'] = {'exe': edge_path}
+                edge_path = os.path.join(path, 'Microsoft', channel, 'Application', 'msedge.exe')
+                if os.path.isfile(edge_path):
+                    browser_name = 'Microsoft {0} (Chromium)'.format(channel)
+                    if browser_name not in browsers:
+                        browsers[browser_name] = {'exe': edge_path}
+                        if channel == 'Edge' and 'Edgium' not in browsers:
+                            browsers['Edgium'] = {'exe': edge_path}
+                        elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
+                            browsers['Edgium Dev'] = {'exe': edge_path}
         if local_appdata is not None and 'Microsoft Edge Canary (Chromium)' not in browsers:
             edge_path = os.path.join(local_appdata, 'Microsoft', 'Edge SxS',
                                      'Application', 'msedge.exe')
