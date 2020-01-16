@@ -228,6 +228,7 @@ class OptimizationChecks(object):
             'Caspowa': [{'Server': 'Caspowa'}],
             'CDN': [{'X-Edge-IP': ''},
                     {'X-Edge-Location': ''}],
+            'CDN77': [{'Server': 'CDN77'}],
             'CDNetworks': [{'X-Px': ''}],
             'ChinaNetCenter': [{'X-Cache': 'cache.51cdn.com'}],
             'Cloudflare': [{'Server': 'cloudflare'}],
