@@ -403,8 +403,8 @@ class WPTAgent(object):
         if self.get_node_version() < 10.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
-                logging.debug('Updating Node.js to 10.x')
-                subprocess.call('curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -',
+                logging.debug('Updating Node.js to 12.x')
+                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -',
                                 shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
             if self.get_node_version() < 10.0:
@@ -623,21 +623,25 @@ def find_browsers():
                 browsers['Edge'] = dict(edge)
         # Microsoft Edge (Chromium)
         paths = [program_files, program_files_x86, local_appdata]
-        channels = ['Edge Dev']
+        channels = ['Edge', 'Edge Dev']
         for channel in channels:
             for path in paths:
-                if path is not None and channel not in browsers:
-                    edge_path = os.path.join(path, 'Microsoft', channel,
-                                             'Application', 'msedge.exe')
-                    if os.path.isfile(edge_path):
-                        browser_name = 'Microsoft {0} (Chromium)'.format(channel)
-                        if browser_name not in browsers:
-                            browsers[browser_name] = {'exe': edge_path}
+                edge_path = os.path.join(path, 'Microsoft', channel, 'Application', 'msedge.exe')
+                if os.path.isfile(edge_path):
+                    browser_name = 'Microsoft {0} (Chromium)'.format(channel)
+                    if browser_name not in browsers:
+                        browsers[browser_name] = {'exe': edge_path}
+                        if channel == 'Edge' and 'Edgium' not in browsers:
+                            browsers['Edgium'] = {'exe': edge_path}
+                        elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
+                            browsers['Edgium Dev'] = {'exe': edge_path}
         if local_appdata is not None and 'Microsoft Edge Canary (Chromium)' not in browsers:
             edge_path = os.path.join(local_appdata, 'Microsoft', 'Edge SxS',
                                      'Application', 'msedge.exe')
             if os.path.isfile(edge_path):
                 browsers['Microsoft Edge Canary (Chromium)'] = {'exe': edge_path}
+                if 'Edgium Canary' not in browsers:
+                    browsers['Edgium Canary'] = {'exe': edge_path}
         # Internet Explorer
         paths = [program_files, program_files_x86]
         for path in paths:

@@ -35,7 +35,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--safebrowsing-disable-auto-update',
     '--disable-background-timer-throttling',
     '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeCookiesAndCredentials',
+    '--net-log-capture-mode=IncludeSensitive',
     '--load-media-router-component-extension=0'
 ]
 
