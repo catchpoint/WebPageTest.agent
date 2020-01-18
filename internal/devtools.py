@@ -241,34 +241,10 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
-        self.send_command('Network.enable', {})
-        if self.headers:
-            self.send_command('Network.setExtraHTTPHeaders',
-                              {'headers': self.headers}, wait=True)
+        self.enable_target()
         if len(self.workers):
             for target in self.workers:
-                self.send_command('Network.enable', {}, target_id=target['targetId'])
-                if self.headers:
-                    self.send_command('Network.setExtraHTTPHeaders',
-                                      {'headers': self.headers}, target_id=target['targetId'],
-                                      wait=True)
-        if 'user_agent_string' in self.job:
-            self.send_command('Network.setUserAgentOverride',
-                              {'userAgent': self.job['user_agent_string']}, wait=True)
-        if len(self.task['block']):
-            for block in self.task['block']:
-                self.send_command('Network.addBlockedURL', {'url': block})
-            self.send_command('Network.setBlockedURLs', {'urls': self.task['block']})
-        if 'overrideHosts' in self.task and self.task['overrideHosts']:
-            patterns = []
-            for host in self.task['overrideHosts']:
-                if host == '*':
-                    patterns.append({'urlPattern': 'http://*'})
-                    patterns.append({'urlPattern': 'https://*'})
-                else:
-                    patterns.append({'urlPattern': 'http://{0}*'.format(host)})
-                    patterns.append({'urlPattern': 'https://{0}*'.format(host)})
-            self.send_command('Network.setRequestInterception', {'patterns': patterns})
+                self.enable_target(target['targetId'])
         if self.task['log_data']:
             self.send_command('Security.enable', {})
             self.send_command('Console.enable', {})
@@ -867,6 +843,32 @@ class DevTools(object):
         """Disable the browser cache"""
         self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
 
+    def enable_target(self, target_id=None):
+        """Hook up the necessary network (or other) events for the given target"""
+        try:
+            self.send_command('Network.enable', {}, target_id=target_id)
+            if self.headers:
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
+            if 'user_agent_string' in self.job:
+                self.send_command('Network.setUserAgentOverride',
+                                {'userAgent': self.job['user_agent_string']}, target_id=target_id, wait=True)
+            if len(self.task['block']):
+                for block in self.task['block']:
+                    self.send_command('Network.addBlockedURL', {'url': block}, target_id=target_id)
+                self.send_command('Network.setBlockedURLs', {'urls': self.task['block']}, target_id=target_id)
+            if 'overrideHosts' in self.task and self.task['overrideHosts']:
+                patterns = []
+                for host in self.task['overrideHosts']:
+                    if host == '*':
+                        patterns.append({'urlPattern': 'http://*'})
+                        patterns.append({'urlPattern': 'https://*'})
+                    else:
+                        patterns.append({'urlPattern': 'http://{0}*'.format(host)})
+                        patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+                self.send_command('Network.setRequestInterception', {'patterns': patterns}, target_id=target_id)
+        except Exception:
+            logging.exception("Error enabling target")
+
     def process_message(self, msg, target_id=None):
         """Process an inbound dev tools message"""
         if 'method' in msg:
@@ -969,7 +971,7 @@ class DevTools(object):
                             break
                 except Exception:
                     logging.exception('Error processing host override')
-                self.send_command('Network.continueInterceptedRequest', params)
+                self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
@@ -1078,11 +1080,7 @@ class DevTools(object):
                 if 'type' in target and target['type'] == 'service_worker':
                     self.workers.append(target)
                     if self.recording:
-                        self.send_command('Network.enable', {}, target_id=target['targetId'])
-                        if self.headers:
-                            self.send_command('Network.setExtraHTTPHeaders',
-                                              {'headers': self.headers}, target_id=target['targetId'],
-                                              wait=True)
+                        self.enable_target(target['targetId'])
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
         if event == 'receivedMessageFromTarget':
