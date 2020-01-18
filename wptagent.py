@@ -717,6 +717,20 @@ def find_browsers():
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
                                            'log_level': 5}
+        # Brave
+        brave_path = '/opt/brave.com/brave/brave-browser'
+        if 'Brave' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-beta/brave-browser-beta'
+        if 'Brave Beta' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Beta'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-dev/brave-browser-dev'
+        if 'Brave Dev' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Dev'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-nightly/brave-browser-nightly'
+        if 'Brave Nightly' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Nightly'] = {'exe': brave_path}
+
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
