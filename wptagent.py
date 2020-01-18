@@ -649,6 +649,25 @@ def find_browsers():
                 ie_path = os.path.join(path, 'Internet Explorer', 'iexplore.exe')
                 if os.path.isfile(ie_path):
                     browsers['ie'] = {'exe': ie_path, 'type': 'IE'}
+        # Brave
+        paths = [program_files, program_files_x86]
+        for path in paths:
+            if path is not None and 'Brave' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave'] = {'exe': brave_path}
+            if path is not None and 'Brave Beta' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Beta', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Beta'] = {'exe': brave_path}
+            if path is not None and 'Brave Dev' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Dev', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Dev'] = {'exe': brave_path}
+            if path is not None and 'Brave Nightly' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Nightly', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Nightly'] = {'exe': brave_path}
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
