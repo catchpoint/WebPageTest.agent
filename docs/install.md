@@ -12,6 +12,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * requests
     * ujson
     * tornado
+    * future
     * xvfbwrapper (Linux only)
     * bind9utils (Linux only, for rndc)
     * marionette_driver (Firefox)
