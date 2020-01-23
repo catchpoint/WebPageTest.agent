@@ -23,7 +23,7 @@ do
 done
 sudo dbus-uuidgen --ensure
 sudo pip install --upgrade pip
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver future
 do
     sleep 1
 done

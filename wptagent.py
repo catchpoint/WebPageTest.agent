@@ -311,6 +311,7 @@ class WPTAgent(object):
         ret = self.requires('PIL', 'pillow') and ret
         ret = self.requires('psutil') and ret
         ret = self.requires('requests') and ret
+        ret = self.requires('future') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
         # Windows-specific imports
@@ -840,7 +841,7 @@ def main():
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at startup.")
     parser.add_argument('--collectversion', action='store_true', default=False,
-                        help="Collection browser versions and submit to controller.")                        
+                        help="Collection browser versions and submit to controller.")
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
