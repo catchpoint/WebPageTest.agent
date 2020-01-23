@@ -376,7 +376,7 @@ class WPTAgent(object):
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             _, err = proc.communicate()
             for line in err.splitlines():
-                matches = re.search(r'\[(\d+)\] Capture screen', line)
+                matches = re.search(r'\[(\d+)\] Capture screen', line.decode('utf-8'))
                 if matches:
                     self.capture_display = matches.group(1)
                     break
