@@ -472,7 +472,7 @@ class DevtoolsBrowser(object):
                 logging.debug(line.rstrip())
                 self.task['lighthouse_log'] += line
             except Exception:
-                logging.exception('Error recording lighthouse log')
+                logging.exception('Error recording lighthouse log line')
         proc.communicate()
 
     def run_lighthouse_test(self, task):
@@ -512,10 +512,13 @@ class DevtoolsBrowser(object):
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
                     command.extend(['--blocked-url-patterns', pattern])
             if 'headers' in task:
-                headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
-                with io.open(headers_file, 'w', encoding='utf-8') as f_out:
-                    json.dump(task['headers'], f_out)
-                command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
+                try:
+                    headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
+                    with open(headers_file, 'wt') as f_out:
+                        json.dump(task['headers'], f_out)
+                    command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
+                except Exception:
+                    logging.exception('Error adding custom headers for lighthouse test')
             cmd = ' '.join(command)
             self.lighthouse_command = cmd
             # Give lighthouse up to 10 minutes to run all of the audits

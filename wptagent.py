@@ -183,9 +183,12 @@ class WPTAgent(object):
                     except Exception:
                         logging.exception('Error running lighthouse test')
                     if self.task['lighthouse_log']:
-                        log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
-                        with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
-                            f_out.write(self.task['lighthouse_log'])
+                        try:
+                            log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
+                            with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
+                                f_out.write(self.task['lighthouse_log'])
+                        except Exception:
+                            logging.exception('Error compressing lighthouse log')
                 else:
                     browser.run_task(self.task)
             except Exception as err:
