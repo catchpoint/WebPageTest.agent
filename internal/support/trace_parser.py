@@ -648,25 +648,25 @@ class Trace():
                     name = BLINK_FEATURES[id]
                 else:
                     name = 'Feature_{0}'.format(id)
-                if name not in self.feature_usage['Features']:
-                    self.feature_usage['Features'][name] = []
-                self.feature_usage['Features'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['Features']:
+                    self.feature_usage['Features'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['Features'][id]['firstUsed'].append(trace_event['ts'])
             elif trace_event['name'] == 'CSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
-                if name not in self.feature_usage['CSSFeatures']:
-                    self.feature_usage['CSSFeatures'][name] = []
-                self.feature_usage['CSSFeatures'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['CSSFeatures']:
+                    self.feature_usage['CSSFeatures'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['CSSFeatures'][id]['firstUsed'].append(trace_event['ts'])
             elif trace_event['name'] == 'AnimatedCSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
-                if name not in self.feature_usage['AnimatedCSSFeatures']:
-                    self.feature_usage['AnimatedCSSFeatures'][name] = []
-                self.feature_usage['AnimatedCSSFeatures'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['AnimatedCSSFeatures']:
+                    self.feature_usage['AnimatedCSSFeatures'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['AnimatedCSSFeatures'][id]['firstUsed'].append(trace_event['ts'])
     
     def post_process_feature_usage(self):
         out = None
@@ -674,15 +674,15 @@ class Trace():
             out = {}
             for category in self.feature_usage:
                 out[category] = {}
-                for name in self.feature_usage[category]:
+                for id in self.feature_usage[category]:
                     feature_time = None
-                    for ts in self.feature_usage[category][name]:
+                    for ts in self.feature_usage[category][id]['firstUsed']:
                         timestamp = float('{0:0.3f}'.format((ts - self.start_time) / 1000.0))
                         if timestamp > 0:
                             if feature_time is None or timestamp < feature_time:
                                 feature_time = timestamp
                     if feature_time is not None:
-                        out[category][name] = feature_time
+                        out[category][id] = {'name': self.feature_usage[category][id]['name'], 'firstUsed': feature_time}
         return out
 
     ##########################################################################

@@ -183,9 +183,12 @@ class WPTAgent(object):
                     except Exception:
                         logging.exception('Error running lighthouse test')
                     if self.task['lighthouse_log']:
-                        log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
-                        with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
-                            f_out.write(self.task['lighthouse_log'])
+                        try:
+                            log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
+                            with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
+                                f_out.write(self.task['lighthouse_log'])
+                        except Exception:
+                            logging.exception('Error compressing lighthouse log')
                 else:
                     browser.run_task(self.task)
             except Exception as err:
@@ -626,17 +629,15 @@ def find_browsers():
         channels = ['Edge', 'Edge Dev']
         for channel in channels:
             for path in paths:
-                if path is not None and channel not in browsers:
-                    edge_path = os.path.join(path, 'Microsoft', channel,
-                                             'Application', 'msedge.exe')
-                    if os.path.isfile(edge_path):
-                        browser_name = 'Microsoft {0} (Chromium)'.format(channel)
-                        if browser_name not in browsers:
-                            browsers[browser_name] = {'exe': edge_path}
-                            if channel == 'Edge' and 'Edgium' not in browsers:
-                                browsers['Edgium'] = {'exe': edge_path}
-                            elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
-                                browsers['Edgium Dev'] = {'exe': edge_path}
+                edge_path = os.path.join(path, 'Microsoft', channel, 'Application', 'msedge.exe')
+                if os.path.isfile(edge_path):
+                    browser_name = 'Microsoft {0} (Chromium)'.format(channel)
+                    if browser_name not in browsers:
+                        browsers[browser_name] = {'exe': edge_path}
+                        if channel == 'Edge' and 'Edgium' not in browsers:
+                            browsers['Edgium'] = {'exe': edge_path}
+                        elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
+                            browsers['Edgium Dev'] = {'exe': edge_path}
         if local_appdata is not None and 'Microsoft Edge Canary (Chromium)' not in browsers:
             edge_path = os.path.join(local_appdata, 'Microsoft', 'Edge SxS',
                                      'Application', 'msedge.exe')
@@ -651,6 +652,25 @@ def find_browsers():
                 ie_path = os.path.join(path, 'Internet Explorer', 'iexplore.exe')
                 if os.path.isfile(ie_path):
                     browsers['ie'] = {'exe': ie_path, 'type': 'IE'}
+        # Brave
+        paths = [program_files, program_files_x86]
+        for path in paths:
+            if path is not None and 'Brave' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave'] = {'exe': brave_path}
+            if path is not None and 'Brave Beta' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Beta', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Beta'] = {'exe': brave_path}
+            if path is not None and 'Brave Dev' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Dev', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Dev'] = {'exe': brave_path}
+            if path is not None and 'Brave Nightly' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Nightly', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Nightly'] = {'exe': brave_path}
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
@@ -719,6 +739,20 @@ def find_browsers():
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
                                            'log_level': 5}
+        # Brave
+        brave_path = '/opt/brave.com/brave/brave-browser'
+        if 'Brave' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-beta/brave-browser-beta'
+        if 'Brave Beta' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Beta'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-dev/brave-browser-dev'
+        if 'Brave Dev' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Dev'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-nightly/brave-browser-nightly'
+        if 'Brave Nightly' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Nightly'] = {'exe': brave_path}
+
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):

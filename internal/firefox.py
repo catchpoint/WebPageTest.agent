@@ -958,7 +958,7 @@ class Firefox(DesktopBrowser):
                                 except Exception:
                                     logging.exception('Error appending response header')
                     if 'created' in req:
-                        request['created'] = req['created']
+                        request['created'] = int(round(req['created'] * 1000.0))
                     request['load_start'] = int(round(req['start'] * 1000.0))
                     request['startTime'] = req['start'] * 1000.0
                     if 'first_byte' in req:
