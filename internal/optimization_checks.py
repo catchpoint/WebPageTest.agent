@@ -216,6 +216,7 @@ class OptimizationChecks(object):
                       '.yimg.',
                       '.yahooapis.com'],
             'Yottaa': ['.yottaa.net'],
+            'ZEIT Smart CDN': ['.zeit.co'],
             'Zenedge': ['.zenedge.net']
         }
         self.cdn_headers = {
@@ -282,6 +283,7 @@ class OptimizationChecks(object):
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}],
+            'ZEIT Smart CDN': [{'Server': 'now'}],
             'Zycada Networks': [{'X-Zy-Server': ''}]
         }
         # spell-checker: enable
