@@ -87,7 +87,7 @@ class DevToolsParser(object):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = str(entry, 'utf-8')
+                        data[key] = str(entry.encode('utf-8'), 'utf-8')
                     except Exception:
                         logging.exception('Error making utf8')
         elif isinstance(data, list):
@@ -97,7 +97,7 @@ class DevToolsParser(object):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = str(entry, 'utf-8')
+                        data[key] = str(entry.encode('utf-8'), 'utf-8')
                     except Exception:
                         logging.exception('Error making utf8')
 
