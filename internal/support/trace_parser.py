@@ -797,6 +797,17 @@ class Trace():
                                 request['parent_stream_id'] = stream['parent_stream_id']
                             if 'weight' in stream:
                                 request['weight'] = stream['weight']
+                                if 'priority' not in request:
+                                    if request['weight'] >= 256:
+                                        request['priority'] = 'HIGHEST'
+                                    elif request['weight'] >= 220:
+                                        request['priority'] = 'MEDIUM'
+                                    elif request['weight'] >= 183:
+                                        request['priority'] = 'LOW'
+                                    elif request['weight'] >= 147:
+                                        request['priority'] = 'LOWEST'
+                                    else:
+                                        request['priority'] = 'IDLE'
                             if 'first_byte' not in request and 'first_byte' in stream:
                                 request['first_byte'] = stream['first_byte']
                             if 'end' not in request and 'end' in stream:
