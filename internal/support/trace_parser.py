@@ -726,6 +726,27 @@ class Trace():
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 request['fromNet'] = bool('start' in request)
+                # build a URL from the request headers if one wasn't explicitly provided
+                if 'url' not in request and 'request_headers' in request:
+                    scheme = None
+                    origin = None
+                    path = None
+                    for header in request['request_headers']:
+                        try:
+                            index = header.find(u':', 1)
+                            if index > 0:
+                                key = header[:index].strip(u': ').lower()
+                                value = header[index + 1:].strip(u': ')
+                                if key == u'scheme':
+                                    scheme = unicode(value)
+                                elif key == u'authority':
+                                    origin = unicode(value)
+                                elif key == u'path':
+                                    path = unicode(value)
+                        except Exception:
+                            logging.exception("Error generating url from request headers")
+                    if scheme and origin and path:
+                        request['url'] = scheme + u'://' + origin + path
                 if 'url' in request and not request['url'].startswith('http://127.0.0.1') and \
                         not request['url'].startswith('http://192.168.10.'):
                     # Match orphaned request streams with their h2 sessions
@@ -1230,11 +1251,12 @@ class Trace():
             entry['method'] = params['method']
         if 'url' in params:
             entry['url'] = params['url'].split('#', 1)[0]
-        if 'start' not in entry and name == 'HTTP_TRANSACTION_SEND_REQUEST' and \
-                trace_event['ph'] == 'e':
+        if 'start' not in entry and name == 'HTTP_TRANSACTION_SEND_REQUEST':
             entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_SEND_REQUEST_HEADERS':
             entry['request_headers'] = params['headers']
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_HTTP2_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -1243,6 +1265,8 @@ class Trace():
             else:
                 entry['request_headers'] = params['headers']
             entry['protocol'] = 'HTTP/2'
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_QUIC_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -1251,6 +1275,8 @@ class Trace():
             else:
                 entry['request_headers'] = params['headers']
             entry['protocol'] = 'QUIC'
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS':
             entry['response_headers'] = params['headers']
             if 'first_byte' not in entry:
