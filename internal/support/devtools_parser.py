@@ -135,6 +135,7 @@ class DevToolsParser(object):
         if raw_events is not None and len(raw_events):
             first_timestamp = None
             raw_requests = {}
+            extra_headers = {}
             id_map = {}
             for raw_event in raw_events:
                 if 'method' in raw_event and 'params' in raw_event:
@@ -174,7 +175,7 @@ class DevToolsParser(object):
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
-                            method == 'Network.requestWillBeSent':
+                            method.startswith('Network.requestWillBeSent'):
                         first_timestamp = params['timestamp']
                     if first_timestamp is not None and 'timestamp' in params:
                         if params['timestamp'] >= first_timestamp:
@@ -186,6 +187,20 @@ class DevToolsParser(object):
                             ('onload' not in page_data or
                              params['timestamp'] > page_data['onload']):
                         page_data['onload'] = params['timestamp']
+                    # events without a need for timestamps
+                    if request_id is not None and method.find('ExtraInfo') > 0:
+                        if request_id not in extra_headers:
+                            extra_headers[request_id] = {}
+                        headers_entry = extra_headers[request_id]
+                        if method == "Network.requestWillBeSentExtraInfo":
+                            if 'headers' in params:
+                                headers_entry['request'] = params['headers']
+                        if method == 'Network.responseReceivedExtraInfo':
+                            if 'headers' in params:
+                                headers_entry['response'] = params['headers']
+                            if 'headersText' in params:
+                                headers_entry['responseText'] = params['headersText']
+                    # Events with timestamps
                     if 'timestamp' in params and request_id is not None:
                         timestamp = params['timestamp']
                         if method == 'Network.requestWillBeSent' and 'request' in params and \
@@ -310,6 +325,24 @@ class DevToolsParser(object):
                             'domContentLoadedEventStart' not in page_data:
                         page_data['domContentLoadedEventStart'] = params['timestamp']
                         page_data['domContentLoadedEventEnd'] = params['timestamp']
+            # add the extra headers to the events
+            for request_id in extra_headers:
+                if request_id in raw_requests:
+                    request = raw_requests[request_id]
+                    if 'request' in extra_headers[request_id]:
+                        if 'headers' not in request:
+                            request['headers'] = {}
+                        temp = request['headers'].copy()
+                        request['headers'].update(dict(extra_headers[request_id]['request']))
+                        request['headers'].update(temp)
+                    if 'response' in extra_headers[request_id] and 'response' in request:
+                        if 'headers' not in request['response']:
+                            request['response']['headers'] = {}
+                        temp = request['response']['headers'].copy()
+                        request['response']['headers'].update(dict(extra_headers[request_id]['response']))
+                        request['response']['headers'].update(temp)
+                    if 'responseText' in extra_headers[request_id] and 'response' in request and 'headersText' not in request['response']:
+                        request['response']['headersText'] = extra_headers[request_id]['responseText']
             # go through and error-out any requests that started but never got
             # a response or error
             for request_id in raw_requests:
