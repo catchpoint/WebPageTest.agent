@@ -332,15 +332,11 @@ class DevToolsParser(object):
                     if 'request' in extra_headers[request_id]:
                         if 'headers' not in request:
                             request['headers'] = {}
-                        temp = request['headers'].copy()
-                        request['headers'].update(dict(extra_headers[request_id]['request']))
-                        request['headers'].update(temp)
+                        request['headers'] = dict(self.merge_devtools_headers(request['headers'], extra_headers[request_id]['request']))
                     if 'response' in extra_headers[request_id] and 'response' in request:
                         if 'headers' not in request['response']:
                             request['response']['headers'] = {}
-                        temp = request['response']['headers'].copy()
-                        request['response']['headers'].update(dict(extra_headers[request_id]['response']))
-                        request['response']['headers'].update(temp)
+                        request['response']['headers'] = dict(self.merge_devtools_headers(request['response']['headers'], extra_headers[request_id]['response']))
                     if 'responseText' in extra_headers[request_id] and 'response' in request and 'headersText' not in request['response']:
                         request['response']['headersText'] = extra_headers[request_id]['responseText']
             # go through and error-out any requests that started but never got
@@ -691,6 +687,19 @@ class DevToolsParser(object):
                         value = headers[key]
                         break
         return value
+
+    def merge_devtools_headers(self, initial, extra):
+        """Merge the headers from the initial devtools request and the extra info (preferring values in the extra info events)"""
+        headers = dict(extra)
+        for key in initial:
+            dupe = False
+            for extra_key in headers:
+                if key.lower().strip(" :") == extra_key.lower().strip(" :"):
+                    dupe = True
+                    break
+            if not dupe:
+                headers[key] = str(initial[key])
+        return headers
 
     def mergeHeaders(self, dest, headers):
         """Merge the headers list into the dest array of existing headers"""
