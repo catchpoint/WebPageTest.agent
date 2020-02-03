@@ -21,9 +21,9 @@ import os
 import re
 import sys
 import time
+from builtins import str
 if (sys.version_info > (3, 0)):
     from urllib.parse import urlsplit # pylint: disable=import-error
-    unicode = str
     GZIP_TEXT = 'wt'
     GZIP_READ_TEXT = 'rt'
 else:
@@ -87,7 +87,7 @@ class DevToolsParser(object):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = unicode(entry)
+                        data[key] = str(entry, 'utf-8')
                     except Exception:
                         logging.exception('Error making utf8')
         elif isinstance(data, list):
@@ -97,7 +97,7 @@ class DevToolsParser(object):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = unicode(entry)
+                        data[key] = str(entry, 'utf-8')
                     except Exception:
                         logging.exception('Error making utf8')
 
@@ -597,7 +597,7 @@ class DevToolsParser(object):
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
                     for line in raw_request['response']['requestHeadersText'].splitlines():
-                        line = unicode(line.encode('utf-8')).strip()
+                        line = str(line.encode('utf-8'), 'utf-8').strip()
                         if len(line):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
@@ -605,8 +605,8 @@ class DevToolsParser(object):
                         for value in raw_request['response']['requestHeaders'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
-                                                       unicode(value.encode('utf-8')).strip()))
+                                    u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                       str(value.encode('utf-8'), 'utf-8').strip()))
                             except Exception:
                                 logging.exception('Error processing response headers')
                 elif 'headers' in raw_request:
@@ -614,22 +614,25 @@ class DevToolsParser(object):
                         for value in raw_request['headers'][key].splitlines():
                             try:
                                 request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
-                                                       unicode(value.encode('utf-8')).strip()))
+                                    u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                       str(value.encode('utf-8'), 'utf-8').strip()))
                             except Exception:
                                 logging.exception('Error processing request headers')
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
-                        line = unicode(line.encode('utf-8')).strip()
-                        if len(line):
-                            request['headers']['response'].append(line)
+                        try:
+                            line = str(line.encode('utf-8'), 'utf-8').strip()
+                            if len(line):
+                                request['headers']['response'].append(line)
+                        except Exception:
+                            logging.exception('Error processing request headers')
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
                     for key in raw_request['response']['headers']:
                         for value in raw_request['response']['headers'][key].splitlines():
                             try:
                                 request['headers']['response'].append(\
-                                    u'{0}: {1}'.format(unicode(key.encode('utf-8')),
-                                                       unicode(value.encode('utf-8')).strip()))
+                                    u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                       str(value.encode('utf-8'), 'utf-8').strip()))
                             except Exception:
                                 logging.exception('Error processing response headers')
                 request['bytesOut'] = len("\r\n".join(str(request['headers']['request'])))

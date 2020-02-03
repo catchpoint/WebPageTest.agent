@@ -10,7 +10,7 @@ done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
 sudo apt-get install -y python-software-properties
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes tornado wsaccel xvfbwrapper brotli marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes tornado wsaccel xvfbwrapper brotli marionette_driver future
 do
     sleep 1
 done
@@ -26,7 +26,7 @@ do
 done
 sudo npm update -g
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' 
+sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
 sudo add-apt-repository -y ppa:mozillateam/ppa
 sudo apt-get update
