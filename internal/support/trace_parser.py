@@ -731,6 +731,19 @@ class Trace():
                     scheme = None
                     origin = None
                     path = None
+                    if 'line' in request:
+                        match = re.search(r'^[^\s]+\s([^\s]+)', request['line'])
+                        if match:
+                            path = match.group(1)
+                    if 'group' in request:
+                        scheme = 'http'
+                        if request['group'].find('ssl/') >= 0:
+                            scheme = 'https'
+                    elif 'socket' in request and 'socket' in self.netlog and request['socket'] in self.netlog['socket']:
+                        socket = self.netlog['socket'][request['socket']]
+                        scheme = 'http'
+                        if 'certificates' in socket or 'ssl_start' in socket:
+                            scheme = 'https'
                     for header in request['request_headers']:
                         try:
                             index = header.find(u':', 1)
@@ -739,6 +752,8 @@ class Trace():
                                 value = header[index + 1:].strip(u': ')
                                 if key == u'scheme':
                                     scheme = unicode(value)
+                                elif key == u'host':
+                                    origin = unicode(value)
                                 elif key == u'authority':
                                     origin = unicode(value)
                                 elif key == u'path':
@@ -947,6 +962,8 @@ class Trace():
                         self.netlog['socket'][socket_id]['dns'] = entry['dns']
         if 'group_name' in params:
             entry['group'] = params['group_name']
+        if 'group_id' in params:
+            entry['group'] = params['group_id']
 
     def ProcessNetlogStreamJobEvent(self, trace_event):
         """Strem jobs leank requests to sockets"""
@@ -958,17 +975,25 @@ class Trace():
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['stream_job'][request_id]
         name = trace_event['name']
+        if 'group_name' in params:
+            entry['group'] = params['group_name']
+        if 'group_id' in params:
+            entry['group'] = params['group_id']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'SOCKET_POOL_BOUND_TO_SOCKET':
                 socket_id = params['source_dependency']['id']
                 entry['socket'] = socket_id
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
                     self.netlog['urlrequest'][entry['urlrequest']]['socket'] = socket_id
+                    if 'group' in entry:
+                        self.netlog['urlrequest'][entry['urlrequest']]['group'] = entry['group']
             if name == 'HTTP_STREAM_JOB_BOUND_TO_REQUEST':
                 url_request_id = params['source_dependency']['id']
                 entry['url_request'] = url_request_id
                 if url_request_id in self.netlog['url_request']:
                     url_request = self.netlog['url_request'][url_request_id]
+                    if 'group' in entry:
+                        url_request['group'] = entry['group']
                     if 'socket' in entry:
                         url_request['socket'] = entry['socket']
                     if 'h2_session' in entry:
@@ -1196,10 +1221,11 @@ class Trace():
             entry['connect_start'] = trace_event['ts']
         if name == 'TCP_CONNECT_ATTEMPT' and trace_event['ph'] == 'e':
             entry['connect_end'] = trace_event['ts']
-        if 'ssl_start' not in entry and name == 'SSL_CONNECT' and trace_event['ph'] == 'b':
-            entry['ssl_start'] = trace_event['ts']
-        if name == 'SSL_CONNECT' and trace_event['ph'] == 'e':
-            entry['ssl_end'] = trace_event['ts']
+        if name == 'SSL_CONNECT':
+            if 'ssl_start' not in entry and trace_event['ph'] == 'b':
+                entry['ssl_start'] = trace_event['ts']
+            if trace_event['ph'] == 'e':
+                entry['ssl_end'] = trace_event['ts']
             if 'version' in params:
                 entry['tls_version'] = params['version']
             if 'is_resumed' in params:
@@ -1266,6 +1292,8 @@ class Trace():
             entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_SEND_REQUEST_HEADERS':
             entry['request_headers'] = params['headers']
+            if 'line' in params:
+                entry['line'] = params['line']
             if 'start' not in entry:
                 entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_HTTP2_SEND_REQUEST_HEADERS':
@@ -1276,6 +1304,8 @@ class Trace():
             else:
                 entry['request_headers'] = params['headers']
             entry['protocol'] = 'HTTP/2'
+            if 'line' in params:
+                entry['line'] = params['line']
             if 'start' not in entry:
                 entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_QUIC_SEND_REQUEST_HEADERS':
@@ -1285,6 +1315,8 @@ class Trace():
                     entry['request_headers'].append('{0}: {1}'.format(key, params['headers'][key]))
             else:
                 entry['request_headers'] = params['headers']
+            if 'line' in params:
+                entry['line'] = params['line']
             entry['protocol'] = 'QUIC'
             if 'start' not in entry:
                 entry['start'] = trace_event['ts']
