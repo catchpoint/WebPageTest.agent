@@ -12,6 +12,7 @@ import platform
 import shutil
 import signal
 import subprocess
+import errno
 import sys
 import threading
 import time
@@ -472,9 +473,11 @@ class DesktopBrowser(BaseBrowser):
                 try:
                     if platform.system() == 'Windows':
                         self.ffmpeg = subprocess.Popen(args,
-                                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                                                       creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                                                       stdin=subprocess.PIPE)
                     else:
-                        self.ffmpeg = subprocess.Popen(args)
+                        self.ffmpeg = subprocess.Popen(args,
+                                                       stdin=subprocess.PIPE)
                     # Wait up to 5 seconds for something to be captured
                     end_time = monotonic() + 5
                     started = False
@@ -515,7 +518,13 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Stopping video capture')
             self.video_capture_running = False
             if platform.system() == 'Windows':
-                os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
+                logging.debug('Attempting graceful ffmpeg shutdown\n')
+                self.ffmpeg.communicate(input='q')
+                if self.ffmpeg.returncode is not 0:
+                    logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
+                else:
+                    logging.debug('ffmpeg shutdown gracefully\n')
+                    self.ffmpeg = None
             else:
                 self.ffmpeg.terminate()
 
@@ -557,7 +566,7 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate()
+            self.ffmpeg.communicate(input='q')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
