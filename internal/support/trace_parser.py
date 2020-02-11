@@ -299,15 +299,32 @@ class Trace():
                             (name, trigger) = event['name'].split('::', 1)
                             name = name[:1].upper() + name[1:]
                             event['name'] = name
+                            key = name
+                            try:
+                                if 'args' in event:
+                                    if 'frame' in event['args']:
+                                        key += ':' + event['args']['frame']
+                                    if 'data' in event['args'] and 'candidateIndex' in event['args']['data']:
+                                        if isinstance(event['args']['data']['candidateIndex'], (int, long)):
+                                            key += '.{0:d}'.format(event['args']['data']['candidateIndex'])
+                                        elif isinstance(event['args']['data']['candidateIndex'], str):
+                                            key += '.' + event['args']['data']['candidateIndex']
+                            except Exception:
+                                logging.exception('Error processing user timing event key')
                             if trigger == 'Candidate':
-                                candidates[name] = dict(event)
-                            elif trigger == 'Invalidate' and name in candidates:
-                                del candidates[name]
+                                candidates[key] = dict(event)
+                            elif trigger == 'Invalidate' and key in candidates:
+                                del candidates[key]
                     if not consumed:
                         out.append(event)
                 except Exception:
                     logging.exception('Error processing user timing event')
-            if lcp_event is not None and 'LargestContentfulPaint' not in candidates:
+            has_lcp = False
+            for name in candidates:
+                if name.startswith('LargestContentfulPaint'):
+                    has_lcp = True
+                    break
+            if lcp_event is not None and not has_lcp:
                 lcp_event['name'] = 'LargestContentfulPaint'
                 out.append(lcp_event)
             for name in candidates:
