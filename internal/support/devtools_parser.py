@@ -1341,7 +1341,7 @@ class DevToolsParser(object):
         """Add the v8 stats to the page data"""
         try:
             page_data = self.result['pageData']
-            if os.path.isfile(self.v8_stats):
+            if self.v8_stats is not None and os.path.isfile(self.v8_stats):
                 _, ext = os.path.splitext(self.v8_stats)
                 if ext.lower() == '.gz':
                     f_in = gzip.open(self.v8_stats, GZIP_READ_TEXT)
