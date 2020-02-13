@@ -12,7 +12,6 @@ import platform
 import shutil
 import signal
 import subprocess
-import errno
 import sys
 import threading
 import time
@@ -485,17 +484,27 @@ class DesktopBrowser(BaseBrowser):
                     while not started and monotonic() < end_time:
                         if os.path.isfile(task['video_file']):
                             video_size = os.path.getsize(task['video_file'])
-                            if initial_size == None:
+                            if initial_size is None:
                                 initial_size = video_size
                             logging.debug("Video file size: %d", video_size)
                             if video_size > initial_size or video_size > 10000:
                                 started = True
                         if not started:
                             time.sleep(0.1)
-                    self.video_capture_running = True
+                    # Check to make sure ffmpeg is still capturing - if Windows gdigrab doesn't stream,
+                    # ffmpeg will complain with "Failed to capture image (error 5)" and
+                    # "Output file #0 does not contain any stream"
+                    # gdigrab will fail to capture if Secure Desktop and UAC are enabled
+                    # or an RDP session is minimized/disconnected/locked
+                    if self.ffmpeg.poll() is None:
+                        logging.debug("Video capture process is still running...")
+                        self.video_capture_running = True
+                    else:
+                        self.video_capture_running = False
+                        logging.exception("ERROR: ffmpeg started but gdigrab did not provide a stream.")
+                        raise RuntimeError('Video could not be captured with this run. Is UAC enabled or RDP minimized/disconnected/locked?')
                 except Exception:
                     logging.exception('Error starting video capture')
-
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = multiprocessing.JoinableQueue()
             self.thread = threading.Thread(target=self.background_thread)
@@ -514,7 +523,7 @@ class DesktopBrowser(BaseBrowser):
             else:
                 subprocess.call(['sudo', 'killall', 'tcpdump'])
                 kill_all('tcpdump', False)
-        if self.ffmpeg is not None:
+        if self.ffmpeg is not None and self.video_capture_running:
             logging.debug('Stopping video capture')
             self.video_capture_running = False
             if platform.system() == 'Windows':
@@ -522,11 +531,14 @@ class DesktopBrowser(BaseBrowser):
                 self.ffmpeg.communicate(input='q')
                 if self.ffmpeg.returncode is not 0:
                     logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
+                    raise RuntimeError('ffmpeg encountered an error during exit. Video may be corrupt.')
                 else:
                     logging.debug('ffmpeg shutdown gracefully\n')
-                    self.ffmpeg = None
+                self.ffmpeg = None
             else:
                 self.ffmpeg.terminate()
+        else:
+            logging.debug('ffmpeg not running, stop not necessary\n')
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -564,10 +576,14 @@ class DesktopBrowser(BaseBrowser):
             else:
                 wait_for_all('tcpdump')
             self.tcpdump = None
-        if self.ffmpeg is not None:
-            logging.debug('Waiting for video capture to finish')
+        if self.ffmpeg is not None and self.video_capture_running:
+            logging.debug('Waiting for video capture to finish...')
             self.ffmpeg.communicate(input='q')
-            self.ffmpeg = None
+            if self.ffmpeg.returncode is not 0:
+                logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
+            else:
+                logging.debug('ffmpeg shutdown gracefully\n')
+                self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
             kill_all('ffmpeg.exe', True)
@@ -737,7 +753,12 @@ class DesktopBrowser(BaseBrowser):
                     logging.debug('Stopping video capture - File is too big: %d', video_size)
                     self.video_capture_running = False
                     if platform.system() == 'Windows':
-                        os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
+                        self.ffmpeg.communicate(input='q')
+                        if self.ffmpeg.returncode is not 0:
+                            logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
+                        else:
+                            logging.debug('ffmpeg shutdown gracefully\n')
+                            self.ffmpeg = None
                     else:
                         self.ffmpeg.terminate()
 
