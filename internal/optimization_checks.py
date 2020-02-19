@@ -64,10 +64,14 @@ class OptimizationChecks(object):
             'afxcdn.net': ['.afxcdn.net'],
             'Akamai': ['.akamai.net',
                        '.akamaized.net',
+                       '.akamaized-staging.net',
                        '.akamaiedge.net',
+                       '.akamaiedge-staging.net',
                        '.akamaihd.net',
                        '.edgesuite.net',
+                       '.edgesuite-staging.net',
                        '.edgekey.net',
+                       '.edgekey-staging.net',
                        '.srip.net',
                        '.akamaitechnologies.com',
                        '.akamaitechnologies.fr'],
@@ -221,6 +225,8 @@ class OptimizationChecks(object):
         }
         self.cdn_headers = {
             'Airee': [{'Server': 'Airee'}],
+            'Akamai': [{'x-akamai-staging': 'ESSL'},
+                       {'x-akamai-request-id': ''}],
             'Amazon CloudFront': [{'Via': 'CloudFront'}],
             'Aryaka': [{'X-Ar-Debug': ''}],
             'BelugaCDN': [{'Server': 'Beluga'},

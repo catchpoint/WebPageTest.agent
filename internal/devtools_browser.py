@@ -468,11 +468,11 @@ class DevtoolsBrowser(object):
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         for line in iter(proc.stderr.readline, b''):
             try:
-                line = unicode(line)
+                line = unicode(line,errors='ignore')
                 logging.debug(line.rstrip())
                 self.task['lighthouse_log'] += line
             except Exception:
-                logging.exception('Error recording lighthouse log line')
+                logging.exception('Error recording lighthouse log line %s', line.rstrip())
         proc.communicate()
 
     def run_lighthouse_test(self, task):
