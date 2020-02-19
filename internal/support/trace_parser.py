@@ -54,6 +54,7 @@ class Trace():
         self.timeline_events = []
         self.trace_events = []
         self.interactive = []
+        self.long_tasks = []
         self.interactive_start = 0
         self.interactive_end = None
         self.start_time = None
@@ -104,6 +105,9 @@ class Trace():
 
     def WriteInteractive(self, out_file):
         self.write_json(out_file, self.interactive)
+    
+    def WriteLongTasks(self, out_file):
+        self.write_json(out_file, self.long_tasks)
 
     def WriteNetlog(self, out_file):
         out = self.post_process_netlog_events()
@@ -564,6 +568,20 @@ class Trace():
                     self.interactive_end = None
                 else:
                     self.interactive_end = end
+            
+            # Keep track of the long-duration top-level tasks
+            if parent is None and elapsed > 50000 and 'main_thread' in self.cpu and thread == self.cpu['main_thread']:
+                # make sure this isn't contained within an existing event
+                ms_start = int(math.floor(start / 1000.0))
+                ms_end = int(math.ceil(end / 1000.0))
+                found = False
+                for task in self.long_tasks:
+                    if ms_start >= task[0] and ms_start <= task[1] and ms_end >= task[0] and ms_end <= task[1]:
+                        found = True
+                        break
+                if not found:
+                    self.long_tasks.append([ms_start, ms_end])
+
 
             if 'js' in timeline_event:
                 script = timeline_event['js']
@@ -1427,6 +1445,7 @@ def main():
                         help="Output blink feature usage file.")
     parser.add_argument('-i', '--interactive',
                         help="Output list of interactive times.")
+    parser.add_argument('-x', '--longtasks', help="Output list of long main thread task times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
     options, _ = parser.parse_known_args()
@@ -1468,6 +1487,9 @@ def main():
 
     if options.interactive:
         trace.WriteInteractive(options.interactive)
+    
+    if options.longtasks:
+        trace.WriteLongTasks(options.longtasks)
 
     if options.netlog:
         trace.WriteNetlog(options.netlog)
