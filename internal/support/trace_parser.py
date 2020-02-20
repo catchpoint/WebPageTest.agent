@@ -325,7 +325,7 @@ class Trace():
                                     if 'frame' in event['args']:
                                         key += ':' + event['args']['frame']
                                     if 'data' in event['args'] and 'candidateIndex' in event['args']['data']:
-                                        if isinstance(event['args']['data']['candidateIndex'], (int, long)):
+                                        if isinstance(event['args']['data']['candidateIndex'], int):
                                             key += '.{0:d}'.format(event['args']['data']['candidateIndex'])
                                         elif isinstance(event['args']['data']['candidateIndex'], str):
                                             key += '.' + event['args']['data']['candidateIndex']
