@@ -292,18 +292,23 @@ class DesktopBrowser(BaseBrowser):
         """Terminate the browser but don't do all of the cleanup that stop does"""
         if self.proc:
             logging.debug("Closing browser")
-            from .os_util import kill_all
-            kill_all(os.path.basename(self.path), False)
-            if 'browser_info' in job and 'other_exes' in job['browser_info']:
-                for exe in job['browser_info']['other_exes']:
-                    kill_all(exe, False)
             try:
-                if platform.system() != 'Windows':
-                    os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
-                self.proc.terminate()
-                self.proc.kill()
-            except Exception:
-                pass
+                self.proc.wait(timeout=15)
+            except TimeoutExpired:
+                self.proc.wait(timeout=15)
+            if self.proc.poll() == None:
+                from .os_util import kill_all
+                kill_all(os.path.basename(self.path), False)
+                if 'browser_info' in job and 'other_exes' in job['browser_info']:
+                    for exe in job['browser_info']['other_exes']:
+                        kill_all(exe, False)
+                try:
+                    if platform.system() != 'Windows':
+                        os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
+                    self.proc.terminate()
+                    self.proc.kill()
+                except Exception:
+                    pass
             self.proc = None
 
     def stop(self, job, task):
