@@ -293,9 +293,9 @@ class DesktopBrowser(BaseBrowser):
         if self.proc:
             logging.debug("Closing browser")
             try:
-                self.proc.wait(timeout=15)
-            except TimeoutExpired:
-                self.proc.wait(timeout=15)
+                self.proc.wait()
+            except Exception:
+                self.proc.wait()
             if self.proc.poll() == None:
                 from .os_util import kill_all
                 kill_all(os.path.basename(self.path), False)
