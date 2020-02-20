@@ -104,7 +104,23 @@ class Trace():
             self.write_json(out_file, out)
 
     def WriteInteractive(self, out_file):
-        self.write_json(out_file, self.interactive)
+        # Generate the interactive periods from the long-task data
+        if self.end_time and self.start_time:
+            interactive = []
+            end_time = int(math.ceil(float(self.end_time - self.start_time) / 1000.0))
+            if not self.long_tasks:
+                interactive.append([0, end_time])
+            else:
+                last_end = 0
+                for task in self.long_tasks:
+                    elapsed = task[0] - last_end
+                    if elapsed > 0:
+                        interactive.append([last_end, task[0]])
+                    last_end = task[1]
+                elapsed = end_time - last_end
+                if elapsed > 0:
+                    interactive.append([last_end, end_time])
+            self.write_json(out_file, interactive)
     
     def WriteLongTasks(self, out_file):
         self.write_json(out_file, self.long_tasks)
@@ -570,18 +586,26 @@ class Trace():
                     self.interactive_end = end
             
             # Keep track of the long-duration top-level tasks
-            if parent is None and elapsed > 50000 and 'main_thread' in self.cpu and thread == self.cpu['main_thread']:
+            if parent is None and elapsed > 50000 and thread in self.cpu['main_threads']:
                 # make sure this isn't contained within an existing event
                 ms_start = int(math.floor(start / 1000.0))
                 ms_end = int(math.ceil(end / 1000.0))
-                found = False
-                for task in self.long_tasks:
-                    if ms_start >= task[0] and ms_start <= task[1] and ms_end >= task[0] and ms_end <= task[1]:
-                        found = True
-                        break
-                if not found:
+                if not self.long_tasks:
+                    # Empty list of long tasks
                     self.long_tasks.append([ms_start, ms_end])
-
+                else:
+                    last_start = self.long_tasks[-1][0]
+                    last_end = self.long_tasks[-1][1]
+                    if ms_start >= last_end:
+                        # This task is entirely after the last long task we know about
+                        self.long_tasks.append([ms_start, ms_end])
+                    elif ms_end > last_end:
+                        # task extends beyond the previous end of the long tasks but overlaps
+                        del self.long_tasks[-1]
+                        if ms_start >= last_start:
+                            self.long_tasks.append([last_start, ms_end])
+                        else:
+                            self.long_tasks.append([ms_start, ms_end])
 
             if 'js' in timeline_event:
                 script = timeline_event['js']
