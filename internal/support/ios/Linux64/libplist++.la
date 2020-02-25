@@ -8,7 +8,7 @@
 dlname='libplist++.so.3'
 
 # Names of this library.
-library_names='libplist++.so.3.1.0 libplist++.so.3 libplist++.so'
+library_names='libplist++.so.3.2.0 libplist++.so.3 libplist++.so'
 
 # The name of the static archive.
 old_library='libplist++.a'
@@ -23,8 +23,8 @@ dependency_libs=' /usr/local/lib/libplist.la -lpthread'
 weak_library_names=''
 
 # Version information for libplist++.
-current=4
-age=1
+current=5
+age=2
 revision=0
 
 # Is this an already installed library?

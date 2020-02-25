@@ -17,7 +17,7 @@ old_library='libios_webkit_debug_proxy.a'
 inherited_linker_flags=' -pthread'
 
 # Libraries that this one depends upon.
-dependency_libs=' -L/usr/local/lib /usr/local/lib/libimobiledevice.la -lssl -lcrypto /usr/local/lib/libusbmuxd.la /usr/local/lib/libplist.la -lpthread -lm'
+dependency_libs=' -L/usr/local/lib /usr/local/lib/libimobiledevice.la /usr/local/lib/libusbmuxd.la /usr/local/lib/libplist.la -lpthread -lssl -lcrypto -lm'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
