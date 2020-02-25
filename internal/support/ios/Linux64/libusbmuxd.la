@@ -5,10 +5,10 @@
 # It is necessary for linking the library.
 
 # The name that we can dlopen(3).
-dlname='libusbmuxd.so.4'
+dlname='libusbmuxd.so.6'
 
 # Names of this library.
-library_names='libusbmuxd.so.4.1.0 libusbmuxd.so.4 libusbmuxd.so'
+library_names='libusbmuxd.so.6.0.0 libusbmuxd.so.6 libusbmuxd.so'
 
 # The name of the static archive.
 old_library='libusbmuxd.a'
@@ -23,8 +23,8 @@ dependency_libs=' -L/usr/local/lib /usr/local/lib/libplist.la -lpthread'
 weak_library_names=''
 
 # Version information for libusbmuxd.
-current=5
-age=1
+current=6
+age=0
 revision=0
 
 # Is this an already installed library?
