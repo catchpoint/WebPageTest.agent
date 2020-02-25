@@ -76,22 +76,10 @@ class iWptBrowser(BaseBrowser):
         self.pending_commands = []
         self.headers = {}
         self.webinspector_proxy = None
-        self.ios_utils_path = None
         self.ios_version = None
         self.target_sessions = {}
         self.workers = []
         self.default_target = None
-        plat = platform.system()
-        if plat == "Darwin":
-            self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                               'support', 'ios', 'Darwin')
-        elif plat == "Linux":
-            if os.uname()[4].startswith('arm'):
-                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'support', 'ios', 'arm')
-            else:
-                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'support', 'ios', 'Linux64')
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
@@ -132,10 +120,9 @@ class iWptBrowser(BaseBrowser):
         self.connected = False
         self.flush_messages()
         self.ios_version = self.ios.get_os_version()
-        if self.ios_utils_path and self.ios.start_browser():
+        if self.ios.start_browser():
             # Start the webinspector proxy
-            exe = os.path.join(self.ios_utils_path, 'ios_webkit_debug_proxy')
-            args = [exe, '-F', '-u', self.ios.serial]
+            args = ['ios_webkit_debug_proxy', '-F', '-u', self.ios.serial]
             logging.debug(' '.join(args))
             self.webinspector_proxy = subprocess.Popen(args)
             if self.webinspector_proxy:
