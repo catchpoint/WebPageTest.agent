@@ -130,20 +130,7 @@ class iWptBrowser(BaseBrowser):
                 self.connected = self.connect()
 
             if self.connected:
-                self.send_command('Target.setAutoAttach',
-                                {'autoAttach': True, 'waitForDebuggerOnStart': True})
-                response = self.send_command('Target.getTargets', {}, wait=True)
-                if response is not None and 'result' in response and 'targetInfos' in response['result']:
-                    for target in response['result']['targetInfos']:
-                        logging.debug(target)
-                        if 'type' in target and 'targetId' in target:
-                            if target['type'] == 'service_worker':
-                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                  wait=True)
-                            if self.default_target is None and target['type'] == 'page':
-                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                  wait=True)
-                                self.default_target = target['targetId']
+                self.send_command('Target.setPauseOnStart', {'pauseOnStart': True})
                 # Override the UA String if necessary
                 ua_string = self.execute_js('navigator.userAgent;')
                 if 'uastring' in self.job:
@@ -328,8 +315,7 @@ class iWptBrowser(BaseBrowser):
                 if len(self.workers):
                     for target in self.workers:
                         self.send_command('Network.setExtraHTTPHeaders',
-                                          {'headers': self.headers}, target_id=target['targetId'],
-                                          wait=True)
+                                          {'headers': self.headers}, target_id=target['targetId'])
 
     def reset_headers(self):
         """Add/modify a header on the outbound requests"""
@@ -339,8 +325,7 @@ class iWptBrowser(BaseBrowser):
         if len(self.workers):
             for target in self.workers:
                 self.send_command('Network.setExtraHTTPHeaders',
-                                  {'headers': self.headers}, target_id=target['targetId'],
-                                  wait=True)
+                                  {'headers': self.headers}, target_id=target['targetId'])
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
@@ -678,13 +663,18 @@ class iWptBrowser(BaseBrowser):
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
         if event == 'targetCreated':
-            if 'targetInfo' in msg['params'] and \
-                    'type' in msg['params']['targetInfo'] and \
-                    msg['params']['targetInfo']['type'] == 'page' and \
-                    'targetId' in msg['params']['targetInfo']:
-                self.default_target = msg['params']['targetInfo']['targetId']
-                if self.recording:
-                    self.enable_safari_events()
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                target_id = target['targetId']
+                if 'type' in target and target['type'] == 'page':
+                    self.default_target = target_id
+                    if self.recording:
+                        self.enable_safari_events()
+                else:
+                    self.workers.append(target)
+                    if self.recording:
+                        self.enable_target(target_id)
+                self.send_command('Target.resume', {'targetId': target_id})
 
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
@@ -787,22 +777,22 @@ class iWptBrowser(BaseBrowser):
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+    
+    def enable_target(self, target_id):
+        """Enable all of the targe-specific events"""
+        self.send_command('Network.enable', {}, target_id=target_id)
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id)
 
     def enable_safari_events(self):
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
-        self.send_command('Inspector.enable', {})
         if self.headers:
-            self.send_command('Network.setExtraHTTPHeaders',
-                              {'headers': self.headers}, wait=True)
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
         if len(self.workers):
             for target in self.workers:
-                self.send_command('Network.enable', {}, target_id=target['targetId'])
-                if self.headers:
-                    self.send_command('Network.setExtraHTTPHeaders',
-                                      {'headers': self.headers}, target_id=target['targetId'],
-                                      wait=True)
+                self.enable_target(target['targetId'])
         if 'user_agent_string' in self.job:
             self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
