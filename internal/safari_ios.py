@@ -124,21 +124,25 @@ class iWptBrowser(BaseBrowser):
             # Start the webinspector proxy
             args = ['ios_webkit_debug_proxy', '-F', '-u', self.ios.serial]
             logging.debug(' '.join(args))
-            self.webinspector_proxy = subprocess.Popen(args)
-            if self.webinspector_proxy:
-                # Connect to the dev tools interface
-                self.connected = self.connect()
+            try:
+                self.webinspector_proxy = subprocess.Popen(args)
 
-            if self.connected:
-                self.send_command('Target.setPauseOnStart', {'pauseOnStart': True})
-                # Override the UA String if necessary
-                ua_string = self.execute_js('navigator.userAgent;')
-                if 'uastring' in self.job:
-                    ua_string = self.job['uastring']
-                if ua_string is not None and 'AppendUA' in task:
-                    ua_string += ' ' + task['AppendUA']
-                if ua_string is not None:
-                    self.job['user_agent_string'] = ua_string
+                if self.webinspector_proxy:
+                    # Connect to the dev tools interface
+                    self.connected = self.connect()
+
+                if self.connected:
+                    self.send_command('Target.setPauseOnStart', {'pauseOnStart': True})
+                    # Override the UA String if necessary
+                    ua_string = self.execute_js('navigator.userAgent;')
+                    if 'uastring' in self.job:
+                        ua_string = self.job['uastring']
+                    if ua_string is not None and 'AppendUA' in task:
+                        ua_string += ' ' + task['AppendUA']
+                    if ua_string is not None:
+                        self.job['user_agent_string'] = ua_string
+            except Exception:
+                logging.exception("Error starting webkit proxy")
 
         self.flush_messages()
 
