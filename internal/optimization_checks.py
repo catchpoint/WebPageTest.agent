@@ -456,7 +456,9 @@ class OptimizationChecks(object):
                         cache = self.get_header_value(request['response_headers'], 'Cache-Control')
                         pragma = self.get_header_value(request['response_headers'], 'Pragma')
                         expires = self.get_header_value(request['response_headers'], 'Expires')
+                        max_age_matches = None
                         if cache is not None:
+                            max_age_matches = re.search(re_max_age, cache)
                             cache = cache.lower()
                             if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
                                 is_static = False
@@ -466,17 +468,15 @@ class OptimizationChecks(object):
                                 is_static = False
                         if is_static:
                             time_remaining = 0
-                            if cache is not None:
-                                matches = re.search(re_max_age, cache)
-                                if matches:
-                                    time_remaining = int(matches.groupdict().get('maxage'))
-                                    age = self.get_header_value(request['response_headers'], 'Age')
-                                    if time_remaining == 0:
-                                        is_static = False
-                                        time_remaining = -1
-                                    elif age is not None:
-                                        time_remaining -= int(re.search(r'\d+',
-                                                                        str(age).strip()).group())
+                            if max_age_matches is not None:
+                                time_remaining = int(max_age_matches.groupdict().get('maxage'))
+                                age = self.get_header_value(request['response_headers'], 'Age')
+                                if time_remaining == 0:
+                                    is_static = False
+                                    time_remaining = -1
+                                elif age is not None:
+                                    time_remaining -= int(re.search(r'\d+',
+                                                                    str(age).strip()).group())
                             elif expires is not None:
                                 date = self.get_header_value(request['response_headers'], 'Date')
                                 exp = time.mktime(parsedate(expires))
