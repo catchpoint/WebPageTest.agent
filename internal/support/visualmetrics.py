@@ -140,10 +140,9 @@ def extract_frames(video, directory, full_resolution, viewport):
                    '-vf', crop + scale + decimate + '=0:64:640:0.001',
                    os.path.join(dir_escaped, 'img-%d.png')]
         logging.debug(' '.join(command))
-        lines = []
-        proc = subprocess.Popen(command, stderr=subprocess.PIPE)
-        while proc.poll() is None:
-            lines.extend(iter(proc.stderr.readline, ""))
+        proc = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = proc.communicate()
+        lines = stderr.splitlines()
 
         pattern = re.compile(r'keep pts:[0-9]+ pts_time:(?P<timecode>[0-9\.]+)')
         frame_count = 0
