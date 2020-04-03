@@ -1683,6 +1683,7 @@ def main():
         '-v',
         '--verbose',
         action='count',
+        default=0,
         help="Increase verbosity (specify multiple times for more).")
     parser.add_argument(
         '--logfile',
