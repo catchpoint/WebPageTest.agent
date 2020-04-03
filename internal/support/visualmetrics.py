@@ -140,10 +140,9 @@ def extract_frames(video, directory, full_resolution, viewport):
                    '-vf', crop + scale + decimate + '=0:64:640:0.001',
                    os.path.join(dir_escaped, 'img-%d.png')]
         logging.debug(' '.join(command))
-        lines = []
-        proc = subprocess.Popen(command, stderr=subprocess.PIPE)
-        while proc.poll() is None:
-            lines.extend(iter(proc.stderr.readline, ""))
+        proc = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = proc.communicate()
+        lines = stderr.splitlines()
 
         pattern = re.compile(r'keep pts:[0-9]+ pts_time:(?P<timecode>[0-9\.]+)')
         frame_count = 0
@@ -1683,6 +1682,7 @@ def main():
         '-v',
         '--verbose',
         action='count',
+        default=0,
         help="Increase verbosity (specify multiple times for more).")
     parser.add_argument(
         '--logfile',
@@ -1738,10 +1738,10 @@ def main():
     parser.add_argument('-e', '--end', type=int, default=0,
                         help="End time (in milliseconds) for calculating visual metrics.")
     parser.add_argument('--findstart', type=int, default=0,
-                        help="Find the start of activity by looking at the top X% "
+                        help="Find the start of activity by looking at the top X%% "
                              "of the video (like a browser address bar).")
     parser.add_argument('--renderignore', type=int, default=0,
-                        help="Ignore the center X% of the frame when looking for "
+                        help="Ignore the center X%% of the frame when looking for "
                              "the first rendered frame (useful for Opera mini).")
     parser.add_argument('--startwhite', action='store_true', default=False,
                         help="Find the first fully white frame as the start of the video.")
