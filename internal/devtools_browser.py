@@ -388,7 +388,7 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'exec':
             script = command['target']
             if command['record']:
-                script = self.prepare_script_for_record(script) #pylint: disable=no-member
+                script = self.prepare_script_for_record(script, True) #pylint: disable=no-member
                 self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'sleep':

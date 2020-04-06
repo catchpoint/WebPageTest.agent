@@ -58,6 +58,7 @@ class Trace():
         self.interactive_start = 0
         self.interactive_end = None
         self.start_time = None
+        self.marked_start_time = None
         self.end_time = None
         self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': []}
         self.feature_usage = None
@@ -258,7 +259,9 @@ class Trace():
                 keep = True
             if keep:
                 self.user_timing.append(trace_event)
-            if 'name' in trace_event and trace_event['name'].find('navigationStart') >= 0:
+            if self.marked_start_time is None and \
+                    'name' in trace_event and \
+                    trace_event['name'].find('navigationStart') >= 0:
                 if self.start_time is None or trace_event['ts'] < self.start_time:
                     self.start_time = trace_event['ts']
             if self.cpu['main_thread'] is None and 'name' in trace_event and \
@@ -363,6 +366,15 @@ class Trace():
                 trace_event['args']['name'] == 'CrRendererMain' and \
                 thread not in self.cpu['main_threads']:
             self.cpu['main_threads'].append(thread)
+        
+        # Watch for the marker indicating the start time
+        if trace_event['name'] == 'ResourceSendRequest' and \
+                'args' in trace_event and \
+                'data' in trace_event['args'] and \
+                'url' in trace_event['args']['data'] and \
+                trace_event['args']['data']['url'] == 'http://127.0.0.1:8888/wpt-start-recording':
+            self.marked_start_time = trace_event['ts']
+            self.start_time = trace_event['ts']
 
         # Keep track of the main thread
         if 'args' in trace_event and 'data' in trace_event['args'] and \
@@ -377,8 +389,9 @@ class Trace():
                     'url' in trace_event['args']['data']):
                     if thread not in self.threads:
                         self.threads[thread] = {}
-                    if self.start_time is None or trace_event['ts'] < self.start_time:
-                        self.start_time = trace_event['ts']
+                    if self.marked_start_time is None:
+                        if self.start_time is None or trace_event['ts'] < self.start_time:
+                            self.start_time = trace_event['ts']
                     self.cpu['main_thread'] = thread
                     if thread not in self.cpu['main_threads']:
                         self.cpu['main_threads'].append(thread)
@@ -978,7 +991,7 @@ class Trace():
                          'start', 'created', 'first_byte', 'end']
                 for request in requests:
                     for time_name in times:
-                        if time_name in request:
+                        if time_name in request and self.marked_start_time is None:
                             if self.start_time is None or request[time_name] < self.start_time:
                                 self.start_time = request[time_name]
                 # Go through and adjust all of the times to be relative in ms
