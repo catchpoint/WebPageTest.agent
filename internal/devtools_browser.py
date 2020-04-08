@@ -236,7 +236,7 @@ class DevtoolsBrowser(object):
         """Start any processing of the captured data"""
         if task['log_data']:
             # Start the processing that can run in a background thread
-            optimization = OptimizationChecks(self.job, task, self.get_requests())
+            optimization = OptimizationChecks(self.job, task, self.get_requests(True))
             optimization.start()
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
@@ -325,6 +325,14 @@ class DevtoolsBrowser(object):
             ret = self.devtools.execute_js(script)
         return ret
 
+    def get_sorted_requests(self, include_bodies):
+        requests = []
+        raw_requests = self.get_requests(include_bodies)
+        for request_id in raw_requests:
+            requests.append(raw_requests[request_id])
+        requests = sorted(requests, key=lambda request: request['sequence'])
+        return requests
+
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
         user_timing = self.run_js_file('user_timing.js')
@@ -337,10 +345,24 @@ class DevtoolsBrowser(object):
             task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
+            '''
+            requests = None
+            try:
+                requests = json.dumps(self.get_sorted_requests(False), ensure_ascii=False)
+            except Exception:
+                logging.exception('Error getting request data for custom script')
+            logging.debug(requests)
+            '''
             for name in self.job['customMetrics']:
-                script = 'var wptCustomMetric = function() {' +\
-                         self.job['customMetrics'][name] +\
-                         '};try{wptCustomMetric();}catch(e){};'
+                custom_script = self.job['customMetrics'][name]
+                '''
+                if requests is not None:
+                    try:
+                        custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                    except Exception:
+                        logging.exception('Error substituting request data into custom script')
+                '''
+                script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
@@ -453,11 +475,11 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             self.devtools.send_command('Page.navigate', {'url': url}, wait=True)
 
-    def get_requests(self):
+    def get_requests(self, include_bodies):
         """Get the request details for running an optimization check"""
         requests = None
         if self.devtools is not None:
-            requests = self.devtools.get_requests()
+            requests = self.devtools.get_requests(include_bodies)
         return requests
 
     def lighthouse_thread(self):

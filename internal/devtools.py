@@ -74,6 +74,7 @@ class DevTools(object):
         self.prepare()
         self.html_body = False
         self.all_bodies = False
+        self.request_sequence = 0
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -474,7 +475,7 @@ class DevTools(object):
     def get_response_body(self, request_id):
         """Retrieve and store the given response body (if necessary)"""
         if request_id not in self.response_bodies and self.body_fail_count < 3:
-            request = self.get_request(request_id)
+            request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request:
                 content_length = self.get_header_value(request['response_headers'],
@@ -564,42 +565,58 @@ class DevTools(object):
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
-        requests = self.get_requests()
+        requests = self.get_requests(True)
         if self.task['error'] is None and requests:
             for request_id in requests:
                 self.get_response_body(request_id)
 
-    def get_request(self, request_id):
+    def get_request(self, request_id, include_bodies):
         """Get the given request details if it is a real request"""
         request = None
         if request_id in self.requests and 'fromNet' in self.requests[request_id] \
                 and self.requests[request_id]['fromNet']:
             events = self.requests[request_id]
             request = {'id': request_id}
+            if 'sequence' in events:
+                request['sequence'] = events['sequence']
             # See if we have a body
-            body_path = os.path.join(self.task['dir'], 'bodies')
-            body_file_path = os.path.join(body_path, request_id)
-            if os.path.isfile(body_file_path):
-                request['body'] = body_file_path
-            if request_id in self.response_bodies:
-                request['response_body'] = self.response_bodies[request_id]
+            if include_bodies:
+                body_path = os.path.join(self.task['dir'], 'bodies')
+                body_file_path = os.path.join(body_path, request_id)
+                if os.path.isfile(body_file_path):
+                    request['body'] = body_file_path
+                if request_id in self.response_bodies:
+                    request['response_body'] = self.response_bodies[request_id]
             # Get the headers from responseReceived
             if 'response' in events:
                 response = events['response'][-1]
                 if 'response' in response:
-                    if 'url' in response['response']:
-                        request['url'] = response['response']['url']
-                    if 'status' in response['response']:
-                        request['status'] = response['response']['status']
+                    fields = ['url', 'status', 'connectionId', 'protocol', 'connectionReused',
+                              'fromServiceWorker', 'timing', 'fromDiskCache', 'remoteIPAddress',
+                              'remotePort', 'securityState', 'securityDetails', 'fromPrefetchCache']
+                    for field in fields:
+                        if field in response['response']:
+                            request[field] = response['response'][field]
                     if 'headers' in response['response']:
                         request['response_headers'] = response['response']['headers']
                     if 'requestHeaders' in response['response']:
                         request['request_headers'] = response['response']['requestHeaders']
-                    if 'connectionId' in response['response']:
-                        request['connection'] = response['response']['connectionId']
+            if 'requestExtra' in events:
+                extra = events['requestExtra']
+                if 'headers' in extra:
+                    request['request_headers'] = extra['headers']
+            if 'responseExtra' in events:
+                extra = events['responseExtra']
+                if 'headers' in extra:
+                    request['response_headers'] = extra['headers']
             # Fill in any missing details from the requestWillBeSent event
             if 'request' in events:
                 req = events['request'][-1]
+                fields = ['initiator', 'documentURL', 'timestamp', 'frameId', 'hasUserGesture',
+                          'type', 'wallTime']
+                for field in fields:
+                    if field in req and field not in request:
+                        request[field] = req[field]
                 if 'request' in req:
                     if 'url' not in request and 'url' in req['request']:
                         request['url'] = req['request']['url']
@@ -618,12 +635,12 @@ class DevTools(object):
                 request['transfer_size'] = transfer_size
         return request
 
-    def get_requests(self):
+    def get_requests(self, include_bodies):
         """Get a dictionary of all of the requests and the details (headers, body file)"""
         requests = None
         if self.requests:
             for request_id in self.requests:
-                request = self.get_request(request_id)
+                request = self.get_request(request_id, include_bodies)
                 if request is not None:
                     if requests is None:
                         requests = {}
@@ -975,7 +992,8 @@ class DevTools(object):
         elif 'requestId' in msg['params']:
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
-                self.requests[request_id] = {'id': request_id}
+                self.request_sequence += 1
+                self.requests[request_id] = {'id': request_id, 'sequence': self.request_sequence}
             request = self.requests[request_id]
             if target_id is not None:
                 request['targetId'] = target_id
@@ -999,6 +1017,8 @@ class DevTools(object):
                     self.main_request = request_id
                     if 'timestamp' in msg['params']:
                         self.start_timestamp = float(msg['params']['timestamp'])
+            elif event == 'requestWillBeSentExtraInfo':
+                request['requestExtra'] = msg['params']
             elif event == 'resourceChangedPriority':
                 if 'priority' not in request:
                     request['priority'] = []
@@ -1032,6 +1052,9 @@ class DevTools(object):
                         else:
                             self.nav_error = '{0:d} Navigation error'.format(self.nav_error_code)
                         logging.debug('Main resource Navigation error: %s', self.nav_error)
+            elif event == 'responseReceivedExtraInfo':
+                self.response_started = True
+                request['responseExtra'] = msg['params']
             elif event == 'dataReceived':
                 self.response_started = True
                 if 'data' not in request:
