@@ -325,10 +325,51 @@ class DevtoolsBrowser(object):
             ret = self.devtools.execute_js(script)
         return ret
 
+    def strip_non_text(self, data):
+        """Strip any non-text fields"""
+        if isinstance(data, dict):
+            for key in data:
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.strip_non_text(entry)
+                elif isinstance(entry, str) or isinstance(entry, unicode):
+                    try:
+                        if (sys.version_info > (3, 0)):
+                            entry.encode('utf-8').decode('utf-8')
+                        else:
+                            entry.decode('utf-8')
+                    except Exception:
+                        data[key] = None
+                elif isinstance(entry, bytes):
+                    try:
+                        data[key] = str(entry.decode('utf-8'))
+                    except Exception:
+                        data[key] = None
+        elif isinstance(data, list):
+            for key in range(len(data)):
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.strip_non_text(entry)
+                elif isinstance(entry, str) or isinstance(entry, unicode):
+                    try:
+                        if (sys.version_info > (3, 0)):
+                            entry.encode('utf-8').decode('utf-8')
+                        else:
+                            entry.decode('utf-8')
+                    except Exception:
+                        data[key] = None
+                elif isinstance(entry, bytes):
+                    try:
+                        data[key] = str(entry.decode('utf-8'))
+                    except Exception:
+                        data[key] = None
+
+
     def get_sorted_requests(self, include_bodies):
         requests = []
         raw_requests = self.get_requests(include_bodies)
         for request_id in raw_requests:
+            self.strip_non_text(raw_requests[request_id])
             requests.append(raw_requests[request_id])
         requests = sorted(requests, key=lambda request: request['sequence'])
         return requests
@@ -345,23 +386,18 @@ class DevtoolsBrowser(object):
             task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
-            '''
             requests = None
             try:
-                requests = json.dumps(self.get_sorted_requests(False), ensure_ascii=False)
+                requests = json.dumps(self.get_sorted_requests(True))
             except Exception:
                 logging.exception('Error getting request data for custom script')
-            logging.debug(requests)
-            '''
             for name in self.job['customMetrics']:
-                custom_script = self.job['customMetrics'][name]
-                '''
+                custom_script = unicode(self.job['customMetrics'][name])
                 if requests is not None:
                     try:
                         custom_script = custom_script.replace('$WPT_REQUESTS', requests)
                     except Exception:
                         logging.exception('Error substituting request data into custom script')
-                '''
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')

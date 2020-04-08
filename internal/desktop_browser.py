@@ -567,7 +567,7 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate(input='q')
+            self.ffmpeg.communicate(input='q'.encode('utf-8'))
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
