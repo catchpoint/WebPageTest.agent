@@ -16,6 +16,7 @@ import sys
 import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
+    unicode = str
     from urllib.parse import urlsplit # pylint: disable=import-error
     GZIP_TEXT = 'wt'
 else:
@@ -681,6 +682,9 @@ class Edge(DesktopBrowser):
                 logging.debug(ret)
         return ret
 
+    def get_sorted_requests_json(self, include_bodies):
+        return 'null'
+
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
         # Trigger a message to start writing the interactive periods asynchronously
@@ -700,11 +704,26 @@ class Edge(DesktopBrowser):
         if 'customMetrics' in self.job:
             self.driver.set_script_timeout(30)
             custom_metrics = {}
+            requests = None
+            bodies = None
             for name in self.job['customMetrics']:
                 logging.debug("Collecting custom metric %s", name)
-                script = 'var wptCustomMetric = function() {' +\
-                         self.job['customMetrics'][name] +\
-                         '};try{return wptCustomMetric();}catch(e){};'
+                custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_REQUESTS') >= 0:
+                    if requests is None:
+                        requests = self.get_sorted_requests_json(False)
+                        try:
+                            custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                        except Exception:
+                            logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_BODIES') >= 0:
+                    if bodies is None:
+                        bodies = self.get_sorted_requests_json(True)
+                        try:
+                            custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                        except Exception:
+                            logging.exception('Error substituting request data with bodies into custom script')
+                script = 'var wptCustomMetric = function() {' + custom_script + '};try{return wptCustomMetric();}catch(e){};'
                 try:
                     custom_metrics[name] = self.driver.execute_script(script)
                     if custom_metrics[name] is not None:

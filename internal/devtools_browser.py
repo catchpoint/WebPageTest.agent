@@ -365,14 +365,21 @@ class DevtoolsBrowser(object):
                         data[key] = None
 
 
-    def get_sorted_requests(self, include_bodies):
-        requests = []
-        raw_requests = self.get_requests(include_bodies)
-        for request_id in raw_requests:
-            self.strip_non_text(raw_requests[request_id])
-            requests.append(raw_requests[request_id])
-        requests = sorted(requests, key=lambda request: request['sequence'])
-        return requests
+    def get_sorted_requests_json(self, include_bodies):
+        requests_json = None
+        try:
+            requests = []
+            raw_requests = self.get_requests(include_bodies)
+            for request_id in raw_requests:
+                self.strip_non_text(raw_requests[request_id])
+                requests.append(raw_requests[request_id])
+            requests = sorted(requests, key=lambda request: request['sequence'])
+            requests_json = json.dumps(requests)
+        except Exception:
+            logging.exception('Error getting json request data')
+        if requests_json is None:
+            requests_json = 'null'
+        return requests_json
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
@@ -387,17 +394,23 @@ class DevtoolsBrowser(object):
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
-            try:
-                requests = json.dumps(self.get_sorted_requests(True))
-            except Exception:
-                logging.exception('Error getting request data for custom script')
+            bodies = None
             for name in self.job['customMetrics']:
                 custom_script = unicode(self.job['customMetrics'][name])
-                if requests is not None:
-                    try:
-                        custom_script = custom_script.replace('$WPT_REQUESTS', requests)
-                    except Exception:
-                        logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_REQUESTS') >= 0:
+                    if requests is None:
+                        requests = self.get_sorted_requests_json(False)
+                        try:
+                            custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                        except Exception:
+                            logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_BODIES') >= 0:
+                    if bodies is None:
+                        bodies = self.get_sorted_requests_json(True)
+                        try:
+                            custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                        except Exception:
+                            logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
