@@ -945,6 +945,8 @@ class DevToolsParser(object):
                     if 'start' in entry:
                         request['load_start_float'] = float(str(entry['start']).strip())
                     request['headers'] = {'request': [], 'response': []}
+                    if 'status' in entry:
+                        request['responseCode'] = entry['status']
                     if 'request_headers' in entry:
                         request['headers']['request'] = list(entry['request_headers'])
                     if 'response_headers' in entry:

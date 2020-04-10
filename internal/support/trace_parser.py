@@ -65,6 +65,7 @@ class Trace():
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
         self.netlog_requests = None
+        self.netlog_event_types = {}
         self.v8stats = None
         self.v8stack = {}
         return
@@ -761,31 +762,40 @@ class Trace():
     #   Netlog
     ##########################################################################
     def ProcessNetlogEvent(self, trace_event):
-        if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event and \
-                'source_type' in trace_event['args']:
+        if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event:
             try:
                 if isinstance(trace_event['id'], (str, unicode)):
                     trace_event['id'] = int(trace_event['id'], 16)
-                event_type = trace_event['args']['source_type']
-                if event_type == 'HOST_RESOLVER_IMPL_JOB' or \
-                        trace_event['name'].startswith('HOST_RESOLVER'):
-                    self.ProcessNetlogDnsEvent(trace_event)
-                elif event_type == 'CONNECT_JOB' or \
-                        event_type == 'SSL_CONNECT_JOB' or \
-                        event_type == 'TRANSPORT_CONNECT_JOB':
-                    self.ProcessNetlogConnectJobEvent(trace_event)
-                elif event_type == 'HTTP_STREAM_JOB':
-                    self.ProcessNetlogStreamJobEvent(trace_event)
-                elif event_type == 'HTTP2_SESSION':
-                    self.ProcessNetlogHttp2SessionEvent(trace_event)
-                elif event_type == 'QUIC_SESSION':
-                    self.ProcessNetlogQuicSessionEvent(trace_event)
-                elif event_type == 'SOCKET':
-                    self.ProcessNetlogSocketEvent(trace_event)
-                elif event_type == 'UDP_SOCKET':
-                    self.ProcessNetlogUdpSocketEvent(trace_event)
-                elif event_type == 'URL_REQUEST':
-                    self.ProcessNetlogUrlRequestEvent(trace_event)
+                event_type = None
+                name = trace_event['name']
+                if 'source_type' in trace_event['args']:
+                    event_type = trace_event['args']['source_type']
+                    if name not in self.netlog_event_types:
+                        self.netlog_event_types[name] = event_type
+                elif name in self.netlog_event_types:
+                    event_type = self.netlog_event_types[name]
+                if event_type is not None:
+                    if event_type == 'HOST_RESOLVER_IMPL_JOB' or \
+                            trace_event['name'].startswith('HOST_RESOLVER'):
+                        self.ProcessNetlogDnsEvent(trace_event)
+                    elif event_type == 'CONNECT_JOB' or \
+                            event_type == 'SSL_CONNECT_JOB' or \
+                            event_type == 'TRANSPORT_CONNECT_JOB':
+                        self.ProcessNetlogConnectJobEvent(trace_event)
+                    elif event_type == 'HTTP_STREAM_JOB':
+                        self.ProcessNetlogStreamJobEvent(trace_event)
+                    elif event_type == 'HTTP2_SESSION':
+                        self.ProcessNetlogHttp2SessionEvent(trace_event)
+                    elif event_type == 'QUIC_SESSION':
+                        self.ProcessNetlogQuicSessionEvent(trace_event)
+                    elif event_type == 'SOCKET':
+                        self.ProcessNetlogSocketEvent(trace_event)
+                    elif event_type == 'UDP_SOCKET':
+                        self.ProcessNetlogUdpSocketEvent(trace_event)
+                    elif event_type == 'URL_REQUEST':
+                        self.ProcessNetlogUrlRequestEvent(trace_event)
+                    elif event_type == 'DISK_CACHE_ENTRY':
+                        self.ProcessNetlogDiskCacheEvent(trace_event)
             except Exception:
                 logging.exception('Error processing netlog event')
 
@@ -794,10 +804,16 @@ class Trace():
         if self.netlog_requests is not None:
             return self.netlog_requests
         requests = []
+        known_hosts = []
+        last_time = 0
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 request['fromNet'] = bool('start' in request)
+                if 'start' in request and request['start'] > last_time:
+                    last_time = request['start']
+                if 'end' in request and request['end'] > last_time:
+                    last_time = request['end']
                 # build a URL from the request headers if one wasn't explicitly provided
                 if 'url' not in request and 'request_headers' in request:
                     scheme = None
@@ -836,9 +852,11 @@ class Trace():
                         request['url'] = scheme + u'://' + origin + path
                 if 'url' in request and not request['url'].startswith('http://127.0.0.1') and \
                         not request['url'].startswith('http://192.168.10.'):
+                    request_host = urlparse(request['url']).hostname
+                    if request_host not in known_hosts:
+                        known_hosts.append(request_host)
                     # Match orphaned request streams with their h2 sessions
                     if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
-                        request_host = urlparse(request['url']).hostname
                         for h2_session_id in self.netlog['h2_session']:
                             h2_session = self.netlog['h2_session'][h2_session_id]
                             if 'host' in h2_session:
@@ -904,6 +922,35 @@ class Trace():
                                 request['chunks'] = stream['chunks']
                     if 'phantom' not in request and 'request_headers' in request:
                         requests.append(request)
+            # See if there were any connections for hosts that we didn't know abot that timed out
+            if 'urls' in self.netlog:
+                failed_hosts = {}
+                if 'stream_job' in self.netlog:
+                    for stream_job_id in self.netlog['stream_job']:
+                        stream_job = self.netlog['stream_job'][stream_job_id]
+                        if 'group' in stream_job and 'socket_start' in stream_job and 'socket' not in stream_job:
+                            matches = re.match(r'^.*/([^:]+)\:\d+$', stream_job['group'])
+                            if matches:
+                                group_hostname = matches.group(1)
+                                if group_hostname not in known_hosts and group_hostname not in failed_hosts:
+                                    failed_hosts[group_hostname] = {'start': stream_job['socket_start']}
+                                    if 'socket_end' in stream_job:
+                                        failed_hosts[group_hostname]['end'] = stream_job['socket_end']
+                                    else:
+                                        failed_hosts[group_hostname]['end'] = max(stream_job['socket_start'], last_time)
+                if failed_hosts:
+                    for url in self.netlog['urls']:
+                        host = urlparse(url).hostname
+                        if host in failed_hosts:
+                            request = {'url': url,
+                                       'created': failed_hosts[host]['start'],
+                                       'start': failed_hosts[host]['start'],
+                                       'end': failed_hosts[host]['end'],
+                                       'connect_start': failed_hosts[host]['start'],
+                                       'connect_end': failed_hosts[host]['end'],
+                                       'fromNet': True,
+                                       'status': 12029}
+                            requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
                 requests.sort(key=lambda x: x['start'] if 'start' in x else x['created'])
@@ -1019,10 +1066,14 @@ class Trace():
             self.netlog['connect_job'] = {}
         request_id = trace_event['id']
         if request_id not in self.netlog['connect_job']:
-            self.netlog['connect_job'][request_id] = {}
+            self.netlog['connect_job'][request_id] = {'created': trace_event['ts']}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['connect_job'][request_id]
         name = trace_event['name']
+        if name == 'TRANSPORT_CONNECT_JOB_CONNECT' and trace_event['ph'] == 'b':
+            entry['connect_start'] = trace_event['ts']
+        if name == 'TRANSPORT_CONNECT_JOB_CONNECT' and trace_event['ph'] == 'e':
+            entry['connect_end'] = trace_event['ts']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'CONNECT_JOB_SET_SOCKET':
                 socket_id = params['source_dependency']['id']
@@ -1043,7 +1094,7 @@ class Trace():
             self.netlog['stream_job'] = {}
         request_id = trace_event['id']
         if request_id not in self.netlog['stream_job']:
-            self.netlog['stream_job'][request_id] = {}
+            self.netlog['stream_job'][request_id] = {'created': trace_event['ts']}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['stream_job'][request_id]
         name = trace_event['name']
@@ -1051,9 +1102,14 @@ class Trace():
             entry['group'] = params['group_name']
         if 'group_id' in params:
             entry['group'] = params['group_id']
+        if name == 'HTTP_STREAM_REQUEST_STARTED_JOB':
+            entry['start'] = trace_event['ts']
+        if name == 'TCP_CLIENT_SOCKET_POOL_REQUESTED_SOCKET':
+            entry['socket_start'] = trace_event['ts']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'SOCKET_POOL_BOUND_TO_SOCKET':
                 socket_id = params['source_dependency']['id']
+                entry['socket_end'] = trace_event['ts']
                 entry['socket'] = socket_id
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
                     self.netlog['urlrequest'][entry['urlrequest']]['socket'] = socket_id
@@ -1062,6 +1118,8 @@ class Trace():
             if name == 'HTTP_STREAM_JOB_BOUND_TO_REQUEST':
                 url_request_id = params['source_dependency']['id']
                 entry['url_request'] = url_request_id
+                if 'socket_end' not in entry:
+                    entry['socket_end'] = trace_event['ts']
                 if url_request_id in self.netlog['url_request']:
                     url_request = self.netlog['url_request'][url_request_id]
                     if 'group' in entry:
@@ -1075,6 +1133,8 @@ class Trace():
                     name == 'HTTP2_SESSION_POOL_FOUND_EXISTING_SESSION_FROM_IP_POOL':
                 h2_session_id = params['source_dependency']['id']
                 entry['h2_session'] = h2_session_id
+                if 'socket_end' not in entry:
+                    entry['socket_end'] = trace_event['ts']
                 if h2_session_id in self.netlog['h2_session'] and 'socket' in self.netlog['h2_session'][h2_session_id]:
                     entry['socket'] = self.netlog['h2_session'][h2_session_id]['socket']
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
@@ -1294,6 +1354,8 @@ class Trace():
         if name == 'TCP_CONNECT_ATTEMPT' and trace_event['ph'] == 'e':
             entry['connect_end'] = trace_event['ts']
         if name == 'SSL_CONNECT':
+            if 'connect_end' not in entry:
+                entry['connect_end'] = trace_event['ts']
             if 'ssl_start' not in entry and trace_event['ph'] == 'b':
                 entry['ssl_start'] = trace_event['ts']
             if trace_event['ph'] == 'e':
@@ -1307,6 +1369,8 @@ class Trace():
             if 'cipher_suite' in params:
                 entry['tls_cipher_suite'] = params['cipher_suite']
         if name == 'SOCKET_BYTES_SENT' and 'byte_count' in params:
+            if 'connect_end' not in entry:
+                entry['connect_end'] = trace_event['ts']
             entry['bytes_out'] += params['byte_count']
             entry['chunks_out'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
         if name == 'SOCKET_BYTES_RECEIVED' and 'byte_count' in params:
@@ -1417,6 +1481,15 @@ class Trace():
             self.netlog['next_request_id'] += 1
             self.netlog['url_request'][new_id] = entry
             del self.netlog['url_request'][request_id]
+    
+    def ProcessNetlogDiskCacheEvent(self, trace_event):
+        """Disk cache events"""
+        if 'args' in trace_event and 'params' in trace_event['args'] and 'key' in trace_event['args']['params']:
+            url = trace_event['args']['params']['key']
+            if 'urls' not in self.netlog:
+                self.netlog['urls'] = {}
+            if url not in self.netlog['urls']:
+                self.netlog['urls'][url] = {'start': trace_event['ts']}
 
 
     #######################################################################
