@@ -16,10 +16,12 @@ import threading
 import time
 if (sys.version_info > (3, 0)):
     from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
     GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
     GZIP_TEXT = 'w'
 try:
     import ujson as json
@@ -441,6 +443,21 @@ class DevtoolsBrowser(object):
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
             script = self.prepare_script_for_record(script) #pylint: disable=no-member
+            # Set up permissions for the origin
+            try:
+                parts = urlsplit(url)
+                origin = parts.scheme + '://' + parts.netloc
+                self.devtools.send_command('Browser.grantPermissions',
+                                        {'origin': origin,
+                                        'permissions': ['geolocation',
+                                                        'videoCapture',
+                                                        'audioCapture',
+                                                        'sensors',
+                                                        'idleDetection',
+                                                        'wakeLockScreen']},
+                                        wait=True)
+            except Exception:
+                logging.exception('Error setting permissions for origin')
             self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'logdata':

@@ -915,6 +915,23 @@ class DevTools(object):
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
+        # Handle permissions for frame navigations
+        if 'params' in msg and 'url' in msg['params']:
+            try:
+                parts = urlsplit(msg['params']['url'])
+                origin = parts.scheme + '://' + parts.netloc
+                self.send_command('Browser.grantPermissions',
+                                  {'origin': origin,
+                                   'permissions': ['geolocation',
+                                                   'videoCapture',
+                                                   'audioCapture',
+                                                   'sensors',
+                                                   'idleDetection',
+                                                   'wakeLockScreen']})
+            except Exception:
+                logging.exception('Error setting permissions for origin')
+
+        # Event-specific logic
         if event == 'loadEventFired':
             self.page_loaded = monotonic()
         elif event == 'frameStartedLoading' and 'params' in msg and 'frameId' in msg['params']:
