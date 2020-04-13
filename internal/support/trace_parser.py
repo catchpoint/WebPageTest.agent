@@ -804,7 +804,7 @@ class Trace():
         if self.netlog_requests is not None:
             return self.netlog_requests
         requests = []
-        known_hosts = ['cache.pack.google.com', 'clients1.google.com']
+        known_hosts = ['cache.pack.google.com', 'clients1.google.com', 'redirector.gvt1.com']
         last_time = 0
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:

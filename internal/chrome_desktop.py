@@ -41,7 +41,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
 
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
-    '"MAP clients1.google.com 127.0.0.1"'
+    '"MAP clients1.google.com 127.0.0.1"',
+    '"MAP redirector.gvt1.com 127.0.0.1"'
 ]
 
 ENABLE_CHROME_FEATURES = [
