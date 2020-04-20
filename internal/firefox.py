@@ -441,17 +441,17 @@ class Firefox(DesktopBrowser):
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
-                        try:
-                            custom_script = custom_script.replace('$WPT_REQUESTS', requests)
-                        except Exception:
-                            logging.exception('Error substituting request data into custom script')
+                    try:
+                        custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                    except Exception:
+                        logging.exception('Error substituting request data into custom script')
                 if custom_script.find('$WPT_BODIES') >= 0:
                     if bodies is None:
                         bodies = self.get_sorted_requests_json(True)
-                        try:
-                            custom_script = custom_script.replace('$WPT_BODIES', bodies)
-                        except Exception:
-                            logging.exception('Error substituting request data with bodies into custom script')
+                    try:
+                        custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{return wptCustomMetric();}catch(e){};'
                 try:
                     custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
