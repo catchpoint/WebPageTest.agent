@@ -31,9 +31,19 @@ function wptagentGetInteractivePeriods() {
     start = longTasks[i][1];
   }
   interactive.push([start, now]);
-  longTasks = [];
-  startTime = now;
   return JSON.stringify(interactive);
 }
 
+function wptagentGetLongTasks() {
+  checkLongTask();
+  return JSON.stringify(longTasks);
+}
+
+function wptagentResetLongTasks() {
+  longTasks = [];
+  startTime = now;
+}
+
 exportFunction(wptagentGetInteractivePeriods, window, {defineAs:'wptagentGetInteractivePeriods'});
+exportFunction(wptagentGetLongTasks, window, {defineAs:'wptagentGetLongTasks'});
+exportFunction(wptagentResetLongTasks, window, {defineAs:'wptagentResetLongTasks'});

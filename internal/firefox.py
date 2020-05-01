@@ -668,6 +668,12 @@ class Firefox(DesktopBrowser):
             interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
             with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
                 f_out.write(interactive)
+        long_tasks = self.execute_js('window.wrappedJSObject.wptagentGetLongTasks();')
+        if long_tasks is not None and len(long_tasks):
+            long_tasks_file = os.path.join(task['dir'], task['prefix'] + '_long_tasks.json.gz')
+            with gzip.open(long_tasks_file, GZIP_TEXT, 7) as f_out:
+                f_out.write(long_tasks)
+        self.execute_js('window.wrappedJSObject.wptagentResetLongTasks();')
         # Close the browser if we are done testing (helps flush logs)
         if not len(task['script']):
             self.close_browser(self.job, task)
