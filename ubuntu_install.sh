@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -eu
+
 until sudo apt-get update
 do
     sleep 1
@@ -8,7 +11,7 @@ do
     sleep 1
 done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
-sudo apt-get install -y python-software-properties
+sudo apt-get install -y python-software-properties || :
 sudo dbus-uuidgen --ensure
 until sudo pip install dnspython monotonic pillow psutil requests git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes tornado wsaccel xvfbwrapper brotli marionette_driver future
 do
