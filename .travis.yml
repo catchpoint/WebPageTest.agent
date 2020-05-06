@@ -1,8 +1,18 @@
+dist: bionic
 sudo: required
 language: php
-services:
-  - docker
-script:
-  - docker build --tag wptagent .
-after_script:
-  - docker images
+
+jobs:
+  include:
+    - name: Build Docker image
+      services:
+        - docker
+      script:
+        - docker build --tag wptagent .
+      after_script:
+        - docker images
+
+    - name: Ubuntu installation test
+      script:
+        - ./ubuntu_install.sh
+        - ./test/ubuntu_install.sh
