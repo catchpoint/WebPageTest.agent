@@ -115,6 +115,7 @@ class OptimizationChecks(object):
                            '.cloudflare.net'],
             'Cotendo CDN': ['.cotcdn.net'],
             'cubeCDN': ['.cubecdn.net'],
+            'DigitalOcean Spaces CDN': ['.cdn.digitaloceanspaces.com'],
             'Edgecast': ['edgecastcdn.net',
                          '.systemcdn.net',
                          '.transactcdn.net',
@@ -214,6 +215,8 @@ class OptimizationChecks(object):
                               '.cdn15.com'],
             'VegaCDN': ['.vegacdn.vn',
                         '.vegacdn.com'],
+            'Vercel': ['.vercel.com',
+                       '.zeit.co'],
             'VoxCDN': ['.voxcdn.net'],
             'XLabs Security': ['.xlabs.com.br',
                                '.armor.zone'],
@@ -221,8 +224,6 @@ class OptimizationChecks(object):
                       '.yimg.',
                       '.yahooapis.com'],
             'Yottaa': ['.yottaa.net'],
-            'Vercel': ['.vercel.com',
-                       '.zeit.co'],
             'Zenedge': ['.zenedge.net']
         }
         self.cdn_headers = {
@@ -289,11 +290,11 @@ class OptimizationChecks(object):
             'Surge': [{'Server': 'SurgeCDN'}],
             'Twitter': [{'Server': 'tsa_b'}],
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
+            'Vercel': [{'Server': 'Vercel'},
+                       {'Server': 'now'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}],
-            'Vercel': [{'Server': 'Vercel'},
-                       {'Server': 'now'}],
             'Zycada Networks': [{'X-Zy-Server': ''}]
         }
         # spell-checker: enable
