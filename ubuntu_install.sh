@@ -44,12 +44,17 @@ do
 done
 sudo fc-cache -f -v
 sudo apt-get clean
-echo '# Limits increased for wptagent' | sudo tee -a /etc/security/limits.conf
-echo '* soft nofile 250000' | sudo tee -a /etc/security/limits.conf
-echo '* hard nofile 300000' | sudo tee -a /etc/security/limits.conf
-echo '# wptagent end' | sudo tee -a /etc/security/limits.conf
-echo '# Settings updated for wptagent' | sudo tee -a /etc/sysctl.conf
-echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/sysctl.conf
-echo '# wptagent end' | sudo tee -a /etc/sysctl.conf
+
+cat << _LIMITS_ | sudo tee /etc/security/limits.d/wptagent.conf
+# Limits increased for wptagent
+* soft nofile 250000
+* hard nofile 300000
+_LIMITS_
+
+cat << _SYSCTL_ | sudo tee /etc/sysctl.d/60-wptagent.conf
+net.ipv4.tcp_syn_retries = 4
+_SYSCTL_
+
 sudo sysctl -p
+
 echo 'Reboot is recommended before starting testing'
