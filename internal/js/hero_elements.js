@@ -113,7 +113,7 @@ function isLargestHero(name, area) {
 }
 
 function isVisibleElement(rect) {
-  return rect.height > 0;
+  return rect.width * rect.height > 1;
 }
 
 function isInViewport(rect) {
