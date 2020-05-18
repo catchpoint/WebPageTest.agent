@@ -222,7 +222,9 @@ class OptimizationChecks(object):
                                '.armor.zone'],
             'Yahoo': ['.ay1.b.yahoo.com',
                       '.yimg.',
-                      '.yahooapis.com'],
+                      '.yahooapis.com',
+                      'cdn.vidible.tv',
+                      'cdn-ssl.vidible.tv'],
             'Yottaa': ['.yottaa.net'],
             'Zenedge': ['.zenedge.net']
         }
