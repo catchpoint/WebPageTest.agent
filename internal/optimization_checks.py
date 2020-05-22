@@ -535,8 +535,8 @@ class OptimizationChecks(object):
             try:
                 from dns import resolver, reversename
                 dns_resolver = resolver.Resolver()
-                dns_resolver.timeout = 5
-                dns_resolver.lifetime = 5
+                dns_resolver.timeout = 1
+                dns_resolver.lifetime = 1
                 # reverse-lookup the edge server
                 try:
                     addresses = dns_resolver.query(domain)
@@ -623,6 +623,7 @@ class OptimizationChecks(object):
             try:
                 while True:
                     dns_result = self.dns_result_queue.get_nowait()
+                    logging.debug("Provider for %s is %s", dns_result['domain'], dns_result['provider'])
                     domains[dns_result['domain']] = dns_result['provider']
             except Exception:
                 pass
