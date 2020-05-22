@@ -615,6 +615,8 @@ class OptimizationChecks(object):
             thread_count = min(10, count)
             threads = []
             for _ in range(thread_count):
+                self.dns_lookup_queue.put(None)
+            for _ in range(thread_count):
                 thread = threading.Thread(target=self.dns_worker)
                 thread.start()
                 threads.append(thread)
@@ -622,11 +624,17 @@ class OptimizationChecks(object):
                 thread.join()
             try:
                 while True:
-                    dns_result = self.dns_result_queue.get_nowait()
-                    logging.debug("Provider for %s is %s", dns_result['domain'], dns_result['provider'])
-                    domains[dns_result['domain']] = dns_result['provider']
+                    dns_result = self.dns_result_queue.get(5)
+                    if dns_result is None:
+                        thread_count -= 1
+                        self.dns_result_queue.task_done()
+                        if thread_count == 0:
+                            break
+                    else:
+                        domains[dns_result['domain']] = dns_result['provider']
+                        self.dns_result_queue.task_done()
             except Exception:
-                pass
+                logging.exception("Error getting CDN DNS results")
         # Final pass, populate the CDN info for each request
         for request_id in self.requests:
             check = {'score': -1, 'provider': ''}
@@ -657,7 +665,6 @@ class OptimizationChecks(object):
         provider = self.check_cdn_name(domain)
         # First do a CNAME check
         if provider is None:
-            logging.debug("Trying cname lookup for %s", domain)
             try:
                 answers = dns_resolver.query(domain, 'CNAME')
                 if answers and len(answers):
@@ -676,7 +683,6 @@ class OptimizationChecks(object):
         # Try a reverse-lookup of the address
         if provider is None:
             try:
-                logging.debug("Trying reverse lookup for %s", domain)
                 addresses = dns_resolver.query(domain)
                 if addresses:
                     addr = str(addresses[0])
@@ -695,14 +701,19 @@ class OptimizationChecks(object):
         """Handle the DNS CNAME lookups and checking in multiple threads"""
         try:
             while True:
-                domain = self.dns_lookup_queue.get_nowait()
-                try:
-                    provider = self.find_dns_cdn(domain)
-                    if provider is not None:
-                        self.dns_result_queue.put({'domain': domain, 'provider': provider})
-                except Exception:
-                    logging.debug('Error in dns worker')
-                self.dns_lookup_queue.task_done()
+                domain = self.dns_lookup_queue.get(5)
+                if domain is None:
+                    self.dns_lookup_queue.task_done()
+                    self.dns_result_queue.put(None)
+                    break
+                else:
+                    try:
+                        provider = self.find_dns_cdn(domain)
+                        if provider is not None:
+                            self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                    except Exception:
+                        logging.debug('Error in dns worker')
+                    self.dns_lookup_queue.task_done()
         except Exception:
             pass
 

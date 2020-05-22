@@ -552,10 +552,15 @@ class DesktopBrowser(BaseBrowser):
             gzfile = gzip.open(file_path, GZIP_TEXT, 7)
             if gzfile:
                 gzfile.write("Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n")
-                while not self.usage_queue.empty():
-                    snapshot = self.usage_queue.get_nowait()
-                    gzfile.write('{0:d},{1:d},{2:0.2f},-1\n'.format(
-                        snapshot['time'], snapshot['bw'], snapshot['cpu']))
+                try:
+                    while True:
+                        snapshot = self.usage_queue.get(5)
+                        if snapshot is None:
+                            break
+                        gzfile.write('{0:d},{1:d},{2:0.2f},-1\n'.format(
+                            snapshot['time'], snapshot['bw'], snapshot['cpu']))
+                except Exception:
+                    logging.Exception("Error processing usage queue")
                 gzfile.close()
         if self.tcpdump is not None:
             logging.debug('Waiting for tcpdump to stop')
@@ -741,6 +746,7 @@ class DesktopBrowser(BaseBrowser):
                         os.kill(self.ffmpeg.pid, signal.CTRL_BREAK_EVENT) #pylint: disable=no-member
                     else:
                         self.ffmpeg.terminate()
+        self.usage_queue.put(None)
 
     def enable_cpu_throttling(self, command_line):
         """Prepare the CPU throttling if necessary"""

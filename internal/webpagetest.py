@@ -899,7 +899,9 @@ class WebPageTest(object):
         proxies = {"http": None, "https": None}
         try:
             while True:
-                task = self.fetch_queue.get_nowait()
+                task = self.fetch_queue.get(5)
+                if task is None:
+                    break
                 try:
                     url = task['url']
                     dest = task['file']
@@ -932,6 +934,7 @@ class WebPageTest(object):
                 self.fetch_queue.task_done()
         except Exception:
             pass
+        self.fetch_result_queue.put(None)
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
@@ -1012,6 +1015,8 @@ class WebPageTest(object):
                 threads = []
                 thread_count = min(count, 10)
                 for _ in range(thread_count):
+                    self.fetch_queue.put(None)
+                for _ in range(thread_count):
                     thread = threading.Thread(target=self.body_fetch_thread)
                     thread.daemon = True
                     thread.start()
@@ -1022,20 +1027,26 @@ class WebPageTest(object):
                 bodies = []
                 try:
                     while True:
-                        task = self.fetch_result_queue.get_nowait()
-                        if os.path.isfile(task['file']):
-                            # check to see if it is text or utf-8 data
-                            try:
-                                data = ''
-                                with open(task['file'], 'r') as f_in:
-                                    data = f_in.read()
-                                json.loads('"' + data.replace('"', '\\"') + '"')
-                                body_index += 1
-                                file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
-                                bodies.append({'name': file_name, 'file': task['file']})
-                            except Exception:
-                                logging.exception('Error appending bodies')
-                        self.fetch_result_queue.task_done()
+                        task = self.fetch_result_queue.get(5)
+                        if task is None:
+                            thread_count -= 1
+                            self.fetch_result_queue.task_done()
+                            if thread_count == 0:
+                                break
+                        else:
+                            if os.path.isfile(task['file']):
+                                # check to see if it is text or utf-8 data
+                                try:
+                                    data = ''
+                                    with open(task['file'], 'r') as f_in:
+                                        data = f_in.read()
+                                    json.loads('"' + data.replace('"', '\\"') + '"')
+                                    body_index += 1
+                                    file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
+                                    bodies.append({'name': file_name, 'file': task['file']})
+                                except Exception:
+                                    logging.exception('Error appending bodies')
+                            self.fetch_result_queue.task_done()
                 except Exception:
                     pass
                 # Add the files
