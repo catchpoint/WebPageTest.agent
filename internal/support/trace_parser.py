@@ -245,6 +245,8 @@ class Trace():
 
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
+        if 'ts' in trace_event:
+            trace_event['ts'] = int(trace_event['ts'])
         if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
                 cat.find('loading') >= 0 or cat.find('navigation') >= 0:
             keep = False

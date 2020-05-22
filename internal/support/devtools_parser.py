@@ -1028,42 +1028,46 @@ class DevToolsParser(object):
         page_data['responses_other'] = 0
         page_data['fullyLoaded'] = page_data['docTime'] if 'docTime' in page_data else 0
         for request in requests:
-            if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
-                    request['ttfb_ms'] >= 0 and 'responseCode' in request and \
-                    (request['responseCode'] == 200 or request['responseCode'] == 304):
-                if 'contentType' not in request or \
-                        (request['contentType'].find('ocsp-response') < 0 and \
-                            request['contentType'].find('ca-cert') < 0):
-                    page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
-                    if request['ssl_end'] >= request['ssl_start'] and \
-                            request['ssl_start'] >= 0:
-                        page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
-                                                                 request['ssl_start']))
-            if 'bytesOut' in request:
-                page_data['bytesOut'] += request['bytesOut']
-            if 'bytesIn' in request:
-                page_data['bytesIn'] += request['bytesIn']
-            page_data['requests'] += 1
-            page_data['requestsFull'] += 1
-            if request['load_start'] < page_data['docTime']:
+            try:
+                request['load_start'] = int(request['load_start'])
+                if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
+                        request['ttfb_ms'] >= 0 and 'responseCode' in request and \
+                        (request['responseCode'] == 200 or request['responseCode'] == 304):
+                    if 'contentType' not in request or \
+                            (request['contentType'].find('ocsp-response') < 0 and \
+                                request['contentType'].find('ca-cert') < 0):
+                        page_data['TTFB'] = int(round(float(request['load_start']) + float(request['ttfb_ms'])))
+                        if request['ssl_end'] >= request['ssl_start'] and \
+                                request['ssl_start'] >= 0:
+                            page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                                    request['ssl_start']))
                 if 'bytesOut' in request:
-                    page_data['bytesOutDoc'] += request['bytesOut']
+                    page_data['bytesOut'] += request['bytesOut']
                 if 'bytesIn' in request:
-                    page_data['bytesInDoc'] += request['bytesIn']
-                page_data['requestsDoc'] += 1
-            if 'responseCode' in request and request['responseCode'] == 200:
-                page_data['responses_200'] += 1
-            elif 'responseCode' in request and request['responseCode'] == 404:
-                page_data['responses_404'] += 1
-                page_data['result'] = 99999
-            else:
-                page_data['responses_other'] += 1
-            if 'load_start' in request:
-                end_time = request['load_start']
-                if 'load_ms' in request:
-                    end_time += request['load_ms']
-                if end_time > page_data['fullyLoaded']:
-                    page_data['fullyLoaded'] = end_time
+                    page_data['bytesIn'] += request['bytesIn']
+                page_data['requests'] += 1
+                page_data['requestsFull'] += 1
+                if request['load_start'] < page_data['docTime']:
+                    if 'bytesOut' in request:
+                        page_data['bytesOutDoc'] += request['bytesOut']
+                    if 'bytesIn' in request:
+                        page_data['bytesInDoc'] += request['bytesIn']
+                    page_data['requestsDoc'] += 1
+                if 'responseCode' in request and request['responseCode'] == 200:
+                    page_data['responses_200'] += 1
+                elif 'responseCode' in request and request['responseCode'] == 404:
+                    page_data['responses_404'] += 1
+                    page_data['result'] = 99999
+                else:
+                    page_data['responses_other'] += 1
+                if 'load_start' in request:
+                    end_time = request['load_start']
+                    if 'load_ms' in request:
+                        end_time += request['load_ms']
+                    if end_time > page_data['fullyLoaded']:
+                        page_data['fullyLoaded'] = end_time
+            except Exception:
+                logging.exception('Error processing request for page data')
         if page_data['responses_200'] == 0:
             if len(requests) > 0 and 'responseCode' in requests[0] and \
                     requests[0]['responseCode'] >= 400:
