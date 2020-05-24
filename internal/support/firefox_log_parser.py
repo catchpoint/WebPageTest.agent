@@ -208,6 +208,11 @@ class FirefoxLogParser(object):
             if match:
                 self.http['channels'][self.http['current_channel']] = \
                         match.groupdict().get('url')
+        # V/nsHttp Creating nsHttpTransaction @0x7f88bb130400
+        elif msg['message'].startswith('Creating nsHttpTransaction '):
+            match = re.search(r'^Creating nsHttpTransaction @(?P<id>[\w\d]+)', msg['message'])
+            if match:
+                self.http['creating_trans_id'] = match.groupdict().get('id')
         # D/nsHttp nsHttpChannel c30d000 created nsHttpTransaction c138c00
         elif msg['message'].startswith('nsHttpChannel') and \
                 msg['message'].find(' created nsHttpTransaction ') > -1:
@@ -218,7 +223,11 @@ class FirefoxLogParser(object):
                 if channel in self.http['channels']:
                     url = self.http['channels'][channel]
                     del self.http['channels'][channel]
-                    trans_id = match.groupdict().get('id')
+                    if 'creating_trans_id' in self.http:
+                        trans_id = self.http['creating_trans_id']
+                        del self.http['creating_trans_id']
+                    else:
+                        trans_id = match.groupdict().get('id')
                     # If there is already an existing transaction with the same ID,
                     # move it to a unique ID.
                     if trans_id in self.http['requests']:
