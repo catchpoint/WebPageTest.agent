@@ -1033,6 +1033,24 @@ class Trace():
                                                 elapsed = dns['elapsed']
                                                 request['dns_start'] = dns['start']
                                                 request['dns_end'] = dns['end']
+                    # Make another pass for any DNS lookups that didn't establish a connection (HTTP/2 coalescing)
+                    for request in requests:
+                        hostname = urlparse(request['url']).hostname
+                        if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
+                            dns = dns_lookups[hostname]
+                            dns['claimed'] = True
+                            # Find the longest DNS time that completed before the request start
+                            if 'times' in dns_lookups[hostname]:
+                                elapsed = None
+                                for dns in dns_lookups[hostname]['times']:
+                                    dns['end'] = min(dns['end'], request['start'])
+                                    if dns['end'] >= dns['start']:
+                                        dns['elapsed'] = dns['end'] - dns['start']
+                                        if elapsed is None or dns['elapsed'] > elapsed:
+                                            elapsed = dns['elapsed']
+                                            request['dns_start'] = dns['start']
+                                            request['dns_end'] = dns['end']
+
                 # Find the start timestamp if we didn't have one already
                 times = ['dns_start', 'dns_end',
                          'connect_start', 'connect_end',
