@@ -166,27 +166,30 @@ class FirefoxLogParser(object):
                 if msg['timestamp'] >= 0:
                     offset = line.find(']: ', 32)
                     if offset >= 0:
-                        thread = line[34:offset]
-                        separator = thread.find(':')
-                        if separator >= 0:
-                            thread = thread[separator + 1:].strip()
-                        msg['thread'] = thread
-                        msg['level'] = line[offset + 3:offset + 4]
-                        msg_start = line.find(' ', offset + 5)
-                        if msg_start >= 0:
-                            msg['category'] = line[offset + 5:msg_start]
-                            msg['message'] = line[msg_start + 1:]
-                            if msg['category'] == 'nsHttp':
-                                if msg['thread'] == 'Main Thread':
-                                    self.main_thread_http_entry(msg)
-                                elif msg['thread'] == 'Socket Thread':
-                                    self.socket_thread_http_entry(msg)
-                            elif msg['category'] == 'nsSocketTransport':
-                                self.socket_transport_entry(msg)
-                            elif msg['category'] == 'nsHostResolver':
-                                self.dns_entry(msg)
+                        try:
+                            thread = line[34:offset]
+                            separator = thread.find(':')
+                            if separator >= 0:
+                                thread = thread[separator + 1:].strip()
+                            msg['thread'] = thread
+                            msg['level'] = line[offset + 3:offset + 4]
+                            msg_start = line.find(' ', offset + 5)
+                            if msg_start >= 0:
+                                msg['category'] = line[offset + 5:msg_start]
+                                msg['message'] = line[msg_start + 1:]
+                                if msg['category'] == 'nsHttp':
+                                    if msg['thread'] == 'Main Thread':
+                                        self.main_thread_http_entry(msg)
+                                    elif msg['thread'] == 'Socket Thread':
+                                        self.socket_thread_http_entry(msg)
+                                elif msg['category'] == 'nsSocketTransport':
+                                    self.socket_transport_entry(msg)
+                                elif msg['category'] == 'nsHostResolver':
+                                    self.dns_entry(msg)
+                        except Exception:
+                            logging.exception('Error processing log line')
             except Exception:
-                logging.exception('Error processing log line')
+                pass
 
     def main_thread_http_entry(self, msg):
         """Process a single HTTP log line from the main thread"""
