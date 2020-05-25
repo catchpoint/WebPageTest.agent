@@ -751,7 +751,7 @@ class DesktopBrowser(BaseBrowser):
     def enable_cpu_throttling(self, command_line):
         """Prepare the CPU throttling if necessary"""
         if self.options.throttle and 'throttle_cpu' in self.job:
-            logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+            logging.debug('Preparing cgroups CPU Throttle (not enabled yet) target: %0.3fx', self.job['throttle_cpu'])
         if self.options.throttle and 'throttle_cpu' in self.job and \
                 self.job['throttle_cpu'] > 1:
             try:
@@ -778,6 +778,7 @@ class DesktopBrowser(BaseBrowser):
     def disable_cpu_throttling(self):
         """Remove the CPU throttling if necessary"""
         if self.throttling_cpu:
+            logging.debug("Disabling cgroup CPU throttling")
             try:
                 cmd = ['sudo', 'cgdelete', '-r', 'cpu,cpuset:wptagent']
                 logging.debug(' '.join(cmd))
@@ -790,6 +791,7 @@ class DesktopBrowser(BaseBrowser):
         if self.options.throttle and 'throttle_cpu' in self.job:
             self.task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
         if self.throttling_cpu:
+            logging.debug("Starting cgroup CPU throttling target: %0.3fx", self.job['throttle_cpu'])
             self.task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
             try:
                 # Leave the quota at 1000 and vary the period to get to the correct multiplier

@@ -127,7 +127,7 @@ class DevtoolsBrowser(object):
                                            {"hidden": True},
                                            wait=True)
                 if (task['running_lighthouse'] or not self.options.throttle) and 'throttle_cpu' in self.job:
-                    logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+                    logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                     if self.job['throttle_cpu'] > 1:
                         self.devtools.send_command("Emulation.setCPUThrottlingRate",
                                                    {"rate": self.job['throttle_cpu']},
