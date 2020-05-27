@@ -557,6 +557,14 @@ class WebPageTest(object):
                         'navigated': False,
                         'page_result': None,
                         'script_step_count': 1}
+                # Increase the activity timeout for high-latency tests
+                if 'latency' in job:
+                    try:
+                        factor = int(min(job['latency'] / 100, 4))
+                        if factor > 1:
+                            task['activity_time'] *= factor
+                    except Exception:
+                        pass
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
