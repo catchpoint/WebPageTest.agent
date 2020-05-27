@@ -65,7 +65,8 @@ class Firefox(DesktopBrowser):
             "tracking-protection.cdn.mozilla.net",
             "shavar.services.mozilla.com",
             "firefox.settings.services.mozilla.com",
-            "snippets.cdn.mozilla.net"]
+            "snippets.cdn.mozilla.net",
+            "content-signature-2.cdn.mozilla.net"]
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
