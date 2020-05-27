@@ -63,7 +63,9 @@ class Firefox(DesktopBrowser):
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.block_domains = [
             "tracking-protection.cdn.mozilla.net",
-            "shavar.services.mozilla.com"]
+            "shavar.services.mozilla.com",
+            "firefox.settings.services.mozilla.com",
+            "snippets.cdn.mozilla.net"]
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
