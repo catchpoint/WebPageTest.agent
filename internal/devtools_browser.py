@@ -586,8 +586,6 @@ class DevtoolsBrowser(object):
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
-                       '--disable-network-throttling',
-                       '--disable-cpu-throttling',
                        '--throttling-method', 'provided',
                        '--enable-error-reporting',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
