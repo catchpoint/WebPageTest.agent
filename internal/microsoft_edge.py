@@ -14,7 +14,7 @@ import shutil
 import subprocess
 import sys
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     unicode = str
     from urllib.parse import urlsplit # pylint: disable=import-error

@@ -18,7 +18,7 @@ import threading
 import time
 import zipfile
 import psutil
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
     GZIP_READ_TEXT = 'rt'
@@ -130,7 +130,7 @@ class WebPageTest(object):
         self.version = '20.05'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            if (sys.version_info > (3, 0)):
+            if (sys.version_info >= (3, 0)):
                 out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory, encoding='UTF-8')
             else:
                 out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory)

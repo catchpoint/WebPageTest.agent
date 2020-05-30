@@ -11,7 +11,7 @@ import subprocess
 import sys
 from threading import Timer
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
 else:
     from monotonic import monotonic
@@ -140,7 +140,7 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                if (sys.version_info > (3, 0)):
+                if (sys.version_info >= (3, 0)):
                     stdout = subprocess.check_output(['ps', 'ax'], encoding='UTF-8')
                 else:
                     stdout = subprocess.check_output(['ps', 'ax'])

@@ -14,7 +14,7 @@ import subprocess
 import sys
 import threading
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
@@ -340,7 +340,7 @@ class DevtoolsBrowser(object):
                     self.strip_non_text(entry)
                 elif isinstance(entry, str) or isinstance(entry, unicode):
                     try:
-                        if (sys.version_info > (3, 0)):
+                        if (sys.version_info >= (3, 0)):
                             entry.encode('utf-8').decode('utf-8')
                         else:
                             entry.decode('utf-8')
@@ -358,7 +358,7 @@ class DevtoolsBrowser(object):
                     self.strip_non_text(entry)
                 elif isinstance(entry, str) or isinstance(entry, unicode):
                     try:
-                        if (sys.version_info > (3, 0)):
+                        if (sys.version_info >= (3, 0)):
                             entry.encode('utf-8').decode('utf-8')
                         else:
                             entry.decode('utf-8')

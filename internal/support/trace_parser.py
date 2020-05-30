@@ -22,7 +22,7 @@ import os
 import re
 import sys
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from urllib.parse import urlparse # pylint: disable=import-error
     unicode = str
     GZIP_TEXT = 'wt'
