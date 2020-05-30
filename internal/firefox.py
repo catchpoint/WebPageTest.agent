@@ -180,7 +180,7 @@ class Firefox(DesktopBrowser):
             self.wait_for_extension()
             if self.connected:
                 # Override the UA String if necessary
-                ua_string = self.execute_js('navigator.userAgent;')
+                ua_string = self.execute_js('return navigator.userAgent;')
                 modified = False
                 if 'uastring' in self.job:
                     ua_string = self.job['uastring']
@@ -205,7 +205,7 @@ class Firefox(DesktopBrowser):
                     except Exception:
                         logging.exception('Error overriding location')
                 # Figure out the native viewport size
-                size = self.execute_js("[window.innerWidth, window.innerHeight]")
+                size = self.execute_js("return [window.innerWidth, window.innerHeight]")
                 logging.debug(size)
                 if size is not None and len(size) == 2:
                     task['actual_viewport'] = {"width": size[0], "height": size[1]}

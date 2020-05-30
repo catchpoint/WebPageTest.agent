@@ -6,6 +6,14 @@
 import logging
 import os
 import re
+import sys
+
+if (sys.version_info >= (3, 0)):
+    unicode = str
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 from .desktop_browser import DesktopBrowser
 from .firefox import Firefox
@@ -19,18 +27,26 @@ class FirefoxWebDriver(Firefox):
     def start_firefox(self, job, task):
         """Start Firefox using WebDriver"""
         from selenium import webdriver # pylint: disable=import-error
-        from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
-        profile = webdriver.FirefoxProfile(task['profile'])
-        self.configure_prefs(profile)
-        binary = FirefoxBinary(self.path)
         capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
         if 'ignoreSSL' in job and job['ignoreSSL']:
             capabilities['acceptInsecureCerts'] = True
         else:
             capabilities['acceptInsecureCerts'] = False
 
-        self.driver = webdriver.Firefox(desired_capabilities=capabilities, firefox_profile=profile, firefox_binary=binary)
+        capabilities['moz:firefoxOptions'] = {
+            'binary': self.path,
+            # 'args': ['-profile', task['profile']],
+            'prefs': self.prepare_prefs(),
+            "log": {"level": "error"},
+            'env': {
+                "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
+                "MOZ_LOG": os.environ["MOZ_LOG"]
+            }
+        }
+
+        self.driver = webdriver.Firefox(desired_capabilities=capabilities)
+        logging.debug(self.driver.capabilities)
 
         self.driver.set_page_load_timeout(task['time_limit'])
         if 'browserVersion' in self.driver.capabilities:
@@ -47,8 +63,9 @@ class FirefoxWebDriver(Firefox):
         extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'Firefox', 'extension')
         self.driver.install_addon(extension_path, temporary=True)
 
-    def configure_prefs(self, profile):
+    def prepare_prefs(self):
         """Load the prefs file and configure them through webdriver"""
+        prefs = {}
         prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'Firefox', 'profile', 'prefs.js')
         with open(prefs_file) as f_in:
             for line in f_in:
@@ -57,16 +74,29 @@ class FirefoxWebDriver(Firefox):
                     key = matches.group(1).strip()
                     value = self.get_pref_value(matches.group(2).strip())
                     if value is not None:
-                        try:
-                            profile.set_preference(key, value)
-                        except Exception:
-                            logging.exception('Error setting prefs through webdriver')
-        # TODO: look through the script if there is one for any prefs
-        profile.update_preferences()
+                        prefs[key] = value
+        return prefs
 
     def driver_set_pref(self, key, value):
-        """TODO: Set a Firefox pref at runtime"""
-        pass
+        """Set a Firefox pref at runtime"""
+        if self.driver is not None:
+            try:
+                script = 'const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");'
+                script += 'Services.prefs.'
+                if isinstance(value, bool):
+                    script += 'setBoolPref'
+                elif isinstance(value, (str, unicode)):
+                    script += 'setStringPref'
+                else:
+                    script += 'setIntPref'
+                script += '({0}, {1});'.format(json.dumps(key), json.dumps(value))
+                logging.debug(script)
+                self.driver.set_context(self.driver.CONTEXT_CHROME)
+                self.driver.execute_script(script)
+            except Exception:
+                logging.exception("Error setting pref")
+            finally:
+                self.driver.set_context(self.driver.CONTEXT_CONTENT)
 
     def set_window_size(self, width, height):
         """Position the window"""
