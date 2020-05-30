@@ -39,6 +39,13 @@ var send_message = function(event, body = undefined) {
   }
 };
 
+browser.runtime.onMessage.addListener(data => {
+  if (data.msg == 'longTask') {
+    send_message('wptagent.longTask', {dur: data.dur, ts: performance.now()});
+  }
+});
+
+
 var log = function(message) {
   message_headers = new Headers({
     "Content-Type": "application/json",
@@ -158,7 +165,7 @@ fetch(SERVER + 'config').then(function(response) {
         installBlockingHandler();
       }
       // Let wptagent know we started
-      send_message('wptagent.started');
+      send_message('wptagent.started', {ts: performance.now()});
     });
   }
 });

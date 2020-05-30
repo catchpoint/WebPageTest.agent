@@ -52,12 +52,15 @@ class Firefox(DesktopBrowser):
         self.start_offset = None
         self.browser_version = None
         self.main_request_headers = None
+        self.extension_start_time = None
+        self.navigate_start_time = None
         self.log_pos = {}
         self.log_level = 5
         if 'browser_info' in job and 'log_level' in job['browser_info']:
             self.log_level = job['browser_info']['log_level']
         self.page = {}
         self.requests = {}
+        self.long_tasks = []
         self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.start_page = 'http://127.0.0.1:8888/orange.html'
@@ -334,12 +337,13 @@ class Firefox(DesktopBrowser):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
             end_time = monotonic() + 30
-            while monotonic() < end_time:
+            while monotonic() < end_time and not self.connected:
                 try:
-                    self.job['message_server'].get_message(1)
-                    logging.debug('Extension started')
-                    self.connected = True
-                    break
+                    message = self.job['message_server'].get_message(1)
+                    try:
+                        self.process_message(message)
+                    except Exception:
+                        logging.exception('Error processing message')
                 except Exception:
                     pass
 
@@ -397,7 +401,7 @@ class Firefox(DesktopBrowser):
         ret = None
         if self.marionette is not None:
             try:
-                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30000)
             except Exception:
                 logging.exception('Error executing script')
         return ret
@@ -412,7 +416,7 @@ class Firefox(DesktopBrowser):
                 script = script_file.read()
         if script is not None:
             try:
-                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30000)
             except Exception:
                 logging.exception('Error executing script file')
             if ret is not None:
@@ -457,7 +461,7 @@ class Firefox(DesktopBrowser):
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{return wptCustomMetric();}catch(e){};'
                 try:
-                    custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+                    custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30000)
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
@@ -483,7 +487,26 @@ class Firefox(DesktopBrowser):
     def process_message(self, message):
         """Process a message from the extension"""
         logging.debug(message)
-        if self.recording:
+        if not self.connected:
+            logging.debug('Extension started')
+            self.connected = True
+        if 'path' in message and message['path'].startswith('wptagent.'):
+                if 'ts' in message['body']:
+                    if message['path'] == 'wptagent.started':
+                        now = monotonic()
+                        self.extension_start_time = now - (float(message['body']['ts']) / 1000.0)
+                        logging.debug("Extension start time: %0.3f", self.extension_start_time)
+                    elif message['path'] == 'wptagent.longTask' and 'dur' in message['body'] and self.extension_start_time is not None and self.recording:
+                        # adjust the long task time to be relative to the step start time
+                        duration = float(message['body']['dur']) / 1000.0
+                        end_time = (self.task['run_start_time'] - self.extension_start_time) + (float(message['body']['ts']) / 1000.0)
+                        start_time = end_time - duration
+                        if start_time > 0:
+                            self.long_tasks.append([int(start_time * 1000), int(end_time * 1000)])
+                        else:
+                            logging.debug("Long task outside of the test time")
+
+        elif self.recording:
             self.last_activity = monotonic()
             try:
                 # Make all of the timestamps relative to the test start to match the log events
@@ -522,7 +545,7 @@ class Firefox(DesktopBrowser):
                     logging.debug("Injecting script: \n%s", self.job['injectScript'])
                     try:
                         self.marionette.execute_script(self.job['injectScript'],
-                                                       script_timeout=30)
+                                                       script_timeout=30000)
                     except Exception:
                         logging.exception('Error injecting script')
             elif message == 'onDOMContentLoaded':
@@ -626,6 +649,7 @@ class Firefox(DesktopBrowser):
         # Clear the state
         self.page = {}
         self.requests = {}
+        self.long_tasks = []
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
         task['run_start_time'] = monotonic()
@@ -665,18 +689,26 @@ class Firefox(DesktopBrowser):
                 self.grab_screenshot(screen_shot, png=False, resize=600)
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
-        # Collect the interactive periods
-        interactive = self.execute_js('window.wrappedJSObject.wptagentGetInteractivePeriods();')
-        if interactive is not None and len(interactive):
-            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
-            with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
-                f_out.write(interactive)
-        long_tasks = self.execute_js('window.wrappedJSObject.wptagentGetLongTasks();')
-        if long_tasks is not None and len(long_tasks):
+        # Write out the long tasks
+        try:
             long_tasks_file = os.path.join(task['dir'], task['prefix'] + '_long_tasks.json.gz')
             with gzip.open(long_tasks_file, GZIP_TEXT, 7) as f_out:
-                f_out.write(long_tasks)
-        self.execute_js('window.wrappedJSObject.wptagentResetLongTasks();')
+                f_out.write(json.dumps(self.long_tasks))
+        except Exception:
+            logging.exception("Error writing the long tasks")
+        try:
+            interactive_periods = []
+            last_end = 0
+            for period in self.long_tasks:
+                interactive_periods.append([last_end, period[0]])
+                last_end = period[1]
+            test_end = int((monotonic() - task['run_start_time']) * 1000)
+            interactive_periods.append([last_end, test_end])
+            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
+            with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
+                f_out.write(json.dumps(interactive_periods))
+        except Exception:
+            logging.exception("Error writing the interactive periods")
         # Close the browser if we are done testing (helps flush logs)
         if not len(task['script']):
             self.close_browser(self.job, task)
