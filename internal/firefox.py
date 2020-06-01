@@ -385,6 +385,8 @@ class Firefox(DesktopBrowser):
                     pass
                 now = monotonic()
                 elapsed_test = now - start_time
+                if 'time' in self.job and elapsed_test < self.job['time']:
+                    continue
                 # Allow up to 5 seconds after a navigation for a re-navigation to happen
                 # (bizarre sequence Firefox seems to do)
                 if self.possible_navigation_error is not None:
@@ -394,7 +396,7 @@ class Firefox(DesktopBrowser):
                 if self.nav_error is not None:
                     logging.debug('Navigation error')
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'time' in self.job:
                         logging.debug('Page not loaded')
                         self.task['error'] = self.nav_error
                         self.task['page_data']['result'] = 12999
@@ -406,7 +408,7 @@ class Firefox(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99998
-                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:

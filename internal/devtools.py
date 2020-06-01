@@ -751,9 +751,11 @@ class DevTools(object):
                     pass
                 now = monotonic()
                 elapsed_test = now - start_time
+                if 'time' in self.job and elapsed_test < self.job['time']:
+                    continue
                 if self.nav_error is not None:
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'time' in self.job:
                         self.task['error'] = self.nav_error
                         if self.nav_error_code is not None:
                             self.task['page_data']['result'] = self.nav_error_code
@@ -765,7 +767,7 @@ class DevTools(object):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99997
-                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
