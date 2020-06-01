@@ -82,9 +82,6 @@ class DevTools(object):
         self.response_bodies = {}
         self.nav_error = None
         self.nav_error_code = None
-        self.main_request = None
-        self.main_request_headers = None
-        self.response_started = False
         self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
