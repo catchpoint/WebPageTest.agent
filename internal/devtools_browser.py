@@ -498,6 +498,8 @@ class DevtoolsBrowser(object):
             if 'target' in command:
                 milliseconds = int(re.search(r'\d+', str(command['target'])).group())
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
+        elif command['command'] == 'setminimumstepseconds':
+            self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':

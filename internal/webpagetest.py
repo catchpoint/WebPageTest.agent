@@ -646,6 +646,8 @@ class WebPageTest(object):
                     else:
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
+                if 'time' in job:
+                    task['minimumTestSeconds'] = job['time']
                 task['time_limit'] = job['timeout']
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
