@@ -36,7 +36,7 @@ class FirefoxWebDriver(Firefox):
 
         capabilities['moz:firefoxOptions'] = {
             'binary': self.path,
-            # 'args': ['-profile', task['profile']],
+            'args': ['-profile', task['profile']],
             'prefs': self.prepare_prefs(),
             "log": {"level": "error"},
             'env': {
@@ -44,8 +44,9 @@ class FirefoxWebDriver(Firefox):
                 "MOZ_LOG": os.environ["MOZ_LOG"]
             }
         }
+        service_args = ["--marionette-port", "2828"]
 
-        self.driver = webdriver.Firefox(desired_capabilities=capabilities)
+        self.driver = webdriver.Firefox(desired_capabilities=capabilities, service_args=service_args)
         logging.debug(self.driver.capabilities)
 
         self.driver.set_page_load_timeout(task['time_limit'])
