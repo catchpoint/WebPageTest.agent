@@ -133,7 +133,7 @@ class DevtoolsBrowser(object):
             #   2. Lighthouse test runs where a custom config path is not specified
             if not self.options.android and \
                     (task['running_lighthouse'] or not self.options.throttle) and \
-                    (not task['running_lighthouse'] or not self.job['lighthouse_config_path']) and \
+                    (not task['running_lighthouse'] or not self.job['lighthouse_config']) and \
                     'throttle_cpu' in self.job:
                 logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                 if self.job['throttle_cpu'] > 1:
@@ -580,7 +580,7 @@ class DevtoolsBrowser(object):
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
         if 'url' in self.job and self.job['url'] is not None:
-            if not self.job['lighthouse_config_path']:
+            if not self.job['lighthouse_config']:
                 self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
@@ -597,8 +597,14 @@ class DevtoolsBrowser(object):
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
-            if self.job['lighthouse_config_path']:
-                command.extend(['--config-path', self.job['lighthouse_config_path']])
+            if self.job['lighthouse_config']:
+                try:
+                    lighthouse_config_file = os.path.join(task['dir'], 'lighthouse-config.json')
+                    with open(lighthouse_config_file, 'wt') as f_out:
+                        json.dump(json.loads(self.job['lighthouse_config']), f_out)
+                    command.extend(['--config-path', lighthouse_config_file])
+                except Exception:
+                    logging.exception('Error adding custom config for lighthouse test')
             else:
                 command.extend(['--throttling-method', 'provided'])
             if self.job['keep_lighthouse_trace']:
