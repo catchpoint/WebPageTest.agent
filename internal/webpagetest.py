@@ -474,6 +474,8 @@ class WebPageTest(object):
                         bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
                     job['lighthouse_throttle'] = \
                         bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                    job['lighthouse_config'] = \
+                        str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and
