@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 import zipfile
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
@@ -82,9 +82,6 @@ class DevTools(object):
         self.response_bodies = {}
         self.nav_error = None
         self.nav_error_code = None
-        self.main_request = None
-        self.main_request_headers = None
-        self.response_started = False
         self.start_timestamp = None
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
@@ -754,9 +751,13 @@ class DevTools(object):
                     pass
                 now = monotonic()
                 elapsed_test = now - start_time
+                if 'minimumTestSeconds' in self.task and \
+                        elapsed_test < self.task['minimumTestSeconds'] and \
+                        now < end_time:
+                    continue
                 if self.nav_error is not None:
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'minimumTestSeconds' in self.task:
                         self.task['error'] = self.nav_error
                         if self.nav_error_code is not None:
                             self.task['page_data']['result'] = self.nav_error_code
@@ -768,7 +769,7 @@ class DevTools(object):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99997
-                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:

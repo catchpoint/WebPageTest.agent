@@ -40,7 +40,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
     GZIP_READ_TEXT = 'rt'
 else:
@@ -751,7 +751,7 @@ def crop_viewport(directory):
 def get_decimate_filter():
     decimate = None
     try:
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT, encoding='UTF-8')
         else:
             filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
@@ -1651,7 +1651,7 @@ def check_config():
 def check_process(command, output):
     ok = False
     try:
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True, encoding='UTF-8')
         else:
             out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)

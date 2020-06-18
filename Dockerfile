@@ -44,6 +44,7 @@ RUN apt-get update && \
   google-chrome-unstable \
   firefox \
   firefox-trunk \
+  firefox-geckodriver \
   opera-stable \
   opera-beta \
   opera-developer \
@@ -69,6 +70,7 @@ RUN apt-get update && \
     brotli \
     'fonttools>=3.44.0,<4.0.0' \
     marionette_driver \
+    selenium \
     future
 
 COPY wptagent.py /wptagent/wptagent.py

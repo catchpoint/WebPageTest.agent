@@ -21,7 +21,7 @@ import logging
 import os
 import re
 import sys
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import urlsplit # pylint: disable=import-error
     GZIP_TEXT = 'wt'

@@ -15,7 +15,7 @@ import subprocess
 import sys
 import threading
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     GZIP_TEXT = 'wt'
     unicode = str
@@ -403,7 +403,7 @@ class OptimizationChecks(object):
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             from urllib.parse import urlsplit # pylint: disable=import-error
         else:
             from urlparse import urlsplit # pylint: disable=import-error
@@ -582,7 +582,7 @@ class OptimizationChecks(object):
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             from urllib.parse import urlparse # pylint: disable=import-error
         else:
             from urlparse import urlparse # pylint: disable=import-error

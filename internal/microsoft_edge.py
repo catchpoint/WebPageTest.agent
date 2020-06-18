@@ -14,7 +14,7 @@ import shutil
 import subprocess
 import sys
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     unicode = str
     from urllib.parse import urlsplit # pylint: disable=import-error
@@ -337,9 +337,13 @@ class Edge(DesktopBrowser):
                     pass
                 now = monotonic()
                 elapsed_test = now - start_time
+                if 'minimumTestSeconds' in self.task and \
+                        elapsed_test < self.task['minimumTestSeconds'] and \
+                        now < end_time:
+                    continue
                 if self.nav_error is not None:
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'minimumTestSeconds' in self.task:
                         self.task['error'] = self.nav_error
                         self.task['page_data']['result'] = 12999
                     logging.debug("Page load navigation error: %s", self.nav_error)
@@ -350,8 +354,7 @@ class Edge(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99998
-                elif self.last_activity is not None and \
-                        ('time' not in self.job or elapsed_test > self.job['time']):
+                elif self.last_activity is not None:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
@@ -877,6 +880,8 @@ class Edge(DesktopBrowser):
             if 'target' in command:
                 milliseconds = int(re.search(r'\d+', str(command['target'])).group())
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
+        elif command['command'] == 'setminimumstepseconds':
+            self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':

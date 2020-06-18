@@ -15,7 +15,7 @@ import shutil
 import subprocess
 import sys
 import time
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     unicode = str
     from urllib.parse import urlsplit # pylint: disable=import-error
@@ -52,12 +52,15 @@ class Firefox(DesktopBrowser):
         self.start_offset = None
         self.browser_version = None
         self.main_request_headers = None
+        self.extension_start_time = None
+        self.navigate_start_time = None
         self.log_pos = {}
         self.log_level = 5
         if 'browser_info' in job and 'log_level' in job['browser_info']:
             self.log_level = job['browser_info']['log_level']
         self.page = {}
         self.requests = {}
+        self.long_tasks = []
         self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.start_page = 'http://127.0.0.1:8888/orange.html'
@@ -133,11 +136,8 @@ class Firefox(DesktopBrowser):
                 pass
         return command_line
 
-    def launch(self, job, task):
-        """Launch the browser"""
-        if self.job['message_server'] is not None:
-            self.job['message_server'].flush_messages()
-        self.connected = False
+    def start_firefox(self, job, task):
+        """Start Firefox using Marionette"""
         from marionette_driver.marionette import Marionette
         from marionette_driver.addons import Addons
         args = ['-profile', '"{0}"'.format(task['profile']),
@@ -151,28 +151,36 @@ class Firefox(DesktopBrowser):
         command_line += ' ' + ' '.join(args)
         command_line = self.disable_fsync(command_line)
         DesktopBrowser.launch_browser(self, command_line)
+        self.marionette = Marionette('localhost', port=2828)
+        capabilities = None
+        if 'ignoreSSL' in job and job['ignoreSSL']:
+            capabilities = {'acceptInsecureCerts': True}
+        self.marionette.start_session(timeout=self.task['time_limit'], capabilities=capabilities)
+        self.configure_prefs()
+        logging.debug('Installing extension')
+        self.addons = Addons(self.marionette)
+        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        'support', 'Firefox', 'extension')
+        self.extension_id = self.addons.install(extension_path, temp=True)
+        logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
+        self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
+        if 'browserVersion' in self.marionette.session_capabilities:
+            self.browser_version = self.marionette.session_capabilities['browserVersion']
+        self.marionette.navigate(self.start_page)
+
+    def launch(self, job, task):
+        """Launch the browser"""
+        if self.job['message_server'] is not None:
+            self.job['message_server'].flush_messages()
+        self.connected = False
+
         try:
-            self.marionette = Marionette('localhost', port=2828)
-            capabilities = None
-            if 'ignoreSSL' in job and job['ignoreSSL']:
-                capabilities = {'acceptInsecureCerts': True}
-            self.marionette.start_session(timeout=self.task['time_limit'], capabilities=capabilities)
-            self.configure_prefs()
-            logging.debug('Installing extension')
-            self.addons = Addons(self.marionette)
-            extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                          'support', 'Firefox', 'extension')
-            self.extension_id = self.addons.install(extension_path, temp=True)
-            logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
-            self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
-            if 'browserVersion' in self.marionette.session_capabilities:
-                self.browser_version = self.marionette.session_capabilities['browserVersion']
-            self.marionette.navigate(self.start_page)
+            self.start_firefox(job, task)
             time.sleep(0.5)
             self.wait_for_extension()
             if self.connected:
                 # Override the UA String if necessary
-                ua_string = self.execute_js('navigator.userAgent;')
+                ua_string = self.execute_js('return navigator.userAgent;')
                 modified = False
                 if 'uastring' in self.job:
                     ua_string = self.job['uastring']
@@ -182,7 +190,7 @@ class Firefox(DesktopBrowser):
                     modified = True
                 if modified:
                     logging.debug(ua_string)
-                    self.marionette.set_pref('general.useragent.override', ua_string)
+                    self.driver_set_pref('general.useragent.override', ua_string)
                 # Location
                 if 'lat' in self.job and 'lng' in self.job:
                     try:
@@ -193,11 +201,11 @@ class Firefox(DesktopBrowser):
                             '"location":{{"lat":{0:f},"lng":{1:f}}}'\
                             '}}'.format(lat, lng)
                         logging.debug('Setting location: %s', location_uri)
-                        self.set_pref('geo.wifi.uri', location_uri)
+                        self.driver_set_pref('geo.wifi.uri', location_uri)
                     except Exception:
                         logging.exception('Error overriding location')
                 # Figure out the native viewport size
-                size = self.execute_js("[window.innerWidth, window.innerHeight]")
+                size = self.execute_js("return [window.innerWidth, window.innerHeight]")
                 logging.debug(size)
                 if size is not None and len(size) == 2:
                     task['actual_viewport'] = {"width": size[0], "height": size[1]}
@@ -208,7 +216,7 @@ class Firefox(DesktopBrowser):
                             width = task['width'] + delta_x
                             height = task['height'] + delta_y
                             logging.debug('Resizing browser to %dx%d', width, height)
-                            self.marionette.set_window_rect(x=0, y=0, height=height, width=width)
+                            self.set_window_size(width, height)
                 # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
         except Exception as err:
@@ -249,8 +257,16 @@ class Firefox(DesktopBrowser):
             except Exception:
                 logging.exception('Error setting prefs through marionette')
 
-    def close_browser(self, job, task):
-        """Terminate the browser but don't do all of the cleanup that stop does"""
+    def driver_set_pref(self, key, value):
+        """Set a Firefox pref at runtime using Marionette"""
+        self.marionette.set_pref(key, value)
+
+    def set_window_size(self, width, height):
+        """Position the window"""
+        self.marionette.set_window_rect(x=0, y=0, height=height, width=width)
+
+    def disconnect_driver(self):
+        """Disconnect Marionette"""
         if self.extension_id is not None and self.addons is not None:
             try:
                 self.addons.uninstall(self.extension_id)
@@ -264,6 +280,11 @@ class Firefox(DesktopBrowser):
             except Exception:
                 logging.exception('Error closing marionette')
             self.marionette = None
+
+    def close_browser(self, job, task):
+        """Terminate the browser but don't do all of the cleanup that stop does"""
+        self.connected = False
+        self.disconnect_driver()
         DesktopBrowser.close_browser(self, job, task)
         # make SURE the Firefox processes are gone
         if platform.system() == "Linux":
@@ -291,7 +312,7 @@ class Firefox(DesktopBrowser):
 
     def run_task(self, task):
         """Run an individual test"""
-        if self.marionette is not None and self.connected:
+        if self.connected:
             self.task = task
             logging.debug("Running test")
             end_time = monotonic() + task['test_time_limit']
@@ -325,7 +346,7 @@ class Firefox(DesktopBrowser):
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
             try:
-                self.marionette.navigate('about:blank')
+                self.navigate('about:blank')
             except Exception:
                 logging.exception('Marionette exception navigating to about:blank after the test')
             self.task = None
@@ -334,12 +355,13 @@ class Firefox(DesktopBrowser):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
             end_time = monotonic() + 30
-            while monotonic() < end_time:
+            while monotonic() < end_time and not self.connected:
                 try:
-                    self.job['message_server'].get_message(1)
-                    logging.debug('Extension started')
-                    self.connected = True
-                    break
+                    message = self.job['message_server'].get_message(1)
+                    try:
+                        self.process_message(message)
+                    except Exception:
+                        logging.exception('Error processing message')
                 except Exception:
                     pass
 
@@ -363,6 +385,10 @@ class Firefox(DesktopBrowser):
                     pass
                 now = monotonic()
                 elapsed_test = now - start_time
+                if 'minimumTestSeconds' in self.task and \
+                        elapsed_test < self.task['minimumTestSeconds'] and \
+                        now < end_time:
+                    continue
                 # Allow up to 5 seconds after a navigation for a re-navigation to happen
                 # (bizarre sequence Firefox seems to do)
                 if self.possible_navigation_error is not None:
@@ -372,7 +398,7 @@ class Firefox(DesktopBrowser):
                 if self.nav_error is not None:
                     logging.debug('Navigation error')
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'minimumTestSeconds' in self.task:
                         logging.debug('Page not loaded')
                         self.task['error'] = self.nav_error
                         self.task['page_data']['result'] = 12999
@@ -384,7 +410,7 @@ class Firefox(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99998
-                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
@@ -397,7 +423,7 @@ class Firefox(DesktopBrowser):
         ret = None
         if self.marionette is not None:
             try:
-                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+                ret = self.marionette.execute_script(script, script_timeout=30000)
             except Exception:
                 logging.exception('Error executing script')
         return ret
@@ -412,7 +438,7 @@ class Firefox(DesktopBrowser):
                 script = script_file.read()
         if script is not None:
             try:
-                ret = self.marionette.execute_script('return ' + script, script_timeout=30)
+                ret = self.marionette.execute_script('return ' + script, script_timeout=30000)
             except Exception:
                 logging.exception('Error executing script file')
             if ret is not None:
@@ -457,7 +483,7 @@ class Firefox(DesktopBrowser):
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{return wptCustomMetric();}catch(e){};'
                 try:
-                    custom_metrics[name] = self.marionette.execute_script(script, script_timeout=30)
+                    custom_metrics[name] = self.execute_js(script)
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
@@ -483,7 +509,26 @@ class Firefox(DesktopBrowser):
     def process_message(self, message):
         """Process a message from the extension"""
         logging.debug(message)
-        if self.recording:
+        if not self.connected:
+            logging.debug('Extension started')
+            self.connected = True
+        if 'path' in message and message['path'].startswith('wptagent.'):
+                if 'ts' in message['body']:
+                    if message['path'] == 'wptagent.started':
+                        now = monotonic()
+                        self.extension_start_time = now - (float(message['body']['ts']) / 1000.0)
+                        logging.debug("Extension start time: %0.3f", self.extension_start_time)
+                    elif message['path'] == 'wptagent.longTask' and 'dur' in message['body'] and self.extension_start_time is not None and self.recording:
+                        # adjust the long task time to be relative to the step start time
+                        duration = float(message['body']['dur']) / 1000.0
+                        end_time = (self.task['run_start_time'] - self.extension_start_time) + (float(message['body']['ts']) / 1000.0)
+                        start_time = end_time - duration
+                        if start_time > 0:
+                            self.long_tasks.append([int(start_time * 1000), int(end_time * 1000)])
+                        else:
+                            logging.debug("Long task outside of the test time")
+
+        elif self.recording:
             self.last_activity = monotonic()
             try:
                 # Make all of the timestamps relative to the test start to match the log events
@@ -518,11 +563,10 @@ class Firefox(DesktopBrowser):
                 if 'timeStamp' in evt and 'frameId' in evt and evt['frameId'] == 0 \
                         and 'committed' not in self.page:
                     self.page['committed'] = evt['timeStamp']
-                if 'injectScript' in self.job and self.marionette is not None:
+                if 'injectScript' in self.job and self.connected:
                     logging.debug("Injecting script: \n%s", self.job['injectScript'])
                     try:
-                        self.marionette.execute_script(self.job['injectScript'],
-                                                       script_timeout=30)
+                        self.execute_js(self.job['injectScript'])
                     except Exception:
                         logging.exception('Error injecting script')
             elif message == 'onDOMContentLoaded':
@@ -626,6 +670,7 @@ class Firefox(DesktopBrowser):
         # Clear the state
         self.page = {}
         self.requests = {}
+        self.long_tasks = []
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
         task['run_start_time'] = monotonic()
@@ -665,18 +710,26 @@ class Firefox(DesktopBrowser):
                 self.grab_screenshot(screen_shot, png=False, resize=600)
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
-        # Collect the interactive periods
-        interactive = self.execute_js('window.wrappedJSObject.wptagentGetInteractivePeriods();')
-        if interactive is not None and len(interactive):
-            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
-            with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
-                f_out.write(interactive)
-        long_tasks = self.execute_js('window.wrappedJSObject.wptagentGetLongTasks();')
-        if long_tasks is not None and len(long_tasks):
+        # Write out the long tasks
+        try:
             long_tasks_file = os.path.join(task['dir'], task['prefix'] + '_long_tasks.json.gz')
             with gzip.open(long_tasks_file, GZIP_TEXT, 7) as f_out:
-                f_out.write(long_tasks)
-        self.execute_js('window.wrappedJSObject.wptagentResetLongTasks();')
+                f_out.write(json.dumps(self.long_tasks))
+        except Exception:
+            logging.exception("Error writing the long tasks")
+        try:
+            interactive_periods = []
+            last_end = 0
+            for period in self.long_tasks:
+                interactive_periods.append([last_end, period[0]])
+                last_end = period[1]
+            test_end = int((monotonic() - task['run_start_time']) * 1000)
+            interactive_periods.append([last_end, test_end])
+            interactive_file = os.path.join(task['dir'], task['prefix'] + '_interactive.json.gz')
+            with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
+                f_out.write(json.dumps(interactive_periods))
+        except Exception:
+            logging.exception("Error writing the interactive periods")
         # Close the browser if we are done testing (helps flush logs)
         if not len(task['script']):
             self.close_browser(self.job, task)
@@ -764,7 +817,7 @@ class Firefox(DesktopBrowser):
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
             script = self.prepare_script_for_record(script)
-            self.marionette.execute_script(script)
+            self.execute_js(script)
         elif command['command'] == 'logdata':
             self.task['combine_steps'] = False
             if int(re.search(r'\d+', str(command['target'])).group()):
@@ -782,7 +835,7 @@ class Firefox(DesktopBrowser):
             script = command['target']
             if command['record']:
                 script = self.prepare_script_for_record(script)
-            self.marionette.execute_script(script)
+            self.execute_js(script)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
@@ -795,6 +848,8 @@ class Firefox(DesktopBrowser):
             if 'target' in command:
                 milliseconds = int(re.search(r'\d+', str(command['target'])).group())
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
+        elif command['command'] == 'setminimumstepseconds':
+            self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'firefoxpref':
@@ -832,15 +887,19 @@ class Firefox(DesktopBrowser):
         if value is not None:
             try:
                 logging.debug('Setting Pref "%s" to %s', key, value_str)
-                self.marionette.set_pref(key, value)
+                self.driver_set_pref(key, value)
             except Exception:
                 logging.exception('Error setting pref')
 
+    def grab_raw_screenshot(self):
+        """Grab a screenshot using Marionette"""
+        return self.marionette.screenshot(format='binary', full=False)
+
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        if self.marionette is not None:
+        if self.connected:
             try:
-                data = self.marionette.screenshot(format='binary', full=False)
+                data = self.grab_raw_screenshot()
                 if data is not None:
                     resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                     if png:

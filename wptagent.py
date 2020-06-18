@@ -16,7 +16,7 @@ import subprocess
 import sys
 import time
 import traceback
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
     GZIP_TEXT = 'w'
@@ -73,7 +73,7 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
             from monotonic import monotonic
@@ -239,7 +239,7 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
             from monotonic import monotonic
@@ -292,13 +292,13 @@ class WPTAgent(object):
             except ImportError:
                 pass
         if not ret:
-            if (sys.version_info > (3, 0)):
+            if (sys.version_info >= (3, 0)):
                 print("Missing {0} module. Please run 'pip3 install {1}'".format(module, module_name))
             else:
                 print("Missing {0} module. Please run 'pip install {1}'".format(module, module_name))
         return ret
 
-    def startup(self):
+    def startup(self, detected_browsers):
         """Validate that all of the external dependencies are installed"""
         ret = True
 
@@ -319,6 +319,9 @@ class WPTAgent(object):
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
+
+        if self.options.webdriver and 'Firefox' in detected_browsers:
+            ret = self.requires('selenium')
 
         # Optional imports
         self.requires('brotli')
@@ -355,7 +358,14 @@ class WPTAgent(object):
                 subprocess.check_output(['traceroute', '--version'])
             except Exception:
                 logging.debug("Traceroute is missing, installing...")
-                subprocess.call(['sudo', 'apt-get', '-yq', 'install', 'traceroute'])
+                subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
+
+        if self.options.webdriver and 'Firefox' in detected_browsers:
+            try:
+                subprocess.check_output(['geckodriver', '-V'])
+            except Exception:
+                logging.debug("geckodriver is missing, installing...")
+                subprocess.call(['sudo', 'apt', '-yq', 'install', 'firefox-geckodriver'])
 
         # If we are on Linux and there is no display, enable xvfb by default
         if platform.system() == "Linux" and not self.options.android and \
@@ -441,7 +451,7 @@ class WPTAgent(object):
         """Get the installed version of Node.js"""
         version = 0
         try:
-            if (sys.version_info > (3, 0)):
+            if (sys.version_info >= (3, 0)):
                 stdout = subprocess.check_output(['node', '--version'], encoding='UTF-8')
             else:
                 stdout = subprocess.check_output(['node', '--version'])
@@ -505,7 +515,7 @@ def get_windows_build():
     return int(output.strip().split(' ')[-1])
 
 
-def find_browsers():
+def find_browsers(options):
     """Find the various known-browsers in case they are not explicitly configured"""
     browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
     if browsers is None:
@@ -776,7 +786,7 @@ def find_browsers():
     logging.debug('Detected Browsers:')
     for browser in browsers:
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
-    if 'Firefox' in browsers and sys.version_info < (3, 0):
+    if not options.webdriver and 'Firefox' in browsers:
         try:
             # make sure marionette is up to date
             from internal.os_util import run_elevated
@@ -794,7 +804,7 @@ def upgrade_pip_modules():
         from internal.os_util import run_elevated
         subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
         run_elevated(sys.executable, '-m pip install --upgrade pip')
-        if (sys.version_info > (3, 0)):
+        if (sys.version_info >= (3, 0)):
             out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'], encoding='UTF-8')
         else:
             out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'])
@@ -919,6 +929,10 @@ def main():
     parser.add_argument('--list', action='store_true', default=False,
                         help="List available iOS devices.")
 
+    # Firefox
+    parser.add_argument('--webdriver', action='store_true', default=False,
+                        help="Use WebDriver instead of Marionette for Firefox (Defaults to False on Python 2, always True for Python 3).")
+
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
@@ -949,6 +963,10 @@ def main():
         for device in devices:
             print(device)
         exit(1)
+
+    # Force WebDriver for Python 3
+    if (sys.version_info >= (3, 0)):
+        options.webdriver = True
 
     # Set up logging
     log_level = logging.CRITICAL
@@ -982,7 +1000,7 @@ def main():
 
     browsers = None
     if not options.android and not options.iOS:
-        browsers = find_browsers()
+        browsers = find_browsers(options)
         if len(browsers) == 0:
             print("No browsers configured. Check that browsers.ini is present and correct.")
             exit(1)
@@ -991,7 +1009,7 @@ def main():
         get_browser_versions(browsers)
 
     agent = WPTAgent(options, browsers)
-    if agent.startup():
+    if agent.startup(browsers):
         # Create a work directory relative to where we are running
         print("Running agent, hit Ctrl+C to exit")
         agent.run_testing()

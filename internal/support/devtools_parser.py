@@ -27,7 +27,7 @@ try:
     HAS_FUTURE = True
 except BaseException:
     pass
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from urllib.parse import urlsplit # pylint: disable=import-error
     unicode = str
     GZIP_TEXT = 'wt'

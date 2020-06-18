@@ -18,7 +18,7 @@ import threading
 import time
 import zipfile
 import psutil
-if (sys.version_info > (3, 0)):
+if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
     GZIP_READ_TEXT = 'rt'
@@ -130,7 +130,7 @@ class WebPageTest(object):
         self.version = '20.05'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            if (sys.version_info > (3, 0)):
+            if (sys.version_info >= (3, 0)):
                 out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory, encoding='UTF-8')
             else:
                 out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory)
@@ -474,6 +474,8 @@ class WebPageTest(object):
                         bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
                     job['lighthouse_throttle'] = \
                         bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                    job['lighthouse_config'] = \
+                        str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and
@@ -646,6 +648,8 @@ class WebPageTest(object):
                     else:
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
+                if 'time' in job:
+                    task['minimumTestSeconds'] = job['time']
                 task['time_limit'] = job['timeout']
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
