@@ -6,14 +6,14 @@ until sudo apt-get update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
+until sudo apt-get install -y python2.7 python-pip python-ujson imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
 do
     sleep 1
 done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
 sudo apt-get install -y python-software-properties || :
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes tornado wsaccel xvfbwrapper brotli marionette_driver future
+until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli marionette_driver future
 do
     sleep 1
 done
