@@ -8,6 +8,7 @@ RUN apt-get update && \
     git \
     python \
     python-pip \
+    python-ujson \
     xvfb \
     imagemagick \
     python-dev \
@@ -63,7 +64,6 @@ RUN apt-get update && \
     pillow \
     psutil \
     requests \
-    git+git://github.com/marshallpierce/ultrajson.git@v1.35-gentoo-fixes \
     tornado \
     wsaccel \
     xvfbwrapper \

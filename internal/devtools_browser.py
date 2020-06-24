@@ -128,8 +128,12 @@ class DevtoolsBrowser(object):
                                            wait=True)
 
             # DevTools-based CPU throttling for desktop and emulated mobile tests
+            # This throttling should only be applied for:
+            #   1. Normal test runs where cgroups throttling (--throttle) is disabled
+            #   2. Lighthouse test runs where a custom config path is not specified
             if not self.options.android and \
                     (task['running_lighthouse'] or not self.options.throttle) and \
+                    (not task['running_lighthouse'] or not self.job['lighthouse_config']) and \
                     'throttle_cpu' in self.job:
                 logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                 if self.job['throttle_cpu'] > 1:
@@ -576,7 +580,8 @@ class DevtoolsBrowser(object):
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
         if 'url' in self.job and self.job['url'] is not None:
-            self.job['shaper'].configure(self.job, task)
+            if not self.job['lighthouse_config']:
+                self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
@@ -586,15 +591,22 @@ class DevtoolsBrowser(object):
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
-                       '--disable-network-throttling',
-                       '--disable-cpu-throttling',
-                       '--throttling-method', 'provided',
                        '--enable-error-reporting',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
+            if self.job['lighthouse_config']:
+                try:
+                    lighthouse_config_file = os.path.join(task['dir'], 'lighthouse-config.json')
+                    with open(lighthouse_config_file, 'wt') as f_out:
+                        json.dump(json.loads(self.job['lighthouse_config']), f_out)
+                    command.extend(['--config-path', lighthouse_config_file])
+                except Exception:
+                    logging.exception('Error adding custom config for lighthouse test')
+            else:
+                command.extend(['--throttling-method', 'provided'])
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:

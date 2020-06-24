@@ -127,7 +127,7 @@ class WebPageTest(object):
                 pass
         # If we are running in a git clone, grab the date of the last
         # commit as the version
-        self.version = '20.05'
+        self.version = '20.06'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
             if (sys.version_info >= (3, 0)):
@@ -474,6 +474,8 @@ class WebPageTest(object):
                         bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
                     job['lighthouse_throttle'] = \
                         bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                    job['lighthouse_config'] = \
+                        str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
                     job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and
