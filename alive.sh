@@ -4,6 +4,12 @@
 # Add a test-binary entry to /etc/watchdog.conf and start the watchdog service:
 # test-binary = /home/ubuntu/wptagent/alive.sh
 
+: ${UBUNTU_VERSION:=`(lsb_release -rs | cut -b 1,2)`}
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
 rm /var/log/watchdog/* || true
-python $DIR/alive.py --file /tmp/wptagent
+if [ "$UBUNTU_VERSION" \< "20" ]; then
+    python $DIR/alive.py --file /tmp/wptagent
+else
+    python3 $DIR/alive.py --file /tmp/wptagent
+fi
