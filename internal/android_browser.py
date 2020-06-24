@@ -205,7 +205,7 @@ class AndroidBrowser(BaseBrowser):
             progress_file = os.path.join(task['dir'], task['prefix']) + \
                 '_visual_progress.json.gz'
             visualmetrics = os.path.join(support_path, "visualmetrics.py")
-            args = ['python', visualmetrics, '-i', task['video_file'],
+            args = [sys.executable, visualmetrics, '-i', task['video_file'],
                     '-d', video_path, '--force', '--quality',
                     '{0:d}'.format(self.job['imageQuality']),
                     '--viewport', '--maxframes', '50', '--histogram', histograms,
@@ -247,7 +247,7 @@ class AndroidBrowser(BaseBrowser):
                     slices_file = path_base + '_pcap_slices.json.gz'
                     pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                                'support', "pcap-parser.py")
-                    cmd = ['python', pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
+                    cmd = [sys.executable, pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
                     logging.debug(' '.join(cmd))
                     self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                                                stderr=subprocess.PIPE)

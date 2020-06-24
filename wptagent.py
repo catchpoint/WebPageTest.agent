@@ -336,9 +336,9 @@ class WPTAgent(object):
             logging.debug('wsaccel not installed, Chrome debug interface will be slower than it could be')
 
         try:
-            subprocess.check_output(['python', '--version'])
+            subprocess.check_output([sys.executable, '--version'])
         except Exception:
-            print("Make sure python 2.7 is available in the path.")
+            print("Unable to start python.")
             ret = False
 
         try:
