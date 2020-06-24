@@ -8,8 +8,4 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 rm /var/log/watchdog/* || true
-if [ "$UBUNTU_VERSION" \< "20" ]; then
-    python $DIR/alive.py --file /tmp/wptagent
-else
-    python3 $DIR/alive.py --file /tmp/wptagent
-fi
+python $DIR/alive.py --file /tmp/wptagent
