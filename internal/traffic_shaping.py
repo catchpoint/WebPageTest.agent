@@ -73,21 +73,27 @@ class TrafficShaper(object):
             ret = self.shaper.reset()
         return ret
 
+    def _to_int(s):
+        return int(re.search(r'\d+', str(s)).group())
+
     def configure(self, job, task):
         """Enable traffic-shaping"""
         ret = False
         in_bps = 0
         if 'bwIn' in job:
-            in_bps = int(re.search(r'\d+', str(job['bwIn'])).group()) * 1000
+            in_bps = self._to_int(job['bwIn']) * 1000
         out_bps = 0
         if 'bwOut' in job:
-            out_bps = int(re.search(r'\d+', str(job['bwOut'])).group()) * 1000
+            out_bps = self._to_int(job['bwOut']) * 1000
         rtt = 0
         if 'latency' in job:
-            rtt = int(re.search(r'\d+', str(job['latency'])).group())
+            rtt = self._to_int(job['latency'])
         plr = .0
         if 'plr' in job:
             plr = float(job['plr'])
+        tcQdiscLimit = 0
+        if 'tcQdiscLimit' in job:
+            tcQdiscLimit = self._to_int(job['tcQdiscLimit'])
         if self.shaper is not None:
             # If a lighthouse test is running, force the Lighthouse 3G profile:
             # https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md
@@ -97,9 +103,10 @@ class TrafficShaper(object):
                 in_bps = 1600000
                 out_bps = 750000
                 plr = .0
-            logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr',
-                          in_bps, out_bps, rtt, plr)
-            ret = self.shaper.configure(in_bps, out_bps, rtt, plr)
+                tcQdiscLimit = 0
+            logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr, %d tc-qdisc limit',
+                          in_bps, out_bps, rtt, plr, tcQdiscLimit)
+            ret = self.shaper.configure(in_bps, out_bps, rtt, plr, tcQdiscLimit)
             job['interface'] = self.shaper.interface
         return ret
 
@@ -124,9 +131,9 @@ class NoShaper(object):
         """Disable traffic-shaping"""
         return True
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, tcQdiscLimit):
         """Enable traffic-shaping"""
-        if in_bps > 0 or out_bps > 0 or rtt > 0 or plr > 0:
+        if in_bps > 0 or out_bps > 0 or rtt > 0 or plr > 0 or tcQdiscLimit > 0:
             return False
         return True
 
@@ -159,7 +166,10 @@ class WinShaper(object):
         """Disable traffic-shaping"""
         return self.shaper(['reset'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, tcQdiscLimit):
+        if tcQdiscLimit > 0:
+            return False # not supported
+
         """Enable traffic-shaping"""
         return self.shaper(['set',
                             'inbps={0:d}'.format(int(in_bps)),
@@ -222,8 +232,10 @@ class Dummynet(object):
                self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, tcQdiscLimit):
         """Enable traffic-shaping"""
+        if tcQdiscLimit > 0:
+            return False # not supported
         # inbound connection
         in_kbps = int(in_bps / 1000)
         in_latency = rtt / 2
@@ -295,7 +307,7 @@ class MacDummynet(Dummynet):
                self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.pfctl(['-f', rules_file])
-               
+
 
     def remove(self):
         """clear the config"""
@@ -309,8 +321,10 @@ class MacDummynet(Dummynet):
         return self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, tcQdiscLimit):
         """Enable traffic-shaping"""
+        if tcQdiscLimit > 0:
+            return False # not supported
         # inbound connection
         in_kbps = int(in_bps / 1000)
         in_latency = rtt / 2
@@ -451,20 +465,18 @@ class NetEm(object):
                                    'root']) == 0
         return ret
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, tcQdiscLimit):
         """Enable traffic-shaping"""
         ret = False
         if self.interface is not None and self.in_interface is not None:
             in_latency = rtt / 2
             if rtt % 2:
                 in_latency += 1
-            if self.configure_interface(self.in_interface, in_bps, in_latency, plr):
-                ret = self.configure_interface(self.interface, out_bps, rtt / 2, plr)
+            if self.configure_interface(self.in_interface, in_bps, in_latency, plr, tcQdiscLimit):
+                ret = self.configure_interface(self.interface, out_bps, rtt / 2, plr, tcQdiscLimit)
         return ret
 
-    def configure_interface(self, interface, bps, latency, plr):
-        """Configure traffic-shaping for a single interface"""
-        ret = False
+    def build_command_args(self, interface, bps, latency, plr, tcQdiscLimit):
         args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root',
                 'netem', 'delay', '{0:d}ms'.format(int(latency))]
         if bps > 0:
@@ -472,6 +484,12 @@ class NetEm(object):
             args.extend(['rate', '{0:d}kbit'.format(int(kbps))])
         if plr > 0:
             args.extend(['loss', '{0:.2f}%'.format(float(plr))])
+        if tcQdiscLimit > 0:
+            args.extend(['limit', '{0:d}'.format(tcQdiscLimit)])
+        return args
+
+    def configure_interface(self, interface, bps, latency, plr, tcQdiscLimit):
+        """Configure traffic-shaping for a single interface"""
+        args = self.build_command_args(interface, bps, latency, plr, tcQdiscLimit)
         logging.debug(' '.join(args))
-        ret = subprocess.call(args) == 0
-        return ret
+        return subprocess.call(args) == 0
