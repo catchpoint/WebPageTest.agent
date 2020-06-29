@@ -73,7 +73,7 @@ class TrafficShaper(object):
             ret = self.shaper.reset()
         return ret
 
-    def _to_int(s):
+    def _to_int(self, s):
         return int(re.search(r'\d+', str(s)).group())
 
     def configure(self, job, task):
