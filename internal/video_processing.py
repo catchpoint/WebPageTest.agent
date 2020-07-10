@@ -9,6 +9,7 @@ import math
 import os
 import re
 import subprocess
+import sys
 
 VIDEO_SIZE = 400
 
@@ -99,7 +100,7 @@ class VideoProcessing(object):
             progress_file = os.path.join(self.task['dir'], self.task['prefix']) + \
                 '_visual_progress.json.gz'
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
-            args = ['python', visualmetrics, '-d', self.video_path,
+            args = [sys.executable, visualmetrics, '-d', self.video_path,
                     '--histogram', histograms, '--progress', progress_file]
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(self.task['dir'], self.task['prefix']) + \

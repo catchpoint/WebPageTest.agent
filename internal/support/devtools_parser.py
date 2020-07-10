@@ -139,10 +139,6 @@ class DevToolsParser(object):
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
-        # sort all of the events by timestamp
-        if len(raw_events):
-            raw_events.sort(key=lambda x: x['params']['timestamp'] if \
-                ('params' in x and 'timestamp' in x['params']) else 9999999)
         f_in.close()
         if raw_events is not None and len(raw_events):
             first_timestamp = None

@@ -2,22 +2,45 @@
 
 set -eu
 
+: ${UBUNTU_VERSION:=`(lsb_release -rs | cut -b 1,2)`}
+
 until sudo apt-get update
 do
     sleep 1
 done
-until sudo apt-get install -y python2.7 python-pip python-ujson imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
+if [ "$UBUNTU_VERSION" \< "20" ]; then
+    until sudo apt-get install -y python2.7 python-pip python-ujson 
+    do
+        sleep 1
+    done
+else
+    until sudo apt-get install -y python python3 python3-pip python3-ujson 
+    do
+        sleep 1
+    done
+fi
+until sudo apt-get install -y imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
 do
     sleep 1
 done
 # Unavailable on Ubuntu 18.04 but needed on earlier releases
-sudo apt-get install -y python-software-properties || :
+if [ "$UBUNTU_VERSION" \< "18" ]; then
+    sudo apt-get install -y python-software-properties || :
+fi
 sudo dbus-uuidgen --ensure
-until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli marionette_driver selenium future
-do
-    sleep 1
-done
-sudo pip install 'fonttools>=3.44.0,<4.0.0'
+if [ "$UBUNTU_VERSION" \< "20" ]; then
+    until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli marionette_driver selenium future
+    do
+        sleep 1
+    done
+    sudo pip install 'fonttools>=3.44.0,<4.0.0'
+else
+    until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli selenium future
+    do
+        sleep 1
+    done
+    sudo pip3 install 'fonttools>=3.44.0,<4.0.0'
+fi
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do

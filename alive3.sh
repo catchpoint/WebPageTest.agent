@@ -8,4 +8,4 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 rm /var/log/watchdog/* || true
-python $DIR/alive.py --file /tmp/wptagent
+python3 $DIR/alive.py --file /tmp/wptagent
