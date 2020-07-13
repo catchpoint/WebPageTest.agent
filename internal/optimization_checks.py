@@ -1025,8 +1025,8 @@ class OptimizationChecks(object):
                                 entry = reader.tables[tag]
                                 if tables is None:
                                     tables = {}
-                                tables[tag] = entry.length
-                            ttf.close()                            
+                                tables[tag.decode('utf-8', 'ignore')] = entry.length
+                            ttf.close()
                             if tables is not None:
                                 self.font_results[request_id] = {'table_sizes': tables}
                 except Exception:
