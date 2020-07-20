@@ -787,8 +787,10 @@ class OptimizationChecks(object):
                 # Ignore small responses that will fit in a packet
                 if not check['score'] and content_length < 1400:
                     check['score'] = -1
-                # Try compressing it if it isn't an image
-                if not check['score'] and 'body' in request:
+                if 'body' not in request:
+                    check['score'] = -1
+                # Try compressing it if it isn't an image or known binary
+                if not check['score']:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type is not None:
                         check['score'] = -1
