@@ -397,8 +397,8 @@ class Edge(DesktopBrowser):
                     message['data']['URL'].startswith('http') and \
                     message['data']['URL'].startswith('http') and \
                     not message['data']['URL'].startswith('http://127.0.0.1:8888'):
-                if 'EventContextId' in message['data']:
-                    self.pageContexts.append(message['data']['EventContextId'])
+                tid = message['data']['EventContextId']  if 'EventContextId' in message['data'] else  message['tid']
+                self.pageContexts.append(tid)
                 self.CMarkup.append(message['data']['CMarkup'])
                 self.navigating = False
                 self.last_activity = monotonic()
@@ -416,8 +416,8 @@ class Edge(DesktopBrowser):
                     message['data']['Markup'] in self.CMarkup:
                 logging.debug("Injecting script: \n%s", self.job['injectScript'])
                 self.execute_js(self.job['injectScript'])
-            if 'EventContextId' in message['data'] and \
-                    message['data']['EventContextId'] in self.pageContexts:
+            tid = message['data']['EventContextId']  if 'EventContextId' in message['data'] else  message['tid'];
+            if  tid in self.pageContexts:
                 if message['Event'] == 'Mshtml_WebOCEvents_DocumentComplete':
                     if 'CMarkup' in message['data'] and message['data']['CMarkup'] in self.CMarkup:
                         if 'loadEventStart' not in self.page:

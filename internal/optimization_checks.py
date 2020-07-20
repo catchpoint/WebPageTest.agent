@@ -1021,6 +1021,11 @@ class OptimizationChecks(object):
                         if sniff_type is not None and sniff_type in ['OTF', 'TTF', 'WOFF', 'WOFF2']:
                             tables = None
                             ttf = TTFont(request['body'], lazy=True)
+                            try:
+                                ttf.getGlyphNames()
+                            except Exception:
+                                logging.error('Not a vaild font: ' + request['url'])
+                                continue
                             reader = ttf.reader
                             tags = sorted(reader.keys())
                             for tag in tags:
