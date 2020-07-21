@@ -282,7 +282,9 @@ class DesktopBrowser(BaseBrowser):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
-        command_line = self.enable_cpu_throttling(command_line)
+        if not self.job['lighthouse_config'] or not self.task['running_lighthouse']:
+            # Only enable CPU throttling for Lighthouse runs if a custom config was not provided
+            command_line = self.enable_cpu_throttling(command_line)
         logging.debug(command_line)
         if platform.system() == 'Windows':
             self.proc = subprocess.Popen(command_line, shell=True)
