@@ -177,6 +177,7 @@ class OptimizationChecks(object):
                        '.netdna-ssl.com',
                        '.netdna.com'],
             'Netlify': ['.netlify.com'],
+            'Nexcess CDN': ['.nxedge.io'],
             'NGENIX': ['.ngenix.net'],
             'NYI FTW': ['.nyiftw.net',
                         '.nyiftw.com'],
