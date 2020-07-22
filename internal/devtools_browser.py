@@ -128,13 +128,10 @@ class DevtoolsBrowser(object):
                                            wait=True)
 
             # DevTools-based CPU throttling for desktop and emulated mobile tests
-            # This throttling should only be applied for:
-            #   1. Normal test runs where cgroups throttling (--throttle) is disabled
-            #   2. Lighthouse test runs where a custom config path is not specified
-            if not self.options.android and \
-                    (task['running_lighthouse'] or not self.options.throttle) and \
-                    (not task['running_lighthouse'] or not self.job['lighthouse_config']) and \
-                    'throttle_cpu' in self.job:
+            # This throttling should only be applied for lighthouse test runs where
+            # a custom config path is not specified
+            if not self.options.android and 'throttle_cpu' in self.job and\
+                    (not task['running_lighthouse'] or not self.job['lighthouse_config']):
                 logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                 if self.job['throttle_cpu'] > 1:
                     self.devtools.send_command("Emulation.setCPUThrottlingRate",
@@ -179,7 +176,7 @@ class DevtoolsBrowser(object):
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
-        if not self.options.throttle and 'throttle_cpu' in self.job:
+        if 'throttle_cpu' in self.job:
             task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
             if self.job['throttle_cpu'] > 1:
                 task['page_data']['throttle_cpu'] = self.job['throttle_cpu']

@@ -395,13 +395,6 @@ class WPTAgent(object):
         elif platform.system() == "Windows":
             self.capture_display = 'desktop'
 
-        if self.options.throttle:
-            try:
-                subprocess.check_output('sudo cgset -h', shell=True)
-            except Exception:
-                print("Missing cgroups, make sure cgroup-tools is installed.")
-                ret = False
-
         # Fix Lighthouse install permissions
         if platform.system() != "Windows" and sys.version_info < (3, 0):
             from internal.os_util import run_elevated
@@ -883,11 +876,6 @@ def main():
                         'over ssh and use pre-configured dummynet pipes (ssh keys for root user '
                         'should be pre-authorized).')
     parser.add_argument('--tcpdump', help='Specify an interface to use for tcpdump.')
-
-    # CPU Throttling
-    parser.add_argument('--throttle', action='store_true', default=False,
-                        help='Enable cgroup-based CPU throttling for mobile emulation '
-                        '(Linux only).')
 
     # Android options
     parser.add_argument('--android', action='store_true', default=False,

@@ -282,9 +282,6 @@ class DesktopBrowser(BaseBrowser):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
-        if not self.job['lighthouse_config'] or not self.task['running_lighthouse']:
-            # Only enable CPU throttling for Lighthouse runs if a custom config was not provided
-            command_line = self.enable_cpu_throttling(command_line)
         logging.debug(command_line)
         if platform.system() == 'Windows':
             self.proc = subprocess.Popen(command_line, shell=True)
@@ -315,7 +312,6 @@ class DesktopBrowser(BaseBrowser):
         self.recording = False
         logging.debug("Stopping browser")
         self.close_browser(job, task)
-        self.disable_cpu_throttling()
         self.restore_hosts()
         # Clean up the downloads folder in case anything was downloaded
         if platform.system() == 'Linux':
@@ -504,7 +500,6 @@ class DesktopBrowser(BaseBrowser):
             self.thread = threading.Thread(target=self.background_thread)
             self.thread.daemon = True
             self.thread.start()
-        self.start_cpu_throttling()
 
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
@@ -533,7 +528,6 @@ class DesktopBrowser(BaseBrowser):
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
-        self.stop_cpu_throttling()
         import psutil
         if self.cpu_start is not None:
             cpu_end = psutil.cpu_times()
@@ -749,67 +743,3 @@ class DesktopBrowser(BaseBrowser):
                     else:
                         self.ffmpeg.terminate()
         self.usage_queue.put(None)
-
-    def enable_cpu_throttling(self, command_line):
-        """Prepare the CPU throttling if necessary"""
-        if self.options.throttle and 'throttle_cpu' in self.job:
-            logging.debug('Preparing cgroups CPU Throttle (not enabled yet) target: %0.3fx', self.job['throttle_cpu'])
-        if self.options.throttle and 'throttle_cpu' in self.job and \
-                self.job['throttle_cpu'] > 1:
-            try:
-                import getpass
-                uid = '{0}:{0}'.format(getpass.getuser())
-                cmd = ['sudo', 'cgcreate', '-a', uid, '-t', uid, '-g', 'cpu,cpuset:wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-                cmd = ['sudo', 'cgset', '-r', 'cpuset.cpus="0"', 'wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us=1000', 'wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_quota_us=1000', 'wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-                command_line = 'cgexec -g cpu:wptagent ' + command_line
-            except Exception as err:
-                logging.exception("Exception enabling throttling: %s", err.__str__())
-            self.throttling_cpu = True
-        return command_line
-
-    def disable_cpu_throttling(self):
-        """Remove the CPU throttling if necessary"""
-        if self.throttling_cpu:
-            logging.debug("Disabling cgroup CPU throttling")
-            try:
-                cmd = ['sudo', 'cgdelete', '-r', 'cpu,cpuset:wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-            except Exception:
-                logging.exception('Error disabling throttling')
-
-    def start_cpu_throttling(self):
-        """Start the CPU throttling if necessary"""
-        if self.options.throttle and 'throttle_cpu' in self.job:
-            self.task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
-        if self.throttling_cpu:
-            logging.debug("Starting cgroup CPU throttling target: %0.3fx", self.job['throttle_cpu'])
-            self.task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
-            try:
-                # Leave the quota at 1000 and vary the period to get to the correct multiplier
-                period = int(round(1000.0 * self.job['throttle_cpu']))
-                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us={0:d}'.format(period), 'wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-            except Exception:
-                logging.exception('Error starting throttling')
-
-    def stop_cpu_throttling(self):
-        """Start the CPU throttling if necessary"""
-        if self.throttling_cpu:
-            try:
-                cmd = ['sudo', 'cgset', '-r', 'cpu.cfs_period_us=1000', 'wptagent']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-            except Exception:
-                logging.exception('Error stopping throttling')
