@@ -886,31 +886,34 @@ class Edge(DesktopBrowser):
             self.task['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
             if 'target' in command and 'value' in command:
-                url = command['target'].strip()
-                cookie = command['value']
-                pos = cookie.find(';')
-                if pos > 0:
-                    cookie = cookie[:pos]
-                pos = cookie.find('=')
-                if pos > 0:
-                    name = cookie[:pos].strip()
-                    value = cookie[pos+1:].strip()
-                    if len(name) and len(value) and len(url):
-                        try:
-                            self.driver.add_cookie({'url': url, 'name': name, 'value': value})
-                        except Exception:
-                            logging.exception('Error adding cookie')
-                        try:
-                            import win32inet # pylint: disable=import-error
-                            cookie_string = cookie
-                            if cookie.find('xpires') == -1:
-                                expires = datetime.utcnow() + timedelta(days=30)
-                                expires_string = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
-                                cookie_string += '; expires={0}'.format(expires_string)
-                            logging.debug("Setting cookie: %s", cookie_string)
-                            win32inet.InternetSetCookie(url, None, cookie_string)
-                        except Exception as err:
-                            logging.exception("Error setting cookie: %s", str(err))
+                try:
+                    url = command['target'].strip()
+                    cookie = command['value']
+                    pos = cookie.find(';')
+                    if pos > 0:
+                        cookie = cookie[:pos]
+                    pos = cookie.find('=')
+                    if pos > 0:
+                        name = cookie[:pos].strip()
+                        value = cookie[pos+1:].strip()
+                        if len(name) and len(value) and len(url):
+                            try:
+                                self.driver.add_cookie({'url': url, 'name': name, 'value': value})
+                            except Exception:
+                                logging.exception('Error adding cookie')
+                            try:
+                                import win32inet # pylint: disable=import-error
+                                cookie_string = cookie
+                                if cookie.find('xpires') == -1:
+                                    expires = datetime.utcnow() + timedelta(days=30)
+                                    expires_string = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
+                                    cookie_string += '; expires={0}'.format(expires_string)
+                                logging.debug("Setting cookie: %s", cookie_string)
+                                win32inet.InternetSetCookie(url, None, cookie_string)
+                            except Exception as err:
+                                logging.exception("Error setting cookie: %s", str(err))
+                except Exception:
+                    logging.exception('Error setting cookie')
 
     def navigate(self, url):
         """Navigate to the given URL"""
