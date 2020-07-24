@@ -199,7 +199,7 @@ class OptimizationChecks(object):
             'Roast.io': ['.roast.io'],
             'Rocket CDN': ['.streamprovider.net'],
             'section.io': ['.squixa.net'],
-            'SFR': ['cdn.sfr.net'],,
+            'SFR': ['cdn.sfr.net'],
             'shift8 web toronto': ['.wpcdn.shift8cdn.com',
                                    '.cdn.shift8web.com'],
             'SwiftyCDN': ['.swiftycdn.net'],
