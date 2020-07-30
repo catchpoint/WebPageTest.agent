@@ -1014,34 +1014,20 @@ class OptimizationChecks(object):
         """Check each request to extract metadata about fonts"""
         start = monotonic()
         try:
-            from fontTools.ttLib import TTFont
+            import font_metadata
             for request_id in self.requests:
                 try:
                     request = self.requests[request_id]
                     if 'body' in request:
                         sniff_type = self.sniff_file_content(request['body'])
                         if sniff_type is not None and sniff_type in ['OTF', 'TTF', 'WOFF', 'WOFF2']:
-                            tables = None
-                            ttf = TTFont(request['body'], lazy=True)
-                            try:
-                                ttf.getGlyphNames()
-                            except Exception:
-                                logging.error('Not a vaild font: ' + request['url'])
-                                continue
-                            reader = ttf.reader
-                            tags = sorted(reader.keys())
-                            for tag in tags:
-                                entry = reader.tables[tag]
-                                if tables is None:
-                                    tables = {}
-                                tables[tag] = entry.length
-                            ttf.close()                            
-                            if tables is not None:
-                                self.font_results[request_id] = {'table_sizes': tables}
+                            font_info = font_metadata.read_metadata(request['body'])
+                            if font_info is not None:
+                                self.font_results[request_id] = font_info
                 except Exception:
                     logging.exception('Error checking font')
         except Exception:
-            pass
+            logging.exception('Error checking fonts')
         self.font_time = monotonic() - start
 
     def get_header_value(self, headers, name):
