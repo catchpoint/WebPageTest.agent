@@ -1023,7 +1023,7 @@ class OptimizationChecks(object):
                         if sniff_type is not None and sniff_type in ['OTF', 'TTF', 'WOFF', 'WOFF2']:
                             font_info = font_metadata.read_metadata(request['body'])
                             if font_info is not None:
-                                self.font_results[request_id] = {'table_sizes': tables}
+                                self.font_results[request_id] = font_info
                 except Exception:
                     logging.exception('Error checking font')
         except Exception:

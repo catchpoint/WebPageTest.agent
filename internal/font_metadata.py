@@ -15,6 +15,14 @@ _NAME_ID_LICENSE_URL = 14
 _MAX_NAME_LEN = 64
 
 
+def _safe_result_type(v):
+    return type(v) in {bool, int, float, complex, str}
+
+
+def _safe_map(m):
+    return {k: v for k, v in m.items() if _safe_result_type(v)}
+
+
 def _read_names(ttf, name_ids):
     names = {}
     try:
@@ -37,11 +45,9 @@ def _read_names(ttf, name_ids):
 
 def _read_os2(ttf):
     try:
-        os2 = ttf['OS/2']
-        return {
-            'usWeightClass': os2.usWeightClass,
-            'usWidthClass': os2.usWidthClass,
-        }
+        os2 = _safe_map(ttf['OS/2'].__dict__)
+        os2['panose'] = _safe_map(ttf['OS/2'].panose.__dict__)
+        return os2
     except Exception:
         logging.exception('Error reading font names')
     return None
