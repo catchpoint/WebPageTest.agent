@@ -13,6 +13,8 @@ _NAME_ID_VERSION = 5
 _NAME_ID_POSTSCRIPT_NAME = 6
 _NAME_ID_LICENSE_URL = 14
 _MAX_NAME_LEN = 64
+_MAX_NAME_ID = 20
+_MAX_NAMES = 20
 
 
 def _safe_result_type(v):
@@ -26,11 +28,14 @@ def _safe_map(m):
 def _read_names(ttf, name_ids):
     names = {}
     try:
-        for name in ttf['name'].names:
-            if not name.nameID in name_ids:
-                continue
-            if not name.isUnicode():
-                continue
+        # limit # of names we retain
+        unicode_names = sorted(
+            (n for n in ttf['name'].names
+            if n.isUnicode() and n.nameID <= _MAX_NAME_ID),
+            key=lambda n: n.nameID
+        )[:_MAX_NAMES]
+        # limit length of names we retain
+        for name in unicode_names:
             try:
                 names[name.nameID] = name.toUnicode()[:_MAX_NAME_LEN]
             except Exception:
@@ -49,7 +54,16 @@ def _read_os2(ttf):
         os2['panose'] = _safe_map(ttf['OS/2'].panose.__dict__)
         return os2
     except Exception:
-        logging.exception('Error reading font names')
+        logging.exception('Error reading font OS/2')
+    return None
+
+
+def _read_post(ttf):
+    try:
+        post = _safe_map(ttf['post'].__dict__)
+        return post
+    except Exception:
+        logging.exception('Error reading font post')
     return None
 
 
@@ -92,27 +106,19 @@ def read_metadata(font):
         return None
     reader = ttf.reader
 
-    table_sizes = {tag: reader.tables[tag].length 
-                   for tag in sorted(reader.keys())}
-    names = _read_names(ttf, (_NAME_ID_VERSION,
-        _NAME_ID_POSTSCRIPT_NAME, _NAME_ID_LICENSE_URL))
-    os2_info = _read_os2(ttf)
-    axes = _read_fvar(ttf)
-    counts = _read_codepoint_glyph_counts(ttf)
-
+    metadata = {
+        'table_sizes': {tag: reader.tables[tag].length 
+                        for tag in sorted(reader.keys())},
+        'names': _read_names(ttf, (_NAME_ID_VERSION,
+            _NAME_ID_POSTSCRIPT_NAME, _NAME_ID_LICENSE_URL)),
+        'OS2': _read_os2(ttf),
+        'post': _read_post(ttf),
+        'fvar': _read_fvar(ttf),
+        'counts': _read_codepoint_glyph_counts(ttf),
+    }
     ttf.close()
 
-    metadata = {'table_sizes': table_sizes}
-    if names:
-        metadata['names'] = names
-    if os2_info:
-        metadata['os2_info'] = os2_info
-    if axes:
-        metadata['axes'] = axes
-    if counts:
-        metadata['counts'] = counts
-
-    return metadata
+    return {k: v for k,v in metadata.items() if v is not None}
 
 
 def main():
