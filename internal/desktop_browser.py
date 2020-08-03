@@ -46,8 +46,6 @@ SET_ORANGE = "(function() {" \
 
 class DesktopBrowser(BaseBrowser):
     """Desktop Browser base"""
-    START_BROWSER_TIME_LIMIT = 30
-
     def __init__(self, path, options, job):
         BaseBrowser.__init__(self)
         self.path = path
@@ -329,7 +327,7 @@ class DesktopBrowser(BaseBrowser):
             self.thread.join(10)
             self.thread = None
 
-    def wait_for_idle(self):
+    def wait_for_idle(self, wait_time = 30):
         """Wait for no more than 50% of a single core used for 500ms"""
         import psutil
         logging.debug("Waiting for Idle...")
@@ -337,7 +335,7 @@ class DesktopBrowser(BaseBrowser):
         if cpu_count > 0:
             target_pct = 50. / float(cpu_count)
             idle_start = None
-            end_time = monotonic() + self.START_BROWSER_TIME_LIMIT
+            end_time = monotonic() + wait_time
             idle = False
             while not idle and monotonic() < end_time:
                 check_start = monotonic()

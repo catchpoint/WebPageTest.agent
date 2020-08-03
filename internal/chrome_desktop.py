@@ -103,10 +103,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
 
         # Disable site isolation if emulating mobile. It is disabled on
-        # actual mobile Chrome (and breaks CPU throttling on Windows)
+        # actual mobile Chrome (and breaks Chrome's CPU throttling)
         if 'mobile' in job and job['mobile']:
-            disable_features.extend(['NetworkService',
-                                     'IsolateOrigins',
+            disable_features.extend(['IsolateOrigins',
                                      'site-per-process'])
         args.append('--disable-features=' + ','.join(disable_features))
 
@@ -146,9 +145,11 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 time.sleep(10)
         if connected:
             self.connected = True
+            DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.prepare_browser(self, task)
             DevtoolsBrowser.navigate(self, self.start_page)
-            DesktopBrowser.wait_for_idle(self)
+            # When throttling the CPU, Chrome sits in a busy loop so ony apply a short idle wait
+            DesktopBrowser.wait_for_idle(self, 2)
 
     def run_task(self, task):
         """Run an individual test"""
