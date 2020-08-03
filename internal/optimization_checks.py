@@ -1014,7 +1014,7 @@ class OptimizationChecks(object):
         """Check each request to extract metadata about fonts"""
         start = monotonic()
         try:
-            import font_metadata
+            from . import font_metadata
             for request_id in self.requests:
                 try:
                     request = self.requests[request_id]

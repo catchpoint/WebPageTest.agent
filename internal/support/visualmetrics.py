@@ -141,7 +141,12 @@ def extract_frames(video, directory, full_resolution, viewport):
                    os.path.join(dir_escaped, 'img-%d.png')]
         logging.debug(' '.join(command))
         proc = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
-        stdout, stderr = proc.communicate()
+        _, stderr = proc.communicate()
+        if (sys.version_info >= (3, 0)):
+            try:
+                stderr = stderr.decode('utf-8')
+            except Exception:
+                pass
         lines = stderr.splitlines()
 
         pattern = re.compile(r'keep pts:[0-9]+ pts_time:(?P<timecode>[0-9\.]+)')
@@ -812,6 +817,11 @@ def is_color_frame(file, color_file):
                                    image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
                 _, err = compare.communicate()
+                if (sys.version_info >= (3, 0)):
+                    try:
+                        err = err.decode('utf-8')
+                    except Exception:
+                        pass
                 if re.match('^[0-9]+$', err):
                     different_pixels = int(err)
                     if different_pixels < 100:
@@ -846,7 +856,12 @@ def is_white_frame(file, white_file):
                        '{4} -metric AE - -fuzz 10% null:').format(
                            image_magick['convert'], white_file, file, crop, image_magick['compare'])
         compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-        out, err = compare.communicate()
+        _, err = compare.communicate()
+        if (sys.version_info >= (3, 0)):
+            try:
+                err = err.decode('utf-8')
+            except Exception:
+                pass
         if re.match('^[0-9]+$', err):
             different_pixels = int(err)
             if different_pixels < 500:
@@ -891,7 +906,12 @@ def frames_match(image1, image2, fuzz_percent,
     if platform.system() != 'Windows':
         command = command.replace('(', '\\(').replace(')', '\\)')
     compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-    out, err = compare.communicate()
+    _, err = compare.communicate()
+    if (sys.version_info >= (3, 0)):
+        try:
+            err = err.decode('utf-8')
+        except Exception:
+            pass
     if re.match('^[0-9]+$', err):
         different_pixels = int(err)
         if different_pixels <= max_differences:
