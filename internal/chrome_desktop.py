@@ -107,6 +107,9 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'mobile' in job and job['mobile']:
             disable_features.extend(['IsolateOrigins',
                                      'site-per-process'])
+        elif 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
+            disable_features.extend(['IsolateOrigins',
+                                     'site-per-process'])
         args.append('--disable-features=' + ','.join(disable_features))
 
         if self.path.find(' ') > -1:
