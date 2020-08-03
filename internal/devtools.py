@@ -39,6 +39,7 @@ class DevTools(object):
         self.task = task
         self.command_id = 0
         self.command_responses = {}
+        self.pending_body_requests = {}
         self.pending_commands = []
         self.workers = []
         self.page_loaded = None
@@ -401,6 +402,20 @@ class DevTools(object):
                 except Exception:
                     logging.exception('Error stopping devtools')
         self.recording = False
+        # Process messages for up to 10 seconds in case we still have some pending async commands
+        end_time = monotonic() + 10
+        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
+            try:
+                raw = self.websocket.get_message(1)
+                try:
+                    if raw is not None and len(raw):
+                        logging.debug(raw[:200])
+                        msg = json.loads(raw)
+                        self.process_message(msg)
+                except Exception:
+                    logging.exception('Error processing websocket message')
+            except Exception:
+                pass
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
@@ -469,7 +484,7 @@ class DevTools(object):
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
 
-    def get_response_body(self, request_id):
+    def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
         if request_id not in self.response_bodies and self.body_fail_count < 3:
             request = self.get_request(request_id, True)
@@ -495,14 +510,8 @@ class DevTools(object):
                     need_body = True
                     content_type = self.get_header_value(request['response_headers'],
                                                         'Content-Type')
-                    is_text = False
                     if content_type is not None:
                         content_type = content_type.lower()
-                        if content_type.startswith('text/') or \
-                                content_type.find('javascript') >= 0 or \
-                                content_type.find('json') >= 0 or \
-                                content_type.find('/svg+xml'):
-                            is_text = True
                         # Ignore video files over 10MB
                         if content_type[:6] == 'video/' and content_length > 10000000:
                             need_body = False
@@ -514,58 +523,80 @@ class DevTools(object):
                         if request_id in self.requests and 'targetId' in self.requests[request_id]:
                             target_id = self.requests[request_id]['targetId']
                         response = self.send_command("Network.getResponseBody",
-                                                    {'requestId': request_id}, wait=True,
+                                                    {'requestId': request_id}, wait=wait,
                                                     target_id=target_id)
-                        if response is None:
-                            self.body_fail_count += 1
-                            logging.warning('No response to body request for request %s',
-                                            request_id)
-                        elif 'result' not in response or \
-                                'body' not in response['result']:
-                            self.body_fail_count = 0
-                            logging.warning('Missing response body for request %s',
-                                            request_id)
-                        elif len(response['result']['body']):
+                        if wait:
+                            self.process_response_body(request_id, response)
+
+    def process_response_body(self, request_id, response):
+        request = self.get_request(request_id, True)
+        path = os.path.join(self.task['dir'], 'bodies')
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        body_file_path = os.path.join(path, request_id)
+        if not os.path.exists(body_file_path):
+            is_text = False
+            if request is not None and 'status' in request and request['status'] == 200 and \
+                    'response_headers' in request:
+                content_type = self.get_header_value(request['response_headers'],
+                                                    'Content-Type')
+                if content_type is not None:
+                    content_type = content_type.lower()
+                    if content_type.startswith('text/') or \
+                            content_type.find('javascript') >= 0 or \
+                            content_type.find('json') >= 0 or \
+                            content_type.find('/svg+xml'):
+                        is_text = True
+            if response is None:
+                self.body_fail_count += 1
+                logging.warning('No response to body request for request %s',
+                                request_id)
+            elif 'result' not in response or \
+                    'body' not in response['result']:
+                self.body_fail_count = 0
+                logging.warning('Missing response body for request %s',
+                                request_id)
+            elif len(response['result']['body']):
+                try:
+                    self.body_fail_count = 0
+                    # Write the raw body to a file (all bodies)
+                    if 'base64Encoded' in response['result'] and \
+                            response['result']['base64Encoded']:
+                        body = base64.b64decode(response['result']['body'])
+                        # Run a sanity check to make sure it isn't binary
+                        if self.bodies_zip_file is not None and is_text:
                             try:
-                                self.body_fail_count = 0
-                                # Write the raw body to a file (all bodies)
-                                if 'base64Encoded' in response['result'] and \
-                                        response['result']['base64Encoded']:
-                                    body = base64.b64decode(response['result']['body'])
-                                    # Run a sanity check to make sure it isn't binary
-                                    if self.bodies_zip_file is not None and is_text:
-                                        try:
-                                            json.loads('"' + body.replace('"', '\\"') + '"')
-                                        except Exception:
-                                            is_text = False
-                                else:
-                                    body = response['result']['body'].encode('utf-8')
-                                    is_text = True
-                                # Add text bodies to the zip archive
-                                store_body = self.all_bodies
-                                if self.html_body and request_id == self.main_request:
-                                    store_body = True
-                                if store_body and self.bodies_zip_file is not None and is_text:
-                                    self.body_index += 1
-                                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                                    self.bodies_zip_file.writestr(name, body)
-                                    logging.debug('%s: Stored body in zip', request_id)
-                                logging.debug('%s: Body length: %d', request_id, len(body))
-                                self.response_bodies[request_id] = body
-                                with open(body_file_path, 'wb') as body_file:
-                                    body_file.write(body)
+                                json.loads('"' + body.replace('"', '\\"') + '"')
                             except Exception:
-                                logging.exception('Exception retrieving body')
-                        else:
-                            self.body_fail_count = 0
-                            self.response_bodies[request_id] = response['result']['body']
+                                is_text = False
+                    else:
+                        body = response['result']['body'].encode('utf-8')
+                        is_text = True
+                    # Add text bodies to the zip archive
+                    store_body = self.all_bodies
+                    if self.html_body and request_id == self.main_request:
+                        store_body = True
+                    if store_body and self.bodies_zip_file is not None and is_text:
+                        self.body_index += 1
+                        name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                        self.bodies_zip_file.writestr(name, body)
+                        logging.debug('%s: Stored body in zip', request_id)
+                    logging.debug('%s: Body length: %d', request_id, len(body))
+                    self.response_bodies[request_id] = body
+                    with open(body_file_path, 'wb') as body_file:
+                        body_file.write(body)
+                except Exception:
+                    logging.exception('Exception retrieving body')
+            else:
+                self.body_fail_count = 0
+                self.response_bodies[request_id] = response['result']['body']
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
         requests = self.get_requests(True)
         if self.task['error'] is None and requests:
             for request_id in requests:
-                self.get_response_body(request_id)
+                self.get_response_body(request_id, True)
 
     def get_request(self, request_id, include_bodies):
         """Get the given request details if it is a real request"""
@@ -675,7 +706,7 @@ class DevTools(object):
             end_time = monotonic() + timeout
             self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
-                              wait=True, timeout=timeout)
+                              wait=wait, timeout=timeout)
             if wait:
                 if command_id in self.command_responses:
                     ret = self.command_responses[command_id]
@@ -696,6 +727,9 @@ class DevTools(object):
                                 logging.exception('Error processing websocket message')
                         except Exception:
                             pass
+            elif method == 'Network.getResponseBody' and 'requestId' in params:
+                self.pending_body_requests[command_id] = params['requestId']
+
         elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -723,6 +757,8 @@ class DevTools(object):
                                 logging.error('Error processing websocket message: %s', err.__str__())
                         except Exception:
                             pass
+                elif method == 'Network.getResponseBody' and 'requestId' in params:
+                    self.pending_body_requests[command_id] = params['requestId']
             except Exception as err:
                 logging.exception("Websocket send error: %s", err.__str__())
         return ret
@@ -910,6 +946,10 @@ class DevTools(object):
                     self.log_dev_tools_event(msg)
         if 'id' in msg:
             response_id = int(re.search(r'\d+', str(msg['id'])).group())
+            if response_id in self.pending_body_requests:
+                request_id = self.pending_body_requests[response_id]
+                self.process_response_body(request_id, msg)
+                del(self.pending_body_requests[response_id])
             if response_id in self.pending_commands:
                 self.pending_commands.remove(response_id)
                 self.command_responses[response_id] = msg
@@ -1081,7 +1121,7 @@ class DevTools(object):
             elif event == 'loadingFinished':
                 self.response_started = True
                 request['finished'] = msg['params']
-                self.get_response_body(request_id)
+                self.get_response_body(request_id, False)
             elif event == 'loadingFailed':
                 request['failed'] = msg['params']
                 if not self.response_started:
