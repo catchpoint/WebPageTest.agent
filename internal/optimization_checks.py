@@ -198,7 +198,7 @@ class OptimizationChecks(object):
                              '.revdn.net'],
             'Roast.io': ['.roast.io'],
             'Rocket CDN': ['.streamprovider.net'],
-            'section.io': ['.squixa.net'],
+            'section.io': ['.section.io'],
             'SFR': ['cdn.sfr.net'],
             'SwiftyCDN': ['.swiftycdn.net'],
             'Simple CDN': ['.simplecdn.net'],
