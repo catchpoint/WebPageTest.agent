@@ -1338,11 +1338,12 @@ class DevToolsClient(WebSocketClient):
             logging.debug("Processing the trace timeline events")
             self.trace_parser.ProcessTimelineEvents()
             self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
-            self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
-            self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
+            if 'timeline' in self.job and self.job['timeline']:
+                self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
+                self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
+                self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
+                self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
-            self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
-            self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
             elapsed = monotonic() - start

@@ -53,14 +53,14 @@ class Trace():
         self.scripts = None
         self.timeline_events = []
         self.trace_events = []
-        self.interactive = []
-        self.long_tasks = []
+        self.interactive = None
+        self.long_tasks = None
         self.interactive_start = 0
         self.interactive_end = None
         self.start_time = None
         self.marked_start_time = None
         self.end_time = None
-        self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': []}
+        self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': [], 'valid': False}
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
@@ -93,7 +93,8 @@ class Trace():
             self.write_json(out_file, out)
 
     def WriteCPUSlices(self, out_file):
-        self.write_json(out_file, self.cpu)
+        if self.cpu['valid']:
+            self.write_json(out_file, self.cpu)
 
     def WriteScriptTimings(self, out_file):
         if self.scripts is not None:
@@ -107,7 +108,7 @@ class Trace():
 
     def WriteInteractive(self, out_file):
         # Generate the interactive periods from the long-task data
-        if self.end_time and self.start_time:
+        if self.end_time and self.start_time and self.long_tasks is not None:
             interactive = []
             end_time = int(math.ceil(float(self.end_time - self.start_time) / 1000.0))
             if not self.long_tasks:
@@ -125,7 +126,8 @@ class Trace():
             self.write_json(out_file, interactive)
     
     def WriteLongTasks(self, out_file):
-        self.write_json(out_file, self.long_tasks)
+        if self.long_tasks is not None:
+            self.write_json(out_file, self.long_tasks)
 
     def WriteNetlog(self, out_file):
         out = self.post_process_netlog_events()
@@ -518,6 +520,8 @@ class Trace():
         if len(self.timeline_events) and self.end_time > self.start_time:
             # Figure out how big each slice should be in usecs. Size it to a
             # power of 10 where we have at least 2000 slices
+            if self.interactive is None:
+                self.interactive = []
             exp = 0
             last_exp = 0
             slice_count = self.end_time - self.start_time
@@ -581,6 +585,9 @@ class Trace():
     def ProcessTimelineEvent(self, timeline_event, parent, stack=None):
         start = timeline_event['s'] - self.start_time
         end = timeline_event['e'] - self.start_time
+        if self.long_tasks is None:
+            self.long_tasks = []
+        self.cpu['valid'] = True
         if stack is None:
             stack = {}
         if end > start:
