@@ -76,11 +76,14 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
                 response += cgi.escape(json.dumps(MESSAGE_SERVER.config))
                 response += '</div>'
             response += "</body></html>"
+        elif self.request.uri == '/wpt-start-recording':
+            response = 'ok'
 
         if response is not None:
             self.set_status(200)
             self.set_header("Content-Type", content_type)
             self.set_header("Referrer-Policy", "no-referrer")
+            self.set_header("Access-Control-Allow-Origin", "*")
             self.write(response)
 
     def post(self):
