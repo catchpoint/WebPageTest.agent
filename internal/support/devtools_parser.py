@@ -701,11 +701,7 @@ class DevToolsParser(object):
                             end_offset > page_data['fullyLoaded']:
                         page_data['fullyLoaded'] = end_offset
                 if request['load_start'] >= 0:
-                    # Ignore Chrome phantom requests for asset-manifest.json
-                    if request['responseCode'] == 404 and request['url'] == '/asset-manifest.json':
-                        logging.debug('Discarding phantom asset manifest request')
-                    else:
-                        requests.append(dict(request))
+                    requests.append(dict(request))
         page_data['connections'] = len(connections)
         if len(requests):
             requests.sort(key=lambda x: x['load_start_float'])
