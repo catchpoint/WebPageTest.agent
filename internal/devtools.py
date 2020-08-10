@@ -477,7 +477,7 @@ class DevTools(object):
                             no_message_count += 1
                             time.sleep(1)
                             pass
-                self.websocket.stop_processing_trace()
+                self.websocket.stop_processing_trace(self.job)
             except Exception:
                 logging.exception('Error processing trace events')
             elapsed = monotonic() - start
@@ -1314,7 +1314,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.keep_timeline = keep_timeline
 
-    def stop_processing_trace(self):
+    def stop_processing_trace(self, job):
         """All done"""
         if self.pending_image is not None and self.last_image is not None and\
                 self.pending_image["image"] != self.last_image["image"]:
@@ -1338,7 +1338,7 @@ class DevToolsClient(WebSocketClient):
             logging.debug("Processing the trace timeline events")
             self.trace_parser.ProcessTimelineEvents()
             self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
-            if 'timeline' in self.job and self.job['timeline']:
+            if 'timeline' in job and job['timeline']:
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
                 self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')

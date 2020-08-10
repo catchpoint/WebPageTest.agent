@@ -201,10 +201,10 @@ class DevtoolsBrowser(object):
                     screen_shot = os.path.join(task['dir'],
                                                task['prefix'] + '_screen.jpg')
                     self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+            # Stop recording dev tools
+            self.devtools.stop_recording()
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
-            # Stop recording dev tools (which also collects the trace)
-            self.devtools.stop_recording()
 
     def run_task(self, task):
         """Run an individual test"""
