@@ -997,6 +997,7 @@ class DevToolsParser(object):
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
                     if 'contentType' not in request or \
                             (request['contentType'].find('ocsp-response') < 0 and \
+                             request['contentType'].find('pkix-crl') < 0 and \
                              request['contentType'].find('ca-cert') < 0):
                         main_request = request
                         request['final_base_page'] = True
