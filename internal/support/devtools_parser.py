@@ -1032,6 +1032,7 @@ class DevToolsParser(object):
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
                     if 'contentType' not in request or \
                             (request['contentType'].find('ocsp-response') < 0 and \
+                                request['contentType'].find('pkix-crl') < 0 and \
                                 request['contentType'].find('ca-cert') < 0):
                         page_data['TTFB'] = int(round(float(request['load_start']) + float(request['ttfb_ms'])))
                         if request['ssl_end'] >= request['ssl_start'] and \
