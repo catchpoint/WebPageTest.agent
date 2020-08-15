@@ -418,7 +418,8 @@ class WPTAgent(object):
 
         # Check the iOS install
         if self.ios is not None:
-            ret = self.ios.check_install()
+            ret = self.requires('usbmuxwrapper') and ret
+            ret = self.ios.check_install() and ret
 
         if not self.options.android and not self.options.iOS and not self.options.noidle:
             self.wait_for_idle(300)

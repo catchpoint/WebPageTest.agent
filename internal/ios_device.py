@@ -60,7 +60,7 @@ class iOSDevice(object):
             try:
                 if not os.path.exists('/var/run/usbmuxd'):
                     subprocess.call(['sudo', 'usbmuxd'])
-                from .support.ios.usbmux import USBMux
+                from usbmuxwrapper import USBMux
                 self.mux = USBMux()
             except Exception:
                 logging.exception("Error initializing usbmux")
