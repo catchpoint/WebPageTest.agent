@@ -177,6 +177,99 @@ class WinShaper(object):
                             'inbuff={0:d}'.format(int(self.in_buff)),
                             'outbuff={0:d}'.format(int(self.out_buff))])
 
+#	
+# Dummynet	
+#	
+class Dummynet(object):	
+    """Dummynet support (windows only currently)"""	
+    def __init__(self):	
+        self.interface = None	
+        self.in_pipe = '1'	
+        self.out_pipe = '2'	
+        self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),	
+                                "support", "dummynet")	
+        if platform.machine().endswith('64'):	
+            self.exe = os.path.join(self.exe, "x64", "ipfw.exe")	
+        else:	
+            self.exe = os.path.join(self.exe, "x86", "ipfw.exe")	
+
+    def ipfw(self, args):	
+        """Run a single ipfw command"""	
+        from .os_util import run_elevated	
+        cmd = ' '.join(args)	
+        logging.debug('ipfw ' + cmd)	
+        return run_elevated(self.exe, cmd) == 0	
+
+    def install(self):	
+        """Set up the pipes"""	
+        return self.ipfw(['-q', 'flush']) and\	
+               self.ipfw(['-q', 'pipe', 'flush']) and\	
+               self.ipfw(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\	
+               self.ipfw(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\	
+               self.ipfw(['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100', \	
+                          'noerror', 'mask', 'dst-port', '0xffff']) and\	
+               self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \	
+                          'noerror', 'mask', 'src-port', '0xffff']) and\	
+               self.ipfw(['add', 'queue', self.in_pipe, 'ip', 'from', 'any', 'to', 'any',	
+                          'in']) and\	
+               self.ipfw(['add', 'queue', self.out_pipe, 'ip', 'from', 'any', 'to', 'any',	
+                          'out']) and\	
+               self.ipfw(['add', '60000', 'allow', 'ip', 'from', 'any', 'to', 'any'])	
+
+    def remove(self):	
+        """clear the config"""	
+        return self.ipfw(['-q', 'flush']) and\	
+               self.ipfw(['-q', 'pipe', 'flush'])	
+
+    def reset(self):	
+        """Disable traffic-shaping"""	
+        return self.ipfw(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\	
+               self.ipfw(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\	
+               self.ipfw(['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100', \	
+                          'noerror', 'mask', 'dst-port', '0xffff']) and\	
+               self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \	
+                          'noerror', 'mask', 'dst-port', '0xffff'])	
+
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):	
+        """Enable traffic-shaping"""	
+        if shaperLimit > 0:	
+            return False # not supported	
+        # inbound connection	
+        in_kbps = int(in_bps / 1000)	
+        in_latency = rtt / 2	
+        if rtt % 2:	
+            in_latency += 1	
+        in_command = ['pipe', self.in_pipe, 'config']	
+        if in_kbps > 0:	
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(int(in_kbps))])	
+        if in_latency >= 0:	
+            in_command.extend(['delay', '{0:d}ms'.format(int(in_latency))])	
+
+        # outbound connection	
+        out_kbps = int(out_bps / 1000)	
+        out_latency = rtt / 2	
+        out_command = ['pipe', self.out_pipe, 'config']	
+        if out_kbps > 0:	
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(int(out_kbps))])	
+        if out_latency >= 0:	
+            out_command.extend(['delay', '{0:d}ms'.format(int(out_latency))])	
+
+        # Packet loss get applied to the queues	
+        plr = plr / 100.0	
+        in_queue_command = ['queue', self.in_pipe, 'config', 'pipe', self.in_pipe, 'queue', '100']	
+        out_queue_command = ['queue', self.out_pipe, 'config', 'pipe', self.out_pipe,	
+                             'queue', '100']	
+        if plr > 0.0 and plr <= 1.0:	
+            in_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])	
+            out_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])	
+        in_queue_command.extend(['mask', 'dst-port', '0xffff'])	
+        out_queue_command.extend(['mask', 'dst-port', '0xffff'])	
+
+        return self.ipfw(in_command) and\	
+               self.ipfw(out_command) and\	
+               self.ipfw(in_queue_command) and\	
+               self.ipfw(out_queue_command)	
+
 #
 # MacDummynet - Dummynet through pfctl
 #
