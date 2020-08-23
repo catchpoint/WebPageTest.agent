@@ -405,16 +405,14 @@ class DesktopBrowser(BaseBrowser):
                 if platform.system() == 'Windows':
                     tcpdump = os.path.join(self.support_path, 'windows', 'WinDump.exe')
                     if interface == 'any':
-                        args = [tcpdump, '-p', '-s', '0', '-w', self.pcap_file]
+                        args = [tcpdump, '-p', '-s', '0', '-w', self.pcap_file, 'tcp', 'or', 'udp']
                     else:
-                        args = [tcpdump, '-p', '-i', interface, '-s', '0',
-                                '-w', self.pcap_file]
+                        args = [tcpdump, '-p', '-i', interface, '-s', '0', '-w', self.pcap_file, 'tcp', 'or', 'udp']
                     logging.debug(' '.join(args))
                     self.tcpdump = subprocess.Popen(args,
                                                     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
                 else:
-                    args = ['sudo', 'tcpdump', '-p', '-i', interface, '-s', '0',
-                            '-w', self.pcap_file]
+                    args = ['sudo', 'tcpdump', '-p', '-i', interface, '-s', '0', '-w', self.pcap_file, 'tcp', 'or', 'udp']
                     logging.debug(' '.join(args))
                     self.tcpdump = subprocess.Popen(args)
                 # Wait for the capture file to start growing
