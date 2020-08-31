@@ -606,7 +606,14 @@ class DevtoolsBrowser(object):
                 except Exception:
                     logging.exception('Error adding custom config for lighthouse test')
             else:
-                command.extend(['--throttling-method', 'provided'])
+                if self.job['throttle_cpu'] > 1:
+                    command.extend(['--throttling-method', 'devtools',
+                                    '--throttling.requestLatencyMs', '0',
+                                    '--throttling.downloadThroughputKbps', '0',
+                                    '--throttling.uploadThroughputKbps', '0',
+                                    '--throttling.cpuSlowdownMultiplier', '{:.3f}'.format(self.job['throttle_cpu'])])
+                else:
+                    command.extend(['--throttling-method', 'provided'])
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
