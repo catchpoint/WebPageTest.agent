@@ -606,7 +606,7 @@ class DevtoolsBrowser(object):
                 except Exception:
                     logging.exception('Error adding custom config for lighthouse test')
             else:
-                if not self.options.android and self.job['throttle_cpu'] > 1:
+                if not self.options.android and 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
                     command.extend(['--throttling-method', 'devtools',
                                     '--throttling.requestLatencyMs', '0',
                                     '--throttling.downloadThroughputKbps', '0',
