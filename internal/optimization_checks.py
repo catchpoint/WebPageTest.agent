@@ -942,6 +942,8 @@ class OptimizationChecks(object):
                                         check['score'] = 100
                     elif sniff_type == 'webp':
                         check['score'] = 100
+                    elif sniff_type == 'avif':
+                        check['score'] = 100
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
             except Exception:
@@ -1054,6 +1056,8 @@ class OptimizationChecks(object):
             content_type = 'jpeg'
         elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
+        elif hex_bytes[0:24] == b'000000206674797061766966':
+            content_type = 'avif'
         elif raw_bytes[:6] == b'GIF87a' or raw_bytes[:6] == b'GIF89a':
             content_type = 'gif'
         elif raw_bytes[:4] == b'RIFF' and raw_bytes[8:14] == b'WEBPVP':
