@@ -223,6 +223,8 @@ class DevToolsParser(object):
                                 request['frame_id'] = page_data['main_frame']
                             if 'initiator' in params:
                                 request['initiator'] = params['initiator']
+                            if 'documentURL' in params:
+                                request['documentURL'] = params['documentURL']
                             # Redirects re-use the same ID so we need to fake a new request
                             if request_id in raw_requests:
                                 if 'redirectResponse' in params:
@@ -455,6 +457,8 @@ class DevToolsParser(object):
                     request['frame_id'] = raw_request['frame_id']
                 if len(parts.query):
                     request['url'] += '?' + parts.query
+                if 'documentURL' in raw_request:
+                    request['documentURL'] = raw_request['documentURL']
                 request['responseCode'] = -1
                 if 'response' in raw_request and 'status' in raw_request['response']:
                     request['responseCode'] = raw_request['response']['status']
