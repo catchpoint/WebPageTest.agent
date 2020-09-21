@@ -293,7 +293,9 @@ class iWptBrowser(BaseBrowser):
         """Run javascipt (stub for overriding"""
         ret = None
         if self.connected:
-            ret = self.ios.execute_js(script)
+            result = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
+            if result is not None and 'result' in result and 'result' in result['result'] and 'value' in result['result']['result']:
+                ret = result['result']['result']['value']
         return ret
 
     def run_js_file(self, file_name):
@@ -306,7 +308,7 @@ class iWptBrowser(BaseBrowser):
                 with open(script_file_path, 'r') as script_file:
                     script = script_file.read()
             if script is not None:
-                ret = self.ios.execute_js(script)
+                ret = self.execute_js(script)
         return ret
 
     def set_header(self, header):
@@ -356,6 +358,8 @@ class iWptBrowser(BaseBrowser):
             requests = None
             bodies = None
             for name in self.job['customMetrics']:
+                if name == 'jsLibsVulns':
+                    continue
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_REQUESTS') >= 0:
@@ -374,7 +378,7 @@ class iWptBrowser(BaseBrowser):
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = '(function() {' + custom_script + '})()'
                 try:
-                    custom_metrics[name] = self.ios.execute_js(script)
+                    custom_metrics[name] = self.execute_js(script)
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
@@ -392,7 +396,7 @@ class iWptBrowser(BaseBrowser):
             with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
                 hero_elements_script = script_file.read()
             script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.ios.execute_js(script)
+            hero_elements = self.execute_js(script)
             if hero_elements is not None:
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
@@ -805,6 +809,7 @@ class iWptBrowser(BaseBrowser):
     def enable_safari_events(self):
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
+        self.send_command('Runtime.enable', {})
         if self.headers:
             self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
         if len(self.workers):
@@ -879,6 +884,7 @@ class iWptBrowser(BaseBrowser):
         self.send_command('Page.disable', {})
         self.send_command('Inspector.disable', {})
         self.send_command('Network.disable', {})
+        self.send_command('Runtime.disable', {})
         if len(self.workers):
             for target in self.workers:
                 self.send_command('Network.disable', {}, target_id=target['targetId'])
@@ -1052,13 +1058,13 @@ class iWptBrowser(BaseBrowser):
                             try:
                                 if msg:
                                     self.process_message(msg)
-                                    if command_id in self.command_responses:
-                                        ret = self.command_responses[command_id]
-                                        del self.command_responses[command_id]
                             except Exception:
                                 logging.exception('Error processing command response')
                         except Exception:
                             pass
+                        if command_id in self.command_responses:
+                            ret = self.command_responses[command_id]
+                            del self.command_responses[command_id]
         elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -1077,13 +1083,13 @@ class iWptBrowser(BaseBrowser):
                             try:
                                 if msg:
                                     self.process_message(msg)
-                                    if command_id in self.command_responses:
-                                        ret = self.command_responses[command_id]
-                                        del self.command_responses[command_id]
                             except Exception:
                                 logging.exception('Error processing response to command')
                         except Exception:
                             pass
+                        if command_id in self.command_responses:
+                            ret = self.command_responses[command_id]
+                            del self.command_responses[command_id]
             except Exception as err:
                 logging.exception("Websocket send error: %s", err.__str__())
         return ret
@@ -1130,7 +1136,7 @@ class iWptBrowser(BaseBrowser):
                 self.main_frame = None
                 self.main_request = None
                 self.is_navigating = True
-            self.ios.execute_js(command['target'], remove_orange=self.recording)
+            self.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
             delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
