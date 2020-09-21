@@ -77,7 +77,6 @@ class iWptBrowser(BaseBrowser):
         self.headers = {}
         self.webinspector_proxy = None
         self.ios_version = None
-        self.target_sessions = {}
         self.workers = []
         self.default_target = None
 
@@ -132,7 +131,7 @@ class iWptBrowser(BaseBrowser):
                     self.connected = self.connect()
 
                 if self.connected:
-                    self.send_command('Target.setPauseOnStart', {'pauseOnStart': True})
+                    self.send_command('Target.setPauseOnStart', {'pauseOnStart': True}, wait=True)
                     # Override the UA String if necessary
                     ua_string = self.execute_js('navigator.userAgent;')
                     if 'uastring' in self.job:
@@ -399,7 +398,7 @@ class iWptBrowser(BaseBrowser):
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
 
-    def process_message(self, msg, target_id=None):
+    def process_message(self, msg):
         """Process a message from the browser
         https://trac.webkit.org/browser/webkit/trunk/Source/JavaScriptCore/inspector/protocol"""
         try:
@@ -677,17 +676,10 @@ class iWptBrowser(BaseBrowser):
     def process_target_event(self, event, msg):
         """Process Target.* dev tools events"""
         if event == 'dispatchMessageFromTarget':
-            target_id = None
-            if 'targetId' in msg['params']:
-                target_id = msg['params']['targetId']
-            elif 'sessionId' in msg['params']:
-                session_id = msg['params']['sessionId']
-                if session_id in self.target_sessions:
-                    target_id = self.target_sessions[session_id]
-            if 'message' in msg['params'] and target_id is not None:
+            if 'message' in msg['params']:
                 logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
-                self.process_message(target_message, target_id=target_id)
+                self.process_message(target_message)
         if event == 'targetCreated':
             if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
                 target = msg['params']['targetInfo']
@@ -811,7 +803,6 @@ class iWptBrowser(BaseBrowser):
             self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id)
 
     def enable_safari_events(self):
-        self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
         if self.headers:
@@ -823,7 +814,8 @@ class iWptBrowser(BaseBrowser):
             self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
             self.send_command('Console.enable', {})
-            self.send_command('Timeline.start', {})
+            self.send_command('Timeline.start', {}, wait=True)
+        self.send_command('Page.enable', {}, wait=True)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
@@ -1056,11 +1048,9 @@ class iWptBrowser(BaseBrowser):
                 else:
                     while ret is None and monotonic() < end_time:
                         try:
-                            raw = self.websocket.get_message(1)
+                            msg = self.messages.get(timeout=1)
                             try:
-                                if raw is not None and len(raw):
-                                    logging.debug(raw[:200])
-                                    msg = json.loads(raw)
+                                if msg:
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
                                         ret = self.command_responses[command_id]
