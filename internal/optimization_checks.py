@@ -76,6 +76,8 @@ class OptimizationChecks(object):
                        '.akamaitechnologies.com',
                        '.akamaitechnologies.fr'],
             'Akamai China CDN': ['.tl88.net'],
+            'Alibaba':['.w.kunlunsl.com',
+                      '.w.cdngslb.com'],
             'Alimama': ['.gslb.tbcache.com'],
             'Amazon CloudFront': ['.cloudfront.net'],
             'Aryaka': ['.aads1.net',
