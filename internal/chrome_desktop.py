@@ -26,6 +26,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--allow-running-insecure-content',
     '--disable-component-update',
     '--disable-background-downloads',
+    '--disable-component-update',
     '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
     '--disable-datasaver-prompt',

@@ -23,6 +23,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--metrics-recording-only',
     '--disable-geolocation',
     '--disable-background-networking',
+    '--disable-component-update',
     '--no-default-browser-check',
     '--no-first-run',
     '--disable-infobars',
