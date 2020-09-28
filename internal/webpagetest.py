@@ -54,7 +54,7 @@ class WebPageTest(object):
         self.work_servers_str = options.server
         if self.work_servers_str == 'www.webpagetest.org':
             self.work_servers_str = 'http://www.webpagetest.org/'
-        self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+        self.work_servers = self.work_servers_str.split(',')
         self.url = str(self.work_servers[0])
         self.location = ''
         self.test_locations = []
@@ -303,20 +303,21 @@ class WebPageTest(object):
                     value = parts[1].strip()
                     logging.debug('Setting config option "%s" to "%s"', key, value)
                     if key == 'wpt_server':
+                        server = ''
                         if re.search(r'^https?://', value):
-                            self.url = value
+                            server = value
                             if value.endswith('/'):
-                                self.url += 'work/'
+                                server += 'work/'
                             else:
-                                self.url += '/work/'
+                                server += '/work/'
                         else:
-                            self.url = 'http://{0}/work/'.format(value)
-                        self.work_servers_str = self.url.replace('/www.webpagetest.org/','/agent.webpagetest.org/')
+                            server = 'http://{0}/work/'.format(value)
+                        self.work_servers_str = str(server)
                         self.work_servers = self.work_servers_str.split(',')
                         self.url = str(self.work_servers[0])
                     if key == 'wpt_url':
-                        self.work_servers_str = value
-                        self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/','/agent.webpagetest.org/').split(',')
+                        self.work_servers_str = str(value)
+                        self.work_servers = self.work_servers_str.split(',')
                         self.url = str(self.work_servers[0])
                     elif key == 'wpt_loc' or key == 'wpt_location':
                         if value is not None:
@@ -448,7 +449,7 @@ class WebPageTest(object):
                         servers_str = response.text[8:]
                         if servers_str and servers_str != self.work_servers_str:
                             self.work_servers_str = servers_str
-                            self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+                            self.work_servers = self.work_servers_str.split(',')
                             logging.debug("Servers changed to: %s", self.work_servers_str)
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
@@ -508,7 +509,7 @@ class WebPageTest(object):
                         job['throttle_cpu'] = throttle
                     if 'work_servers' in job and job['work_servers'] != self.work_servers_str:
                             self.work_servers_str = job['work_servers']
-                            self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+                            self.work_servers = self.work_servers_str.split(',')
                             logging.debug("Servers changed to: %s", self.work_servers_str)
 
                 # Rotate through the list of locations
