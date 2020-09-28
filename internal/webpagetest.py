@@ -51,11 +51,14 @@ class WebPageTest(object):
                                                datefmt="%H:%M:%S")
         self.log_handler = None
         # Configurable options
-        self.work_servers_str = options.server
-        if self.work_servers_str == 'www.webpagetest.org':
-            self.work_servers_str = 'http://www.webpagetest.org/'
-        self.work_servers = self.work_servers_str.split(',')
-        self.url = str(self.work_servers[0])
+        self.work_servers = []
+        self.url = ''
+        if options.server is not None:
+            self.work_servers_str = options.server
+            if self.work_servers_str == 'www.webpagetest.org':
+                self.work_servers_str = 'http://www.webpagetest.org/'
+            self.work_servers = self.work_servers_str.split(',')
+            self.url = str(self.work_servers[0])
         self.location = ''
         self.test_locations = []
         if options.location is not None:
