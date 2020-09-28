@@ -1122,16 +1122,7 @@ class WebPageTest(object):
                                 filepath = os.path.join(video_dir, filename)
                                 if os.path.isfile(filepath):
                                     name = video_subdirectory + '/' + filename
-                                    if os.path.getsize(filepath) > 100000:
-                                        logging.debug('Uploading %s (%d bytes)', filename,
-                                                    os.path.getsize(filepath))
-                                        if self.post_data(self.url + "resultimage.php", data,
-                                                        filepath, task['prefix'] + '_' + filename):
-                                            os.remove(filepath)
-                                        else:
-                                            needs_zip.append({'path': filepath, 'name': name})
-                                    else:
-                                        needs_zip.append({'path': filepath, 'name': name})
+                                    needs_zip.append({'path': filepath, 'name': name})
                 # Upload the separate large files (> 100KB)
                 for filename in os.listdir(task['dir']):
                     filepath = os.path.join(task['dir'], filename)
@@ -1143,16 +1134,6 @@ class WebPageTest(object):
                                 os.remove(filepath)
                             except Exception:
                                 pass
-                        elif os.path.getsize(filepath) > 100000:
-                            logging.debug('Uploading %s (%d bytes)', filename,
-                                        os.path.getsize(filepath))
-                            if self.post_data(self.url + "resultimage.php", data, filepath, filename):
-                                try:
-                                    os.remove(filepath)
-                                except Exception:
-                                    pass
-                            else:
-                                needs_zip.append({'path': filepath, 'name': filename})
                         else:
                             needs_zip.append({'path': filepath, 'name': filename})
                 # Zip the remaining files
@@ -1175,7 +1156,11 @@ class WebPageTest(object):
             if cpu_pct is not None:
                 data['cpu'] = '{0:0.2f}'.format(cpu_pct)
             logging.debug('Uploading result zip')
-            self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            uploaded = False
+            if 'work_server' in self.job:
+                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+            if not uploaded:
+                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around
         if os.path.isdir(task['dir']):
             try:
@@ -1201,7 +1186,7 @@ class WebPageTest(object):
             if file_path is not None and os.path.isfile(file_path):
                 self.session.post(url,
                                   files={'file': (filename, open(file_path, 'rb'))},
-                                  timeout=300,)
+                                  timeout=600)
             else:
                 self.session.post(url)
         except Exception:
