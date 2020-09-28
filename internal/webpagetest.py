@@ -9,6 +9,7 @@ import logging
 import multiprocessing
 import os
 import platform
+import random
 import re
 import shutil
 import socket
@@ -50,7 +51,11 @@ class WebPageTest(object):
                                                datefmt="%H:%M:%S")
         self.log_handler = None
         # Configurable options
-        self.url = options.server
+        self.work_servers_str = options.server
+        if self.work_servers_str == 'www.webpagetest.org':
+            self.work_servers_str = 'http://www.webpagetest.org/'
+        self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+        self.url = str(self.work_servers[0])
         self.location = ''
         self.test_locations = []
         if options.location is not None:
@@ -148,9 +153,6 @@ class WebPageTest(object):
         if os.path.isfile(margins_file):
             with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
-        # Override the public webpagetest server automatically
-        if self.url is not None and self.url.find('www.webpagetest.org') >= 0:
-            self.url = 'http://agent.webpagetest.org/work/'
     # pylint: enable=E0611
 
     def benchmark_cpu(self):
@@ -309,8 +311,13 @@ class WebPageTest(object):
                                 self.url += '/work/'
                         else:
                             self.url = 'http://{0}/work/'.format(value)
+                        self.work_servers_str = self.url.replace('/www.webpagetest.org/','/agent.webpagetest.org/')
+                        self.work_servers = self.work_servers_str.split(',')
+                        self.url = str(self.work_servers[0])
                     if key == 'wpt_url':
-                        self.url = value
+                        self.work_servers_str = value
+                        self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/','/agent.webpagetest.org/').split(',')
+                        self.url = str(self.work_servers[0])
                     elif key == 'wpt_loc' or key == 'wpt_location':
                         if value is not None:
                             self.test_locations = value.split(',')
@@ -379,10 +386,14 @@ class WebPageTest(object):
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
-        if self.url is None:
+        if len(self.work_servers) == 0:
             return None
         job = None
+        servers = list(self.work_servers)
+        random.shuffle(servers)
+        self.url = str(servers.pop(0))
         locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
+        random.shuffle(locations)
         location = str(locations.pop(0))
         # Shuffle the list order
         if len(self.test_locations) > 1:
@@ -392,7 +403,7 @@ class WebPageTest(object):
         while count < 3 and retry:
             retry = False
             count += 1
-            url = self.url + "getwork.php?f=json&shards=1&reboot=1"
+            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1"
             url += "&location=" + quote_plus(location)
             url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
@@ -433,6 +444,12 @@ class WebPageTest(object):
                     if response.text == 'Reboot':
                         self.reboot()
                         return None
+                    elif response.text.startswith('Servers:'):
+                        servers_str = response.text[8:]
+                        if servers_str and servers_str != self.work_servers_str:
+                            self.work_servers_str = servers_str
+                            self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+                            logging.debug("Servers changed to: %s", self.work_servers_str)
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
@@ -489,8 +506,15 @@ class WebPageTest(object):
                             throttle *= self.cpu_scale_multiplier
                         job['throttle_cpu_requested'] = job['throttle_cpu']
                         job['throttle_cpu'] = throttle
+                    if 'work_servers' in job and job['work_servers'] != self.work_servers_str:
+                            self.work_servers_str = job['work_servers']
+                            self.work_servers = self.work_servers_str.replace('/www.webpagetest.org/', '/agent.webpagetest.org/').split(',')
+                            logging.debug("Servers changed to: %s", self.work_servers_str)
+
+                # Rotate through the list of locations
                 if job is None and len(locations) > 0:
                     location = str(locations.pop(0))
+                    count -= 1
                     retry = True
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
@@ -505,6 +529,14 @@ class WebPageTest(object):
                 time.sleep(0.1)
             except Exception:
                 pass
+            # Rotate through the list of servers
+            if not retry and job is None and len(servers) > 0:
+                self.url = str(servers.pop(0))
+                locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
+                random.shuffle(locations)
+                location = str(locations.pop(0))
+                count -= 1
+                retry = True
         self.job = job
         return job
 
