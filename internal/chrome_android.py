@@ -23,6 +23,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--metrics-recording-only',
     '--disable-geolocation',
     '--disable-background-networking',
+    '--disable-component-update',
     '--no-default-browser-check',
     '--no-first-run',
     '--disable-infobars',
@@ -47,6 +48,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
     '"MAP clients1.google.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
     '"MAP redirector.gvt1.com 127.0.0.1"'
 ]
 

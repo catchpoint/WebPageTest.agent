@@ -316,12 +316,11 @@ class WPTAgent(object):
         ret = self.requires('requests') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
+            if self.options.webdriver and 'Firefox' in detected_browsers:
+                ret = self.requires('selenium')
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
-
-        if self.options.webdriver and 'Firefox' in detected_browsers:
-            ret = self.requires('selenium')
 
         # Optional imports
         self.requires('brotli')
@@ -360,7 +359,7 @@ class WPTAgent(object):
                 logging.debug("Traceroute is missing, installing...")
                 subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
 
-        if self.options.webdriver and 'Firefox' in detected_browsers:
+        if not self.options.android and not self.options.iOS and self.options.webdriver and 'Firefox' in detected_browsers:
             try:
                 subprocess.check_output(['geckodriver', '-V'])
             except Exception:

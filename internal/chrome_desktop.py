@@ -26,6 +26,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--allow-running-insecure-content',
     '--disable-component-update',
     '--disable-background-downloads',
+    '--disable-component-update',
     '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
     '--disable-datasaver-prompt',
@@ -42,6 +43,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
     '"MAP clients1.google.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
     '"MAP redirector.gvt1.com 127.0.0.1"',
     '"MAP laptop-updates.brave.com 127.0.0.1"'
 ]
