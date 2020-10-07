@@ -92,14 +92,15 @@ class DevtoolsBrowser(object):
                         self.device_pixel_ratio = max(1.0, float(ratio))
                 except Exception:
                     pass
-            # Clear the caches
-            self.profile_start('clear_cache')
-            if not task['cached']:
-                self.devtools.send_command("Network.clearBrowserCache", {},
-                                           wait=True)
-                self.devtools.send_command("Network.clearBrowserCookies", {},
-                                           wait=True)
-            self.profile_end('clear_cache')
+            # Clear the caches. Only needed on Android since we start with a completely clear profile for desktop
+            if self.options.android:
+                self.profile_start('clear_cache')
+                if not task['cached']:
+                    self.devtools.send_command("Network.clearBrowserCache", {},
+                                            wait=True)
+                    self.devtools.send_command("Network.clearBrowserCookies", {},
+                                            wait=True)
+                self.profile_end('clear_cache')
 
             # Mobile Emulation
             if not self.options.android and \
