@@ -93,11 +93,13 @@ class DevtoolsBrowser(object):
                 except Exception:
                     pass
             # Clear the caches
+            self.profile_start('clear_cache')
             if not task['cached']:
                 self.devtools.send_command("Network.clearBrowserCache", {},
                                            wait=True)
                 self.devtools.send_command("Network.clearBrowserCookies", {},
                                            wait=True)
+            self.profile_end('clear_cache')
 
             # Mobile Emulation
             if not self.options.android and \
@@ -282,11 +284,14 @@ class DevtoolsBrowser(object):
     def process_video(self):
         """Post process the video"""
         from internal.video_processing import VideoProcessing
+        self.profile_start('process_video')
         video = VideoProcessing(self.options, self.job, self.task)
         video.process()
+        self.profile_end('process_video')
 
     def process_devtools_requests(self, task):
         """Process the devtools log and pull out the requests information"""
+        self.profile_start('process_devtools_requests')
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
         if os.path.isfile(devtools_file):
@@ -319,6 +324,7 @@ class DevtoolsBrowser(object):
                     os.remove(devtools_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
+        self.profile_end('process_devtools_requests')
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
@@ -577,6 +583,7 @@ class DevtoolsBrowser(object):
         proc.communicate()
 
     def run_lighthouse_test(self, task):
+        self.profile_start('run_lighthouse_test')
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
         if 'url' in self.job and self.job['url'] is not None:
@@ -749,9 +756,11 @@ class DevtoolsBrowser(object):
                     os.remove(html_file)
                 except Exception:
                     logging.exception('Error compressing lighthouse report')
+        self.profile_end('run_lighthouse_test')
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
+        self.profile_start('wappalyzer_detect')
         # Run the Wappalyzer detection (give it 30 seconds at most)
         completed = False
         if self.devtools is not None:
@@ -780,6 +789,7 @@ class DevtoolsBrowser(object):
                 logging.exception("Exception running Wappalyzer: %s", err.__str__())
         if not completed:
             task['page_data']['wappalyzer_failed'] = 1
+        self.profile_end('wappalyzer_detect')
 
     def wappalyzer_script(self, response_headers):
         """Build the wappalyzer script to run in-browser"""
@@ -826,3 +836,17 @@ class DevtoolsBrowser(object):
         except Exception:
             logging.exception('Error building wappalyzer script')
         return script
+
+    def profile_start(self, event_name):
+        event_name = 'dtbrowser.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                self.task['profile_data'][event_name] = {'s': round(monotonic() - self.task['profile_data']['start'], 3)}
+
+    def profile_end(self, event_name):
+        event_name = 'dtbrowser.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                if event_name in self.task['profile_data']:
+                    self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
+                    self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)

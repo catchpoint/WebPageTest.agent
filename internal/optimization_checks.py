@@ -410,6 +410,7 @@ class OptimizationChecks(object):
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
+        self.profile_start('keep_alive')
         if (sys.version_info >= (3, 0)):
             from urllib.parse import urlsplit # pylint: disable=import-error
         else:
@@ -445,6 +446,7 @@ class OptimizationChecks(object):
                     self.results[request_id]['keep_alive'] = check
             except Exception:
                 logging.exception('Error checking keep-alive')
+        self.profile_end('keep_alive')
 
     def get_time_remaining(self, request):
         """See if a request is static and how long it can be cached for"""
@@ -507,6 +509,7 @@ class OptimizationChecks(object):
 
     def check_cache_static(self):
         """Check static resources for how long they are cacheable for"""
+        self.profile_start('cache_static')
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -527,9 +530,11 @@ class OptimizationChecks(object):
                     self.results[request_id]['cache'] = check
             except Exception:
                 logging.exception('Error checking cache static')
+        self.profile_end('cache_static')
 
     def check_hosting(self):
         """Pull the data needed to determine the hosting"""
+        self.profile_start('hosting')
         start = monotonic()
         self.hosting_results['base_page_ip_ptr'] = ''
         self.hosting_results['base_page_cname'] = ''
@@ -586,6 +591,7 @@ class OptimizationChecks(object):
             except Exception:
                 logging.exception('Error checking hosting')
         self.hosting_time = monotonic() - start
+        self.profile_end('hosting')
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
@@ -593,6 +599,7 @@ class OptimizationChecks(object):
             from urllib.parse import urlparse # pylint: disable=import-error
         else:
             from urlparse import urlparse # pylint: disable=import-error
+        self.profile_start('cdn')
         start = monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}
@@ -662,6 +669,7 @@ class OptimizationChecks(object):
                         check['provider'] = provider
                 self.cdn_results[request_id] = check
         self.cdn_time = monotonic() - start
+        self.profile_end('cdn')
 
     def find_dns_cdn(self, domain, depth=0):
         """Recursively check a CNAME chain"""
@@ -762,6 +770,7 @@ class OptimizationChecks(object):
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
+        self.profile_start('gzip')
         start = monotonic()
         for request_id in self.requests:
             try:
@@ -828,9 +837,11 @@ class OptimizationChecks(object):
             except Exception:
                 logging.exception('Error checking gzip')
         self.gzip_time = monotonic() - start
+        self.profile_end('gzip')
 
     def check_images(self):
         """Check each request to see if images can be compressed better"""
+        self.profile_start('images')
         start = monotonic()
         for request_id in self.requests:
             try:
@@ -951,10 +962,12 @@ class OptimizationChecks(object):
             except Exception:
                 logging.exception('Error checking images')
         self.image_time = monotonic() - start
+        self.profile_end('images')
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
         from PIL import Image
+        self.profile_start('progressive')
         start = monotonic()
         for request_id in self.requests:
             try:
@@ -1013,9 +1026,11 @@ class OptimizationChecks(object):
             except Exception:
                 logging.exception('Error checking progressive')
         self.progressive_time = monotonic() - start
+        self.profile_end('progressive')
 
     def check_fonts(self):
         """Check each request to extract metadata about fonts"""
+        self.profile_start('fonts')
         start = monotonic()
         try:
             from . import font_metadata
@@ -1033,6 +1048,7 @@ class OptimizationChecks(object):
         except Exception:
             logging.exception('Error checking fonts')
         self.font_time = monotonic() - start
+        self.profile_end('fonts')
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
@@ -1082,3 +1098,17 @@ class OptimizationChecks(object):
             raw = f_in.read(14)
             content_type = self.sniff_content(raw)
         return content_type
+
+    def profile_start(self, event_name):
+        event_name = 'opt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                self.task['profile_data'][event_name] = {'s': round(monotonic() - self.task['profile_data']['start'], 3)}
+
+    def profile_end(self, event_name):
+        event_name = 'opt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                if event_name in self.task['profile_data']:
+                    self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
+                    self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)

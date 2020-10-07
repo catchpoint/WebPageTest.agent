@@ -111,6 +111,7 @@ class DevTools(object):
     def wait_for_available(self, timeout):
         """Wait for the dev tools interface to become available (but don't connect)"""
         import requests
+        self.profile_start('devtools_start')
         proxies = {"http": None, "https": None}
         ret = False
         end_time = monotonic() + timeout
@@ -131,6 +132,7 @@ class DevTools(object):
             except Exception as err:
                 logging.exception("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
+        self.profile_end('devtools_start')
         return ret
 
     def connect(self, timeout):
@@ -220,6 +222,7 @@ class DevTools(object):
 
     def start_recording(self):
         """Start capturing dev tools, timeline and trace data"""
+        self.profile_start('prepare_chrome')
         self.prepare()
         if (self.bodies_zip_file is None and (self.html_body or self.all_bodies)):
             self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
@@ -319,6 +322,7 @@ class DevTools(object):
             self.last_activity = now
         if self.page_loaded is not None:
             self.page_loaded = now
+        self.profile_end('prepare_chrome')
 
     def stop_capture(self):
         """Do any quick work to stop things that are capturing data"""
@@ -329,6 +333,7 @@ class DevTools(object):
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
+        self.profile_start('stop_recording')
         if self.task['log_data']:
             if 'coverage' in self.job and self.job['coverage']:
                 try:
@@ -433,6 +438,7 @@ class DevTools(object):
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
+        self.profile_end('stop_recording')
 
     def start_collecting_trace(self):
         """Kick off the trace processing asynchronously"""
@@ -450,6 +456,7 @@ class DevTools(object):
         """Stop tracing and collect the results"""
         if self.trace_enabled:
             self.trace_enabled = False
+            self.profile_start('collect_trace')
             start = monotonic()
             try:
                 # Keep pumping messages until we get tracingComplete or
@@ -481,6 +488,7 @@ class DevTools(object):
             except Exception:
                 logging.exception('Error processing trace events')
             elapsed = monotonic() - start
+            self.profile_end('collect_trace')
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
 
@@ -593,10 +601,12 @@ class DevTools(object):
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
+        self.profile_start('get_response_bodies')
         requests = self.get_requests(True)
         if self.task['error'] is None and requests:
             for request_id in requests:
                 self.get_response_body(request_id, True)
+        self.profile_end('get_response_bodies')
 
     def get_request(self, request_id, include_bodies):
         """Get the given request details if it is a real request"""
@@ -765,6 +775,7 @@ class DevTools(object):
 
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
+        self.profile_start('wait_for_page_load')
         if self.websocket:
             start_time = monotonic()
             end_time = start_time + self.task['time_limit']
@@ -812,10 +823,12 @@ class DevTools(object):
                         done = True
                     elif self.task['error'] is not None:
                         done = True
+        self.profile_end('wait_for_page_load')
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         if not self.main_thread_blocked:
+            self.profile_start('screenshot')
             response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
             if response is not None and 'result' in response and 'data' in response['result']:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
@@ -842,6 +855,7 @@ class DevTools(object):
                             os.remove(tmp_file)
                         except Exception:
                             pass
+            self.profile_end('screenshot')
 
     def colors_are_similar(self, color1, color2, threshold=15):
         """See if 2 given pixels are of similar color"""
@@ -1223,6 +1237,20 @@ class DevTools(object):
         except Exception:
             logging.exception('Error in bytes_from_range')
         return byte_count
+
+    def profile_start(self, event_name):
+        event_name = 'dt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                self.task['profile_data'][event_name] = {'s': round(monotonic() - self.task['profile_data']['start'], 3)}
+
+    def profile_end(self, event_name):
+        event_name = 'dt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                if event_name in self.task['profile_data']:
+                    self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
+                    self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)
 
 
 class DevToolsClient(WebSocketClient):

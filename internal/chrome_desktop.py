@@ -150,11 +150,21 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 time.sleep(10)
         if connected:
             self.connected = True
+            self.profile_start('chrome.post_launch')
+            self.profile_start('chrome.idle1')
             DesktopBrowser.wait_for_idle(self)
+            self.profile_end('chrome.idle1')
+            self.profile_start('chrome.prepare_browser')
             DevtoolsBrowser.prepare_browser(self, task)
+            self.profile_end('chrome.prepare_browser')
+            self.profile_start('chrome.start_page')
             DevtoolsBrowser.navigate(self, self.start_page)
+            self.profile_end('chrome.start_page')
             # When throttling the CPU, Chrome sits in a busy loop so ony apply a short idle wait
+            self.profile_start('chrome.idle2')
             DesktopBrowser.wait_for_idle(self, 2)
+            self.profile_end('chrome.idle2')
+            self.profile_end('chrome.post_launch')
 
     def run_task(self, task):
         """Run an individual test"""

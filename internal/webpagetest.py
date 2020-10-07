@@ -690,6 +690,15 @@ class WebPageTest(object):
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
                 task['run_start_time'] = monotonic()
+                if 'profile_data' in job:
+                    task['profile_data'] = {
+                        'lock': threading.Lock(),
+                        'start': monotonic(),
+                        'test':{
+                            'id': task['id'],
+                            'run': task['run'],
+                            'cached': task['cached'],
+                            's': 0}}
                 # Keep the full resolution video frames if the browser window is smaller than 600px
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
@@ -1111,6 +1120,7 @@ class WebPageTest(object):
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
+        self.profile_start(task, 'upload')
         cpu_pct = None
         self.update_browser_viewport(task)
         # Stop logging to the file
@@ -1208,6 +1218,18 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
+        self.profile_end(task, 'upload')
+        if 'profile_data' in task:
+            try:
+                self.profile_end(task, 'test')
+                del task['profile_data']['start']
+                del task['profile_data']['lock']
+                raw_data = json.dumps(task['profile_data'])
+                logging.debug("%s", raw_data)
+                self.session.post(self.job['profile_data'], raw_data)
+            except Exception:
+                logging.exception('Error uploading profile data')
+            del task['profile_data']
 
     def post_data(self, url, data, file_path, filename):
         """Send a multi-part post"""
@@ -1229,3 +1251,15 @@ class WebPageTest(object):
             logging.exception("Upload Exception")
             ret = False
         return ret
+
+    def profile_start(self, task, event_name):
+        if task is not None and 'profile_data' in task:
+            with task['profile_data']['lock']:
+                task['profile_data'][event_name] = {'s': round(monotonic() - task['profile_data']['start'], 3)}
+
+    def profile_end(self, task, event_name):
+        if task is not None and 'profile_data' in task:
+            with task['profile_data']['lock']:
+                if event_name in task['profile_data']:
+                    task['profile_data'][event_name]['e'] = round(monotonic() - task['profile_data']['start'], 3)
+                    task['profile_data'][event_name]['d'] = round(task['profile_data'][event_name]['e'] - task['profile_data'][event_name]['s'], 3)

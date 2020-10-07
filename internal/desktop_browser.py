@@ -79,6 +79,7 @@ class DesktopBrowser(BaseBrowser):
         """Prepare the profile/OS for the browser"""
         self.stopping = False
         self.task = task
+        self.profile_start('desktop.prepare')
         self.find_default_interface()
         if platform.system() == 'Windows':
             self.prepare_windows()
@@ -111,6 +112,7 @@ class DesktopBrowser(BaseBrowser):
         self.restore_hosts()
         if not self.is_chrome and 'dns_override' in task:
             self.modify_hosts(task, task['dns_override'])
+        self.profile_end('desktop.prepare')
 
     def modify_hosts(self, task, hosts):
         """Add entries to the system's hosts file (non-Windows currently)"""
@@ -288,6 +290,7 @@ class DesktopBrowser(BaseBrowser):
 
     def close_browser(self, job, _task):
         """Terminate the browser but don't do all of the cleanup that stop does"""
+        self.profile_start('desktop.close_browser')
         if self.proc:
             logging.debug("Closing browser")
             from .os_util import kill_all
@@ -303,9 +306,11 @@ class DesktopBrowser(BaseBrowser):
             except Exception:
                 pass
             self.proc = None
+        self.profile_end('desktop.close_browser')
 
     def stop(self, job, task):
         """Terminate the browser (gently at first but forced if needed)"""
+        self.profile_start('desktop.stop_browser')
         self.stopping = True
         self.recording = False
         logging.debug("Stopping browser")
@@ -326,6 +331,7 @@ class DesktopBrowser(BaseBrowser):
         if self.thread is not None:
             self.thread.join(10)
             self.thread = None
+        self.profile_end('desktop.stop_browser')
 
     def wait_for_idle(self, wait_time = 30):
         """Wait for no more than 50% of a single core used for 500ms"""
@@ -398,6 +404,7 @@ class DesktopBrowser(BaseBrowser):
             task['page_data']['os_version'] = '{0} {1}'.format(ver[0], ver[2])
             # Spawn tcpdump
             if self.tcpdump_enabled:
+                self.profile_start('desktop.start_pcap')
                 self.pcap_file = os.path.join(task['dir'], task['prefix']) + '.cap'
                 interface = 'any' if self.job['interface'] is None else self.job['interface']
                 if self.options.tcpdump:
@@ -422,9 +429,11 @@ class DesktopBrowser(BaseBrowser):
                     if os.path.isfile(self.pcap_file):
                         started = True
                     time.sleep(0.1)
+                self.profile_end('desktop.start_pcap')
 
             # Start video capture
             if self.job['capture_display'] is not None and not self.job['disable_video']:
+                self.profile_start('desktop.start_video')
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
                     time.sleep(1)
@@ -490,6 +499,7 @@ class DesktopBrowser(BaseBrowser):
                     self.video_capture_running = True
                 except Exception:
                     logging.exception('Error starting video capture')
+                self.profile_end('desktop.start_video')
 
             # start the background thread for monitoring CPU and bandwidth
             self.usage_queue = multiprocessing.JoinableQueue()
@@ -500,6 +510,7 @@ class DesktopBrowser(BaseBrowser):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         if self.tcpdump is not None:
+            self.profile_start('desktop.stop_pcap')
             logging.debug('Stopping tcpdump')
             from .os_util import kill_all
             if platform.system() == 'Windows':
@@ -508,7 +519,9 @@ class DesktopBrowser(BaseBrowser):
             else:
                 subprocess.call(['sudo', 'killall', 'tcpdump'])
                 kill_all('tcpdump', False)
+            self.profile_end('desktop.stop_pcap')
         if self.ffmpeg is not None:
+            self.profile_start('desktop.stop_video')
             logging.debug('Stopping video capture')
             self.video_capture_running = False
             if platform.system() == 'Windows':
@@ -521,6 +534,7 @@ class DesktopBrowser(BaseBrowser):
                     self.ffmpeg = None
             else:
                 self.ffmpeg.terminate()
+            self.profile_end('desktop.stop_video')
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -577,6 +591,7 @@ class DesktopBrowser(BaseBrowser):
         """Start any processing of the captured data"""
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
+            self.profile_start('desktop.video_processing')
             video_path = os.path.join(task['dir'], task['video_subdirectory'])
             support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
             if task['current_step'] == 1:
@@ -643,6 +658,7 @@ class DesktopBrowser(BaseBrowser):
                     os.remove(task['video_file'])
                 except Exception:
                     pass
+            self.profile_end('desktop.video_processing')
         if self.pcap_thread is not None:
             logging.debug('Waiting for pcap processing to finish')
             self.pcap_thread.join()
@@ -670,6 +686,7 @@ class DesktopBrowser(BaseBrowser):
         """Process the pcap in a background thread"""
         pcap_file = self.pcap_file + '.gz'
         if os.path.isfile(pcap_file):
+            self.profile_start('desktop.pcap_processing')
             path_base = os.path.join(self.task['dir'], self.task['prefix'])
             slices_file = path_base + '_pcap_slices.json.gz'
             pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -692,6 +709,7 @@ class DesktopBrowser(BaseBrowser):
                             self.task['page_data']['pcapBytesInDup'] = result['in_dup']
             except Exception:
                 logging.exception('Error processing tcpdump')
+            self.profile_end('desktop.pcap_processing')
 
     def get_net_bytes(self):
         """Get the bytes received, ignoring the loopback interface"""
