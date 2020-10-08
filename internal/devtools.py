@@ -138,6 +138,7 @@ class DevTools(object):
     def connect(self, timeout):
         """Connect to the browser"""
         import requests
+        self.profile_start('connect')
         session = requests.session()
         proxies = {"http": None, "https": None}
         ret = False
@@ -188,6 +189,7 @@ class DevTools(object):
             except Exception as err:
                 logging.debug("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
+        self.profile_end('connect')
         return ret
 
     def prepare_browser(self):

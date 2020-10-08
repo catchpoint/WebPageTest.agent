@@ -703,11 +703,13 @@ class WebPageTest(object):
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
                 self.test_run_count += 1
+        self.profile_start(task, 'wpt.get_task')
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
+        self.profile_end(task, 'wpt.get_task')
         return task
 
     def running_another_test(self, task):
@@ -998,6 +1000,7 @@ class WebPageTest(object):
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
+        self.profile_start(task, 'wpt.get_bodies')
         all_bodies = False
         html_body = False
         if 'bodies' in self.job and self.job['bodies']:
@@ -1116,11 +1119,12 @@ class WebPageTest(object):
                             zip_file.write(body['file'], body['name'])
         except Exception:
             logging.exception('Error backfilling bodies')
+        self.profile_end(task, 'wpt.get_bodies')
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
-        self.profile_start(task, 'upload')
+        self.profile_start(task, 'wpt.upload')
         cpu_pct = None
         self.update_browser_viewport(task)
         # Stop logging to the file
@@ -1218,7 +1222,7 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
-        self.profile_end(task, 'upload')
+        self.profile_end(task, 'wpt.upload')
         if 'profile_data' in task:
             try:
                 self.profile_end(task, 'test')
