@@ -758,6 +758,10 @@ def find_browsers(options):
         brave_path = '/opt/brave.com/brave-nightly/brave-browser-nightly'
         if 'Brave Nightly' not in browsers and os.path.isfile(brave_path):
             browsers['Brave Nightly'] = {'exe': brave_path}
+        # Vivaldi
+        vivaldi_path = '/usr/bin/vivaldi'
+        if 'Vivaldi' not in browsers and os.path.isfile(vivaldi_path):
+            browsers['Vivaldi'] = {'exe': vivaldi_path}
 
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'

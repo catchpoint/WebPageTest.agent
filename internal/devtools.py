@@ -124,7 +124,7 @@ class DevTools(object):
                     if len(tabs):
                         for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
-                                    tabs[index]['type'] == 'page' and \
+                                    (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
                                     'id' in tabs[index]:
                                 ret = True
@@ -152,7 +152,7 @@ class DevTools(object):
                         websocket_url = None
                         for index in range(len(tabs)):
                             if 'type' in tabs[index] and \
-                                    tabs[index]['type'] == 'page' and \
+                                    (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
                                     'webSocketDebuggerUrl' in tabs[index] and \
                                     'id' in tabs[index]:
                                 if websocket_url is None:
