@@ -9,6 +9,7 @@ import math
 import multiprocessing
 import os
 import platform
+import re
 import shutil
 import signal
 import subprocess
@@ -436,7 +437,7 @@ class DesktopBrowser(BaseBrowser):
                 self.profile_start('desktop.start_video')
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
-                    time.sleep(1)
+                    time.sleep(0.5)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
                     from win32api import GetSystemMetrics #pylint: disable=import-error
@@ -458,7 +459,7 @@ class DesktopBrowser(BaseBrowser):
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
                             '-filter:v',
-                            'crop={0:d}:{1:d}:0:0'.format(width, height),
+                            'crop={0:d}:{1:d}:0:0,showinfo'.format(width, height),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 else:
@@ -467,6 +468,7 @@ class DesktopBrowser(BaseBrowser):
                             '{0:d}x{1:d}'.format(task['width'], task['height']),
                             '-framerate', str(self.job['fps']),
                             '-draw_mouse', '0', '-i', str(self.job['capture_display']),
+                            '-filter:v', 'showinfo',
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 if platform.system() in ['Linux', 'Darwin']:
@@ -478,24 +480,22 @@ class DesktopBrowser(BaseBrowser):
                     if platform.system() == 'Windows':
                         self.ffmpeg = subprocess.Popen(args,
                                                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                                                       stdin=subprocess.PIPE)
+                                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                     else:
                         self.ffmpeg = subprocess.Popen(args,
-                                                       stdin=subprocess.PIPE)
+                                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                     # Wait up to 5 seconds for something to be captured
                     end_time = monotonic() + 5
                     started = False
-                    initial_size = None
                     while not started and monotonic() < end_time:
-                        if os.path.isfile(task['video_file']):
-                            video_size = os.path.getsize(task['video_file'])
-                            if initial_size == None:
-                                initial_size = video_size
-                            logging.debug("Video file size: %d", video_size)
-                            if video_size > initial_size or video_size > 10000:
+                        try:
+                            output = self.ffmpeg.stderr.readline().strip()
+                            logging.debug("ffmpeg: %s", output)
+                            if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                                logging.debug("Video started")
                                 started = True
-                        if not started:
-                            time.sleep(0.1)
+                        except Exception:
+                            logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True
                 except Exception:
                     logging.exception('Error starting video capture')
@@ -578,7 +578,7 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate(input='q'.encode('utf-8'))
+            self.ffmpeg.communicate(input='q')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
