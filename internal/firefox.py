@@ -333,9 +333,9 @@ class Firefox(DesktopBrowser):
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_capture(task)
+                        self.on_start_processing(task)
                         self.on_stop_recording(task)
                         recording = False
-                        self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.step_complete(task)
                         if task['log_data']:
@@ -491,6 +491,8 @@ class Firefox(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+
+    def collect_hero_elements(self, task):
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
@@ -696,6 +698,7 @@ class Firefox(DesktopBrowser):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         DesktopBrowser.on_stop_capture(self, task)
+        self.collect_hero_elements(task)
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""

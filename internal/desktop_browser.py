@@ -629,7 +629,7 @@ class DesktopBrowser(BaseBrowser):
                     pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args, close_fds=True)
-        # Process the tcpdump
+        # Process the tcpdump (async)
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
             if os.path.isfile(self.pcap_file):

@@ -190,6 +190,7 @@ class DevtoolsBrowser(object):
         """Do any quick work to stop things that are capturing data"""
         if self.devtools is not None:
             self.devtools.stop_capture()
+        self.collect_hero_elements(task)
 
     def on_stop_recording(self, task):
         """Stop recording"""
@@ -229,9 +230,9 @@ class DevtoolsBrowser(object):
                     self.devtools.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_capture(task)
+                        self.on_start_processing(task)
                         self.on_stop_recording(task)
                         recording = False
-                        self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
                         self.step_complete(task) #pylint: disable=no-member
@@ -430,6 +431,8 @@ class DevtoolsBrowser(object):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+
+    def collect_hero_elements(self, task):
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
@@ -444,7 +447,6 @@ class DevtoolsBrowser(object):
                 path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(hero_elements))
-
 
     def process_command(self, command):
         """Process an individual script command"""

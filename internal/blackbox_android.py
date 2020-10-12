@@ -139,8 +139,8 @@ class BlackBoxAndroid(AndroidBrowser):
                     self.adb.shell(['rm', remote_intent])
             self.wait_for_page_load()
         self.on_stop_capture(task)
-        self.on_stop_recording(task)
         self.on_start_processing(task)
+        self.on_stop_recording(task)
         self.wait_for_processing(task)
         self.step_complete(task)
 
