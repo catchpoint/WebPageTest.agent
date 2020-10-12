@@ -232,14 +232,6 @@ class DevTools(object):
         self.recording = True
         if self.use_devtools_video and self.job['video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.jpg', png=False)
-        elif self.mobile_viewport is None and not self.options.android:
-            # grab an initial screen shot to get the crop rectangle
-            try:
-                tmp_file = os.path.join(self.task['dir'], 'tmp.png')
-                self.grab_screenshot(tmp_file)
-                os.remove(tmp_file)
-            except Exception:
-                logging.exception('Error grabbing screenshot')
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
