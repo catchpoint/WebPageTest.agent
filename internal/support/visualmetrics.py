@@ -154,16 +154,19 @@ def extract_frames(video, directory, full_resolution, viewport):
         for line in lines:
             match = re.search(pattern, line)
             if match:
-                frame_count += 1
-                frame_time = int(math.ceil(float( \
-                    match.groupdict().get('timecode')) * 1000))
-                src = os.path.join(
-                    directory, 'img-{0:d}.png'.format(frame_count))
-                dest = os.path.join(
-                    directory, 'video-{0:06d}.png'.format(frame_time))
-                logging.debug('Renaming ' + src + ' to ' + dest)
-                os.rename(src, dest)
-                ret = True
+                try:
+                    frame_count += 1
+                    frame_time = int(math.ceil(float( \
+                        match.groupdict().get('timecode')) * 1000))
+                    src = os.path.join(
+                        directory, 'img-{0:d}.png'.format(frame_count))
+                    dest = os.path.join(
+                        directory, 'video-{0:06d}.png'.format(frame_time))
+                    logging.debug('Renaming ' + src + ' to ' + dest)
+                    os.rename(src, dest)
+                    ret = True
+                except Exception:
+                    logging.exception("Error renaming video frame")
     return ret
 
 

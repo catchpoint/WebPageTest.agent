@@ -194,21 +194,7 @@ class DevtoolsBrowser(object):
 
     def on_stop_recording(self, task):
         """Stop recording"""
-        if self.devtools is not None:
-            self.devtools.collect_trace()
-            if self.devtools_screenshot:
-                if self.job['pngScreenShot']:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.png')
-                    self.devtools.grab_screenshot(screen_shot, png=True)
-                else:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.jpg')
-                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
-            # Stop recording dev tools
-            self.devtools.stop_recording()
-            # Collect end of test data from the browser
-            self.collect_browser_metrics(task)
+        pass
 
     def run_task(self, task):
         """Run an individual test"""
@@ -230,9 +216,9 @@ class DevtoolsBrowser(object):
                     self.devtools.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_capture(task)
-                        self.on_start_processing(task)
                         self.on_stop_recording(task)
                         recording = False
+                        self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
                         self.step_complete(task) #pylint: disable=no-member
@@ -245,16 +231,34 @@ class DevtoolsBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        optimization = None
         if task['log_data']:
             # Start the processing that can run in a background thread
             optimization = OptimizationChecks(self.job, task, self.get_requests(True))
             optimization.start()
+        if self.devtools is not None:
+            self.devtools.collect_trace()
+            if self.devtools_screenshot:
+                if self.job['pngScreenShot']:
+                    screen_shot = os.path.join(task['dir'],
+                                               task['prefix'] + '_screen.png')
+                    self.devtools.grab_screenshot(screen_shot, png=True)
+                else:
+                    screen_shot = os.path.join(task['dir'],
+                                               task['prefix'] + '_screen.jpg')
+                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+            # Stop recording dev tools
+            self.devtools.stop_recording()
+            # Collect end of test data from the browser
+            self.collect_browser_metrics(task)
+        if task['log_data']:
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
             self.wappalyzer_detect(task, self.devtools.main_request_headers)
             # wait for the background optimization checks
-            optimization.join()
+            if optimization is not None:
+                optimization.join()
 
     def wait_for_processing(self, task):
         """Wait for the background processing (if any)"""

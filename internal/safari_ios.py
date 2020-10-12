@@ -232,9 +232,9 @@ class iWptBrowser(BaseBrowser):
                     self.wait_for_page_load()
                     if not task['combine_steps'] or not len(task['script']):
                         self.on_stop_capture(task)
-                        self.on_start_processing(task)
                         self.on_stop_recording(task)
                         recording = False
+                        self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.step_complete(task)
                         if task['log_data']:
