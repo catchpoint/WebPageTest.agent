@@ -335,7 +335,7 @@ class DesktopBrowser(BaseBrowser):
         self.profile_end('desktop.stop_browser')
 
     def wait_for_idle(self, wait_time = 30):
-        """Wait for no more than 50% CPU utilization for 200ms"""
+        """Wait for no more than 50% CPU utilization for 400ms"""
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
@@ -346,11 +346,11 @@ class DesktopBrowser(BaseBrowser):
             idle = False
             while not idle and monotonic() < end_time:
                 check_start = monotonic()
-                pct = psutil.cpu_percent(interval=0.01)
+                pct = psutil.cpu_percent(interval=0.1)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic() - idle_start >= 0.2:
+                    if monotonic() - idle_start >= 0.4:
                         idle = True
                 else:
                     idle_start = None
