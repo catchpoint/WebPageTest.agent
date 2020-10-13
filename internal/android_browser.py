@@ -232,7 +232,7 @@ class AndroidBrowser(BaseBrowser):
             else:
                 args.append('--orange')
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             if os.path.isfile(tcpdump):

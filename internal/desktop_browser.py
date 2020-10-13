@@ -648,7 +648,7 @@ class DesktopBrowser(BaseBrowser):
                 except Exception:
                     pass
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         # Process the tcpdump (async)
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
