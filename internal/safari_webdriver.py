@@ -42,8 +42,6 @@ class SafariWebDriver(DesktopBrowser):
         self.event_name = None
         # remove moz_log entirely
         self.webdriver = None
-        self.addons = None
-        self.extension_id = None
         self.possible_nagivation_error = None
         self.nav_error = None
         self.page_loaded = None
@@ -247,13 +245,6 @@ class SafariWebDriver(DesktopBrowser):
 
     def disconnect_driver(self):
         """Disconnect Webdriver"""
-        if self.extension_id is not None and self.addons is not None:
-            try:
-                self.addons.uninstall(self.extension_id)
-            except Exception:
-                logging.error('Error removing addons')
-            self.extension_id = None
-            self.addons = None
         if self.webdriver:
             self.webdriver.quit()
             self.webdriver = None
@@ -263,10 +254,8 @@ class SafariWebDriver(DesktopBrowser):
         self.connected = False
         self.disconnect_driver()
         DesktopBrowser.close_browser(self, job, task)
-        # make SURE the Firefox processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'safari'])
-            # subprocess.call(['killall', '-9', 'firefox-trunk'])
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
 
@@ -361,7 +350,6 @@ class SafariWebDriver(DesktopBrowser):
                         now < end_time:
                     continue
                 # Allow up to 5 seconds after a navigation for a re-navigation to happen
-                # (bizarre sequence Firefox seems to do)
                 if self.possible_navigation_error is not None:
                     elapsed_error = now - self.possible_navigation_error['time']
                     if elapsed_error > 5:

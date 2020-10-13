@@ -436,8 +436,6 @@ class WPTAgent(object):
                 print("Error configuring traffic shaping, make sure secure boot is disabled.")
             else:
                 print("Error configuring traffic shaping, make sure it is installed.")
-            # TODO(wuwang): Remove this comments if pfctl/dnctl works,
-            # comments below line for running in debugger
             ret = False
 
         # Update the Windows root certs
