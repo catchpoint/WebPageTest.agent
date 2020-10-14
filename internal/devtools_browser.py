@@ -254,8 +254,7 @@ class DevtoolsBrowser(object):
                 self.process_video()
             self.wappalyzer_detect(task, self.devtools.main_request_headers)
             # wait for the background optimization checks
-            if optimization is not None:
-                optimization.join()
+            optimization.join()
 
     def wait_for_processing(self, task):
         """Wait for the background processing (if any)"""

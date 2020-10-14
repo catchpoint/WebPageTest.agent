@@ -437,7 +437,7 @@ class DesktopBrowser(BaseBrowser):
                 self.profile_start('desktop.start_video')
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
-                    time.sleep(0.5)
+                    time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
                     from win32api import GetSystemMetrics #pylint: disable=import-error
