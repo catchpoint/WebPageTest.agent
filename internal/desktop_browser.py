@@ -486,7 +486,7 @@ class DesktopBrowser(BaseBrowser):
                     if platform.system() == 'Windows':
                         self.ffmpeg = subprocess.Popen(args,
                                                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                                                       stdin=subprocess.PIPE)
                     else:
                         self.ffmpeg = subprocess.Popen(args,
                                                        stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -546,7 +546,10 @@ class DesktopBrowser(BaseBrowser):
             self.video_capture_running = False
             if platform.system() == 'Windows':
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
-                self.ffmpeg.communicate(input='q')
+                if platform.system() == 'Windows':
+                    self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                else:
+                    self.ffmpeg.communicate(input='q')
                 if self.ffmpeg.returncode is not 0:
                     logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
                 else:
@@ -598,7 +601,10 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate(input='q')
+            if platform.system() == 'Windows':
+                self.ffmpeg.communicate(input='q'.encode('utf-8'))
+            else:
+                self.ffmpeg.communicate(input='q')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
