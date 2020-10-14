@@ -194,7 +194,21 @@ class DevtoolsBrowser(object):
 
     def on_stop_recording(self, task):
         """Stop recording"""
-        pass
+        if self.devtools is not None:
+            self.devtools.collect_trace()
+            if self.devtools_screenshot:
+                if self.job['pngScreenShot']:
+                    screen_shot = os.path.join(task['dir'],
+                                               task['prefix'] + '_screen.png')
+                    self.devtools.grab_screenshot(screen_shot, png=True)
+                else:
+                    screen_shot = os.path.join(task['dir'],
+                                               task['prefix'] + '_screen.jpg')
+                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+            # Stop recording dev tools
+            self.devtools.stop_recording()
+            # Collect end of test data from the browser
+            self.collect_browser_metrics(task)
 
     def run_task(self, task):
         """Run an individual test"""
@@ -231,27 +245,10 @@ class DevtoolsBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
-        optimization = None
         if task['log_data']:
             # Start the processing that can run in a background thread
             optimization = OptimizationChecks(self.job, task, self.get_requests(True))
             optimization.start()
-        if self.devtools is not None:
-            self.devtools.collect_trace()
-            if self.devtools_screenshot:
-                if self.job['pngScreenShot']:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.png')
-                    self.devtools.grab_screenshot(screen_shot, png=True)
-                else:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.jpg')
-                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
-            # Stop recording dev tools
-            self.devtools.stop_recording()
-            # Collect end of test data from the browser
-            self.collect_browser_metrics(task)
-        if task['log_data']:
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
