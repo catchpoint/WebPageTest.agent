@@ -236,7 +236,7 @@ class AndroidBrowser(BaseBrowser):
             except Exception:
                 pass
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, close_fds=True)
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             if os.path.isfile(tcpdump):
