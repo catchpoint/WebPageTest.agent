@@ -232,7 +232,7 @@ class AndroidBrowser(BaseBrowser):
             else:
                 args.append('--orange')
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             if os.path.isfile(tcpdump):
@@ -255,11 +255,7 @@ class AndroidBrowser(BaseBrowser):
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
         if self.video_processing is not None:
-            output, errors = self.video_processing.communicate()
-            for line in errors.splitlines():
-                logging.debug('video: %s', line)
-            for line in output.splitlines():
-                logging.debug('video: %s', line)
+            self.video_processing.communicate()
             self.video_processing = None
             if not self.job['keepvideo']:
                 try:

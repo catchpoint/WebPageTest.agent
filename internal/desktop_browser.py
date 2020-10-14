@@ -654,7 +654,7 @@ class DesktopBrowser(BaseBrowser):
                 except Exception:
                     pass
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
         # Process the tcpdump (async)
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
@@ -676,11 +676,7 @@ class DesktopBrowser(BaseBrowser):
         """Wait for any background processing threads to finish"""
         if self.video_processing is not None:
             logging.debug('Waiting for video processing to finish')
-            output, errors = self.video_processing.communicate()
-            for line in errors.splitlines():
-                logging.debug('video: %s', line)
-            for line in output.splitlines():
-                logging.debug('video: %s', line)
+            self.video_processing.communicate()
             self.video_processing = None
             logging.debug('Video processing complete')
             if not self.job['keepvideo']:

@@ -968,7 +968,7 @@ class iWptBrowser(BaseBrowser):
                     except Exception:
                         pass
                 logging.debug(' '.join(args))
-                self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'
@@ -995,11 +995,7 @@ class iWptBrowser(BaseBrowser):
         """Wait for any background processing threads to finish"""
         if self.video_processing is not None:
             logging.debug('Waiting for video processing to finish')
-            output, errors = self.video_processing.communicate()
-            for line in errors.splitlines():
-                logging.debug('video: %s', line)
-            for line in output.splitlines():
-                logging.debug('video: %s', line)
+            self.video_processing.communicate()
             self.video_processing = None
             if not self.job['keepvideo']:
                 try:
