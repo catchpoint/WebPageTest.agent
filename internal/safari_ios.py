@@ -967,6 +967,10 @@ class iWptBrowser(BaseBrowser):
                             args.extend(['--thumbsize', str(thumbsize)])
                     except Exception:
                         pass
+                try:
+                    logging.debug('Video file size: %d', os.path.getsize(video_path))
+                except Exception:
+                    pass
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
             # Save the console logs

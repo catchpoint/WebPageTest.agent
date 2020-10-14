@@ -231,6 +231,10 @@ class AndroidBrowser(BaseBrowser):
                 args.extend(self.config['videoFlags'])
             else:
                 args.append('--orange')
+            try:
+                logging.debug('Video file size: %d', os.path.getsize(video_path))
+            except Exception:
+                pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args, close_fds=True, universal_newlines=True)
         if self.tcpdump_enabled:
