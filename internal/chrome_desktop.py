@@ -152,7 +152,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             self.connected = True
             self.profile_start('chrome.post_launch')
             self.profile_start('chrome.idle1')
-            DesktopBrowser.wait_for_idle(self, 2)
+            DesktopBrowser.wait_for_idle(self)
             self.profile_end('chrome.idle1')
             self.profile_start('chrome.prepare_browser')
             DevtoolsBrowser.prepare_browser(self, task)
