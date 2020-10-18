@@ -322,7 +322,7 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
 
-        if 'Safari' in detected_browsers and not self.options.iOS:
+        if detected_browsers is not None and 'Safari' in detected_browsers and not self.options.iOS:
             # if running for safari
             ret = self.requires('selenium')
 
