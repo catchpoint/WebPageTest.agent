@@ -335,7 +335,7 @@ class DesktopBrowser(BaseBrowser):
         self.profile_end('desktop.stop_browser')
 
     def wait_for_idle(self, wait_time = 30):
-        """Wait for no more than 50% CPU utilization for 200ms"""
+        """Wait for no more than 50% CPU utilization for 400ms"""
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
@@ -346,11 +346,11 @@ class DesktopBrowser(BaseBrowser):
             idle = False
             while not idle and monotonic() < end_time:
                 check_start = monotonic()
-                pct = psutil.cpu_percent(interval=0.01)
+                pct = psutil.cpu_percent(interval=0.1)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic() - idle_start >= 0.2:
+                    if monotonic() - idle_start >= 0.4:
                         idle = True
                 else:
                     idle_start = None
@@ -437,7 +437,7 @@ class DesktopBrowser(BaseBrowser):
                 self.profile_start('desktop.start_video')
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
-                    time.sleep(0.5)
+                    time.sleep(1)
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
                     from win32api import GetSystemMetrics #pylint: disable=import-error
@@ -486,7 +486,7 @@ class DesktopBrowser(BaseBrowser):
                     if platform.system() == 'Windows':
                         self.ffmpeg = subprocess.Popen(args,
                                                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                                                       stdin=subprocess.PIPE)
                     else:
                         self.ffmpeg = subprocess.Popen(args,
                                                        stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -546,7 +546,10 @@ class DesktopBrowser(BaseBrowser):
             self.video_capture_running = False
             if platform.system() == 'Windows':
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
-                self.ffmpeg.communicate(input='q')
+                if platform.system() == 'Windows':
+                    self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                else:
+                    self.ffmpeg.communicate(input='q')
                 if self.ffmpeg.returncode is not 0:
                     logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
                 else:
@@ -598,7 +601,10 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate(input='q')
+            if platform.system() == 'Windows':
+                self.ffmpeg.communicate(input='q'.encode('utf-8'))
+            else:
+                self.ffmpeg.communicate(input='q')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
@@ -647,8 +653,12 @@ class DesktopBrowser(BaseBrowser):
                         args.extend(['--thumbsize', str(thumbsize)])
                 except Exception:
                     pass
+            try:
+                logging.debug('Video file size: %d', os.path.getsize(video_path))
+            except Exception:
+                pass
             logging.debug(' '.join(args))
-            self.video_processing = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            self.video_processing = subprocess.Popen(args, close_fds=True)
         # Process the tcpdump (async)
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
@@ -670,11 +680,7 @@ class DesktopBrowser(BaseBrowser):
         """Wait for any background processing threads to finish"""
         if self.video_processing is not None:
             logging.debug('Waiting for video processing to finish')
-            output, errors = self.video_processing.communicate()
-            for line in errors.splitlines():
-                logging.debug('video: %s', line)
-            for line in output.splitlines():
-                logging.debug('video: %s', line)
+            self.video_processing.communicate()
             self.video_processing = None
             logging.debug('Video processing complete')
             if not self.job['keepvideo']:

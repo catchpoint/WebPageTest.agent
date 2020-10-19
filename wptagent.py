@@ -322,6 +322,10 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
 
+        if detected_browsers is not None and 'Safari' in detected_browsers and not self.options.iOS:
+            # if running for safari
+            ret = self.requires('selenium')
+
         # Optional imports
         self.requires('brotli')
         self.requires('fontTools', 'fonttools')
@@ -783,6 +787,10 @@ def find_browsers(options):
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
                                            'log_level': 5}
+        safari_path = '/Applications/Safari.app/Contents/MacOS/Safari'
+        if 'Safari' not in browsers and os.path.isfile(safari_path):
+            browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
+
     logging.debug('Detected Browsers:')
     for browser in browsers:
         logging.debug('%s: %s', browser, browsers[browser]['exe'])
