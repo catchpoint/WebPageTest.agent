@@ -766,6 +766,15 @@ def find_browsers(options):
         vivaldi_path = '/usr/bin/vivaldi'
         if 'Vivaldi' not in browsers and os.path.isfile(vivaldi_path):
             browsers['Vivaldi'] = {'exe': vivaldi_path}
+        # Microsoft Edge
+        edge_path = '/usr/bin/microsoft-edge'
+        if os.path.isfile(edge_path):
+            if 'Microsoft Edge Dev (Chromium)' not in browsers:
+                browsers['Microsoft Edge Dev (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge Dev' not in browsers:
+                browsers['Microsoft Edge Dev'] = {'exe': edge_path}
+            if 'Edge Dev' not in browsers:
+                browsers['Edge Dev'] = {'exe': edge_path}
 
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
