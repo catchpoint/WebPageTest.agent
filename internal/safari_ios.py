@@ -704,7 +704,7 @@ class iWptBrowser(BaseBrowser):
         """Retrieve and store the given response body (if necessary)"""
         if original_id not in self.response_bodies and self.body_fail_count < 3:
             request = self.requests[request_id]
-            if 'status' in request and request['status'] == 200 and 'response_headers' in request:
+            if 'status' in request and request['status'] == 200 and 'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 logging.debug('Getting body for %s (%d) - %s', request_id,
                               request['bytesIn'], request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')

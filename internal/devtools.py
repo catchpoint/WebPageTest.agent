@@ -491,7 +491,7 @@ class DevTools(object):
         if request_id not in self.response_bodies and self.body_fail_count < 3:
             request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
-                    'response_headers' in request:
+                    'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 content_length = self.get_header_value(request['response_headers'],
                                                     'Content-Length')
                 if content_length is not None:

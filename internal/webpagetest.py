@@ -1037,6 +1037,7 @@ class WebPageTest(object):
                     logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
+                            request['full_url'].startswith('http') and \
                             'responseCode' in request \
                             and request['responseCode'] == 200 and \
                             request['full_url'].find('ocsp') == -1 and\
