@@ -28,7 +28,7 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
                     shutil.rmtree(cache_dir)
                 except Exception:
                     pass
-        os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:9222"
+        os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:{}".format(task['port'])
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
