@@ -147,3 +147,6 @@ run the agent in a docker container.
     * waitForJSDone (change semantics to console log message)
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
+
+## Contributing
+There are 2 separate lies of development under different licenses and pull requests are accepted to either of them.  The master branch where most active development is occurring is under the [Polyform Shield 1.0.0 license](LICENSE.md) and there is an "apache" branch which is under the more permissive Apache 2.0 license.
