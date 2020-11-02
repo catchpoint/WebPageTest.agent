@@ -31,12 +31,13 @@ from ws4py.client.threadedclient import WebSocketClient
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, options, job, task, use_devtools_video):
+    def __init__(self, options, job, task, use_devtools_video, is_webkit):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
         self.options = options
         self.job = job
         self.task = task
+        self.is_webkit = is_webkit
         self.command_id = 0
         self.command_responses = {}
         self.pending_body_requests = {}
@@ -192,18 +193,37 @@ class DevTools(object):
         self.profile_end('connect')
         return ret
 
+    def enable_safari_events(self):
+        self.send_command('Inspector.enable', {})
+        self.send_command('Network.enable', {})
+        self.send_command('Runtime.enable', {})
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
+        if len(self.workers):
+            for target in self.workers:
+                self.enable_target(target['targetId'])
+        if 'user_agent_string' in self.job:
+            self.send_command('Page.overrideUserAgent', {'value': self.job['user_agent_string']})
+        if self.task['log_data']:
+            self.send_command('Console.enable', {})
+            self.send_command('Timeline.start', {}, wait=True)
+        self.send_command('Page.enable', {}, wait=True)
+
     def prepare_browser(self):
         """Run any one-time startup preparation before testing starts"""
-        self.send_command('Target.setAutoAttach',
-                          {'autoAttach': True, 'waitForDebuggerOnStart': True})
-        response = self.send_command('Target.getTargets', {}, wait=True)
-        if response is not None and 'result' in response and 'targetInfos' in response['result']:
-            for target in response['result']['targetInfos']:
-                logging.debug(target)
-                if 'type' in target and 'targetId' in target:
-                    if target['type'] == 'service_worker':
-                        self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                           wait=True)
+        if self.is_webkit:
+            self.send_command('Target.setPauseOnStart', {'pauseOnStart': True}, wait=True)
+        else:
+            self.send_command('Target.setAutoAttach',
+                            {'autoAttach': True, 'waitForDebuggerOnStart': True})
+            response = self.send_command('Target.getTargets', {}, wait=True)
+            if response is not None and 'result' in response and 'targetInfos' in response['result']:
+                for target in response['result']['targetInfos']:
+                    logging.debug(target)
+                    if 'type' in target and 'targetId' in target:
+                        if target['type'] == 'service_worker':
+                            self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                            wait=True)
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -237,6 +257,7 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
+        self.enable_safari_events()
         self.enable_target()
         if len(self.workers):
             for target in self.workers:
@@ -307,10 +328,9 @@ class DevTools(object):
                 trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
-            self.trace_enabled = True
-            self.send_command('Tracing.start',
-                              {'traceConfig': trace_config},
-                              wait=True)
+            if not self.is_webkit:
+                self.trace_enabled = True
+                self.send_command('Tracing.start', {'traceConfig': trace_config}, wait=True)
         now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
@@ -334,8 +354,7 @@ class DevTools(object):
                     coverage = {}
                     # process the JS coverage
                     self.send_command('Profiler.stop', {})
-                    response = self.send_command('Profiler.getBestEffortCoverage',
-                                                 {}, wait=True, timeout=30)
+                    response = self.send_command('Profiler.getBestEffortCoverage', {}, wait=True, timeout=30)
                     if 'result' in response and 'result' in response['result']:
                         for script in response['result']['result']:
                             if 'url' in script and script['url'] and 'functions' in script:
@@ -354,8 +373,7 @@ class DevTools(object):
                                             })
                     self.send_command('Profiler.disable', {})
                     # Process the css coverage
-                    response = self.send_command('CSS.stopRuleUsageTracking',
-                                                 {}, wait=True, timeout=30)
+                    response = self.send_command('CSS.stopRuleUsageTracking', {}, wait=True, timeout=30)
                     if 'result' in response and 'ruleUsage' in response['result']:
                         rule_usage = response['result']['ruleUsage']
                         for rule in rule_usage:
@@ -524,9 +542,7 @@ class DevTools(object):
                         target_id = None
                         if request_id in self.requests and 'targetId' in self.requests[request_id]:
                             target_id = self.requests[request_id]['targetId']
-                        response = self.send_command("Network.getResponseBody",
-                                                    {'requestId': request_id}, wait=wait,
-                                                    target_id=target_id)
+                        response = self.send_command("Network.getResponseBody", {'requestId': request_id}, wait=wait, target_id=target_id)
                         if wait:
                             self.process_response_body(request_id, response)
 
@@ -540,8 +556,7 @@ class DevTools(object):
             is_text = False
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request:
-                content_type = self.get_header_value(request['response_headers'],
-                                                    'Content-Type')
+                content_type = self.get_header_value(request['response_headers'], 'Content-Type')
                 if content_type is not None:
                     content_type = content_type.lower()
                     if content_type.startswith('text/') or \
@@ -701,6 +716,10 @@ class DevTools(object):
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
+        if target_id is None and self.default_target is not None and \
+                not method.startswith('Target.') and \
+                not method.startswith('Tracing.'):
+            target_id = self.default_target
         if target_id is not None:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -868,12 +887,15 @@ class DevTools(object):
         """Run the provided JS in the browser and return the result"""
         ret = None
         if self.task['error'] is None and not self.main_thread_blocked:
-            response = self.send_command("Runtime.evaluate",
-                                         {'expression': script,
-                                          'awaitPromise': True,
-                                          'returnByValue': True,
-                                          'timeout': 30000},
-                                         wait=True, timeout=30)
+            if self.is_webkit:
+                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
+            else:
+                response = self.send_command("Runtime.evaluate",
+                                            {'expression': script,
+                                            'awaitPromise': True,
+                                            'returnByValue': True,
+                                            'timeout': 30000},
+                                            wait=True, timeout=30)
             if response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
@@ -888,14 +910,18 @@ class DevTools(object):
                 name = header[:separator].strip()
                 value = header[separator + 1:].strip()
                 self.headers[name] = value
-                self.send_command('Network.setExtraHTTPHeaders',
-                                  {'headers': self.headers}, wait=True)
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, wait=True)
+                if len(self.workers):
+                    for target in self.workers:
+                        self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target['targetId'])
 
     def reset_headers(self):
         """Add/modify a header on the outbound requests"""
         self.headers = {}
-        self.send_command('Network.setExtraHTTPHeaders',
-                          {'headers': self.headers}, wait=True)
+        self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, wait=True)
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target['targetId'])
 
     def clear_cache(self):
         """Clear the browser cache"""
@@ -903,7 +929,10 @@ class DevTools(object):
 
     def disable_cache(self, disable):
         """Disable the browser cache"""
-        self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
+        if self.is_webkit:
+            self.send_command('Network.setResourceCachingDisabled', {'disabled': disable}, wait=True)
+        else:
+            self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
 
     def enable_target(self, target_id=None):
         """Hook up the necessary network (or other) events for the given target"""
@@ -965,7 +994,7 @@ class DevTools(object):
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
         # Handle permissions for frame navigations
-        if 'params' in msg and 'url' in msg['params']:
+        if 'params' in msg and 'url' in msg['params'] and not self.is_webkit:
             try:
                 parts = urlsplit(msg['params']['url'])
                 origin = parts.scheme + '://' + parts.netloc
@@ -1172,7 +1201,7 @@ class DevTools(object):
                         self.enable_target(target['targetId'])
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
-        if event == 'receivedMessageFromTarget':
+        if event == 'receivedMessageFromTarget' or event == 'dispatchMessageFromTarget':
             target_id = None
             if 'targetId' in msg['params']:
                 target_id = msg['params']['targetId']
@@ -1180,6 +1209,19 @@ class DevTools(object):
                 logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
+        if event == 'targetCreated':
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                target_id = target['targetId']
+                if 'type' in target and target['type'] == 'page':
+                    self.default_target = target_id
+                    if self.recording:
+                        self.enable_safari_events()
+                else:
+                    self.workers.append(target)
+                    if self.recording:
+                        self.enable_target(target_id)
+                self.send_command('Target.resume', {'targetId': target_id})
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
