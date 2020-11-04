@@ -9,12 +9,12 @@ do
     sleep 1
 done
 if [ "$UBUNTU_VERSION" \< "20" ]; then
-    until sudo apt-get install -y python2.7 python-pip python-ujson 
+    until sudo apt-get install -y python2.7 python-pip python-ujson python-xlib
     do
         sleep 1
     done
 else
-    until sudo apt-get install -y python python3 python3-pip python3-ujson 
+    until sudo apt-get install -y python python3 python3-pip python3-ujson python3-xlib
     do
         sleep 1
     done

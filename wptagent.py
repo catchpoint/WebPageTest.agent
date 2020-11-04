@@ -319,6 +319,8 @@ class WPTAgent(object):
             ret = self.requires('tornado') and ret
             if self.options.webdriver and 'Firefox' in detected_browsers:
                 ret = self.requires('selenium')
+        if platform.system() == "Linux" and detected_browsers is not None and 'WebKit' in detected_browsers:
+            self.requires('Xlib', 'python-xlib')
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret

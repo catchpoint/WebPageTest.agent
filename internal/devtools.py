@@ -452,6 +452,7 @@ class DevTools(object):
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Console.disable', {})
+            self.send_command('Timeline.stop', {})
             self.get_response_bodies()
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
@@ -473,7 +474,8 @@ class DevTools(object):
             raw = self.websocket.get_message(1)
             try:
                 if raw is not None and len(raw):
-                    logging.debug('-> %s', raw[:200])
+                    if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                        logging.debug('-> %s', raw[:200])
                     msg = json.loads(raw)
                     self.process_message(msg)
             except Exception:
@@ -732,7 +734,8 @@ class DevTools(object):
                     try:
                         if raw is not None and len(raw):
                             if self.recording:
-                                logging.debug('-> %s', raw[:200])
+                                if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                                    logging.debug('-> %s', raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
                         if not raw:
@@ -769,7 +772,8 @@ class DevTools(object):
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
-                                    logging.debug('-> %s', raw[:200])
+                                    if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                                        logging.debug('-> %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -799,7 +803,8 @@ class DevTools(object):
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
-                                    logging.debug('-> %s', raw[:200])
+                                    if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                                        logging.debug('-> %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -830,7 +835,8 @@ class DevTools(object):
                     raw = self.websocket.get_message(interval)
                     try:
                         if raw is not None and len(raw):
-                            logging.debug('-> %s', raw[:200])
+                            if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                                logging.debug('-> %s', raw[:200])
                             msg = json.loads(raw)
                             self.process_message(msg)
                     except Exception:
@@ -1235,7 +1241,8 @@ class DevTools(object):
             if 'targetId' in msg['params']:
                 target_id = msg['params']['targetId']
             if 'message' in msg['params'] and target_id is not None:
-                logging.debug('-> %s', msg['params']['message'][:200])
+                if msg['params']['message'].find("Timeline.eventRecorded") == -1:
+                    logging.debug('-> %s', msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
         if event == 'targetCreated':
@@ -1627,13 +1634,28 @@ class WebKitGTKInspector():
         self.start()
         logging.debug('WebKitGTKInspector Connected')
     
-    def disconnect(self):
+    def close(self):
         if self.connection is not None:
             self.connection.shutdown(socket.SHUT_RDWR)
             self.connection.close()
             self.connection = None
         if self.background_thread is not None:
             self.background_thread.join(10)
+        # Flush all of the pending messages
+        try:
+            while self.messages.get_nowait():
+                self.messages.task_done()
+        except Exception:
+            pass
+        self.messages.close()
+
+    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline):
+        """ Not Implemented """
+        pass
+
+    def stop_processing_trace(self, job):
+        """ Not Implemented """
+        pass
 
     def start(self):
         """Send the Setup command to get the list of json targets"""
@@ -1648,7 +1670,6 @@ class WebKitGTKInspector():
             msg += command.encode('utf-8')
             msg += b'\x00'
             self.send_raw_message("SendMessageToBackend", msg)
-            
 
     def send_raw_message(self, name, data=None):
         """Send a raw DBUS message over the TCP connection"""

@@ -2,6 +2,7 @@
 # Use of this source code is governed by the Polyform Shield License
 # found in the LICENSE file.
 """Logic for controlling a desktop WebKit GTK browser (Linux)"""
+import logging
 import os
 import platform
 import shutil
@@ -51,8 +52,38 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
             self.connected = True
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.prepare_browser(self, task)
+            self.move_window(task)
             DevtoolsBrowser.navigate(self, self.start_page)
             DesktopBrowser.wait_for_idle(self, 2)
+
+    def move_window(self, task):
+        """Move the browser window (Linux only for now)"""
+        if platform.system() == "Linux":
+            try:
+                import Xlib
+                from Xlib import display
+                disp = display.Display()
+                root = disp.screen().root
+                width = task['width']
+                height = task['height']
+                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
+                for window_id in window_ids:
+                    window = disp.create_resource_object('window', window_id)
+                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
+                    _, class_name = window.get_wm_class()
+                    if class_name == 'Epiphany':
+                        # First move it WAY negative to account for any border. It will be clipped to the top-left corner
+                        window.configure(x=-1000, y=-1000, border_width=0, stack_mode=Xlib.X.Above)
+                        disp.sync()
+                        # Now resize it adjusting for the margins
+                        geometry = window.get_geometry()
+                        width += abs(geometry.x) * 2
+                        height += abs(geometry.y) * 2
+                        window.configure(width=width, height=height, border_width=0, stack_mode=Xlib.X.Above)
+                        disp.sync()
+                        geometry = window.get_geometry()
+            except Exception:
+                logging.exception("Error moving the window")
 
     def run_task(self, task):
         """Run an individual test"""
