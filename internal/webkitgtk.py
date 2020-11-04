@@ -50,9 +50,9 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
             connected = True
         if connected:
             self.connected = True
+            self.move_window(task)
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.prepare_browser(self, task)
-            self.move_window(task)
             DevtoolsBrowser.navigate(self, self.start_page)
             DesktopBrowser.wait_for_idle(self, 2)
 
@@ -77,10 +77,13 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
                         disp.sync()
                         # Now resize it adjusting for the margins
                         geometry = window.get_geometry()
+                        logging.debug("Current window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
                         width += abs(geometry.x) * 2
                         height += abs(geometry.y) * 2
                         window.configure(width=width, height=height, border_width=0, stack_mode=Xlib.X.Above)
                         disp.sync()
+                        geometry = window.get_geometry()
+                        logging.debug("Current window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
                         geometry = window.get_geometry()
             except Exception:
                 logging.exception("Error moving the window")

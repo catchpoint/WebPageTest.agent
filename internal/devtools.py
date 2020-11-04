@@ -77,6 +77,7 @@ class DevTools(object):
         self.main_thread_blocked = False
         self.stylesheets = {}
         self.headers = {}
+        self.trace_parser = None
         self.prepare()
         self.html_body = False
         self.all_bodies = False
@@ -318,6 +319,11 @@ class DevTools(object):
             if 'netlog' in self.job and self.job['netlog']:
                 self.job['keep_netlog'] = True
             if 'timeline' in self.job and self.job['timeline']:
+                if self.is_webkit:
+                    from internal.support.trace_parser import Trace
+                    self.trace_parser = Trace()
+                    self.trace_parser.cpu['main_thread'] = '0'
+                    self.trace_parser.threads['0'] = {}
                 if "blink.console" not in trace_config["includedCategories"]:
                     trace_config["includedCategories"].append("blink.console")
                 if "devtools.timeline" not in trace_config["includedCategories"]:
@@ -466,6 +472,18 @@ class DevTools(object):
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
+        # Process the timeline data
+        if self.trace_parser is not None:
+            start = monotonic()
+            logging.debug("Processing the trace timeline events")
+            self.trace_parser.ProcessTimelineEvents()
+            self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
+            self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
+            self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
+            self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
+            elapsed = monotonic() - start
+            logging.debug("Done processing the trace events: %0.3fs", elapsed)
+            self.trace_parser = None
         self.profile_end('stop_recording')
 
     def pump_message(self):
@@ -1014,6 +1032,8 @@ class DevTools(object):
                     self.process_css_event(event, msg)
                 elif category == 'Target':
                     self.process_target_event(event, msg)
+                elif category == 'Timeline' and self.recording and self.is_webkit:
+                    self.process_timeline_event(event, msg)
                 elif self.recording:
                     self.log_dev_tools_event(msg)
         if 'id' in msg:
@@ -1045,6 +1065,8 @@ class DevTools(object):
                 logging.exception('Error setting permissions for origin')
 
         # Event-specific logic
+        if self.is_webkit and self.start_timestamp is None and 'params' in msg and 'timestamp' in msg['params']:
+            self.start_timestamp = float(msg['params']['timestamp'])
         if event == 'loadEventFired':
             self.page_loaded = monotonic()
         elif event == 'frameStartedLoading' and 'params' in msg and 'frameId' in msg['params']:
@@ -1120,6 +1142,9 @@ class DevTools(object):
                     logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)
         elif 'requestId' in msg['params']:
+            timestamp = None
+            if 'params' in msg and 'timestamp' in msg['params']:
+                timestamp = msg['params']['timestamp']
             request_id = msg['params']['requestId']
             if request_id not in self.requests:
                 self.request_sequence += 1
@@ -1129,6 +1154,8 @@ class DevTools(object):
                 request['targetId'] = target_id
             ignore_activity = request['is_video'] if 'is_video' in request else False
             if event == 'requestWillBeSent':
+                if self.is_webkit and self.start_timestamp is None and 'params' in msg and 'timestamp' in msg['params']:
+                    self.start_timestamp = float(msg['params']['timestamp'])
                 if self.is_navigating and self.main_frame is None and \
                         'frameId' in msg['params']:
                     self.is_navigating = False
@@ -1259,6 +1286,22 @@ class DevTools(object):
                     if self.recording:
                         self.enable_target(target_id)
                 self.send_command('Target.resume', {'targetId': target_id})
+
+    def process_timeline_event(self, event, msg):
+        """Handle Timeline.* events"""
+        if self.trace_parser is not None and 'params' in msg and 'record' in msg['params']:
+            if self.start_timestamp is None:
+                return
+            if self.trace_parser.start_time is None:
+                self.trace_parser.start_time = self.start_timestamp * 1000000.0
+                self.trace_parser.end_time = self.start_timestamp * 1000000.0
+            if 'timestamp' in msg['params']:
+                timestamp = msg['params']['timestamp'] * 1000000.0
+                if timestamp > self.trace_parser.end_time:
+                    self.trace_parser.end_time = timestamp
+            processed = self.trace_parser.ProcessOldTimelineEvent(msg['params']['record'], None)
+            if processed is not None:
+                self.trace_parser.timeline_events.append(processed)
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
