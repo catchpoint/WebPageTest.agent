@@ -10,8 +10,11 @@ import logging
 import multiprocessing
 import os
 import re
+import socket
+import struct
 import subprocess
 import sys
+import threading
 import time
 import zipfile
 if (sys.version_info >= (3, 0)):
@@ -32,12 +35,13 @@ from ws4py.client.threadedclient import WebSocketClient
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, options, job, task, use_devtools_video):
+    def __init__(self, options, job, task, use_devtools_video, is_webkit):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
         self.options = options
         self.job = job
         self.task = task
+        self.is_webkit = is_webkit
         self.command_id = 0
         self.command_responses = {}
         self.pending_body_requests = {}
@@ -77,6 +81,7 @@ class DevTools(object):
         self.html_body = False
         self.all_bodies = False
         self.request_sequence = 0
+        self.default_target = None
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -138,73 +143,108 @@ class DevTools(object):
 
     def connect(self, timeout):
         """Connect to the browser"""
-        import requests
         self.profile_start('connect')
-        session = requests.session()
-        proxies = {"http": None, "https": None}
-        ret = False
-        end_time = monotonic() + timeout
-        while not ret and monotonic() < end_time:
-            try:
-                response = session.get(self.url, timeout=timeout, proxies=proxies)
-                if len(response.text):
-                    tabs = response.json()
-                    logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
-                    if len(tabs):
-                        websocket_url = None
-                        for index in range(len(tabs)):
-                            if 'type' in tabs[index] and \
-                                    (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
-                                    'webSocketDebuggerUrl' in tabs[index] and \
-                                    'id' in tabs[index]:
-                                if websocket_url is None:
-                                    websocket_url = tabs[index]['webSocketDebuggerUrl']
-                                    self.tab_id = tabs[index]['id']
-                                else:
-                                    # Close extra tabs
-                                    try:
-                                        session.get(self.url + '/close/' + tabs[index]['id'],
-                                                    proxies=proxies)
-                                    except Exception:
-                                        logging.exception('Error closing tabs')
-                        if websocket_url is not None:
-                            try:
-                                self.websocket = DevToolsClient(websocket_url)
-                                self.websocket.connect()
-                                ret = True
-                            except Exception as err:
-                                logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
-                            if not ret:
-                                # try connecting to 127.0.0.1 instead of localhost
+        if self.is_webkit:
+            ret = False
+            end_time = monotonic() + timeout
+            while not ret and monotonic() < end_time:
+                try:
+                    self.websocket = WebKitGTKInspector()
+                    self.websocket.connect(self.task['port'], timeout)
+                    # Wait to get the targetCreated message
+                    while self.default_target is None and monotonic() < end_time:
+                        self.pump_message()
+                    if self.default_target is not None:
+                        ret = True
+                except Exception:
+                    logging.exception("Error connecting to webkit inspector")
+                    time.sleep(0.5)
+        else:
+            import requests
+            session = requests.session()
+            proxies = {"http": None, "https": None}
+            ret = False
+            end_time = monotonic() + timeout
+            while not ret and monotonic() < end_time:
+                try:
+                    response = session.get(self.url, timeout=timeout, proxies=proxies)
+                    if len(response.text):
+                        tabs = response.json()
+                        logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
+                        if len(tabs):
+                            websocket_url = None
+                            for index in range(len(tabs)):
+                                if 'type' in tabs[index] and \
+                                        (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
+                                        'webSocketDebuggerUrl' in tabs[index] and \
+                                        'id' in tabs[index]:
+                                    if websocket_url is None:
+                                        websocket_url = tabs[index]['webSocketDebuggerUrl']
+                                        self.tab_id = tabs[index]['id']
+                                    else:
+                                        # Close extra tabs
+                                        try:
+                                            session.get(self.url + '/close/' + tabs[index]['id'],
+                                                        proxies=proxies)
+                                        except Exception:
+                                            logging.exception('Error closing tabs')
+                            if websocket_url is not None:
                                 try:
-                                    websocket_url = websocket_url.replace('localhost', '127.0.0.1')
                                     self.websocket = DevToolsClient(websocket_url)
                                     self.websocket.connect()
                                     ret = True
                                 except Exception as err:
                                     logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
+                                if not ret:
+                                    # try connecting to 127.0.0.1 instead of localhost
+                                    try:
+                                        websocket_url = websocket_url.replace('localhost', '127.0.0.1')
+                                        self.websocket = DevToolsClient(websocket_url)
+                                        self.websocket.connect()
+                                        ret = True
+                                    except Exception as err:
+                                        logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
+                            else:
+                                time.sleep(0.5)
                         else:
                             time.sleep(0.5)
-                    else:
-                        time.sleep(0.5)
-            except Exception as err:
-                logging.debug("Connect to dev tools Error: %s", err.__str__())
-                time.sleep(0.5)
+                except Exception as err:
+                    logging.debug("Connect to dev tools Error: %s", err.__str__())
+                    time.sleep(0.5)
         self.profile_end('connect')
         return ret
 
+    def enable_safari_events(self):
+        self.send_command('Inspector.enable', {})
+        self.send_command('Network.enable', {})
+        self.send_command('Runtime.enable', {})
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
+        if len(self.workers):
+            for target in self.workers:
+                self.enable_target(target['targetId'])
+        if 'user_agent_string' in self.job:
+            self.send_command('Page.overrideUserAgent', {'value': self.job['user_agent_string']})
+        if self.task['log_data']:
+            self.send_command('Console.enable', {})
+            self.send_command('Timeline.start', {}, wait=True)
+        self.send_command('Page.enable', {}, wait=True)
+
     def prepare_browser(self):
         """Run any one-time startup preparation before testing starts"""
-        self.send_command('Target.setAutoAttach',
-                          {'autoAttach': True, 'waitForDebuggerOnStart': True})
-        response = self.send_command('Target.getTargets', {}, wait=True)
-        if response is not None and 'result' in response and 'targetInfos' in response['result']:
-            for target in response['result']['targetInfos']:
-                logging.debug(target)
-                if 'type' in target and 'targetId' in target:
-                    if target['type'] == 'service_worker':
-                        self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                           wait=True)
+        if self.is_webkit:
+            self.send_command('Target.setPauseOnStart', {'pauseOnStart': True}, wait=True)
+        else:
+            self.send_command('Target.setAutoAttach',
+                            {'autoAttach': True, 'waitForDebuggerOnStart': True})
+            response = self.send_command('Target.getTargets', {}, wait=True)
+            if response is not None and 'result' in response and 'targetInfos' in response['result']:
+                for target in response['result']['targetInfos']:
+                    logging.debug(target)
+                    if 'type' in target and 'targetId' in target:
+                        if target['type'] == 'service_worker':
+                            self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
+                                            wait=True)
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
@@ -238,6 +278,7 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
+        self.enable_safari_events()
         self.enable_target()
         if len(self.workers):
             for target in self.workers:
@@ -308,10 +349,9 @@ class DevTools(object):
                 trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
-            self.trace_enabled = True
-            self.send_command('Tracing.start',
-                              {'traceConfig': trace_config},
-                              wait=True)
+            if not self.is_webkit:
+                self.trace_enabled = True
+                self.send_command('Tracing.start', {'traceConfig': trace_config}, wait=True)
         now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
@@ -335,8 +375,7 @@ class DevTools(object):
                     coverage = {}
                     # process the JS coverage
                     self.send_command('Profiler.stop', {})
-                    response = self.send_command('Profiler.getBestEffortCoverage',
-                                                 {}, wait=True, timeout=30)
+                    response = self.send_command('Profiler.getBestEffortCoverage', {}, wait=True, timeout=30)
                     if 'result' in response and 'result' in response['result']:
                         for script in response['result']['result']:
                             if 'url' in script and script['url'] and 'functions' in script:
@@ -355,8 +394,7 @@ class DevTools(object):
                                             })
                     self.send_command('Profiler.disable', {})
                     # Process the css coverage
-                    response = self.send_command('CSS.stopRuleUsageTracking',
-                                                 {}, wait=True, timeout=30)
+                    response = self.send_command('CSS.stopRuleUsageTracking', {}, wait=True, timeout=30)
                     if 'result' in response and 'ruleUsage' in response['result']:
                         rule_usage = response['result']['ruleUsage']
                         for rule in rule_usage:
@@ -406,14 +444,7 @@ class DevTools(object):
         end_time = monotonic() + 10
         while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
             try:
-                raw = self.websocket.get_message(1)
-                try:
-                    if raw is not None and len(raw):
-                        logging.debug(raw[:200])
-                        msg = json.loads(raw)
-                        self.process_message(msg)
-                except Exception:
-                    logging.exception('Error processing websocket message')
+                self.pump_message()
             except Exception:
                 pass
         self.flush_pending_messages()
@@ -434,6 +465,20 @@ class DevTools(object):
             self.dev_tools_file.close()
             self.dev_tools_file = None
         self.profile_end('stop_recording')
+
+    def pump_message(self):
+        """ Run the message pump """
+        try:
+            raw = self.websocket.get_message(1)
+            try:
+                if raw is not None and len(raw):
+                    logging.debug('-> %s', raw[:200])
+                    msg = json.loads(raw)
+                    self.process_message(msg)
+            except Exception:
+                logging.exception('Error processing websocket message')
+        except Exception:
+            pass
 
     def start_collecting_trace(self):
         """Kick off the trace processing asynchronously"""
@@ -525,9 +570,7 @@ class DevTools(object):
                         target_id = None
                         if request_id in self.requests and 'targetId' in self.requests[request_id]:
                             target_id = self.requests[request_id]['targetId']
-                        response = self.send_command("Network.getResponseBody",
-                                                    {'requestId': request_id}, wait=wait,
-                                                    target_id=target_id)
+                        response = self.send_command("Network.getResponseBody", {'requestId': request_id}, wait=wait, target_id=target_id)
                         if wait:
                             self.process_response_body(request_id, response)
 
@@ -541,8 +584,7 @@ class DevTools(object):
             is_text = False
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request:
-                content_type = self.get_header_value(request['response_headers'],
-                                                    'Content-Type')
+                content_type = self.get_header_value(request['response_headers'], 'Content-Type')
                 if content_type is not None:
                     content_type = content_type.lower()
                     if content_type.startswith('text/') or \
@@ -689,7 +731,7 @@ class DevTools(object):
                     try:
                         if raw is not None and len(raw):
                             if self.recording:
-                                logging.debug(raw[:200])
+                                logging.debug('-> %s', raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
                         if not raw:
@@ -702,6 +744,10 @@ class DevTools(object):
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
+        if target_id is None and self.default_target is not None and \
+                not method.startswith('Target.') and \
+                not method.startswith('Tracing.'):
+            target_id = self.default_target
         if target_id is not None:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -722,7 +768,7 @@ class DevTools(object):
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
-                                    logging.debug(raw[:200])
+                                    logging.debug('-> %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -743,7 +789,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
                 out = json.dumps(msg)
-                logging.debug("Sending: %s", out[:1000])
+                logging.debug("<- %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
                     end_time = monotonic() + timeout
@@ -752,7 +798,7 @@ class DevTools(object):
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
-                                    logging.debug(raw[:200])
+                                    logging.debug('-> %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -783,7 +829,7 @@ class DevTools(object):
                     raw = self.websocket.get_message(interval)
                     try:
                         if raw is not None and len(raw):
-                            logging.debug(raw[:200])
+                            logging.debug('-> %s', raw[:200])
                             msg = json.loads(raw)
                             self.process_message(msg)
                     except Exception:
@@ -869,12 +915,15 @@ class DevTools(object):
         """Run the provided JS in the browser and return the result"""
         ret = None
         if self.task['error'] is None and not self.main_thread_blocked:
-            response = self.send_command("Runtime.evaluate",
-                                         {'expression': script,
-                                          'awaitPromise': True,
-                                          'returnByValue': True,
-                                          'timeout': 30000},
-                                         wait=True, timeout=30)
+            if self.is_webkit:
+                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
+            else:
+                response = self.send_command("Runtime.evaluate",
+                                            {'expression': script,
+                                            'awaitPromise': True,
+                                            'returnByValue': True,
+                                            'timeout': 30000},
+                                            wait=True, timeout=30)
             if response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
@@ -889,14 +938,18 @@ class DevTools(object):
                 name = header[:separator].strip()
                 value = header[separator + 1:].strip()
                 self.headers[name] = value
-                self.send_command('Network.setExtraHTTPHeaders',
-                                  {'headers': self.headers}, wait=True)
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, wait=True)
+                if len(self.workers):
+                    for target in self.workers:
+                        self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target['targetId'])
 
     def reset_headers(self):
         """Add/modify a header on the outbound requests"""
         self.headers = {}
-        self.send_command('Network.setExtraHTTPHeaders',
-                          {'headers': self.headers}, wait=True)
+        self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, wait=True)
+        if len(self.workers):
+            for target in self.workers:
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target['targetId'])
 
     def clear_cache(self):
         """Clear the browser cache"""
@@ -904,7 +957,10 @@ class DevTools(object):
 
     def disable_cache(self, disable):
         """Disable the browser cache"""
-        self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
+        if self.is_webkit:
+            self.send_command('Network.setResourceCachingDisabled', {'disabled': disable}, wait=True)
+        else:
+            self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
 
     def enable_target(self, target_id=None):
         """Hook up the necessary network (or other) events for the given target"""
@@ -966,7 +1022,7 @@ class DevTools(object):
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
         # Handle permissions for frame navigations
-        if 'params' in msg and 'url' in msg['params']:
+        if 'params' in msg and 'url' in msg['params'] and not self.is_webkit:
             try:
                 parts = urlsplit(msg['params']['url'])
                 origin = parts.scheme + '://' + parts.netloc
@@ -1173,14 +1229,27 @@ class DevTools(object):
                         self.enable_target(target['targetId'])
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
-        if event == 'receivedMessageFromTarget':
+        if event == 'receivedMessageFromTarget' or event == 'dispatchMessageFromTarget':
             target_id = None
             if 'targetId' in msg['params']:
                 target_id = msg['params']['targetId']
             if 'message' in msg['params'] and target_id is not None:
-                logging.debug(msg['params']['message'][:200])
+                logging.debug('-> %s', msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
+        if event == 'targetCreated':
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                target_id = target['targetId']
+                if 'type' in target and target['type'] == 'page':
+                    self.default_target = target_id
+                    if self.recording:
+                        self.enable_safari_events()
+                else:
+                    self.workers.append(target)
+                    if self.recording:
+                        self.enable_target(target_id)
+                self.send_command('Target.resume', {'targetId': target_id})
 
     def log_dev_tools_event(self, msg):
         """Log the dev tools events to a file"""
@@ -1481,3 +1550,201 @@ class DevToolsClient(WebSocketClient):
                                                "time": int(ms_elapsed),
                                                "path": str(path)}
                             image_file.write(base64.b64decode(img))
+
+class WebKitGTKInspector():
+    """Interface for communicating with the WebKitGTK remote inspector protocol"""
+    def __init__(self):
+        self.connection = None
+        self.background_thread = None
+        self.backend_hash = '3EEFCD78DEE7F8F2E5348226F4B5DD9AFE917947'.encode('ascii') + b'\x00'
+        self.lock = threading.Lock()
+        self.targets_updated = threading.Event()
+        self.targets = []
+        self.client_id = None
+        self.target = None
+        self.messages = multiprocessing.JoinableQueue()
+
+    def read_thread(self):
+        while self.connection is not None:
+            fail = False
+            try:
+                # Read the data length
+                data = self.read_bytes(5)
+                flag = data[4]
+                if flag == 1:
+                    size = struct.unpack('!L', data[:4])[0]
+                    if size > 0:
+                        payload = self.read_bytes(size)
+                        # parse the message name from the beginning of the buffer
+                        message_name, payload = self.parse_string(payload)
+                        if message_name is not None:
+                            try:
+                                if message_name == 'SetTargetList':
+                                    self.SetTargetList(payload)
+                                elif message_name == 'SendMessageToFrontend':
+                                    self.SendMessageToFrontend(payload)
+                            except Exception:
+                                logging.exception("Error processing message")
+                        else:
+                            logging.critical('Invalid message')
+                            fail = True
+                else:
+                    logging.critical('Invalid message flag')
+                    fail = True
+            except socket.timeout:
+                pass
+            except Exception:
+                time.sleep(0.1)
+            if fail:
+                self.connection.shutdown(socket.SHUT_RDWR)
+                self.connection.close()
+                self.connection = None
+
+    def read_bytes(self, size):
+        """Keep reading until we get len bytes"""
+        remaining = size
+        data = b''
+        while self.connection is not None and remaining > 0:
+            chunk = self.connection.recv(remaining)
+            remaining -= len(chunk)
+            data += chunk
+        return data
+    
+    def connect(self, port, timeout):
+        self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connection.settimeout(1)
+        logging.debug('WebKitGTKInspector Connecting...')
+        self.connection.connect(('127.0.0.1', port))
+        logging.debug('WebKitGTKInspector socket Connected')
+        self.background_thread = threading.Thread(target=self.read_thread)
+        self.background_thread.start()
+        self.targets_updated.clear()
+        self.send_raw_message("SetupInspectorClient", self.backend_hash)
+        # Wait up to 10 seconds to get the target list
+        self.targets_updated.wait(timeout)
+        self.start()
+        logging.debug('WebKitGTKInspector Connected')
+    
+    def disconnect(self):
+        if self.connection is not None:
+            self.connection.shutdown(socket.SHUT_RDWR)
+            self.connection.close()
+            self.connection = None
+        if self.background_thread is not None:
+            self.background_thread.join(10)
+
+    def start(self):
+        """Send the Setup command to get the list of json targets"""
+        if self.target is not None and self.client_id is not None:
+            self.send_raw_message("Setup", self.client_id + self.target)
+
+    def send(self, command):
+        """Send the JSON command to the browser"""
+        if self.target is not None and command is not None:
+            msg = self.client_id
+            msg += self.target
+            msg += command.encode('utf-8')
+            msg += b'\x00'
+            self.send_raw_message("SendMessageToBackend", msg)
+            
+
+    def send_raw_message(self, name, data=None):
+        """Send a raw DBUS message over the TCP connection"""
+        """ | message size - 4 bytes | byte order 0x1 - 1 byte | Null-terminated message name | raw message payload | """
+        if self.connection is not None:
+            size = len(name) + 1
+            if data is not None:
+                size += len(data)
+            msg = bytearray()
+            msg.extend(struct.pack('!L', size)) # Size of the payload
+            msg.extend(b'\x01')                 # Network byte order
+            msg.extend(name.encode('ascii'))    # The message name
+            msg.extend(b'\x00')                 # Null-terminate the string
+            if data is not None:
+                msg.extend(data)                # Payload
+            while len(msg):
+                sent_bytes = 0
+                try:
+                    sent_bytes = self.connection.send(msg)
+                except socket.timeout:
+                    # keep looping send until we send it all
+                    pass
+                except Exception:
+                    logging.exception("Error sending message")
+                    break
+                if sent_bytes > 0:
+                    msg = msg[sent_bytes:]
+    
+    def parse_string(self, data):
+        """Extract a gvariant string from the front of the data buffer"""
+        string = None
+        separator = data.find(b'\x00')
+        if separator == 0:
+            string = ''
+            data = data[separator + 1:]
+        elif separator > 0:
+            string = data[:separator].decode('ascii')
+            data = data[separator + 1:]
+        return string, data
+
+    def SetTargetList(self, msg):
+        """Handle an inbound SetTargetList message"""
+        # only handle the target list messages that have contents
+        if len(msg) > 8:
+            client_id = msg[:8]
+            msg = msg[8:]
+            # extract the individual targets
+            self.lock.acquire()
+            self.targets = []
+            while (len(msg) >= 17):
+                target_id = msg[:8]
+                msg = msg[8:]
+                target_type, msg = self.parse_string(msg)
+                target_title, msg = self.parse_string(msg)
+                target_url, msg = self.parse_string(msg)
+                # 4 bytes + padding
+                msg = msg[4:]
+                record_size = 8 + len(target_type) + 1 + len(target_title) + 1 + len(target_url) + 1 + 4
+                padding = 0
+                remainder = record_size % 8
+                if remainder > 0:
+                    padding = 8 - remainder
+                    msg = msg[padding:]
+                if target_type is not None and target_title is not None and target_url is not None:
+                    self.targets.append({
+                        'id': target_id,
+                        'type': target_type,
+                        'title': target_title,
+                        'url': target_url
+                    })
+                    # Default to the first WebPage target we find
+                    if self.target is None and target_type == 'WebPage':
+                        self.client_id = client_id
+                        self.target = target_id
+            logging.debug(self.targets)
+            self.lock.release()
+            self.targets_updated.set()
+
+    def SendMessageToFrontend(self, msg):
+        """Incoming json message"""
+        if len(msg) > 16:
+            client_id = msg[:8]
+            msg = msg[8:]
+            target_id = msg[:8]
+            if client_id == self.client_id and target_id == self.target:
+                msg = msg[8:-1]
+                command_string = msg.decode('utf-8')
+                self.messages.put(command_string)
+
+    def get_message(self, timeout):
+        """Wait for and return a message from the queue"""
+        message = None
+        try:
+            if timeout is None or timeout <= 0:
+                message = self.messages.get_nowait()
+            else:
+                message = self.messages.get(True, timeout)
+            self.messages.task_done()
+        except Exception:
+            pass
+        return message

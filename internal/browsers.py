@@ -96,6 +96,9 @@ class Browsers(object):
             elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Safari':
                 from .safari_webdriver import SafariWebDriver
                 browser = SafariWebDriver(self.browsers[name]['exe'], self.options, job)
+            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'WebKitGTK':
+                from .webkitgtk import WebKitGTK
+                browser = WebKitGTK(self.browsers[name]['exe'], self.options, job)
             else:
                 from .chrome_desktop import ChromeDesktop
                 browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)

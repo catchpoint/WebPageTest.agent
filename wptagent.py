@@ -776,6 +776,13 @@ def find_browsers(options):
                 browsers['Microsoft Edge Dev'] = {'exe': edge_path}
             if 'Edge Dev' not in browsers:
                 browsers['Edge Dev'] = {'exe': edge_path}
+        # Epiphany (WebKit)
+        epiphany_path = '/usr/bin/epiphany'
+        if os.path.isfile(epiphany_path):
+            if 'Epiphany' not in browsers:
+                browsers['Epiphany'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
+            if 'WebKit' not in browsers:
+                browsers['WebKit'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
 
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
