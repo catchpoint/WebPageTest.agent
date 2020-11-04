@@ -163,8 +163,18 @@ class DevtoolsBrowser(object):
                     match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
                 if match:
                     self.browser_version = match.group(1)
-            if 'uastring' in self.job:
+            if 'uastring' in self.job and 'mobile' in self.job and self.job['mobile']:
+                # Replace the requested Chrome version with the actual Chrome version so Mobile emulation is always up to date
+                original_version = None
+                if ua_string is not None:
+                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                    if match:
+                        original_version = match.group(1)
                 ua_string = self.job['uastring']
+                if original_version is not None:
+                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                    if match:
+                        ua_string = ua_string.replace(match.group(1), original_version)
             if ua_string is not None and 'AppendUA' in task:
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
