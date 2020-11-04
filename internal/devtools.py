@@ -214,21 +214,22 @@ class DevTools(object):
         self.profile_end('connect')
         return ret
 
-    def enable_safari_events(self):
-        self.send_command('Inspector.enable', {})
-        self.send_command('Network.enable', {})
-        self.send_command('Runtime.enable', {})
-        if self.headers:
-            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
-        if len(self.workers):
-            for target in self.workers:
-                self.enable_target(target['targetId'])
-        if 'user_agent_string' in self.job:
-            self.send_command('Page.overrideUserAgent', {'value': self.job['user_agent_string']})
-        if self.task['log_data']:
-            self.send_command('Console.enable', {})
-            self.send_command('Timeline.start', {}, wait=True)
-        self.send_command('Page.enable', {}, wait=True)
+    def enable_webkit_events(self):
+        if self.is_webkit:
+            self.send_command('Inspector.enable', {})
+            self.send_command('Network.enable', {})
+            self.send_command('Runtime.enable', {})
+            if self.headers:
+                self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
+            if len(self.workers):
+                for target in self.workers:
+                    self.enable_target(target['targetId'])
+            if 'user_agent_string' in self.job:
+                self.send_command('Page.overrideUserAgent', {'value': self.job['user_agent_string']})
+            if self.task['log_data']:
+                self.send_command('Console.enable', {})
+                self.send_command('Timeline.start', {}, wait=True)
+            self.send_command('Page.enable', {}, wait=True)
 
     def prepare_browser(self):
         """Run any one-time startup preparation before testing starts"""
@@ -278,7 +279,7 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
-        self.enable_safari_events()
+        self.enable_webkit_events()
         self.enable_target()
         if len(self.workers):
             for target in self.workers:
@@ -1242,9 +1243,10 @@ class DevTools(object):
                 target = msg['params']['targetInfo']
                 target_id = target['targetId']
                 if 'type' in target and target['type'] == 'page':
-                    self.default_target = target_id
+                    if self.is_webkit:
+                        self.default_target = target_id
                     if self.recording:
-                        self.enable_safari_events()
+                        self.enable_webkit_events()
                 else:
                     self.workers.append(target)
                     if self.recording:
