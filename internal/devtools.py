@@ -895,12 +895,25 @@ class DevTools(object):
         """Save the screen shot (png or jpeg)"""
         if not self.main_thread_blocked:
             self.profile_start('screenshot')
-            response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
-            if response is not None and 'result' in response and 'data' in response['result']:
+            response = None
+            data = None
+            if self.is_webkit:
+                if 'actual_viewport' in self.task:
+                    width = self.task['actual_viewport']['width']
+                    height = self.task['actual_viewport']['height']
+                    response = self.send_command("Page.snapshotRect", {"x": 0, "y": 0, "width": width, "height": height, "coordinateSystem": "Viewport"}, wait=True, timeout=30)
+                    if response is not None and 'result' in response and 'dataURL' in response['result'] and response['result']['dataURL'].startswith('data:image/png;base64,'):
+                        data = response['result']['dataURL'][22:]
+                        logging.debug("Image Data: %s", data[:200])
+            else:
+                response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
+                if response is not None and 'result' in response and 'data' in response['result']:
+                    data = response['result']['data']
+            if data is not None:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
                 if png:
                     with open(path, 'wb') as image_file:
-                        image_file.write(base64.b64decode(response['result']['data']))
+                        image_file.write(base64.b64decode(data))
                     # Fix png issues
                     cmd = '{0} -format png -define png:color-type=2 '\
                         '-depth 8 {1}"{2}"'.format(self.job['image_magick']['mogrify'],
@@ -910,7 +923,7 @@ class DevTools(object):
                 else:
                     tmp_file = path + '.png'
                     with open(tmp_file, 'wb') as image_file:
-                        image_file.write(base64.b64decode(response['result']['data']))
+                        image_file.write(base64.b64decode(data))
                     command = '{0} "{1}" {2}-quality {3:d} "{4}"'.format(
                         self.job['image_magick']['convert'],
                         tmp_file, resize_string, self.job['imageQuality'], path)
