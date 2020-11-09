@@ -175,14 +175,6 @@ class DevtoolsBrowser(object):
                     match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
                     if match:
                         ua_string = ua_string.replace(match.group(1), original_version)
-            elif self.is_webkit:
-                # Make the Epiphany UA String look like Safari
-                match = re.search(r'( Epiphany\/\d+\.\d+\.\d+)', ua_string)
-                if match:
-                    ua_string = ua_string.replace(match.group(1), '')
-                match = re.search(r'(\(X11[^\)]+\))', ua_string)
-                if match:
-                    ua_string = ua_string.replace(match.group(1), '(Macintosh; Intel Mac OS X 10_15_7)')
             if ua_string is not None and 'AppendUA' in task:
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
