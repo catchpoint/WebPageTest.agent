@@ -559,8 +559,7 @@ class DevTools(object):
             request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request and 'url' in request and request['url'].startswith('http'):
-                content_length = self.get_header_value(request['response_headers'],
-                                                    'Content-Length')
+                content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
@@ -577,8 +576,7 @@ class DevTools(object):
                     # Only grab bodies needed for optimization checks
                     # or if we are saving full bodies
                     need_body = True
-                    content_type = self.get_header_value(request['response_headers'],
-                                                        'Content-Type')
+                    content_type = self.get_header_value(request['response_headers'], 'Content-Type')
                     if content_type is not None:
                         content_type = content_type.lower()
                         # Ignore video files over 10MB
@@ -603,8 +601,7 @@ class DevTools(object):
         body_file_path = os.path.join(path, request_id)
         if not os.path.exists(body_file_path):
             is_text = False
-            if request is not None and 'status' in request and request['status'] == 200 and \
-                    'response_headers' in request:
+            if request is not None and 'status' in request and request['status'] == 200 and 'response_headers' in request:
                 content_type = self.get_header_value(request['response_headers'], 'Content-Type')
                 if content_type is not None:
                     content_type = content_type.lower()
@@ -669,8 +666,7 @@ class DevTools(object):
     def get_request(self, request_id, include_bodies):
         """Get the given request details if it is a real request"""
         request = None
-        if request_id in self.requests and 'fromNet' in self.requests[request_id] \
-                and self.requests[request_id]['fromNet']:
+        if request_id in self.requests and 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
             events = self.requests[request_id]
             request = {'id': request_id}
             if 'sequence' in events:
@@ -1169,8 +1165,7 @@ class DevTools(object):
             if event == 'requestWillBeSent':
                 if self.is_webkit and self.start_timestamp is None and 'params' in msg and 'timestamp' in msg['params']:
                     self.start_timestamp = float(msg['params']['timestamp'])
-                if self.is_navigating and self.main_frame is None and \
-                        'frameId' in msg['params']:
+                if self.is_navigating and self.main_frame is None and 'frameId' in msg['params']:
                     self.is_navigating = False
                     self.main_frame = msg['params']['frameId']
                 if 'request' not in request:
@@ -1179,14 +1174,13 @@ class DevTools(object):
                 if 'url' in msg['params'] and msg['params']['url'].endswith('.mp4'):
                     request['is_video'] = True
                 request['fromNet'] = True
-                if self.main_frame is not None and \
-                        self.main_request is None and \
-                        'frameId' in msg['params'] and \
-                        msg['params']['frameId'] == self.main_frame:
+                if self.main_frame is not None and self.main_request is None and 'frameId' in msg['params'] and msg['params']['frameId'] == self.main_frame:
                     logging.debug('Main request detected')
                     self.main_request = request_id
                     if 'timestamp' in msg['params']:
                         self.start_timestamp = float(msg['params']['timestamp'])
+                if 'params' in msg and 'request' in msg['params'] and 'headers' in msg['params']['request']:
+                    request['request_headers'] = msg['params']['request']['headers']
             elif event == 'requestWillBeSentExtraInfo':
                 request['requestExtra'] = msg['params']
             elif event == 'resourceChangedPriority':

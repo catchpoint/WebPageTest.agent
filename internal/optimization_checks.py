@@ -433,15 +433,14 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                if 'url' in request:
+                if 'url' in request and 'response_headers' in request:
                     check = {'score': 100}
                     url = request['full_url'] if 'full_url' in request else request['url']
                     parsed = urlsplit(url)
                     origin = parsed.scheme + '://' + parsed.netloc
                     if origins[origin] > 1:
                         check['score'] = 100
-                        keep_alive = self.get_header_value(request['response_headers'],
-                                                           'Connection')
+                        keep_alive = self.get_header_value(request['response_headers'], 'Connection')
                         if keep_alive is not None and keep_alive.lower().strip().find('close') > -1:
                             check['score'] = 0
                     if request_id not in self.results:
