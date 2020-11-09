@@ -283,6 +283,8 @@ class DevToolsParser(object):
                                         not params['response']['fromDiskCache'] and \
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
+                                if 'source' in params['response'] and params['response']['source'] in ['network', 'unknown']:
+                                    request['fromNet'] = True
                                 # Chrome reports some phantom duplicate requests
                                 '''
                                 if has_request_headers and \
@@ -533,8 +535,7 @@ class DevToolsParser(object):
                     timing = raw_request['response']['timing']
                     if 'sendStart' in timing and 'receiveHeadersEnd' in timing and \
                             timing['receiveHeadersEnd'] >= timing['sendStart']:
-                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] -
-                                                       timing['sendStart']))
+                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] - timing['sendStart']))
                         if request['load_ms'] >= 0:
                             request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
@@ -566,6 +567,26 @@ class DevToolsParser(object):
                             if 'securityDetails' in raw_request['response']:
                                 request['securityDetails'] = \
                                     raw_request['response']['securityDetails']
+                    elif "domainLookupStart" in timing or "secureConnectionStart" in timing:
+                        # Handle webkit timing data which may only be accurate for connection timings
+                        if 'domainLookupStart' in timing and timing['domainLookupStart'] >= 0:
+                            dns_key = request['host']
+                            if dns_key not in dns_times:
+                                dns_times[dns_key] = True
+                                request['dns_start'] = int(round(timing['domainLookupStart'] - raw_page_data['startTime']))
+                                if 'domainLookupEnd' in timing and timing['domainLookupEnd'] >= 0:
+                                    request['dns_end'] = int(round(timing['domainLookupEnd'] - raw_page_data['startTime']))
+                        if 'connectStart' in timing and timing['connectStart'] >= 0:
+                            request['connect_start'] = int(round(timing['connectStart'] - raw_page_data['startTime']))
+                            if 'connectEnd' in timing and timing['connectEnd'] >= 0:
+                                request['load_start_float'] = timing['connectEnd'] - raw_page_data['startTime']
+                                request['load_start'] = int(round(request['load_start_float']))
+                                request['connect_end'] = request['load_start']
+                        if 'secureConnectionStart' in timing and timing['secureConnectionStart'] >= 0:
+                            request['ssl_start'] = int(round(timing['secureConnectionStart'] - raw_page_data['startTime']))
+                            if request['connect_end'] > request['ssl_start']:
+                                request['ssl_end'] = request['connect_end']
+                                request['connect_end'] = request['ssl_start']
                 request['initiator'] = ''
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
