@@ -77,16 +77,18 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
                     if class_name == 'Epiphany':
                         # First move it WAY negative to account for any border. It will be clipped to the top-left corner
                         window.configure(x=-1000, y=-1000, border_width=0, stack_mode=Xlib.X.Above)
+                        disp.flush()
                         disp.sync()
                         # Now resize it adjusting for the margins
                         geometry = window.get_geometry()
-                        logging.debug("Current window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
+                        logging.debug("Moved window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
                         width += abs(geometry.x) * 2
                         height += abs(geometry.y) * 2
                         window.configure(width=width, height=height, border_width=0, stack_mode=Xlib.X.Above)
+                        disp.flush()
                         disp.sync()
                         geometry = window.get_geometry()
-                        logging.debug("Current window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
+                        logging.debug("Resized window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
                         geometry = window.get_geometry()
             except Exception:
                 logging.exception("Error moving the window")
