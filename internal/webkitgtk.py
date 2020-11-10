@@ -22,10 +22,11 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        dirs = ['~/.config/epiphany', '.local/share/epiphany', '.local/share/webkitgtk']
+        dirs = ['~/.config/epiphany', '~/.local/share/epiphany', '~/.local/share/webkitgtk']
         for directory in dirs:
             directory = os.path.expanduser(directory)
             if os.path.exists(directory):
+                logging.debug("Removing %s", directory)
                 try:
                     shutil.rmtree(directory)
                 except Exception:
