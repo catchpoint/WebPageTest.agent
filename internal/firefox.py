@@ -1195,31 +1195,32 @@ class Firefox(DesktopBrowser):
                     page['bytesOutDoc'] += request['bytesOut']
             page['bytesIn'] += request['bytesIn']
             page['bytesOut'] += request['bytesOut']
-            if request['responseCode'] == 200:
-                page['responses_200'] += 1
-            elif request['responseCode'] == 404:
-                page['responses_404'] += 1
-                page['result'] = 99999
-            elif request['responseCode'] > -1:
-                page['responses_other'] += 1
-            if main_request is None and \
-                    (request['responseCode'] == 200 or request['responseCode'] == 304) and \
-                    ('contentType' not in request or
-                     (request['contentType'] != 'application/ocsp-response' and
-                      request['contentType'] != 'application/pkix-crl')):
-                main_request = request['id']
-                request['is_base_page'] = True
-                page['final_base_page_request'] = index
-                page['final_base_page_request_id'] = main_request
-                page['final_url'] = request['full_url']
-                if 'URL' not in self.task['page_data']:
-                    self.task['page_data']['URL'] = page['final_url']
-                if request['ttfb_ms'] >= 0:
-                    page['TTFB'] = request['load_start'] + request['ttfb_ms']
-                if request['ssl_end'] >= request['ssl_start'] and \
-                        request['ssl_start'] >= 0:
-                    page['basePageSSLTime'] = int(round(request['ssl_end'] -
-                                                        request['ssl_start']))
+            if 'responseCode' in request:
+                if request['responseCode'] == 200:
+                    page['responses_200'] += 1
+                elif request['responseCode'] == 404:
+                    page['responses_404'] += 1
+                    page['result'] = 99999
+                elif request['responseCode'] > -1:
+                    page['responses_other'] += 1
+                if main_request is None and \
+                        (request['responseCode'] == 200 or request['responseCode'] == 304) and \
+                        ('contentType' not in request or
+                        (request['contentType'] != 'application/ocsp-response' and
+                        request['contentType'] != 'application/pkix-crl')):
+                    main_request = request['id']
+                    request['is_base_page'] = True
+                    page['final_base_page_request'] = index
+                    page['final_base_page_request_id'] = main_request
+                    page['final_url'] = request['full_url']
+                    if 'URL' not in self.task['page_data']:
+                        self.task['page_data']['URL'] = page['final_url']
+                    if request['ttfb_ms'] >= 0:
+                        page['TTFB'] = request['load_start'] + request['ttfb_ms']
+                    if request['ssl_end'] >= request['ssl_start'] and \
+                            request['ssl_start'] >= 0:
+                        page['basePageSSLTime'] = int(round(request['ssl_end'] -
+                                                            request['ssl_start']))
         if page['responses_200'] == 0 and len(requests):
             if 'responseCode' in requests[0]:
                 page['result'] = requests[0]['responseCode']
