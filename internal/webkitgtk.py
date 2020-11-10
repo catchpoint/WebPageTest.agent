@@ -38,14 +38,27 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
                     shutil.rmtree(cache_dir)
                 except Exception:
                     pass
+        # Create a session state file with the window dimensions we want
+        config_dir = os.path.expanduser('~/.config')
+        if not os.path.isdir(config_dir):
+            os.mkdir(config_dir)
+        config_dir += '/epiphany'
+        if not os.path.isdir(config_dir):
+            os.mkdir(config_dir)
+        state_file = config_dir + "/session_state.xml"
+        with open(state_file, 'wt') as f_out:
+            f_out.write('<?xml version="1.0"?>\n')
+            f_out.write('<session>\n')
+            f_out.write('	<window x="0" y="0" width="{}" height="{}" active-tab="0" role="epiphany-window-25336e5d">\n'.format(task['width'], task['height']))
+            f_out.write('	 	 <embed url="about:blank" title="Blank page"/>\n')
+            f_out.write('	 </window>\n')
+            f_out.write('</session>\n')
+
         os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:{}".format(task['port'])
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
-        if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
-        command_line += ' ' + 'about:blank'
         # re-try launching and connecting a few times if necessary
         connected = False
         DesktopBrowser.launch_browser(self, command_line)
@@ -53,61 +66,10 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
             connected = True
         if connected:
             self.connected = True
-            self.move_window(task)
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.prepare_browser(self, task)
             DevtoolsBrowser.navigate(self, self.start_page)
             DesktopBrowser.wait_for_idle(self, 2)
-
-    def move_window(self, task):
-        """Move the browser window (Linux only for now)"""
-        if platform.system() == "Linux":
-            try:
-                import Xlib
-                from Xlib import display
-                disp = display.Display()
-                root = disp.screen().root
-                w = task['width']
-                h = task['height']
-
-                # Make several passes to make sure the window actually moves
-                # First move it WAY negative to account for any border. It will be clipped to the top-left corner
-                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
-                for window_id in window_ids:
-                    window = disp.create_resource_object('window', window_id)
-                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
-                    _, class_name = window.get_wm_class()
-                    if class_name == 'Epiphany':
-                        window.configure(x=-1000, y=-1000, width=w, height=h, border_width=0, stack_mode=Xlib.X.Above)
-                disp.flush()
-                disp.sync()
-
-                # Now resize it adjusting for the margins
-                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
-                for window_id in window_ids:
-                    window = disp.create_resource_object('window', window_id)
-                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
-                    _, class_name = window.get_wm_class()
-                    if class_name == 'Epiphany':
-                        geometry = window.get_geometry()
-                        logging.debug("Moved window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
-                        w += abs(geometry.x) * 2
-                        h += abs(geometry.y) * 2
-                        window.configure(width=w, height=h, border_width=0, stack_mode=Xlib.X.Above)
-                disp.flush()
-                disp.sync()
-
-                # Check the final position
-                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
-                for window_id in window_ids:
-                    window = disp.create_resource_object('window', window_id)
-                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
-                    _, class_name = window.get_wm_class()
-                    if class_name == 'Epiphany':
-                        geometry = window.get_geometry()
-                        logging.debug("Resized window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
-            except Exception:
-                logging.exception("Error moving the window")
 
     def run_task(self, task):
         """Run an individual test"""
