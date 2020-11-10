@@ -67,29 +67,45 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
                 from Xlib import display
                 disp = display.Display()
                 root = disp.screen().root
-                width = task['width']
-                height = task['height']
+                w = task['width']
+                h = task['height']
+
+                # Make several passes to make sure the window actually moves
+                # First move it WAY negative to account for any border. It will be clipped to the top-left corner
                 window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
                 for window_id in window_ids:
                     window = disp.create_resource_object('window', window_id)
                     logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
                     _, class_name = window.get_wm_class()
                     if class_name == 'Epiphany':
-                        # First move it WAY negative to account for any border. It will be clipped to the top-left corner
-                        window.configure(x=-1000, y=-1000, border_width=0, stack_mode=Xlib.X.Above)
-                        disp.flush()
-                        disp.sync()
-                        # Now resize it adjusting for the margins
+                        window.configure(x=-1000, y=-1000, width=w, height=h, border_width=0, stack_mode=Xlib.X.Above)
+                disp.flush()
+                disp.sync()
+
+                # Now resize it adjusting for the margins
+                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
+                for window_id in window_ids:
+                    window = disp.create_resource_object('window', window_id)
+                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
+                    _, class_name = window.get_wm_class()
+                    if class_name == 'Epiphany':
                         geometry = window.get_geometry()
                         logging.debug("Moved window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
-                        width += abs(geometry.x) * 2
-                        height += abs(geometry.y) * 2
-                        window.configure(width=width, height=height, border_width=0, stack_mode=Xlib.X.Above)
-                        disp.flush()
-                        disp.sync()
+                        w += abs(geometry.x) * 2
+                        h += abs(geometry.y) * 2
+                        window.configure(width=w, height=h, border_width=0, stack_mode=Xlib.X.Above)
+                disp.flush()
+                disp.sync()
+
+                # Check the final position
+                window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), Xlib.X.AnyPropertyType).value
+                for window_id in window_ids:
+                    window = disp.create_resource_object('window', window_id)
+                    logging.debug("%s :: %s", window.get_wm_class(), window.get_wm_name())
+                    _, class_name = window.get_wm_class()
+                    if class_name == 'Epiphany':
                         geometry = window.get_geometry()
                         logging.debug("Resized window position: %d, %d - %d x %d", geometry.x, geometry.y, geometry.width, geometry.height)
-                        geometry = window.get_geometry()
             except Exception:
                 logging.exception("Error moving the window")
 
