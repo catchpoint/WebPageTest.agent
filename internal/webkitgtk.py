@@ -22,12 +22,14 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        config_dir = os.path.expanduser('~/.config/epiphany')
-        if os.path.exists(config_dir):
-            try:
-                shutil.rmtree(config_dir)
-            except Exception:
-                pass
+        dirs = ['~/.config/epiphany', '.local/share/epiphany', '.local/share/webkitgtk']
+        for directory in dirs:
+            directory = os.path.expanduser(directory)
+            if os.path.exists(directory):
+                try:
+                    shutil.rmtree(directory)
+                except Exception:
+                    pass
         if not task['cached']:
             cache_dir = os.path.expanduser('~/.cache/epiphany')
             if os.path.exists(cache_dir):
