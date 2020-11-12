@@ -32,6 +32,7 @@ class WPTAgent(object):
         from internal.adb import Adb
         from internal.ios_device import iOSDevice
         self.must_exit = False
+        self.needs_shutdown = False
         self.options = options
         self.capture_display = None
         self.job = None
@@ -81,6 +82,7 @@ class WPTAgent(object):
         start_time = monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
+        shutdown_file = os.path.join(self.root_path, 'shutdown')
         message_server = None
         if not self.options.android and not self.options.iOS:
             from internal.message_server import MessageServer
@@ -98,6 +100,14 @@ class WPTAgent(object):
                     except Exception:
                         pass
                     self.must_exit = True
+                    break
+                elif os.path.isfile(shutdown_file):
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
+                    self.must_exit = True
+                    self.needs_shutdown = True
                     break
                 if message_server is not None and self.options.exit > 0 and \
                         not message_server.is_ok():
@@ -167,6 +177,9 @@ class WPTAgent(object):
             if self.adb is not None and self.adb.needs_exit:
                 break
         self.cleanup()
+        if self.needs_shutdown:
+            if platform.system() == "Linux":
+                subprocess.call(['sudo', 'poweroff'])
 
     def run_single_test(self):
         """Run a single test run"""
