@@ -22,43 +22,12 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
-        dirs = ['~/.config/epiphany', '~/.local/share/epiphany', '~/.local/share/webkitgtk']
-        for directory in dirs:
-            directory = os.path.expanduser(directory)
-            if os.path.exists(directory):
-                logging.debug("Removing %s", directory)
-                try:
-                    shutil.rmtree(directory)
-                except Exception:
-                    pass
-        if not task['cached']:
-            cache_dir = os.path.expanduser('~/.cache/epiphany')
-            if os.path.exists(cache_dir):
-                try:
-                    shutil.rmtree(cache_dir)
-                except Exception:
-                    pass
-        # Create a session state file with the window dimensions we want
-        config_dir = os.path.expanduser('~/.config')
-        if not os.path.isdir(config_dir):
-            os.mkdir(config_dir)
-        config_dir += '/epiphany'
-        if not os.path.isdir(config_dir):
-            os.mkdir(config_dir)
-        state_file = config_dir + "/session_state.xml"
-        with open(state_file, 'wt') as f_out:
-            f_out.write('<?xml version="1.0"?>\n')
-            f_out.write('<session>\n')
-            f_out.write('	<window x="0" y="0" width="{}" height="{}" active-tab="0" role="epiphany-window-25336e5d">\n'.format(task['width'], task['height']))
-            f_out.write('	 	 <embed url="about:blank" title="Blank page"/>\n')
-            f_out.write('	 </window>\n')
-            f_out.write('</session>\n')
-
         os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:{}".format(task['port'])
         if self.path.find(' ') > -1:
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
+        command_line += ' --automation-mode'
         # re-try launching and connecting a few times if necessary
         connected = False
         DesktopBrowser.launch_browser(self, command_line)

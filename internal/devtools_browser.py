@@ -49,7 +49,7 @@ class DevtoolsBrowser(object):
         self.devtools_screenshot = True
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
-        self.default_target = None
+        self.webkit_context = None
 
     def connect(self, task):
         """Connect to the dev tools interface"""
@@ -75,12 +75,29 @@ class DevtoolsBrowser(object):
             # remembered across sessions
             if self.task is not None and self.task['error'] is None:
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
+            if self.webkit_context is not None:
+                self.devtools.send_command('Automation.closeBrowsingContext', {'handle': self.webkit_context}, wait=True)
             self.devtools.close()
             self.devtools = None
 
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
+            # Move the WebKit window
+            if self.is_webkit:
+                result = self.devtools.send_command('Automation.getBrowsingContexts', {}, wait=True)
+                if result and 'result' in result and 'contexts' in result['result']:
+                    for context in result['result']['contexts']:
+                        if 'handle' in context:
+                            self.webkit_context = context['handle']
+                            break
+                if self.webkit_context is None:
+                    result = self.devtools.send_command('Automation.createBrowsingContext', {}, wait=True)
+                    if result is not None and 'result' in result and 'handle' in result['result']:
+                        self.webkit_context = result['result']['handle']
+                if self.webkit_context is not None:
+                    self.devtools.send_command('Automation.switchToBrowsingContext', {'browsingContextHandle': self.webkit_context}, wait=True)
+                    self.devtools.send_command('Automation.setWindowFrameOfBrowsingContext', {'handle': self.webkit_context, 'origin': {'x': 0, 'y': 0}, 'size': {'width': task['width'], 'height': task['height']}}, wait=True)
             # Figure out the native viewport size
             if not self.options.android:
                 size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")

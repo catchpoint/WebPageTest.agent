@@ -16,6 +16,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 import zipfile
 if (sys.version_info >= (3, 0)):
     from time import monotonic
@@ -764,6 +765,7 @@ class DevTools(object):
         ret = None
         if target_id is None and self.default_target is not None and \
                 not method.startswith('Target.') and \
+                not method.startswith('Automation.') and \
                 not method.startswith('Tracing.'):
             target_id = self.default_target
         if target_id is not None:
@@ -1619,8 +1621,11 @@ class WebKitGTKInspector():
         self.lock = threading.Lock()
         self.targets_updated = threading.Event()
         self.targets = []
+        self.automation_id = str(uuid.uuid4()).encode('ascii') + b"\x00\x00\x00\x00\x25"
         self.client_id = None
         self.target = None
+        self.automation_client = None
+        self.automation_target = None
         self.messages = multiprocessing.JoinableQueue()
 
     def read_thread(self):
@@ -1678,7 +1683,7 @@ class WebKitGTKInspector():
         self.background_thread = threading.Thread(target=self.read_thread)
         self.background_thread.start()
         self.targets_updated.clear()
-        self.send_raw_message("SetupInspectorClient", self.backend_hash)
+        self.send_raw_message("StartAutomationSession", self.automation_id)
         # Wait up to 10 seconds to get the target list
         self.targets_updated.wait(timeout)
         self.start()
@@ -1711,15 +1716,26 @@ class WebKitGTKInspector():
         """Send the Setup command to get the list of json targets"""
         if self.target is not None and self.client_id is not None:
             self.send_raw_message("Setup", self.client_id + self.target)
+        if self.automation_target is not None and self.automation_client is not None:
+            self.send_raw_message("Setup", self.automation_client + self.automation_target)
 
     def send(self, command):
         """Send the JSON command to the browser"""
-        if self.target is not None and command is not None:
-            msg = self.client_id
-            msg += self.target
-            msg += command.encode('utf-8')
-            msg += b'\x00'
-            self.send_raw_message("SendMessageToBackend", msg)
+        if command is not None:
+            msg = None
+            if command.find('"method":"Automation.') >= 0:
+                if self.automation_target is not None and self.automation_client is not None:
+                    msg = self.automation_client
+                    msg += self.automation_target
+                else:
+                    logging.debug('No automation target available')
+            elif self.target is not None and self.client_id is not None:
+                msg = self.client_id
+                msg += self.target
+            if msg is not None:
+                msg += command.encode('utf-8')
+                msg += b'\x00'
+                self.send_raw_message("SendMessageToBackend", msg)
 
     def send_raw_message(self, name, data=None):
         """Send a raw DBUS message over the TCP connection"""
@@ -1794,6 +1810,9 @@ class WebKitGTKInspector():
                     if self.target is None and target_type == 'WebPage':
                         self.client_id = client_id
                         self.target = target_id
+                    if self.automation_target is None and target_type == 'Automation':
+                        self.automation_client = client_id
+                        self.automation_target = target_id
             logging.debug(self.targets)
             self.lock.release()
             self.targets_updated.set()
@@ -1804,7 +1823,7 @@ class WebKitGTKInspector():
             client_id = msg[:8]
             msg = msg[8:]
             target_id = msg[:8]
-            if client_id == self.client_id and target_id == self.target:
+            if client_id in [self.client_id, self.automation_client] and target_id in [self.target, self.automation_target]:
                 msg = msg[8:-1]
                 command_string = msg.decode('utf-8')
                 self.messages.put(command_string)
