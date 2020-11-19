@@ -76,8 +76,10 @@ run the agent in a docker container.
 * **--device** : Device ID (only needed if more than one android device attached).
 * **--gnirehtet** : Use gnirehtet for reverse-tethering. You will need to manually approve the vpn once per mobile device. Valid options are:
     * <external interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8
-* **--vpntether** : (Android < 7) Use vpn-reverse-tether for reverse-tethering. This is the recommended way to reverse-tether devices. You will need to manually approve the vpn once per mobile device. Valid options are:
+* **--vpntether** : (Android < 7) Use vpn-reverse-tether for reverse-tethering. You will need to manually approve the vpn once per mobile device. Valid options are:
     * <external interface>,<dns>: i.e. --vpntether eth0,8.8.8.8
+* **--vpntether2** : Use vpn-reverse-tether v 2 for reverse-tethering. This is the recommended way to reverse-tether devices. You will need to manually approve the vpn once per mobile device. Valid options are:
+    * <external interface>,<dns>: i.e. --vpntether2 eth0,8.8.8.8
 * **--simplert** : Use [SimpleRT](https://github.com/vvviperrr/SimpleRT) for reverse-tethering.  The APK should be installed manually (adb install simple-rt/simple-rt-1.1.apk) and tested once manually (./simple-rt -i eth0 then disconnect and re-connect phone) to dismiss any system dialogs.  The ethernet interface and DNS server should be passed as options:
     * <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8
 * **--rndis** : (deprecated) Enable reverse-tethering over rndis (Android < 6.0).  Valid options are:
