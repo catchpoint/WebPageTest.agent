@@ -294,7 +294,6 @@ class Adb(object):
             if out is not None:
                 for line in out.splitlines():
                     match = re.search(r'^\s*rtt\s[^=]*=\s*([\d\.]*)', line)
-                    logging.debug(line)
                     if match:
                         ret = float(match.group(1))
             if ret is None:
@@ -484,7 +483,6 @@ class Adb(object):
         if out is not None:
             for line in out.splitlines():
                 if re.search(r'^[\d]+\:\s+tun0:', line):
-                    logging.debug(line)
                     is_ready = True
         return is_ready
 
