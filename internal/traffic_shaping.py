@@ -451,7 +451,8 @@ class NetEm(object):
         if self.interface:
             subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
                              'ingress'])
-            subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
+            if self.in_interface.startswith('ifb'):
+                subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
         return True
 
     def reset(self):
