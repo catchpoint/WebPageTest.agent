@@ -572,9 +572,9 @@ class Adb(object):
             self.cleanup_device()
             # Start the tether app
             if self.options.vpntether2:
-                self.shell(['am', 'start', '-n', 'com.google.android.vpntether/vpntether.StartActivity', '-e', 'SOCKNAME', 'vpntether'])
-            else:
                 self.shell(['am', 'start', '-n', 'org.webpagetest.vpntether/.StartActivity', '-e', 'SOCKNAME', 'vpntether'])
+            else:
+                self.shell(['am', 'start', '-n', 'com.google.android.vpntether/vpntether.StartActivity', '-e', 'SOCKNAME', 'vpntether'])
             forwarder = os.path.join(self.root_path, 'vpn-reverse-tether')
             if os.uname()[4].startswith('arm'):
                 forwarder = os.path.join(forwarder, 'arm')
