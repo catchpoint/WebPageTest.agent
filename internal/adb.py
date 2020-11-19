@@ -553,7 +553,7 @@ class Adb(object):
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
             self.shell(['am', 'force-stop', 'org.webpagetest.vpntether'])
-            if self.vpntether2 and not self.is_installed('org.webpagetest.vpntether'):
+            if self.options.vpntether2 and not self.is_installed('org.webpagetest.vpntether'):
                 apk = os.path.join(self.root_path, 'vpn-reverse-tether', 'Android', 'VpnReverseTether2.apk')
                 self.adb(['install', apk])
             elif not self.is_installed('com.google.android.vpntether'):
