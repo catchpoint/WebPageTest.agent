@@ -9,12 +9,12 @@ do
     sleep 1
 done
 if [ "$UBUNTU_VERSION" \< "20" ]; then
-    until sudo apt-get install -y python2.7 python-pip python-ujson 
+    until sudo apt-get install -y python2.7 python-pip python-ujson python-xlib
     do
         sleep 1
     done
 else
-    until sudo apt-get install -y python python3 python3-pip python3-ujson 
+    until sudo apt-get install -y python python3 python3-pip python3-ujson python3-xlib
     do
         sleep 1
     done
@@ -51,7 +51,7 @@ do
     sleep 1
 done
 sudo npm update -g
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | sudo apt-key add -
 sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
 sudo add-apt-repository -y ppa:mozillateam/ppa

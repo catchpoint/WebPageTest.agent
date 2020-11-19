@@ -27,7 +27,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute && sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver future```
 * Chrome Browser
     * Linux stable, beta and unstable channels on Ubuntu/Debian:
-        * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
+        * ```wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | sudo apt-key add -```
         * ```sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'```
         * ```sudo apt-get update```
         * ```sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable```
@@ -40,7 +40,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
         * ```sudo dbus-uuidgen --ensure```
 * Opera Browser
     * Linux stable, beta and developer builds on Ubuntu/Debian:
-        * ```wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -```
+        * ```wget -qO- https://www.webpagetest.org/keys/opera/archive.key | sudo apt-key add -```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'```

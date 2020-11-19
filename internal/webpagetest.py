@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Main entry point for interfacing with WebPageTest server"""
 from datetime import datetime
 import gzip
@@ -22,10 +23,12 @@ import psutil
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
+    from urllib.parse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'rt'
 else:
     from monotonic import monotonic
     from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
+    from urlparse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'r'
 try:
     import ujson as json
@@ -64,6 +67,8 @@ class WebPageTest(object):
         if options.location is not None:
             self.test_locations = options.location.split(',')
             self.location = str(self.test_locations[0])
+        self.wpthost = None
+        self.license_pinged = False
         self.key = options.key
         self.time_limit = 120
         self.cpu_scale_multiplier = None
@@ -514,6 +519,8 @@ class WebPageTest(object):
                             self.work_servers_str = job['work_servers']
                             self.work_servers = self.work_servers_str.split(',')
                             logging.debug("Servers changed to: %s", self.work_servers_str)
+                    if 'wpthost' in job:
+                        self.wpthost = job['wpthost']
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0:
@@ -703,11 +710,13 @@ class WebPageTest(object):
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
                 self.test_run_count += 1
+        self.profile_start(task, 'wpt.get_task')
         if task is None and os.path.isdir(self.workdir):
             try:
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
+        self.profile_end(task, 'wpt.get_task')
         return task
 
     def running_another_test(self, task):
@@ -998,6 +1007,7 @@ class WebPageTest(object):
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
+        self.profile_start(task, 'wpt.get_bodies')
         all_bodies = False
         html_body = False
         if 'bodies' in self.job and self.job['bodies']:
@@ -1034,6 +1044,7 @@ class WebPageTest(object):
                     logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
+                            request['full_url'].startswith('http') and \
                             'responseCode' in request \
                             and request['responseCode'] == 200 and \
                             request['full_url'].find('ocsp') == -1 and\
@@ -1116,11 +1127,12 @@ class WebPageTest(object):
                             zip_file.write(body['file'], body['name'])
         except Exception:
             logging.exception('Error backfilling bodies')
+        self.profile_end(task, 'wpt.get_bodies')
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run"""
         logging.info('Uploading result')
-        self.profile_start(task, 'upload')
+        self.profile_start(task, 'wpt.upload')
         cpu_pct = None
         self.update_browser_viewport(task)
         # Stop logging to the file
@@ -1218,7 +1230,7 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
-        self.profile_end(task, 'upload')
+        self.profile_end(task, 'wpt.upload')
         if 'profile_data' in task:
             try:
                 self.profile_end(task, 'test')
@@ -1230,8 +1242,9 @@ class WebPageTest(object):
             except Exception:
                 logging.exception('Error uploading profile data')
             del task['profile_data']
+        self.license_ping()
 
-    def post_data(self, url, data, file_path, filename):
+    def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
         ret = True
         # pass the data fields as query params and any files as post data
@@ -1251,6 +1264,19 @@ class WebPageTest(object):
             logging.exception("Upload Exception")
             ret = False
         return ret
+
+    def license_ping(self):
+        """Ping the license server"""
+        if not self.license_pinged:
+            self.license_pinged = True
+            parts = urlsplit(self.url)
+            data = {
+                'loc': self.location,
+                'server': parts.netloc
+            }
+            if self.wpthost:
+                data['wpthost'] = self.wpthost
+            self.post_data('https://license.webpagetest.org/', data)
 
     def profile_start(self, task, event_name):
         if task is not None and 'profile_data' in task:

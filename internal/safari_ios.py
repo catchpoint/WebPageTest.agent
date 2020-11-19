@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Support for Safari on iOS using iWptBrowser"""
 import base64
 from datetime import datetime
@@ -387,6 +388,8 @@ class iWptBrowser(BaseBrowser):
                 path = self.path_base + '_metrics.json.gz'
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
+
+    def collect_hero_elements(self, task):
         if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
             hero_elements = None
             custom_hero_selectors = {}
@@ -702,7 +705,7 @@ class iWptBrowser(BaseBrowser):
         """Retrieve and store the given response body (if necessary)"""
         if original_id not in self.response_bodies and self.body_fail_count < 3:
             request = self.requests[request_id]
-            if 'status' in request and request['status'] == 200 and 'response_headers' in request:
+            if 'status' in request and request['status'] == 200 and 'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 logging.debug('Getting body for %s (%d) - %s', request_id,
                               request['bytesIn'], request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')
@@ -876,7 +879,7 @@ class iWptBrowser(BaseBrowser):
 
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
-        pass
+        self.collect_hero_elements(task)
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
@@ -965,6 +968,10 @@ class iWptBrowser(BaseBrowser):
                             args.extend(['--thumbsize', str(thumbsize)])
                     except Exception:
                         pass
+                try:
+                    logging.debug('Video file size: %d', os.path.getsize(video_path))
+                except Exception:
+                    pass
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args, close_fds=True)
             # Save the console logs

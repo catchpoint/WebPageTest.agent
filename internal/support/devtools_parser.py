@@ -2,18 +2,9 @@
 """
 Copyright 2019 WebPageTest LLC.
 Copyright 2016 Google Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import gzip
 import logging
@@ -265,19 +256,18 @@ class DevToolsParser(object):
                                     request['bytesInData'] += params['dataLength']
                                 if 'bytesInEncoded' not in request:
                                     request['bytesInEncoded'] = 0
-                                if 'encodedDataLength' in params and params['encodedDataLength']:
+                                if 'encodedDataLength' in params and params['encodedDataLength'] > 0:
                                     if 'bytesFinished' not in request:
                                         request['bytesInEncoded'] += params['encodedDataLength']
                                         if 'chunks' not in request:
                                             request['chunks'] = []
                                         request['chunks'].append({'ts': timestamp, 'bytes': params['encodedDataLength']})
-                                elif 'dataLength' in params and params['dataLength']:
+                                elif 'dataLength' in params and params['dataLength'] > 0:
                                     if 'chunks' not in request:
                                         request['chunks'] = []
                                     request['chunks'].append({'ts': timestamp, 'bytes': params['dataLength']})
                             if method == 'Network.responseReceived' and 'response' in params:
-                                if not has_request_headers and \
-                                        'requestHeaders' in params['response']:
+                                if not has_request_headers and 'requestHeaders' in params['response']:
                                     has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
@@ -292,6 +282,8 @@ class DevToolsParser(object):
                                         not params['response']['fromDiskCache'] and \
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
+                                if 'source' in params['response'] and params['response']['source'] in ['network', 'unknown']:
+                                    request['fromNet'] = True
                                 # Chrome reports some phantom duplicate requests
                                 '''
                                 if has_request_headers and \
@@ -304,6 +296,11 @@ class DevToolsParser(object):
                                 '''
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
+                                if 'metrics' in params and 'requestHeaders' in params['metrics']:
+                                    if 'response' not in request:
+                                        request['response'] = {}
+                                    request['response']['requestHeaders'] = params['metrics']['requestHeaders']
+                                    has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
                                 if 'encodedDataLength' in params:
@@ -542,8 +539,7 @@ class DevToolsParser(object):
                     timing = raw_request['response']['timing']
                     if 'sendStart' in timing and 'receiveHeadersEnd' in timing and \
                             timing['receiveHeadersEnd'] >= timing['sendStart']:
-                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] -
-                                                       timing['sendStart']))
+                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] - timing['sendStart']))
                         if request['load_ms'] >= 0:
                             request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
@@ -575,6 +571,31 @@ class DevToolsParser(object):
                             if 'securityDetails' in raw_request['response']:
                                 request['securityDetails'] = \
                                     raw_request['response']['securityDetails']
+                    elif "domainLookupStart" in timing or "secureConnectionStart" in timing:
+                        # Handle webkit timing data which may only be accurate for connection timings
+                        if 'domainLookupStart' in timing and timing['domainLookupStart'] >= 0:
+                            dns_key = request['host']
+                            if dns_key not in dns_times:
+                                dns_times[dns_key] = True
+                                request['dns_start'] = int(round(timing['domainLookupStart'] - raw_page_data['startTime']))
+                                if 'domainLookupEnd' in timing and timing['domainLookupEnd'] >= 0:
+                                    request['dns_end'] = int(round(timing['domainLookupEnd'] - raw_page_data['startTime']))
+                        if 'connectStart' in timing and timing['connectStart'] >= 0:
+                            request['connect_start'] = int(round(timing['connectStart'] - raw_page_data['startTime']))
+                            if 'connectEnd' in timing and timing['connectEnd'] >= 0:
+                                old_load_start = request['load_start_float']
+                                request['load_start_float'] = timing['connectEnd'] - raw_page_data['startTime']
+                                if request['load_start_float'] > old_load_start:
+                                    connection_time = int(round(request['load_start_float'] - old_load_start))
+                                    if 'load_ms' in request and request['load_ms'] > connection_time:
+                                        request['load_ms'] -= int(round(connection_time))
+                                request['load_start'] = int(round(request['load_start_float']))
+                                request['connect_end'] = request['load_start']
+                        if 'secureConnectionStart' in timing and timing['secureConnectionStart'] >= 0:
+                            request['ssl_start'] = int(round(timing['secureConnectionStart'] - raw_page_data['startTime']))
+                            if request['connect_end'] > request['ssl_start']:
+                                request['ssl_end'] = request['connect_end']
+                                request['connect_end'] = request['ssl_start']
                 request['initiator'] = ''
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
@@ -693,14 +714,12 @@ class DevToolsParser(object):
                 if 'URL' not in page_data and len(request['full_url']):
                     page_data['URL'] = request['full_url']
                 if 'startTime' in raw_request:
-                    start_offset = int(round(raw_request['startTime'] - \
-                                             raw_page_data['startTime']))
+                    start_offset = int(round(raw_request['startTime'] - raw_page_data['startTime']))
                     if 'fullyLoaded' not in page_data or \
                             start_offset > page_data['fullyLoaded']:
                         page_data['fullyLoaded'] = start_offset
                 if 'endTime' in raw_request:
-                    end_offset = int(round(raw_request['endTime'] - \
-                                           raw_page_data['startTime']))
+                    end_offset = int(round(raw_request['endTime'] - raw_page_data['startTime']))
                     if 'fullyLoaded' not in page_data or \
                             end_offset > page_data['fullyLoaded']:
                         page_data['fullyLoaded'] = end_offset

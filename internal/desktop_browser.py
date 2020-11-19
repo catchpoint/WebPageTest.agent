@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Base class support for desktop browsers"""
 import gzip
 import logging
@@ -9,6 +10,7 @@ import math
 import multiprocessing
 import os
 import platform
+import re
 import shutil
 import signal
 import subprocess
@@ -334,7 +336,7 @@ class DesktopBrowser(BaseBrowser):
         self.profile_end('desktop.stop_browser')
 
     def wait_for_idle(self, wait_time = 30):
-        """Wait for no more than 50% of a single core used for 500ms"""
+        """Wait for no more than 50% CPU utilization for 400ms"""
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
@@ -461,12 +463,19 @@ class DesktopBrowser(BaseBrowser):
                             'crop={0:d}:{1:d}:0:0'.format(width, height),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
-                else:
-                    grab = 'gdigrab' if platform.system() == 'Windows' else 'x11grab'
-                    args = ['ffmpeg', '-f', grab, '-video_size',
+                elif  platform.system() == 'Windows':
+                    args = ['ffmpeg', '-f', 'gdigrab', '-video_size',
                             '{0:d}x{1:d}'.format(task['width'], task['height']),
                             '-framerate', str(self.job['fps']),
                             '-draw_mouse', '0', '-i', str(self.job['capture_display']),
+                            '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
+                            task['video_file']]
+                else:
+                    args = ['ffmpeg', '-f', 'x11grab', '-video_size',
+                            '{0:d}x{1:d}'.format(task['width'], task['height']),
+                            '-framerate', str(self.job['fps']),
+                            '-draw_mouse', '0', '-i', str(self.job['capture_display']),
+                            '-filter:v', 'showinfo',
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 if platform.system() in ['Linux', 'Darwin']:
@@ -481,21 +490,33 @@ class DesktopBrowser(BaseBrowser):
                                                        stdin=subprocess.PIPE)
                     else:
                         self.ffmpeg = subprocess.Popen(args,
-                                                       stdin=subprocess.PIPE)
+                                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                     # Wait up to 5 seconds for something to be captured
                     end_time = monotonic() + 5
                     started = False
                     initial_size = None
                     while not started and monotonic() < end_time:
-                        if os.path.isfile(task['video_file']):
-                            video_size = os.path.getsize(task['video_file'])
-                            if initial_size == None:
-                                initial_size = video_size
-                            logging.debug("Video file size: %d", video_size)
-                            if video_size > initial_size or video_size > 10000:
-                                started = True
-                        if not started:
-                            time.sleep(0.1)
+                        try:
+                            if platform.system() == 'Windows' or platform.system() == 'Darwin':
+                                if os.path.isfile(task['video_file']):
+                                    video_size = os.path.getsize(task['video_file'])
+                                    if initial_size == None:
+                                        initial_size = video_size
+                                    logging.debug("video: capture file size: %d", video_size)
+                                    if video_size > initial_size or video_size > 10000:
+                                        started = True
+                                else:
+                                    logging.debug("video: waiting for capture file")
+                                if not started:
+                                    time.sleep(0.1)
+                            else:
+                                output = self.ffmpeg.stderr.readline().strip()
+                                logging.debug("ffmpeg: %s", output)
+                                if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                                    logging.debug("Video started")
+                                    started = True
+                        except Exception:
+                            logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True
                 except Exception:
                     logging.exception('Error starting video capture')
@@ -526,7 +547,10 @@ class DesktopBrowser(BaseBrowser):
             self.video_capture_running = False
             if platform.system() == 'Windows':
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
-                self.ffmpeg.communicate(input='q')
+                if platform.system() == 'Windows':
+                    self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                else:
+                    self.ffmpeg.communicate(input='q')
                 if self.ffmpeg.returncode is not 0:
                     logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
                 else:
@@ -578,7 +602,10 @@ class DesktopBrowser(BaseBrowser):
             self.tcpdump = None
         if self.ffmpeg is not None:
             logging.debug('Waiting for video capture to finish')
-            self.ffmpeg.communicate(input='q'.encode('utf-8'))
+            if platform.system() == 'Windows':
+                self.ffmpeg.communicate(input='q'.encode('utf-8'))
+            else:
+                self.ffmpeg.communicate(input='q')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
@@ -627,9 +654,13 @@ class DesktopBrowser(BaseBrowser):
                         args.extend(['--thumbsize', str(thumbsize)])
                 except Exception:
                     pass
+            try:
+                logging.debug('Video file size: %d', os.path.getsize(video_path))
+            except Exception:
+                pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args, close_fds=True)
-        # Process the tcpdump
+        # Process the tcpdump (async)
         if self.pcap_file is not None:
             logging.debug('Compressing pcap')
             if os.path.isfile(self.pcap_file):

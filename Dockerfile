@@ -28,8 +28,8 @@ RUN apt-get update && \
     software-properties-common && \
 # Node setup
   curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && \
-  wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-  wget -qO- https://deb.opera.com/archive.key | apt-key add - && \
+  wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | apt-key add - && \
+  wget -qO- https://www.webpagetest.org/keys/opera/archive.key | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
 # Set repos
   add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
