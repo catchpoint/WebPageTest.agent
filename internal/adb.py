@@ -141,7 +141,7 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                stdout = subprocess.check_output(['ps', 'ax'], , universal_newlines=True)
+                stdout = subprocess.check_output(['ps', 'ax'], universal_newlines=True)
                 if stdout.find('simple-rt ') > -1:
                     running = True
                     logging.debug('simple-rt is already running')
