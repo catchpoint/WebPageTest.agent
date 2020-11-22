@@ -71,7 +71,7 @@ class Adb(object):
         """Run a shell command with a time limit and get the output"""
         if not silent:
             logging.debug(' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         return self.wait_for_process(proc, timeout_sec, silent)
 
     def wait_for_process(self, proc, timeout_sec=10, silent=False):
@@ -118,7 +118,7 @@ class Adb(object):
         cmd = self.build_adb_command(args)
         if not silent:
             logging.debug(' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.wait_for_process(proc, 120, silent)
         return bool(proc.returncode is not None and proc.returncode == 0)
 
@@ -141,10 +141,7 @@ class Adb(object):
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                if (sys.version_info >= (3, 0)):
-                    stdout = subprocess.check_output(['ps', 'ax'], encoding='UTF-8')
-                else:
-                    stdout = subprocess.check_output(['ps', 'ax'])
+                stdout = subprocess.check_output(['ps', 'ax'], , universal_newlines=True)
                 if stdout.find('simple-rt ') > -1:
                     running = True
                     logging.debug('simple-rt is already running')
@@ -162,7 +159,7 @@ class Adb(object):
                 if dns is not None and len(dns):
                     command.extend(['-n', dns])
                 self.simplert = subprocess.Popen(' '.join(command), shell=True,
-                                                 cwd=self.simplert_path)
+                                                 cwd=self.simplert_path, universal_newlines=True)
         return ret
     # pylint: enable=E1101
 
@@ -529,7 +526,7 @@ class Adb(object):
         """Run the given sudo command and return"""
         args.insert(0, 'sudo')
         logging.debug(' '.join(args))
-        return subprocess.call(args)
+        return subprocess.call(args, universal_newlines=True)
 
     # pylint: disable=E1101
     def check_vpntether(self):
@@ -546,7 +543,7 @@ class Adb(object):
                 try:
                     self.vpn_forwarder.write("\n")
                     time.sleep(0.5)
-                    subprocess.call(['sudo', 'killall', 'forwarder'])
+                    subprocess.call(['sudo', 'killall', 'forwarder'], universal_newlines=True)
                     self.vpn_forwarder.close()
                 except Exception:
                     pass
@@ -622,7 +619,7 @@ class Adb(object):
             # Start tethering
             args = [self.gnirehtet_exe, 'run']
             logging.debug(' '.join(args))
-            self.gnirehtet = subprocess.Popen(args)
+            self.gnirehtet = subprocess.Popen(args, universal_newlines=True)
             # Give the app time to start before trying to connect to it
             time.sleep(5)
             self.dismiss_vpn_dialog()
