@@ -1147,7 +1147,9 @@ class DevToolsParser(object):
                                     event['args']['data']['is_main_frame']:
                                 main_frames.append(event['args']['frame'])
                             elif 'isLoadingMainFrame' in event['args']['data'] and \
-                                    event['args']['data']['isLoadingMainFrame']:
+                                    event['args']['data']['isLoadingMainFrame'] and \
+                                    'documentLoaderURL' in event['args']['data'] and \
+                                    event['args']['data']['documentLoaderURL']:
                                 main_frames.append(event['args']['frame'])
                     if event['args']['frame'] in main_frames:
                         if navigation_start is None:
