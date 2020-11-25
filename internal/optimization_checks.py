@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Run the various optimization checks"""
 import binascii
 import gzip
@@ -432,15 +433,14 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                if 'url' in request:
+                if 'url' in request and 'response_headers' in request:
                     check = {'score': 100}
                     url = request['full_url'] if 'full_url' in request else request['url']
                     parsed = urlsplit(url)
                     origin = parsed.scheme + '://' + parsed.netloc
                     if origins[origin] > 1:
                         check['score'] = 100
-                        keep_alive = self.get_header_value(request['response_headers'],
-                                                           'Connection')
+                        keep_alive = self.get_header_value(request['response_headers'], 'Connection')
                         if keep_alive is not None and keep_alive.lower().strip().find('close') > -1:
                             check['score'] = 0
                     if request_id not in self.results:
@@ -1046,7 +1046,7 @@ class OptimizationChecks(object):
                             if font_info is not None:
                                 self.font_results[request_id] = font_info
                 except Exception:
-                    logging.exception('Error checking font')
+                    pass
         except Exception:
             logging.exception('Error checking fonts')
         self.font_time = monotonic() - start

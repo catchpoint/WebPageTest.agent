@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """ADB command-line interface"""
 import logging
 import os
@@ -70,7 +71,7 @@ class Adb(object):
         """Run a shell command with a time limit and get the output"""
         if not silent:
             logging.debug(' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         return self.wait_for_process(proc, timeout_sec, silent)
 
     def wait_for_process(self, proc, timeout_sec=10, silent=False):
@@ -117,7 +118,7 @@ class Adb(object):
         cmd = self.build_adb_command(args)
         if not silent:
             logging.debug(' '.join(cmd))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.wait_for_process(proc, 120, silent)
         return bool(proc.returncode is not None and proc.returncode == 0)
 
@@ -134,16 +135,13 @@ class Adb(object):
                 if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
                     proc.cpu_affinity([0])
             # install the tun0 device if necessary
-            if self.options.vpntether and platform.system() == "Linux":
+            if (self.options.vpntether or self.options.vpntether2) and platform.system() == "Linux":
                 self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
             # Start the simple-rt process if needed
             self.simplert_path = None
             if self.options.simplert is not None and platform.system() == 'Linux':
                 running = False
-                if (sys.version_info >= (3, 0)):
-                    stdout = subprocess.check_output(['ps', 'ax'], encoding='UTF-8')
-                else:
-                    stdout = subprocess.check_output(['ps', 'ax'])
+                stdout = subprocess.check_output(['ps', 'ax'], universal_newlines=True)
                 if stdout.find('simple-rt ') > -1:
                     running = True
                     logging.debug('simple-rt is already running')
@@ -161,7 +159,7 @@ class Adb(object):
                 if dns is not None and len(dns):
                     command.extend(['-n', dns])
                 self.simplert = subprocess.Popen(' '.join(command), shell=True,
-                                                 cwd=self.simplert_path)
+                                                 cwd=self.simplert_path, universal_newlines=True)
         return ret
     # pylint: enable=E1101
 
@@ -172,7 +170,7 @@ class Adb(object):
             logging.debug('Stopping simple-rt bridge process')
             subprocess.call(['sudo', 'killall', 'simple-rt'])
             self.simplert = None
-        if self.options.vpntether and platform.system() == "Linux":
+        if (self.options.vpntether or self.options.vpntether2) and platform.system() == "Linux":
             if self.vpn_forwarder is not None:
                 try:
                     self.vpn_forwarder.write("\n")
@@ -183,6 +181,7 @@ class Adb(object):
                     pass
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
+            self.shell(['am', 'force-stop', 'org.webpagetest.vpntether'])
         if self.gnirehtet_exe is not None:
             try:
                 subprocess.call([self.gnirehtet_exe, 'stop'])
@@ -527,7 +526,7 @@ class Adb(object):
         """Run the given sudo command and return"""
         args.insert(0, 'sudo')
         logging.debug(' '.join(args))
-        return subprocess.call(args)
+        return subprocess.call(args, universal_newlines=True)
 
     # pylint: disable=E1101
     def check_vpntether(self):
@@ -536,20 +535,26 @@ class Adb(object):
         if self.ping('172.31.0.1') is not None and self.is_tun_interface_available():
             is_ready = True
         elif platform.system() == "Linux":
-            interface, dns_server = self.options.vpntether.split(',', 1)
+            if self.options.vpntether2:
+                interface, dns_server = self.options.vpntether2.split(',', 1)
+            else:
+                interface, dns_server = self.options.vpntether.split(',', 1)
             if self.vpn_forwarder is not None:
                 try:
                     self.vpn_forwarder.write("\n")
                     time.sleep(0.5)
-                    subprocess.call(['sudo', 'killall', 'forwarder'])
+                    subprocess.call(['sudo', 'killall', 'forwarder'], universal_newlines=True)
                     self.vpn_forwarder.close()
                 except Exception:
                     pass
                 self.vpn_forwarder = None
             self.shell(['am', 'force-stop', 'com.google.android.vpntether'])
-            if not self.is_installed('com.google.android.vpntether'):
-                apk = os.path.join(self.root_path, 'vpn-reverse-tether', 'Android',
-                                   'VpnReverseTether.apk')
+            self.shell(['am', 'force-stop', 'org.webpagetest.vpntether'])
+            if self.options.vpntether2 and not self.is_installed('org.webpagetest.vpntether'):
+                apk = os.path.join(self.root_path, 'vpn-reverse-tether', 'Android', 'VpnReverseTether2.apk')
+                self.adb(['install', apk])
+            elif self.options.vpntether and not self.is_installed('com.google.android.vpntether'):
+                apk = os.path.join(self.root_path, 'vpn-reverse-tether', 'Android', 'VpnReverseTether.apk')
                 self.adb(['install', apk])
             # Set up the host for forwarding
             self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
@@ -563,9 +568,10 @@ class Adb(object):
             self.adb(['forward', 'tcp:7890', 'localabstract:vpntether'])
             self.cleanup_device()
             # Start the tether app
-            self.shell(['am', 'start', '-n',
-                        'com.google.android.vpntether/vpntether.StartActivity',
-                        '-e', 'SOCKNAME', 'vpntether'])
+            if self.options.vpntether2:
+                self.shell(['am', 'start', '-n', 'org.webpagetest.vpntether/.StartActivity', '-e', 'SOCKNAME', 'vpntether'])
+            else:
+                self.shell(['am', 'start', '-n', 'com.google.android.vpntether/vpntether.StartActivity', '-e', 'SOCKNAME', 'vpntether'])
             forwarder = os.path.join(self.root_path, 'vpn-reverse-tether')
             if os.uname()[4].startswith('arm'):
                 forwarder = os.path.join(forwarder, 'arm')
@@ -581,6 +587,10 @@ class Adb(object):
             self.vpn_forwarder = os.popen(command, 'w')
             # Simulate pressing the home button to dismiss any UI
             self.shell(['input', 'keyevent', '3'])
+            # Give the forwarder time to start and connect
+            time.sleep(2)
+            if self.ping('172.31.0.1') is not None and self.is_tun_interface_available():
+                is_ready = True
         return is_ready
     # pylint: enable=E1101
 
@@ -609,7 +619,7 @@ class Adb(object):
             # Start tethering
             args = [self.gnirehtet_exe, 'run']
             logging.debug(' '.join(args))
-            self.gnirehtet = subprocess.Popen(args)
+            self.gnirehtet = subprocess.Popen(args, universal_newlines=True)
             # Give the app time to start before trying to connect to it
             time.sleep(5)
             self.dismiss_vpn_dialog()
@@ -659,21 +669,18 @@ class Adb(object):
             is_ready = self.check_simplert()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed",
-                              self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
                 self.reset_simplert()
-        if is_ready and self.options.vpntether is not None:
+        if is_ready and (self.options.vpntether is not None or self.options.vpntether2 is not None):
             is_ready = self.check_vpntether()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed",
-                              self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
         if is_ready and self.options.gnirehtet is not None:
             is_ready = self.check_gnirehtet()
             if not is_ready:
                 self.no_network_count += 1
-                logging.debug("Networking unavailable - %d attempts to connect failed",
-                              self.no_network_count)
+                logging.debug("Networking unavailable - %d attempts to connect failed", self.no_network_count)
         # Try pinging the network (prefer the gateway but fall back to DNS or 8.8.8.8)
         if is_ready and self.options.gnirehtet is None:
             net_ok = False

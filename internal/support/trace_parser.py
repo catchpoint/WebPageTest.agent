@@ -2,18 +2,9 @@
 """
 Copyright 2019 WebPageTest LLC.
 Copyright 2016 Google Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import gzip
 import logging
@@ -460,7 +451,7 @@ class Trace():
                 else:
                     self.timeline_events.append(e)
 
-    def ProcessOldTimelineEvent(self, event, type):
+    def ProcessOldTimelineEvent(self, event, type, depth=0):
         e = None
         thread = '0'
         if 'type' in event:
@@ -480,6 +471,30 @@ class Trace():
                 start = event['callInfo']['startTime'] * 1000000.0
                 end = event['callInfo']['endTime'] * 1000000.0
         if start is not None and end is not None and end >= start and type is not None:
+            # Keep track of the long tasks
+            if self.long_tasks is None:
+                self.long_tasks = []
+            elapsed = end - start
+            if depth == 0 and elapsed > 50000:
+                # make sure this isn't contained within an existing event
+                ms_start = int(math.floor(start / 1000.0))
+                ms_end = int(math.ceil(end / 1000.0))
+                if not self.long_tasks:
+                    # Empty list of long tasks
+                    self.long_tasks.append([ms_start, ms_end])
+                else:
+                    last_start = self.long_tasks[-1][0]
+                    last_end = self.long_tasks[-1][1]
+                    if ms_start >= last_end:
+                        # This task is entirely after the last long task we know about
+                        self.long_tasks.append([ms_start, ms_end])
+                    elif ms_end > last_end:
+                        # task extends beyond the previous end of the long tasks but overlaps
+                        del self.long_tasks[-1]
+                        if ms_start >= last_start:
+                            self.long_tasks.append([last_start, ms_end])
+                        else:
+                            self.long_tasks.append([ms_start, ms_end])
             if end > self.end_time:
                 self.end_time = end
             e = {'t': thread,
@@ -501,7 +516,7 @@ class Trace():
             # Process profile child events
             if 'data' in event and 'profile' in event['data'] and 'rootNodes' in event['data']['profile']:
                 for child in event['data']['profile']['rootNodes']:
-                    c = self.ProcessOldTimelineEvent(child, type)
+                    c = self.ProcessOldTimelineEvent(child, type, depth + 1)
                     if c is not None:
                         if 'c' not in e:
                             e['c'] = []
@@ -509,7 +524,7 @@ class Trace():
             # recursively process any child events
             if 'children' in event:
                 for child in event['children']:
-                    c = self.ProcessOldTimelineEvent(child, type)
+                    c = self.ProcessOldTimelineEvent(child, type, depth + 1)
                     if c is not None:
                         if 'c' not in e:
                             e['c'] = []

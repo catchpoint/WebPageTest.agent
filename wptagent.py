@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """WebPageTest cross-platform agent"""
 import atexit
 import logging
@@ -31,6 +32,7 @@ class WPTAgent(object):
         from internal.adb import Adb
         from internal.ios_device import iOSDevice
         self.must_exit = False
+        self.needs_shutdown = False
         self.options = options
         self.capture_display = None
         self.job = None
@@ -80,6 +82,7 @@ class WPTAgent(object):
         start_time = monotonic()
         browser = None
         exit_file = os.path.join(self.root_path, 'exit')
+        shutdown_file = os.path.join(self.root_path, 'shutdown')
         message_server = None
         if not self.options.android and not self.options.iOS:
             from internal.message_server import MessageServer
@@ -97,6 +100,14 @@ class WPTAgent(object):
                     except Exception:
                         pass
                     self.must_exit = True
+                    break
+                elif os.path.isfile(shutdown_file):
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
+                    self.must_exit = True
+                    self.needs_shutdown = True
                     break
                 if message_server is not None and self.options.exit > 0 and \
                         not message_server.is_ok():
@@ -166,6 +177,9 @@ class WPTAgent(object):
             if self.adb is not None and self.adb.needs_exit:
                 break
         self.cleanup()
+        if self.needs_shutdown:
+            if platform.system() == "Linux":
+                subprocess.call(['sudo', 'poweroff'])
 
     def run_single_test(self):
         """Run a single test run"""
@@ -322,7 +336,7 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
 
-        if 'Safari' in detected_browsers and not self.options.iOS:
+        if detected_browsers is not None and 'Safari' in detected_browsers and not self.options.iOS:
             # if running for safari
             ret = self.requires('selenium')
 
@@ -766,6 +780,22 @@ def find_browsers(options):
         vivaldi_path = '/usr/bin/vivaldi'
         if 'Vivaldi' not in browsers and os.path.isfile(vivaldi_path):
             browsers['Vivaldi'] = {'exe': vivaldi_path}
+        # Microsoft Edge
+        edge_path = '/usr/bin/microsoft-edge'
+        if os.path.isfile(edge_path):
+            if 'Microsoft Edge Dev (Chromium)' not in browsers:
+                browsers['Microsoft Edge Dev (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge Dev' not in browsers:
+                browsers['Microsoft Edge Dev'] = {'exe': edge_path}
+            if 'Edge Dev' not in browsers:
+                browsers['Edge Dev'] = {'exe': edge_path}
+        # Epiphany (WebKit)
+        epiphany_path = '/usr/bin/epiphany'
+        if os.path.isfile(epiphany_path):
+            if 'Epiphany' not in browsers:
+                browsers['Epiphany'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
+            if 'WebKit' not in browsers:
+                browsers['WebKit'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
 
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -909,10 +939,14 @@ def main():
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8")
     parser.add_argument('--vpntether',
-                        help="Use vpn-reverse-tether for reverse-tethering. This is the "
-                        "recommended way to reverse-tether devices. You will need to manually "
+                        help="Use vpn-reverse-tether for reverse-tethering. You will need to manually "
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --vpntether eth0,8.8.8.8")
+    parser.add_argument('--vpntether2',
+                        help="Use vpn-reverse-tether v2 for reverse-tethering. This is the "
+                        "recommended way to reverse-tether devices. You will need to manually "
+                        "approve the vpn once per mobile device. Valid options are:\n"
+                        "   <interface>,<dns>: i.e. --vpntether2 eth0,8.8.8.8")
     parser.add_argument('--rndis',
                         help="(deprecated) Enable reverse-tethering over rndis. "
                         "Valid options are:\n"

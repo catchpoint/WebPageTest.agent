@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Base class support for browsers that speak the dev tools protocol"""
 import glob
 import gzip
@@ -34,9 +35,10 @@ class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 120
 
-    def __init__(self, options, job, use_devtools_video=True):
+    def __init__(self, options, job, use_devtools_video=True, is_webkit=False):
         self.options = options
         self.job = job
+        self.is_webkit = is_webkit
         self.devtools = None
         self.task = None
         self.event_name = None
@@ -47,12 +49,13 @@ class DevtoolsBrowser(object):
         self.devtools_screenshot = True
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.webkit_context = None
 
     def connect(self, task):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video)
+        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video, self.is_webkit)
         if task['running_lighthouse']:
             ret = self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
         else:
@@ -72,12 +75,29 @@ class DevtoolsBrowser(object):
             # remembered across sessions
             if self.task is not None and self.task['error'] is None:
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
+            if self.webkit_context is not None:
+                self.devtools.send_command('Automation.closeBrowsingContext', {'handle': self.webkit_context}, wait=True)
             self.devtools.close()
             self.devtools = None
 
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
+            # Move the WebKit window
+            if self.is_webkit:
+                result = self.devtools.send_command('Automation.getBrowsingContexts', {}, wait=True)
+                if result and 'result' in result and 'contexts' in result['result']:
+                    for context in result['result']['contexts']:
+                        if 'handle' in context:
+                            self.webkit_context = context['handle']
+                            break
+                if self.webkit_context is None:
+                    result = self.devtools.send_command('Automation.createBrowsingContext', {}, wait=True)
+                    if result is not None and 'result' in result and 'handle' in result['result']:
+                        self.webkit_context = result['result']['handle']
+                if self.webkit_context is not None:
+                    self.devtools.send_command('Automation.switchToBrowsingContext', {'browsingContextHandle': self.webkit_context}, wait=True)
+                    self.devtools.send_command('Automation.setWindowFrameOfBrowsingContext', {'handle': self.webkit_context, 'origin': {'x': 0, 'y': 0}, 'size': {'width': task['width'], 'height': task['height']}}, wait=True)
             # Figure out the native viewport size
             if not self.options.android:
                 size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")
@@ -96,14 +116,12 @@ class DevtoolsBrowser(object):
             if self.options.android:
                 self.profile_start('dtbrowser.clear_cache')
                 if not task['cached']:
-                    self.devtools.send_command("Network.clearBrowserCache", {},
-                                            wait=True)
-                    self.devtools.send_command("Network.clearBrowserCookies", {},
-                                            wait=True)
+                    self.devtools.send_command("Network.clearBrowserCache", {}, wait=True)
+                    self.devtools.send_command("Network.clearBrowserCookies", {}, wait=True)
                 self.profile_end('dtbrowser.clear_cache')
 
             # Mobile Emulation
-            if not self.options.android and \
+            if not self.options.android and not self.is_webkit and \
                     'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
@@ -133,7 +151,7 @@ class DevtoolsBrowser(object):
             # DevTools-based CPU throttling for desktop and emulated mobile tests
             # This throttling should only be applied for lighthouse test runs where
             # a custom config path is not specified
-            if not self.options.android and 'throttle_cpu' in self.job and\
+            if not self.options.android and not self.is_webkit and 'throttle_cpu' in self.job and\
                     (not task['running_lighthouse'] or not self.job['lighthouse_config']):
                 logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                 if self.job['throttle_cpu'] > 1:
@@ -142,7 +160,7 @@ class DevtoolsBrowser(object):
                                                 wait=True)
 
             # Location
-            if 'lat' in self.job and 'lng' in self.job:
+            if not self.is_webkit and 'lat' in self.job and 'lng' in self.job:
                 try:
                     lat = float(str(self.job['lat']))
                     lng = float(str(self.job['lng']))
@@ -156,17 +174,30 @@ class DevtoolsBrowser(object):
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None:
-                match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
+                if self.is_webkit:
+                    match = re.search(r'WebKit\/(\d+\.\d+\.\d+)', ua_string)
+                else:
+                    match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
                 if match:
                     self.browser_version = match.group(1)
-            if 'uastring' in self.job:
+            if 'uastring' in self.job and 'mobile' in self.job and self.job['mobile']:
+                # Replace the requested Chrome version with the actual Chrome version so Mobile emulation is always up to date
+                original_version = None
+                if ua_string is not None:
+                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                    if match:
+                        original_version = match.group(1)
                 ua_string = self.job['uastring']
+                if original_version is not None:
+                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                    if match:
+                        ua_string = ua_string.replace(match.group(1), original_version)
             if ua_string is not None and 'AppendUA' in task:
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
             # Disable js
-            if self.job['noscript']:
+            if self.job['noscript'] and not self.is_webkit:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
             self.devtools.prepare_browser()
@@ -179,7 +210,7 @@ class DevtoolsBrowser(object):
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
-        if 'throttle_cpu' in self.job:
+        if 'throttle_cpu' in self.job and not self.is_webkit:
             task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
             if self.job['throttle_cpu'] > 1:
                 task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
@@ -198,12 +229,10 @@ class DevtoolsBrowser(object):
             self.devtools.collect_trace()
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.png')
+                    screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
                     self.devtools.grab_screenshot(screen_shot, png=True)
                 else:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.jpg')
+                    screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                     self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
             # Stop recording dev tools
             self.devtools.stop_recording()
@@ -379,7 +408,6 @@ class DevtoolsBrowser(object):
                     except Exception:
                         data[key] = None
 
-
     def get_sorted_requests_json(self, include_bodies):
         requests_json = None
         try:
@@ -458,20 +486,21 @@ class DevtoolsBrowser(object):
             script = 'window.location="{0}";'.format(url)
             script = self.prepare_script_for_record(script) #pylint: disable=no-member
             # Set up permissions for the origin
-            try:
-                parts = urlsplit(url)
-                origin = parts.scheme + '://' + parts.netloc
-                self.devtools.send_command('Browser.grantPermissions',
-                                        {'origin': origin,
-                                        'permissions': ['geolocation',
-                                                        'videoCapture',
-                                                        'audioCapture',
-                                                        'sensors',
-                                                        'idleDetection',
-                                                        'wakeLockScreen']},
-                                        wait=True)
-            except Exception:
-                logging.exception('Error setting permissions for origin')
+            if not self.is_webkit:
+                try:
+                    parts = urlsplit(url)
+                    origin = parts.scheme + '://' + parts.netloc
+                    self.devtools.send_command('Browser.grantPermissions',
+                                            {'origin': origin,
+                                            'permissions': ['geolocation',
+                                                            'videoCapture',
+                                                            'audioCapture',
+                                                            'sensors',
+                                                            'idleDetection',
+                                                            'wakeLockScreen']},
+                                            wait=True)
+                except Exception:
+                    logging.exception('Error setting permissions for origin')
             self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'logdata':
@@ -512,7 +541,7 @@ class DevtoolsBrowser(object):
             self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
             self.task['user_agent_string'] = command['target']
-        elif command['command'] == 'setcookie':
+        elif command['command'] == 'setcookie' and not self.is_webkit:
             if 'target' in command and 'value' in command:
                 try:
                     url = command['target'].strip()
@@ -529,7 +558,7 @@ class DevtoolsBrowser(object):
                                                     {'url': url, 'name': name, 'value': value})
                 except Exception:
                     logging.exception('Error setting cookie')
-        elif command['command'] == 'setlocation':
+        elif command['command'] == 'setlocation' and not self.is_webkit:
             try:
                 if 'target' in command and command['target'].find(',') > 0:
                     accuracy = 0
@@ -589,7 +618,7 @@ class DevtoolsBrowser(object):
         self.profile_start('dtbrowser.run_lighthouse_test')
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
-        if 'url' in self.job and self.job['url'] is not None:
+        if 'url' in self.job and self.job['url'] is not None and not self.is_webkit:
             if not self.job['lighthouse_config']:
                 self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')

@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Main entry point for controlling browsers"""
 import logging
 import os
@@ -95,6 +96,9 @@ class Browsers(object):
             elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Safari':
                 from .safari_webdriver import SafariWebDriver
                 browser = SafariWebDriver(self.browsers[name]['exe'], self.options, job)
+            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'WebKitGTK':
+                from .webkitgtk import WebKitGTK
+                browser = WebKitGTK(self.browsers[name]['exe'], self.options, job)
             else:
                 from .chrome_desktop import ChromeDesktop
                 browser = ChromeDesktop(self.browsers[name]['exe'], self.options, job)

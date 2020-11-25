@@ -76,8 +76,10 @@ run the agent in a docker container.
 * **--device** : Device ID (only needed if more than one android device attached).
 * **--gnirehtet** : Use gnirehtet for reverse-tethering. You will need to manually approve the vpn once per mobile device. Valid options are:
     * <external interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8
-* **--vpntether** : (Android < 7) Use vpn-reverse-tether for reverse-tethering. This is the recommended way to reverse-tether devices. You will need to manually approve the vpn once per mobile device. Valid options are:
+* **--vpntether** : (Android < 7) Use vpn-reverse-tether for reverse-tethering. You will need to manually approve the vpn once per mobile device. Valid options are:
     * <external interface>,<dns>: i.e. --vpntether eth0,8.8.8.8
+* **--vpntether2** : Use vpn-reverse-tether v 2 for reverse-tethering. This is the recommended way to reverse-tether devices. You will need to manually approve the vpn once per mobile device. Valid options are:
+    * <external interface>,<dns>: i.e. --vpntether2 eth0,8.8.8.8
 * **--simplert** : Use [SimpleRT](https://github.com/vvviperrr/SimpleRT) for reverse-tethering.  The APK should be installed manually (adb install simple-rt/simple-rt-1.1.apk) and tested once manually (./simple-rt -i eth0 then disconnect and re-connect phone) to dismiss any system dialogs.  The ethernet interface and DNS server should be passed as options:
     * <interface>,<dns1>: i.e. --simplert eth0,8.8.8.8
 * **--rndis** : (deprecated) Enable reverse-tethering over rndis (Android < 6.0).  Valid options are:
@@ -147,3 +149,6 @@ run the agent in a docker container.
     * waitForJSDone (change semantics to console log message)
     * overrideHost (depends on support being added to dev tools)
     * if/else/endif
+
+## Contributing
+There are 2 separate lies of development under different licenses and pull requests are accepted to either of them.  The master branch where most active development is occurring is under the [Polyform Shield 1.0.0 license](LICENSE.md) and there is an "apache" branch which is under the more permissive Apache 2.0 license.

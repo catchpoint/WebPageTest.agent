@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Cross-platform support for traffic-shaping"""
 import logging
 import os
@@ -28,7 +29,7 @@ class TrafficShaper(object):
                     if_in = 'usb0'
                 elif options.simplert:
                     if_in = 'tun0'
-                elif options.vpntether:
+                elif options.vpntether or options.vpntether2:
                     if_in = 'tun0'
                 self.shaper = NetEm(options=options, out_interface=if_out, in_interface=if_in)
             elif shaper_name[:6] == 'remote':
@@ -450,7 +451,8 @@ class NetEm(object):
         if self.interface:
             subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
                              'ingress'])
-            subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
+            if self.in_interface.startswith('ifb'):
+                subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
         return True
 
     def reset(self):

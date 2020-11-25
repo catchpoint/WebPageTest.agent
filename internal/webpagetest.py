@@ -1,7 +1,8 @@
 # Copyright 2019 WebPageTest LLC.
 # Copyright 2017 Google Inc.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Main entry point for interfacing with WebPageTest server"""
 from datetime import datetime
 import gzip
@@ -22,10 +23,12 @@ import psutil
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
+    from urllib.parse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'rt'
 else:
     from monotonic import monotonic
     from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
+    from urlparse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'r'
 try:
     import ujson as json
@@ -64,6 +67,8 @@ class WebPageTest(object):
         if options.location is not None:
             self.test_locations = options.location.split(',')
             self.location = str(self.test_locations[0])
+        self.wpthost = None
+        self.license_pinged = False
         self.key = options.key
         self.time_limit = 120
         self.cpu_scale_multiplier = None
@@ -514,6 +519,8 @@ class WebPageTest(object):
                             self.work_servers_str = job['work_servers']
                             self.work_servers = self.work_servers_str.split(',')
                             logging.debug("Servers changed to: %s", self.work_servers_str)
+                    if 'wpthost' in job:
+                        self.wpthost = job['wpthost']
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0:
@@ -1037,6 +1044,7 @@ class WebPageTest(object):
                     logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
+                            request['full_url'].startswith('http') and \
                             'responseCode' in request \
                             and request['responseCode'] == 200 and \
                             request['full_url'].find('ocsp') == -1 and\
@@ -1234,8 +1242,9 @@ class WebPageTest(object):
             except Exception:
                 logging.exception('Error uploading profile data')
             del task['profile_data']
+        self.license_ping()
 
-    def post_data(self, url, data, file_path, filename):
+    def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
         ret = True
         # pass the data fields as query params and any files as post data
@@ -1255,6 +1264,19 @@ class WebPageTest(object):
             logging.exception("Upload Exception")
             ret = False
         return ret
+
+    def license_ping(self):
+        """Ping the license server"""
+        if not self.license_pinged:
+            self.license_pinged = True
+            parts = urlsplit(self.url)
+            data = {
+                'loc': self.location,
+                'server': parts.netloc
+            }
+            if self.wpthost:
+                data['wpthost'] = self.wpthost
+            self.post_data('https://license.webpagetest.org/', data)
 
     def profile_start(self, task, event_name):
         if task is not None and 'profile_data' in task:
