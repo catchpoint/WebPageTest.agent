@@ -796,8 +796,13 @@ class DevToolsParser(object):
                     request['request_id'] = request['id']
                 if 'full_url' in request:
                     for entry in netlog:
-                        if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
-                                entry['url'] == request['full_url']:
+                        url_matches = False
+                        if 'url' in entry and entry['url'] == request['full_url']:
+                            url_matches = True
+                        method_matches = False
+                        if 'method' not in entry or 'method' not in request or entry['method'] == request['method']:
+                            method_matches = True
+                        if url_matches and method_matches and 'start' in entry and 'claimed' not in entry:
                             entry['claimed'] = True
                             # Keep the protocol from devtools if we have it because it is more accurate
                             protocol = request['protocol'] if 'protocol' in request else None
