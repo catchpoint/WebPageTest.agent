@@ -90,8 +90,8 @@ class DesktopBrowser(BaseBrowser):
             self.cleanup_thread.start()
         if self.tcpdump_enabled:
             os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
-        else:
-            os.environ["SSLKEYLOGFILE"] = ''
+        elif "SSLKEYLOGFILE" in os.environ:
+            del os.environ["SSLKEYLOGFILE"]
         try:
             from .os_util import kill_all
             from .os_util import flush_dns
@@ -456,11 +456,18 @@ class DesktopBrowser(BaseBrowser):
                 if platform.system() == 'Darwin':
                     width = int(math.ceil(task['width'] * self.device_pixel_ratio))
                     height = int(math.ceil(task['height'] * self.device_pixel_ratio))
+                    x = 0
+                    y = 0
+                    if 'capture_rect' in self.job:
+                        width = self.job['capture_rect']['width']
+                        height = self.job['capture_rect']['height']
+                        x = self.job['capture_rect']['x']
+                        y = self.job['capture_rect']['y']
                     args = ['ffmpeg', '-f', 'avfoundation',
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
                             '-filter:v',
-                            'crop={0:d}:{1:d}:0:0'.format(width, height),
+                            'crop={0:d}:{1:d}:{2:d}:{3:d}'.format(width, height, x, y),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 elif  platform.system() == 'Windows':

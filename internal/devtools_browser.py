@@ -35,10 +35,11 @@ class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 120
 
-    def __init__(self, options, job, use_devtools_video=True, is_webkit=False):
+    def __init__(self, options, job, use_devtools_video=True, is_webkit=False, is_ios=False):
         self.options = options
         self.job = job
         self.is_webkit = is_webkit
+        self.is_ios = is_ios
         self.devtools = None
         self.task = None
         self.event_name = None
@@ -55,7 +56,7 @@ class DevtoolsBrowser(object):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video, self.is_webkit)
+        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video, self.is_webkit, self.is_ios)
         if task['running_lighthouse']:
             ret = self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
         else:
@@ -84,7 +85,7 @@ class DevtoolsBrowser(object):
         """Prepare the running browser (mobile emulation, UA string, etc"""
         if self.devtools is not None:
             # Move the WebKit window
-            if self.is_webkit:
+            if self.is_webkit and not self.is_ios:
                 result = self.devtools.send_command('Automation.getBrowsingContexts', {}, wait=True)
                 if result and 'result' in result and 'contexts' in result['result']:
                     for context in result['result']['contexts']:
@@ -174,7 +175,9 @@ class DevtoolsBrowser(object):
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None:
-                if self.is_webkit:
+                if self.is_ios:
+                    match = re.search(r'Version\/(\d+\.\d+\.\d+)', ua_string)
+                elif self.is_webkit:
                     match = re.search(r'WebKit\/(\d+\.\d+\.\d+)', ua_string)
                 else:
                     match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
@@ -230,10 +233,10 @@ class DevtoolsBrowser(object):
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
                     screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
-                    self.devtools.grab_screenshot(screen_shot, png=True)
+                    self.devtools.grab_screenshot(screen_shot, png=True, browser=self)
                 else:
                     screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
-                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600, browser=self)
             # Stop recording dev tools
             self.devtools.stop_recording()
             # Collect end of test data from the browser
