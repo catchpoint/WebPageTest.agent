@@ -1046,7 +1046,7 @@ class OptimizationChecks(object):
                             if font_info is not None:
                                 self.font_results[request_id] = font_info
                 except Exception:
-                    logging.exception('Error checking font')
+                    pass
         except Exception:
             logging.exception('Error checking fonts')
         self.font_time = monotonic() - start

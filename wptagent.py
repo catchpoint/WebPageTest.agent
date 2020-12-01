@@ -939,10 +939,14 @@ def main():
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8")
     parser.add_argument('--vpntether',
-                        help="Use vpn-reverse-tether for reverse-tethering. This is the "
-                        "recommended way to reverse-tether devices. You will need to manually "
+                        help="Use vpn-reverse-tether for reverse-tethering. You will need to manually "
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --vpntether eth0,8.8.8.8")
+    parser.add_argument('--vpntether2',
+                        help="Use vpn-reverse-tether v2 for reverse-tethering. This is the "
+                        "recommended way to reverse-tether devices. You will need to manually "
+                        "approve the vpn once per mobile device. Valid options are:\n"
+                        "   <interface>,<dns>: i.e. --vpntether2 eth0,8.8.8.8")
     parser.add_argument('--rndis',
                         help="(deprecated) Enable reverse-tethering over rndis. "
                         "Valid options are:\n"
