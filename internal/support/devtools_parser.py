@@ -268,7 +268,7 @@ class DevToolsParser(object):
                                     request['chunks'].append({'ts': timestamp, 'bytes': params['dataLength']})
                             if method == 'Network.responseReceived' and 'response' in params:
                                 if 'type' in params:
-                                    request['type'] = params['type']
+                                    request['request_type'] = params['type']
                                 if not has_request_headers and 'requestHeaders' in params['response']:
                                     has_request_headers = True
                                 if 'firstByteTime' not in request:
@@ -463,8 +463,8 @@ class DevToolsParser(object):
                 request['responseCode'] = -1
                 if 'response' in raw_request and 'status' in raw_request['response']:
                     request['responseCode'] = raw_request['response']['status']
-                if 'type' in raw_request:
-                    request['type'] = raw_request['type']
+                if 'request_type' in raw_request:
+                    request['request_type'] = raw_request['request_type']
                 request['load_ms'] = -1
                 start_time = raw_request['startTime'] - raw_page_data['startTime']
                 if 'response' in raw_request and 'timing' in raw_request['response'] and \
@@ -557,7 +557,7 @@ class DevToolsParser(object):
                         if request['load_ms'] >= 0:
                             request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
-                    if request['socket'] != -1 and request['socket'] not in connections:
+                    if request['socket'] != -1 and request['socket'] not in connections and 'domainLookupStart' not in timing:
                         connections[request['socket']] = timing
                         if 'dnsStart' in timing and timing['dnsStart'] >= 0:
                             dns_key = request['host']
@@ -585,8 +585,8 @@ class DevToolsParser(object):
                             if 'securityDetails' in raw_request['response']:
                                 request['securityDetails'] = \
                                     raw_request['response']['securityDetails']
-                    elif "domainLookupStart" in timing or "secureConnectionStart" in timing:
-                        # Handle webkit timing data which may only be accurate for connection timings
+                    # Handle webkit timing data which may only be accurate for connection timings
+                    if "domainLookupStart" in timing or "secureConnectionStart" in timing:
                         if 'domainLookupStart' in timing and timing['domainLookupStart'] >= 0:
                             dns_key = request['host']
                             if dns_key not in dns_times:
