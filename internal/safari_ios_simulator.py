@@ -5,7 +5,6 @@
 import logging
 import os
 import subprocess
-import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -19,66 +18,64 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False, is_webkit=True, is_ios=True)
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
-        self.driver = None
         self.webinspector_proxy = None
         self.device_id = browser_info['device']['udid']
         self.rotate_simulator = False
         if 'rotate' in browser_info and browser_info['rotate']:
             self.rotate_simulator = True
 
+    def prepare(self, job, task):
+        """ Prepare the OS and simulator """
+        if not task['cached']:
+            logging.debug('Resetting simulator state')
+            subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
+
     def launch(self, job, task):
         """ Launch the browser using Selenium (only first view tests are supported) """
-        if not self.task['cached']:
-            try:
-                # Reset the simulator state (disabled for now until we know if we need it for sure)
-                # subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
+        try:
+            logging.debug('Booting the simulator')
+            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id])
 
-                # Start the simulator and browser
-                from selenium import webdriver
-                capabilities = webdriver.DesiredCapabilities.SAFARI.copy()
-                capabilities['platformName'] = 'iOS'
-                capabilities['safari:useSimulator'] = True
-                capabilities['safari:deviceUDID'] = self.device_id
-                self.driver = webdriver.Safari(desired_capabilities=capabilities)
-                self.driver.get(self.start_page)
+            # Try to move the simulator window
+            if self.rotate_simulator:
+                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
+            else:
+                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+            args = ['open', '-W', '-a', script]
+            logging.debug(' '.join(args))
+            subprocess.call(args)
+            self.find_simulator_window()
 
-                # Try to move the simulator window
-                if self.rotate_simulator:
-                    script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
-                else:
-                    script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
-                args = ['open', '-W', '-a', script]
+            logging.debug('Opening Safari')
+            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
+
+            # find the webinspector socket
+            webinspector_socket = None
+            out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
+            if out:
+                for line in out.splitlines(keepends=False):
+                    if line.endswith('com.apple.webinspectord_sim.socket'):
+                        offset = line.find('/private')
+                        if offset >= 0:
+                            webinspector_socket = line[offset:]
+                            break
+            # Start the webinspector proxy
+            if webinspector_socket is not None:
+                args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
                 logging.debug(' '.join(args))
-                subprocess.call(args)
-                self.find_simulator_window()
-
-                # find the webinspector socket
-                webinspector_socket = None
-                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
-                if out:
-                    for line in out.splitlines(keepends=False):
-                        if line.endswith('com.apple.webinspectord_sim.socket'):
-                            offset = line.find('/private')
-                            if offset >= 0:
-                                webinspector_socket = line[offset:]
-                                break
-                # Start the webinspector proxy
-                if webinspector_socket is not None:
-                    args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
-                    logging.debug(' '.join(args))
-                    self.webinspector_proxy = subprocess.Popen(args)
-                    if self.webinspector_proxy:
-                        # Connect to WebInspector
-                        task['port'] = 9222
-                        if DevtoolsBrowser.connect(self, task):
-                            self.connected = True
-                            # Finish the startup init
-                            DesktopBrowser.wait_for_idle(self)
-                            DevtoolsBrowser.prepare_browser(self, task)
-                            DevtoolsBrowser.navigate(self, self.start_page)
-                            DesktopBrowser.wait_for_idle(self, 2)
-            except Exception:
-                logging.exception('Error starting the simulator')
+                self.webinspector_proxy = subprocess.Popen(args)
+                if self.webinspector_proxy:
+                    # Connect to WebInspector
+                    task['port'] = 9222
+                    if DevtoolsBrowser.connect(self, task):
+                        self.connected = True
+                        # Finish the startup init
+                        DesktopBrowser.wait_for_idle(self)
+                        DevtoolsBrowser.prepare_browser(self, task)
+                        DevtoolsBrowser.navigate(self, self.start_page)
+                        DesktopBrowser.wait_for_idle(self, 2)
+        except Exception:
+            logging.exception('Error starting the simulator')
 
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
@@ -121,20 +118,17 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy.terminate()
             self.webinspector_proxy.communicate()
             self.webinspector_proxy = None
-        if self.driver is not None:
-            self.driver.quit()
-            self.driver = None
-        DesktopBrowser.stop(self, job, task)
-        # Make SURE the processes are gone
+        # Stop the browser
+        subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'])
+        # Shutdown the simulator
         if self.device_id is not None:
             subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id])
         else:
             subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'])
         self.device_id = None
-        from AppKit import NSWorkspace
-        for app in NSWorkspace.sharedWorkspace().runningApplications():
-            if app.localizedName() == 'Simulator':
-                app.terminate()
+        #Cleanup
+        subprocess.call(['killall', 'Simulator'])
+        DesktopBrowser.stop(self, job, task)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
@@ -160,8 +154,3 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         """Wait for any background processing threads to finish"""
         DevtoolsBrowser.wait_for_processing(self, task)
         DesktopBrowser.wait_for_processing(self, task)
-
-    def grab_raw_screenshot(self):
-        """Grab a screenshot using webdriver"""
-        logging.debug('Capturing screen shot')
-        return self.driver.get_screenshot_as_base64()

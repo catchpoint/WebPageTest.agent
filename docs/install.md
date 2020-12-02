@@ -129,6 +129,10 @@ shutdown /r /f
 * Some permissions need to be manually configured to give the agent the ability to record the screen and manipulate the simulator (System Preferences -> Security & Privacy):
   * "Screen Recording" - Add the terminal app that is used to run the agent (i.e. iTerm or Terminal)
   * "Accessibility" - Add both scripts in <wptagent>/internal/support/osx
+* The user accounts needs to be able to run sudo commands without prompting for password:
+```bash
+echo "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/wptagent"
+```
 
 
 ### Raspberry Pi

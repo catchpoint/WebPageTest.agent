@@ -233,10 +233,10 @@ class DevtoolsBrowser(object):
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
                     screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
-                    self.devtools.grab_screenshot(screen_shot, png=True, browser=self)
+                    self.devtools.grab_screenshot(screen_shot, png=True)
                 else:
                     screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
-                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600, browser=self)
+                    self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
             # Stop recording dev tools
             self.devtools.stop_recording()
             # Collect end of test data from the browser

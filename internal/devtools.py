@@ -216,6 +216,10 @@ class DevTools(object):
                 except Exception as err:
                     logging.debug("Connect to dev tools Error: %s", err.__str__())
                     time.sleep(0.5)
+            # Wait for the default target to be created for iOS
+            if ret and self.is_ios:
+                while self.default_target is None and monotonic() < end_time:
+                    self.pump_message()
         self.profile_end('connect')
         return ret
 
@@ -892,15 +896,14 @@ class DevTools(object):
                         done = True
         self.profile_end('wait_for_page_load')
     
-    def grab_screenshot(self, path, png=True, resize=0, browser=None):
+    def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
+        logging.debug('******************* grab_screenshot')
         if not self.main_thread_blocked:
             self.profile_start('screenshot')
             response = None
             data = None
-            if self.is_ios and browser is not None:
-                data = browser.grab_raw_screenshot()
-            elif self.is_webkit:
+            if self.is_webkit:
                 if 'actual_viewport' in self.task:
                     width = self.task['actual_viewport']['width']
                     height = self.task['actual_viewport']['height']
@@ -908,6 +911,8 @@ class DevTools(object):
                     if response is not None and 'result' in response and 'dataURL' in response['result'] and response['result']['dataURL'].startswith('data:image/png;base64,'):
                         data = response['result']['dataURL'][22:]
                         logging.debug("Image Data: %s", data[:200])
+                else:
+                    logging.debug('Viewport dimensions not available for capturing screenshot')
             else:
                 response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
                 if response is not None and 'result' in response and 'data' in response['result']:
@@ -938,6 +943,8 @@ class DevTools(object):
                         except Exception:
                             pass
             self.profile_end('screenshot')
+        else:
+            logging.debug('Skipping screenshot because the main thread is blocked')
 
     def colors_are_similar(self, color1, color2, threshold=15):
         """See if 2 given pixels are of similar color"""
