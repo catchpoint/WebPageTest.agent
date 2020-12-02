@@ -25,48 +25,54 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         self.device_id = browser_info['device']['udid']
 
     def launch(self, job, task):
-        """ Launch the browser using Selenium """
-        try:
-            # Reset the simulator state (TODO: maybe don't do this every time)
-            #subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
+        """ Launch the browser using Selenium (only first view tests are supported) """
+        if not self.task['cached']:
+            try:
+                # Reset the simulator state (disabled for now until we know if we need it for sure)
+                # subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
 
-            # Start the simulator and browser
-            from selenium import webdriver
-            capabilities = webdriver.DesiredCapabilities.SAFARI.copy()
-            capabilities['platformName'] = 'iOS'
-            capabilities['safari:useSimulator'] = True
-            capabilities['safari:deviceUDID'] = self.device_id
-            self.driver = webdriver.Safari(desired_capabilities=capabilities)
-            self.driver.get(self.start_page)
+                # Start the simulator and browser
+                from selenium import webdriver
+                capabilities = webdriver.DesiredCapabilities.SAFARI.copy()
+                capabilities['platformName'] = 'iOS'
+                capabilities['safari:useSimulator'] = True
+                capabilities['safari:deviceUDID'] = self.device_id
+                self.driver = webdriver.Safari(desired_capabilities=capabilities)
+                self.driver.get(self.start_page)
 
-            self.find_simulator_window()
-
-            # find the webinspector socket
-            webinspector_socket = None
-            out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
-            if out:
-                for line in out.splitlines(keepends=False):
-                    if line.endswith('com.apple.webinspectord_sim.socket'):
-                        offset = line.find('/private')
-                        if offset >= 0:
-                            webinspector_socket = line[offset:]
-                            break
-            # Start the webinspector proxy
-            if webinspector_socket is not None:
-                args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
+                # Try to move the simulator window
+                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+                args = ['open', '-W', '-a', script]
                 logging.debug(' '.join(args))
-                self.webinspector_proxy = subprocess.Popen(args)
-                if self.webinspector_proxy:
-                    # Connect to WebInspector
-                    task['port'] = 9222
-                    if DevtoolsBrowser.connect(self, task):
-                        self.connected = True
-                        DesktopBrowser.wait_for_idle(self)
-                        DevtoolsBrowser.prepare_browser(self, task)
-                        DevtoolsBrowser.navigate(self, self.start_page)
-                        DesktopBrowser.wait_for_idle(self, 2)
-        except Exception:
-            logging.exception('Error starting the simulator')
+                subprocess.call(args)
+                self.find_simulator_window()
+
+                # find the webinspector socket
+                webinspector_socket = None
+                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
+                if out:
+                    for line in out.splitlines(keepends=False):
+                        if line.endswith('com.apple.webinspectord_sim.socket'):
+                            offset = line.find('/private')
+                            if offset >= 0:
+                                webinspector_socket = line[offset:]
+                                break
+                # Start the webinspector proxy
+                if webinspector_socket is not None:
+                    args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
+                    logging.debug(' '.join(args))
+                    self.webinspector_proxy = subprocess.Popen(args)
+                    if self.webinspector_proxy:
+                        # Connect to WebInspector
+                        task['port'] = 9222
+                        if DevtoolsBrowser.connect(self, task):
+                            self.connected = True
+                            DesktopBrowser.wait_for_idle(self)
+                            DevtoolsBrowser.prepare_browser(self, task)
+                            DevtoolsBrowser.navigate(self, self.start_page)
+                            DesktopBrowser.wait_for_idle(self, 2)
+            except Exception:
+                logging.exception('Error starting the simulator')
 
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
@@ -96,7 +102,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
 
     def run_task(self, task):
-        """Run an individual test"""
+        """Run an individual test (only first view is supported)"""
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
@@ -111,14 +117,20 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy.terminate()
             self.webinspector_proxy.communicate()
             self.webinspector_proxy = None
-        self.driver.quit()
-        self.driver = None
+        if self.driver is not None:
+            self.driver.quit()
+            self.driver = None
+        DesktopBrowser.stop(self, job, task)
         # Make SURE the processes are gone
         if self.device_id is not None:
             subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id])
         else:
             subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'])
         self.device_id = None
+        from AppKit import NSWorkspace
+        for app in NSWorkspace.sharedWorkspace().runningApplications():
+            if app.localizedName() == 'Simulator':
+                app.terminate()
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""

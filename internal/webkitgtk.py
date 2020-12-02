@@ -21,21 +21,22 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
         self.connected = False
 
     def launch(self, job, task):
-        """Launch the browser"""
-        os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:{}".format(task['port'])
-        if self.path.find(' ') > -1:
-            command_line = '"{0}"'.format(self.path)
-        else:
-            command_line = self.path
-        command_line += ' --automation-mode'
-        # re-try launching and connecting a few times if necessary
-        DesktopBrowser.launch_browser(self, command_line)
-        if DevtoolsBrowser.connect(self, task):
-            self.connected = True
-            DesktopBrowser.wait_for_idle(self)
-            DevtoolsBrowser.prepare_browser(self, task)
-            DevtoolsBrowser.navigate(self, self.start_page)
-            DesktopBrowser.wait_for_idle(self, 2)
+        """Launch the browser (only first view tests are supported)"""
+        if not self.task['cached']:
+            os.environ["WEBKIT_INSPECTOR_SERVER"] = "127.0.0.1:{}".format(task['port'])
+            if self.path.find(' ') > -1:
+                command_line = '"{0}"'.format(self.path)
+            else:
+                command_line = self.path
+            command_line += ' --automation-mode'
+            # re-try launching and connecting a few times if necessary
+            DesktopBrowser.launch_browser(self, command_line)
+            if DevtoolsBrowser.connect(self, task):
+                self.connected = True
+                DesktopBrowser.wait_for_idle(self)
+                DevtoolsBrowser.prepare_browser(self, task)
+                DevtoolsBrowser.navigate(self, self.start_page)
+                DesktopBrowser.wait_for_idle(self, 2)
 
     def run_task(self, task):
         """Run an individual test"""

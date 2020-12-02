@@ -504,7 +504,7 @@ class DesktopBrowser(BaseBrowser):
                     initial_size = None
                     while not started and monotonic() < end_time:
                         try:
-                            if platform.system() == 'Windows' or platform.system() == 'Darwin':
+                            if platform.system() == 'Windows':
                                 if os.path.isfile(task['video_file']):
                                     video_size = os.path.getsize(task['video_file'])
                                     if initial_size == None:
@@ -520,6 +520,9 @@ class DesktopBrowser(BaseBrowser):
                                 output = self.ffmpeg.stderr.readline().strip()
                                 logging.debug("ffmpeg: %s", output)
                                 if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                                    logging.debug("Video started")
+                                    started = True
+                                elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
                                     logging.debug("Video started")
                                     started = True
                         except Exception:

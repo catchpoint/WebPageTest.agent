@@ -47,7 +47,7 @@ class WPTAgent(object):
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
         self.ios = iOSDevice(self.options.device) if self.options.iOS else None
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
-        self.shaper = TrafficShaper(options)
+        self.shaper = TrafficShaper(options, self.root_path)
         atexit.register(self.cleanup)
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
