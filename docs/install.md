@@ -2,7 +2,7 @@
 wptagent currently supports Windows, Linux and OSX for desktop browsers as well as Android and iOS for mobile devices (mobile testing requires a host computer connected to drive the testing).  If local traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux and OSX (NOPASSWD in visudo).
 
 ## Software Requirements
-* Python 2.7 available on the path (python2.7 and  python-pip packages on Ubuntu/Debian) with the following modules installed (all available through pip):
+* Python 3.x available on the path with the following modules installed (all available through pip):
     * dnspython
     * monotonic
     * pillow
@@ -12,19 +12,17 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * requests
     * ujson
     * tornado
+    * wsaccel
+    * brotli
+    * fonttools
     * future
-    * xvfbwrapper (Linux only)
     * bind9utils (Linux only, for rndc)
-    * marionette_driver (Firefox)
-    * selenium (Windows only)
+    * selenium
+    * usbmuxwrapper
 * Imagemagick installed and available in the path
     * The legacy tools (convert, compare, etc) need to be installed which may be optional on Windows
 * ffmpeg installed and available in the path
-* Xvfb (Linux only)
-* cgroup-tools (Linux only if mobile CPU emulation is desired)
 * traceroute (Mac and Linux)
-* Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute && sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver future```
 * Chrome Browser
     * Linux stable, beta and unstable channels on Ubuntu/Debian:
         * ```wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | sudo apt-key add -```
@@ -124,6 +122,14 @@ python.exe C:\Users\WebPageTest\wptagent\wptagent.py -vvvv --server "http://www.
 )
 shutdown /r /f
 ```
+
+### OS X (Mac)
+* Xcode should be installed as well as Network Link Conditioner (additional download)
+* The iOS simulator devices are automatically detected at startup and the browser names will be listed
+* Some permissions need to be manually configured to give the agent the ability to record the screen and manipulate the simulator (System Preferences -> Security & Privacy):
+  * "Screen Recording" - Add the terminal app that is used to run the agent (i.e. iTerm or Terminal)
+  * "Accessibility" - Add both scripts in <wptagent>/internal/support/osx
+
 
 ### Raspberry Pi
 The Raspberry Pi largely follows the Linux installation notes but there are a few additional config items that can be useful:
