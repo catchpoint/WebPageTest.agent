@@ -22,6 +22,9 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         self.driver = None
         self.webinspector_proxy = None
         self.device_id = browser_info['device']['udid']
+        self.rotate_simulator = False
+        if 'rotate' in browser_info and browser_info['rotate']:
+            self.rotate_simulator = True
 
     def launch(self, job, task):
         """ Launch the browser using Selenium (only first view tests are supported) """
@@ -38,6 +41,16 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                 capabilities['safari:deviceUDID'] = self.device_id
                 self.driver = webdriver.Safari(desired_capabilities=capabilities)
                 self.driver.get(self.start_page)
+
+                # Try to move the simulator window
+                if self.rotate_simulator:
+                    script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
+                else:
+                    script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+                args = ['open', '-W', '-a', script]
+                logging.debug(' '.join(args))
+                subprocess.call(args)
+                self.find_simulator_window()
 
                 # find the webinspector socket
                 webinspector_socket = None
@@ -59,12 +72,6 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         task['port'] = 9222
                         if DevtoolsBrowser.connect(self, task):
                             self.connected = True
-                            # Try to move the simulator window
-                            script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
-                            args = ['open', '-W', '-a', script]
-                            logging.debug(' '.join(args))
-                            subprocess.call(args)
-                            self.find_simulator_window()
                             # Finish the startup init
                             DesktopBrowser.wait_for_idle(self)
                             DevtoolsBrowser.prepare_browser(self, task)
