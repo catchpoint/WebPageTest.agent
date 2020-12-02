@@ -96,7 +96,8 @@ class DesktopBrowser(BaseBrowser):
             from .os_util import kill_all
             from .os_util import flush_dns
             logging.debug("Preparing browser")
-            kill_all(os.path.basename(self.path), True)
+            if self.path is not None:
+                kill_all(os.path.basename(self.path), True)
             if 'browser_info' in job and 'other_exes' in job['browser_info']:
                 for exe in job['browser_info']['other_exes']:
                     kill_all(exe, True)
@@ -518,13 +519,14 @@ class DesktopBrowser(BaseBrowser):
                                     time.sleep(0.1)
                             else:
                                 output = self.ffmpeg.stderr.readline().strip()
-                                logging.debug("ffmpeg: %s", output)
-                                if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
-                                    logging.debug("Video started")
-                                    started = True
-                                elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
-                                    logging.debug("Video started")
-                                    started = True
+                                if output:
+                                    logging.debug("ffmpeg: %s", output)
+                                    if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                                        logging.debug("Video started")
+                                        started = True
+                                    elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
+                                        logging.debug("Video started")
+                                        started = True
                         except Exception:
                             logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True

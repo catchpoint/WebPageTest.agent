@@ -4,9 +4,8 @@
 """Logic for controlling a desktop WebKit GTK browser (Linux)"""
 import logging
 import os
-import platform
-import shutil
 import subprocess
+import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -40,13 +39,6 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                 self.driver = webdriver.Safari(desired_capabilities=capabilities)
                 self.driver.get(self.start_page)
 
-                # Try to move the simulator window
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
-                args = ['open', '-W', '-a', script]
-                logging.debug(' '.join(args))
-                subprocess.call(args)
-                self.find_simulator_window()
-
                 # find the webinspector socket
                 webinspector_socket = None
                 out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
@@ -67,6 +59,13 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         task['port'] = 9222
                         if DevtoolsBrowser.connect(self, task):
                             self.connected = True
+                            # Try to move the simulator window
+                            script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+                            args = ['open', '-W', '-a', script]
+                            logging.debug(' '.join(args))
+                            subprocess.call(args)
+                            self.find_simulator_window()
+                            # Finish the startup init
                             DesktopBrowser.wait_for_idle(self)
                             DevtoolsBrowser.prepare_browser(self, task)
                             DevtoolsBrowser.navigate(self, self.start_page)
@@ -76,30 +75,28 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
-        from AppKit import NSWorkspace
         from Quartz import (
             CGWindowListCopyWindowInfo,
             kCGWindowListOptionOnScreenOnly,
             kCGNullWindowID
         )
-        for app in NSWorkspace.sharedWorkspace().runningApplications():
-            if app.localizedName() == 'Simulator':
-                simulator_pid = app.processIdentifier()
-                windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
-                for window in windowList:
-                    pid = window['kCGWindowOwnerPID']
-                    if pid == simulator_pid:
-                        x = int(window['kCGWindowBounds']['X'])
-                        y = int(window['kCGWindowBounds']['Y'])
-                        width = int(window['kCGWindowBounds']['Width'])
-                        height = int(window['kCGWindowBounds']['Height'])
-                        self.job['capture_rect'] = {
-                            'x': x,
-                            'y': y,
-                            'width': width,
-                            'height': height
-                        }
-                        logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
+        windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
+        for window in windowList:
+            ownerName = window['kCGWindowOwnerName']
+            if ownerName == "Simulator":
+                x = int(window['kCGWindowBounds']['X'])
+                y = int(window['kCGWindowBounds']['Y'])
+                width = int(window['kCGWindowBounds']['Width'])
+                height = int(window['kCGWindowBounds']['Height'])
+                self.job['capture_rect'] = {
+                    'x': x,
+                    'y': y,
+                    'width': width,
+                    'height': height
+                }
+                logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
+                found = True
+                break
 
     def run_task(self, task):
         """Run an individual test (only first view is supported)"""

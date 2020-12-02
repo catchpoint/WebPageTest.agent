@@ -313,6 +313,7 @@ class MacDummynet(Dummynet):
                 if match:
                     interface = match.group(1)
                     logging.debug('Default interface for traffic shaping: %s', interface)
+                    break
 
         rules_file = os.path.join(self.tmp_path, 'pfctl.rules')
         with open(rules_file, 'wt') as f_out:
