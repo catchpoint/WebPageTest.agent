@@ -21,7 +21,10 @@ if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
     GZIP_TEXT = 'w'
-
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -328,6 +331,8 @@ class WPTAgent(object):
         ret = self.requires('PIL', 'pillow') and ret
         ret = self.requires('psutil') and ret
         ret = self.requires('requests') and ret
+        if platform.system() == 'Darwin':
+            ret = self.requires('AppKit', 'PyObjC') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
             if self.options.webdriver and 'Firefox' in detected_browsers:
@@ -820,10 +825,27 @@ def find_browsers(options):
         safari_path = '/Applications/Safari.app/Contents/MacOS/Safari'
         if 'Safari' not in browsers and os.path.isfile(safari_path):
             browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
+        # Get a list of all of the iOS simulator devices available
+        try:
+            out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
+            if out:
+                devices = json.loads(out)
+                if 'devices' in devices:
+                    for runtime in devices['devices']:
+                        if runtime.find('.iOS-') >= 0:
+                            for device in devices['devices'][runtime]:
+                                if 'name' in device:
+                                    if device['name'] not in browsers:
+                                        browsers[device['name']] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+        except Exception:
+            logging.exception('iOS Simulator devices unavailable')
 
     logging.debug('Detected Browsers:')
     for browser in browsers:
-        logging.debug('%s: %s', browser, browsers[browser]['exe'])
+        if 'exe' in browsers[browser]:
+            logging.debug('%s: %s', browser, browsers[browser]['exe'])
+        else:
+            logging.debug('%s', browser)
     if not options.webdriver and 'Firefox' in browsers:
         try:
             # make sure marionette is up to date

@@ -29,11 +29,8 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
             command_line = self.path
         command_line += ' --automation-mode'
         # re-try launching and connecting a few times if necessary
-        connected = False
         DesktopBrowser.launch_browser(self, command_line)
         if DevtoolsBrowser.connect(self, task):
-            connected = True
-        if connected:
             self.connected = True
             DesktopBrowser.wait_for_idle(self)
             DevtoolsBrowser.prepare_browser(self, task)

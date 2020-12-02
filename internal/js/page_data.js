@@ -3,6 +3,10 @@ var pageData = {};
 pageData["document_URL"] = document.location.href;
 pageData["document_hostname"] = document.location.hostname;
 pageData["document_origin"] = document.location.origin;
+pageData['viewport'] = {
+  'width': window.innerWidth,
+  'height': window.innerHeight,
+};
 var domCount = document.documentElement.getElementsByTagName("*").length;
 if (domCount === undefined)
   domCount = 0;

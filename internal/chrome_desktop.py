@@ -57,7 +57,8 @@ ENABLE_CHROME_FEATURES = [
 
 DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
-    'CalculateNativeWinOcclusion'
+    'CalculateNativeWinOcclusion',
+    'TranslateUI'
 ]
 
 ENABLE_BLINK_FEATURES = [
