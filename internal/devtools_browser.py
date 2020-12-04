@@ -204,7 +204,9 @@ class DevtoolsBrowser(object):
 
     def on_start_recording(self, task):
         """Start recording"""
-        task['page_data'] = {'date': time.time()}
+        if 'page_data' not in task:
+            task['page_data'] = {}
+        task['page_data']['date'] = time.time()
         task['page_result'] = None
         task['run_start_time'] = monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
