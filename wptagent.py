@@ -619,12 +619,7 @@ def find_browsers(options):
                                         'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
                 if not os.path.isfile(edge_exe):
                     if build > 17134:
-                        from internal.os_util import run_elevated
-                        logging.debug('Installing latest webdriver for Microsoft Edge...')
-                        run_elevated('DISM.exe', '/Online /Add-Capability '
-                                    '/CapabilityName:Microsoft.WebDriver~~~~0.0.1.0')
-                        edge_exe = os.path.join(os.environ['windir'], 'System32',
-                                                'MicrosoftWebDriver.exe')
+                        edge_exe = os.path.join(os.environ['windir'], 'System32', 'MicrosoftWebDriver.exe')
                     else:
                         if build >= 17000:
                             edge_version = 17
