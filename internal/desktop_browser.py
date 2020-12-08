@@ -94,7 +94,10 @@ class DesktopBrowser(BaseBrowser):
             from .os_util import flush_dns
             logging.debug("Preparing browser")
             if self.path is not None:
-                kill_all(os.path.basename(self.path), True)
+		try:
+	            kill_all(os.path.basename(self.path), True)
+		except OSError:
+		    pass
             if 'browser_info' in job and 'other_exes' in job['browser_info']:
                 for exe in job['browser_info']['other_exes']:
                     kill_all(exe, True)
@@ -294,7 +297,10 @@ class DesktopBrowser(BaseBrowser):
         if self.proc:
             logging.debug("Closing browser")
             from .os_util import kill_all
-            kill_all(os.path.basename(self.path), False)
+	    try:
+                kill_all(os.path.basename(self.path), False)
+            except OSError:
+		pass
             if 'browser_info' in job and 'other_exes' in job['browser_info']:
                 for exe in job['browser_info']['other_exes']:
                     kill_all(exe, False)

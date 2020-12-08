@@ -308,7 +308,7 @@ class MacDummynet(Dummynet):
         interface = 'any'
         out = subprocess.check_output(['route', '-n', 'get', 'default'], universal_newlines=True)
         if out:
-            for line in out.splitlines(keepends=False):
+            for line in out.splitlines(False):
                 match = re.search(r'interface:\s+([^\s]+)', line)
                 if match:
                     interface = match.group(1)
