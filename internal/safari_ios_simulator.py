@@ -5,6 +5,7 @@
 import logging
 import os
 import subprocess
+import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -36,7 +37,11 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             logging.debug('Booting the simulator')
             subprocess.call(['xcrun', 'simctl', 'boot', self.device_id])
 
+            logging.debug('Opening Safari')
+            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
+
             # Try to move the simulator window
+            logging.debug('Moving Simulator Window')
             if self.rotate_simulator:
                 script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
             else:
@@ -45,9 +50,6 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             logging.debug(' '.join(args))
             subprocess.call(args)
             self.find_simulator_window()
-
-            logging.debug('Opening Safari')
-            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
 
             # find the webinspector socket
             webinspector_socket = None
@@ -79,28 +81,34 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
-        from Quartz import (
-            CGWindowListCopyWindowInfo,
-            kCGWindowListOptionOnScreenOnly,
-            kCGNullWindowID
-        )
-        windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
-        for window in windowList:
-            ownerName = window['kCGWindowOwnerName']
-            if ownerName == "Simulator":
-                x = int(window['kCGWindowBounds']['X'])
-                y = int(window['kCGWindowBounds']['Y'])
-                width = int(window['kCGWindowBounds']['Width'])
-                height = int(window['kCGWindowBounds']['Height'])
-                self.job['capture_rect'] = {
-                    'x': x,
-                    'y': y,
-                    'width': width,
-                    'height': height
-                }
-                logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
-                found = True
-                break
+        count = 0
+        found = False
+        attempts = 10
+        while count < attempts and not found:
+            from Quartz import (
+                CGWindowListCopyWindowInfo,
+                kCGWindowListOptionOnScreenOnly,
+                kCGNullWindowID
+            )
+            windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
+            for window in windowList:
+                ownerName = window['kCGWindowOwnerName']
+                if ownerName == "Simulator":
+                    x = int(window['kCGWindowBounds']['X'])
+                    y = int(window['kCGWindowBounds']['Y'])
+                    width = int(window['kCGWindowBounds']['Width'])
+                    height = int(window['kCGWindowBounds']['Height'])
+                    self.job['capture_rect'] = {
+                        'x': x,
+                        'y': y,
+                        'width': width,
+                        'height': height
+                    }
+                    logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
+                    found = True
+                    break
+            if count < attempts and not found:
+                time.sleep(0.5)
 
     def run_task(self, task):
         """Run an individual test (only first view is supported)"""
