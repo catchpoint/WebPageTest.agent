@@ -391,7 +391,7 @@ class DesktopBrowser(BaseBrowser):
         if self.device_pixel_ratio is None:
             self.device_pixel_ratio = 1.0
             try:
-                ratio = self.execute_js('window.devicePixelRatio') #pylint: disable=assignment-from-none
+                ratio = self.execute_js('return window.devicePixelRatio') #pylint: disable=assignment-from-none
                 if ratio is not None:
                     self.device_pixel_ratio = max(1.0, float(ratio))
             except Exception:
