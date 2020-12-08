@@ -155,6 +155,7 @@ class BlackBoxAndroid(AndroidBrowser):
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/chrome-command-line'])
         self.adb.su('rm /data/local/chrome-command-line')
+        AndroidBrowser.stop(self, job, task)
 
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""

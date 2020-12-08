@@ -36,13 +36,14 @@ from ws4py.client.threadedclient import WebSocketClient
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
-    def __init__(self, options, job, task, use_devtools_video, is_webkit):
+    def __init__(self, options, job, task, use_devtools_video, is_webkit, is_ios):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.websocket = None
         self.options = options
         self.job = job
         self.task = task
         self.is_webkit = is_webkit
+        self.is_ios = is_ios
         self.command_id = 0
         self.command_responses = {}
         self.pending_body_requests = {}
@@ -146,7 +147,7 @@ class DevTools(object):
     def connect(self, timeout):
         """Connect to the browser"""
         self.profile_start('connect')
-        if self.is_webkit:
+        if self.is_webkit and not self.is_ios:
             ret = False
             end_time = monotonic() + timeout
             while not ret and monotonic() < end_time:
@@ -176,20 +177,22 @@ class DevTools(object):
                         if len(tabs):
                             websocket_url = None
                             for index in range(len(tabs)):
-                                if 'type' in tabs[index] and \
-                                        (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
-                                        'webSocketDebuggerUrl' in tabs[index] and \
-                                        'id' in tabs[index]:
-                                    if websocket_url is None:
+                                if 'type' in tabs[index]:
+                                    if (tabs[index]['type'] == 'page' or tabs[index]['type'] == 'webview') and \
+                                            'webSocketDebuggerUrl' in tabs[index] and \
+                                            'id' in tabs[index]:
+                                        if websocket_url is None:
+                                            websocket_url = tabs[index]['webSocketDebuggerUrl']
+                                            self.tab_id = tabs[index]['id']
+                                        else:
+                                            # Close extra tabs
+                                            try:
+                                                session.get(self.url + '/close/' + tabs[index]['id'], proxies=proxies)
+                                            except Exception:
+                                                logging.exception('Error closing tabs')
+                                elif 'title' in tabs[index] and 'webSocketDebuggerUrl' in tabs[index]:
+                                    if websocket_url is None and tabs[index]['title'] == 'Orange':
                                         websocket_url = tabs[index]['webSocketDebuggerUrl']
-                                        self.tab_id = tabs[index]['id']
-                                    else:
-                                        # Close extra tabs
-                                        try:
-                                            session.get(self.url + '/close/' + tabs[index]['id'],
-                                                        proxies=proxies)
-                                        except Exception:
-                                            logging.exception('Error closing tabs')
                             if websocket_url is not None:
                                 try:
                                     self.websocket = DevToolsClient(websocket_url)
@@ -213,6 +216,10 @@ class DevTools(object):
                 except Exception as err:
                     logging.debug("Connect to dev tools Error: %s", err.__str__())
                     time.sleep(0.5)
+            # Wait for the default target to be created for iOS
+            if ret and self.is_ios:
+                while self.default_target is None and monotonic() < end_time:
+                    self.pump_message()
         self.profile_end('connect')
         return ret
 
@@ -888,9 +895,10 @@ class DevTools(object):
                     elif self.task['error'] is not None:
                         done = True
         self.profile_end('wait_for_page_load')
-
+    
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
+        logging.debug('******************* grab_screenshot')
         if not self.main_thread_blocked:
             self.profile_start('screenshot')
             response = None
@@ -903,6 +911,8 @@ class DevTools(object):
                     if response is not None and 'result' in response and 'dataURL' in response['result'] and response['result']['dataURL'].startswith('data:image/png;base64,'):
                         data = response['result']['dataURL'][22:]
                         logging.debug("Image Data: %s", data[:200])
+                else:
+                    logging.debug('Viewport dimensions not available for capturing screenshot')
             else:
                 response = self.send_command("Page.captureScreenshot", {}, wait=True, timeout=30)
                 if response is not None and 'result' in response and 'data' in response['result']:
@@ -933,6 +943,8 @@ class DevTools(object):
                         except Exception:
                             pass
             self.profile_end('screenshot')
+        else:
+            logging.debug('Skipping screenshot because the main thread is blocked')
 
     def colors_are_similar(self, color1, color2, threshold=15):
         """See if 2 given pixels are of similar color"""

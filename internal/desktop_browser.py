@@ -90,13 +90,14 @@ class DesktopBrowser(BaseBrowser):
             self.cleanup_thread.start()
         if self.tcpdump_enabled:
             os.environ["SSLKEYLOGFILE"] = os.path.join(task['dir'], task['prefix']) + '_keylog.log'
-        else:
-            os.environ["SSLKEYLOGFILE"] = ''
+        elif "SSLKEYLOGFILE" in os.environ:
+            del os.environ["SSLKEYLOGFILE"]
         try:
             from .os_util import kill_all
             from .os_util import flush_dns
             logging.debug("Preparing browser")
-            kill_all(os.path.basename(self.path), True)
+            if self.path is not None:
+                kill_all(os.path.basename(self.path), True)
             if 'browser_info' in job and 'other_exes' in job['browser_info']:
                 for exe in job['browser_info']['other_exes']:
                     kill_all(exe, True)
@@ -456,11 +457,18 @@ class DesktopBrowser(BaseBrowser):
                 if platform.system() == 'Darwin':
                     width = int(math.ceil(task['width'] * self.device_pixel_ratio))
                     height = int(math.ceil(task['height'] * self.device_pixel_ratio))
+                    x = 0
+                    y = 0
+                    if 'capture_rect' in self.job:
+                        width = self.job['capture_rect']['width']
+                        height = self.job['capture_rect']['height']
+                        x = self.job['capture_rect']['x']
+                        y = self.job['capture_rect']['y']
                     args = ['ffmpeg', '-f', 'avfoundation',
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
                             '-filter:v',
-                            'crop={0:d}:{1:d}:0:0'.format(width, height),
+                            'crop={0:d}:{1:d}:{2:d}:{3:d}'.format(width, height, x, y),
                             '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                             task['video_file']]
                 elif  platform.system() == 'Windows':
@@ -497,7 +505,7 @@ class DesktopBrowser(BaseBrowser):
                     initial_size = None
                     while not started and monotonic() < end_time:
                         try:
-                            if platform.system() == 'Windows' or platform.system() == 'Darwin':
+                            if platform.system() == 'Windows':
                                 if os.path.isfile(task['video_file']):
                                     video_size = os.path.getsize(task['video_file'])
                                     if initial_size == None:
@@ -511,10 +519,14 @@ class DesktopBrowser(BaseBrowser):
                                     time.sleep(0.1)
                             else:
                                 output = self.ffmpeg.stderr.readline().strip()
-                                logging.debug("ffmpeg: %s", output)
-                                if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
-                                    logging.debug("Video started")
-                                    started = True
+                                if output:
+                                    logging.debug("ffmpeg: %s", output)
+                                    if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                                        logging.debug("Video started")
+                                        started = True
+                                    elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
+                                        logging.debug("Video started")
+                                        started = True
                         except Exception:
                             logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True

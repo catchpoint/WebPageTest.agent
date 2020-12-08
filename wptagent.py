@@ -21,7 +21,10 @@ if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
     GZIP_TEXT = 'w'
-
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -44,7 +47,7 @@ class WPTAgent(object):
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
         self.ios = iOSDevice(self.options.device) if self.options.iOS else None
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
-        self.shaper = TrafficShaper(options)
+        self.shaper = TrafficShaper(options, self.root_path)
         atexit.register(self.cleanup)
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -328,6 +331,8 @@ class WPTAgent(object):
         ret = self.requires('PIL', 'pillow') and ret
         ret = self.requires('psutil') and ret
         ret = self.requires('requests') and ret
+        if platform.system() == 'Darwin':
+            ret = self.requires('AppKit', 'PyObjC') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
             if self.options.webdriver and 'Firefox' in detected_browsers:
@@ -614,12 +619,7 @@ def find_browsers(options):
                                         'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
                 if not os.path.isfile(edge_exe):
                     if build > 17134:
-                        from internal.os_util import run_elevated
-                        logging.debug('Installing latest webdriver for Microsoft Edge...')
-                        run_elevated('DISM.exe', '/Online /Add-Capability '
-                                    '/CapabilityName:Microsoft.WebDriver~~~~0.0.1.0')
-                        edge_exe = os.path.join(os.environ['windir'], 'System32',
-                                                'MicrosoftWebDriver.exe')
+                        edge_exe = os.path.join(os.environ['windir'], 'System32', 'MicrosoftWebDriver.exe')
                     else:
                         if build >= 17000:
                             edge_version = 17
@@ -820,10 +820,28 @@ def find_browsers(options):
         safari_path = '/Applications/Safari.app/Contents/MacOS/Safari'
         if 'Safari' not in browsers and os.path.isfile(safari_path):
             browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
+        # Get a list of all of the iOS simulator devices available
+        try:
+            out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
+            if out:
+                devices = json.loads(out)
+                if 'devices' in devices:
+                    for runtime in devices['devices']:
+                        if runtime.find('.iOS-') >= 0:
+                            for device in devices['devices'][runtime]:
+                                if 'name' in device:
+                                    if device['name'] not in browsers:
+                                        browsers[device['name']] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+                                        browsers[device['name'] + ' - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
+        except Exception:
+            logging.exception('iOS Simulator devices unavailable')
 
     logging.debug('Detected Browsers:')
     for browser in browsers:
-        logging.debug('%s: %s', browser, browsers[browser]['exe'])
+        if 'exe' in browsers[browser]:
+            logging.debug('%s: %s', browser, browsers[browser]['exe'])
+        else:
+            logging.debug('%s', browser)
     if not options.webdriver and 'Firefox' in browsers:
         try:
             # make sure marionette is up to date

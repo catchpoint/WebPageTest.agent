@@ -56,6 +56,7 @@ class AndroidBrowser(BaseBrowser):
         self.video_enabled = bool(job['video'])
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump_file = None
+        self.hosts_backup = '/data/local/tmp/hosts.bak'
         if self.config['type'] == 'blackbox':
             self.tcpdump_enabled = True
             self.video_enabled = True
@@ -119,6 +120,47 @@ class AndroidBrowser(BaseBrowser):
                         pass
         # kill any running instances
         self.adb.shell(['am', 'force-stop', self.config['package']])
+        # Modify the hosts file for non-Chrome browsers
+        self.restore_hosts()
+        if 'dns_override' in task:
+            self.modify_hosts(task, task['dns_override'])
+        self.profile_end('desktop.prepare')
+
+    def modify_hosts(self, task, hosts):
+        """Add entries to the system's hosts file"""
+        hosts_tmp = os.path.join(task['dir'], "hosts.wpt")
+        hosts_remote_tmp = '/data/local/tmp/hosts.wpt'
+        hosts_file = '/etc/hosts'
+        if len(hosts):
+            logging.debug('Modifying hosts file:')
+            # Make sure the system files are writable
+            self.adb.su('mount -o rw,remount /system')
+            try:
+                hosts_text = self.adb.su('cat {}'.format(hosts_file))
+                if hosts_text is not None:
+                    hosts_text += "\n"
+                    for pair in hosts:
+                        hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
+                    with open(hosts_tmp, 'w') as f_out:
+                        f_out.write(hosts_text)
+                    self.adb.adb(['push', hosts_tmp, hosts_remote_tmp])
+                    self.adb.su('cp {} {}'.format(hosts_remote_tmp, hosts_file))
+                    self.adb.su('rm {}'.format(hosts_remote_tmp))
+                    self.adb.su('chown root:root {}'.format(hosts_file))
+                    self.adb.su('chmod 644 {}'.format(hosts_file))
+                    os.unlink(hosts_tmp)
+                    logging.debug(hosts_text)
+            except Exception as err:
+                logging.exception("Exception modifying hosts file: %s", err.__str__())
+
+    def restore_hosts(self):
+        """See if we have a backup hosts file to restore"""
+        self.adb.su('cp {} {}'.format(self.hosts_backup, '/etc/hosts'))
+        self.adb.su('rm {}'.format(self.hosts_backup))
+
+    def stop(self, job, task):
+        """ Post-test cleanup """
+        self.restore_hosts()
 
     def stop_all_browsers(self):
         """Kill all instances of known browsers"""

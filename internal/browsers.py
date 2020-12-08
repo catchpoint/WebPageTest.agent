@@ -78,6 +78,10 @@ class Browsers(object):
         elif 'type' in job and job['type'] == 'traceroute':
             from .traceroute import Traceroute
             browser = Traceroute(self.options, job)
+        elif name in self.browsers and 'type' in self.browsers[name] and self.browsers[name]['type'] == 'iOS Simulator':
+            job['browser_info'] = self.browsers[name]
+            from .safari_ios_simulator import SafariSimulator
+            browser = SafariSimulator(self.browsers[name], self.options, job)
         elif name in self.browsers and 'exe' in self.browsers[name]:
             job['browser_info'] = self.browsers[name]
             if 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Firefox':

@@ -267,6 +267,8 @@ class DevToolsParser(object):
                                         request['chunks'] = []
                                     request['chunks'].append({'ts': timestamp, 'bytes': params['dataLength']})
                             if method == 'Network.responseReceived' and 'response' in params:
+                                if 'type' in params:
+                                    request['request_type'] = params['type']
                                 if not has_request_headers and 'requestHeaders' in params['response']:
                                     has_request_headers = True
                                 if 'firstByteTime' not in request:
@@ -296,11 +298,13 @@ class DevToolsParser(object):
                                 '''
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
-                                if 'metrics' in params and 'requestHeaders' in params['metrics']:
-                                    if 'response' not in request:
-                                        request['response'] = {}
-                                    request['response']['requestHeaders'] = params['metrics']['requestHeaders']
-                                    has_request_headers = True
+                                if 'metrics' in params:
+                                    request['metrics'] = params['metrics']
+                                    if 'requestHeaders' in params['metrics']:
+                                        if 'response' not in request:
+                                            request['response'] = {}
+                                        request['response']['requestHeaders'] = params['metrics']['requestHeaders']
+                                        has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
                                 if 'encodedDataLength' in params:
@@ -459,6 +463,8 @@ class DevToolsParser(object):
                 request['responseCode'] = -1
                 if 'response' in raw_request and 'status' in raw_request['response']:
                     request['responseCode'] = raw_request['response']['status']
+                if 'request_type' in raw_request:
+                    request['request_type'] = raw_request['request_type']
                 request['load_ms'] = -1
                 start_time = raw_request['startTime'] - raw_page_data['startTime']
                 if 'response' in raw_request and 'timing' in raw_request['response'] and \
@@ -523,12 +529,20 @@ class DevToolsParser(object):
                 request['socket'] = -1
                 if 'response' in raw_request and 'connectionId' in raw_request['response']:
                     request['socket'] = raw_request['response']['connectionId']
+                elif 'metrics' in raw_request and 'connectionIdentifier' in raw_request['metrics']:
+                    request['socket'] = raw_request['metrics']['connectionIdentifier']
                 if 'response' in raw_request and 'remoteIPAddress' in raw_request['response']:
                     request['ip_addr'] = raw_request['response']['remoteIPAddress']
+                elif 'metrics' in raw_request and 'remoteAddress' in raw_request['metrics']:
+                    parts = raw_request['metrics']['remoteAddress'].rsplit(':', 1)
+                    request['ip_addr'] = parts[0]
+                    request['port'] = parts[1]
                 if 'response' in raw_request and 'protocol' in raw_request['response']:
                     request['protocol'] = raw_request['response']['protocol']
-                    if request['protocol'] == 'h2':
-                        request['protocol'] = 'HTTP/2'
+                elif 'metrics' in raw_request and 'protocol' in raw_request['metrics']:
+                    request['protocol'] = raw_request['metrics']['protocol']
+                if 'protocol' in request and request['protocol'] == 'h2':
+                    request['protocol'] = 'HTTP/2'
                 request['dns_start'] = -1
                 request['dns_end'] = -1
                 request['connect_start'] = -1
@@ -543,7 +557,7 @@ class DevToolsParser(object):
                         if request['load_ms'] >= 0:
                             request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
-                    if request['socket'] != -1 and request['socket'] not in connections:
+                    if request['socket'] != -1 and request['socket'] not in connections and 'domainLookupStart' not in timing:
                         connections[request['socket']] = timing
                         if 'dnsStart' in timing and timing['dnsStart'] >= 0:
                             dns_key = request['host']
@@ -571,8 +585,8 @@ class DevToolsParser(object):
                             if 'securityDetails' in raw_request['response']:
                                 request['securityDetails'] = \
                                     raw_request['response']['securityDetails']
-                    elif "domainLookupStart" in timing or "secureConnectionStart" in timing:
-                        # Handle webkit timing data which may only be accurate for connection timings
+                    # Handle webkit timing data which may only be accurate for connection timings
+                    if "domainLookupStart" in timing or "secureConnectionStart" in timing:
                         if 'domainLookupStart' in timing and timing['domainLookupStart'] >= 0:
                             dns_key = request['host']
                             if dns_key not in dns_times:
@@ -626,6 +640,8 @@ class DevToolsParser(object):
                 if 'initialPriority' in raw_request:
                     request['priority'] = raw_request['initialPriority']
                     request['initial_priority'] = raw_request['initialPriority']
+                elif 'metrics' in raw_request and 'priority' in raw_request['metrics']:
+                    request['priority'] = raw_request['metrics']['priority']
                 request['server_rtt'] = None
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
@@ -711,6 +727,31 @@ class DevToolsParser(object):
                 request['cache_time'] = None
                 request['cdn_provider'] = None
                 request['server_count'] = None
+                # Get the webkit sizes from the metrics data
+                if 'metrics' in raw_request:
+                    bytes_out = 0
+                    if 'requestHeaderBytesSent' in raw_request['metrics']:
+                        bytes_out += int(raw_request['metrics']['requestHeaderBytesSent'])
+                    if 'requestBodyBytesSent' in raw_request['metrics']:
+                        bytes_out += int(raw_request['metrics']['requestBodyBytesSent'])
+                    if bytes_out > 0:
+                        request['bytesOut'] = bytes_out
+                    bytes_in = 0
+                    if 'responseHeaderBytesReceived' in raw_request['metrics']:
+                        bytes_in += int(raw_request['metrics']['responseHeaderBytesReceived'])
+                    if 'responseBodyBytesReceived' in raw_request['metrics']:
+                        bytes_in += int(raw_request['metrics']['responseBodyBytesReceived'])
+                        request['objectSize'] = int(raw_request['metrics']['responseBodyBytesReceived'])
+                        request['objectSizeUncompressed'] = int(raw_request['metrics']['responseBodyBytesReceived'])
+                    if bytes_in > 0:
+                        request['bytesIn'] = bytes_in
+                    if 'responseBodyDecodedSize' in raw_request['metrics']:
+                        request['objectSizeUncompressed'] = int(raw_request['metrics']['responseBodyDecodedSize'])
+                    if 'securityConnection' in raw_request['metrics']:
+                        if 'protocol' in raw_request['metrics']['securityConnection']:
+                            request['tls_version'] = raw_request['metrics']['securityConnection']['protocol']
+                        if 'cipher' in raw_request['metrics']['securityConnection']:
+                            request['tls_cipher_suite'] = raw_request['metrics']['securityConnection']['cipher']
                 if 'URL' not in page_data and len(request['full_url']):
                     page_data['URL'] = request['full_url']
                 if 'startTime' in raw_request:

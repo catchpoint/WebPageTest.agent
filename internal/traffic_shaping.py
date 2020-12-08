@@ -14,7 +14,7 @@ import time
 
 class TrafficShaper(object):
     """Main traffic-shaper interface"""
-    def __init__(self, options):
+    def __init__(self, options, root_path):
         shaper_name = options.shaper
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.shaper = None
@@ -48,7 +48,7 @@ class TrafficShaper(object):
             elif plat == "Linux":
                 self.shaper = NetEm(options=options)
             elif plat == "Darwin":
-                self.shaper = MacDummynet()
+                self.shaper = MacDummynet(root_path)
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -276,11 +276,17 @@ class Dummynet(object):
 #
 class MacDummynet(Dummynet):
     """Configure dummynet through pfctl and dnctl"""
-    def __init__(self):
+    def __init__(self, root_path):
         self.interface = None
         self.in_pipe = '1'
         self.out_pipe = '2'
         self.token = None
+        self.tmp_path = os.path.join(root_path, 'work', 'shaper')
+        try:
+            if not os.path.isdir(self.tmp_path):
+                os.makedirs(self.tmp_path)
+        except Exception:
+            pass
 
     def pfctl(self, args):
         """Run a single pfctl command"""
@@ -298,15 +304,29 @@ class MacDummynet(Dummynet):
 
     def install(self):
         """Set up the pipes"""
-        rules_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "support", "osx", "pfctl.rules")
+        # build a rules file that will only shape traffic on the default interface
+        interface = 'any'
+        out = subprocess.check_output(['route', '-n', 'get', 'default'], universal_newlines=True)
+        if out:
+            for line in out.splitlines(keepends=False):
+                match = re.search(r'interface:\s+([^\s]+)', line)
+                if match:
+                    interface = match.group(1)
+                    logging.debug('Default interface for traffic shaping: %s', interface)
+                    break
+
+        rules_file = os.path.join(self.tmp_path, 'pfctl.rules')
+        with open(rules_file, 'wt') as f_out:
+            f_out.write('pass quick on lo0 no state\n')
+            f_out.write('dummynet in on {} all pipe 1\n'.format(interface))
+            f_out.write('dummynet out on {} all pipe 2\n'.format(interface))
+
         return self.pfctl(['-E']) and\
                self.dnctl(['-q', 'flush']) and\
                self.dnctl(['-q', 'pipe', 'flush']) and\
                self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.pfctl(['-f', rules_file])
-
 
     def remove(self):
         """clear the config"""

@@ -131,9 +131,10 @@ class Adb(object):
         if out is not None:
             ret = True
             # Set the CPU affinity for adb which helps avoid hangs
-            for proc in psutil.process_iter():
-                if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
-                    proc.cpu_affinity([0])
+            if platform.system() != "Darwin":
+                for proc in psutil.process_iter():
+                    if proc.name() == "adb.exe" or proc.name() == "adb" or proc.name() == "adb-arm":
+                        proc.cpu_affinity([0])
             # install the tun0 device if necessary
             if (self.options.vpntether or self.options.vpntether2) and platform.system() == "Linux":
                 self.sudo(['ip', 'tuntap', 'add', 'dev', 'tun0', 'mode', 'tun'])
