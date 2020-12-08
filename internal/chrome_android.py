@@ -292,6 +292,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/' + self.config['command_line_file']])
         self.adb.su('rm /data/local/' + self.config['command_line_file'])
+        AndroidBrowser.stop(self, job, task)
         # grab the netlog if there was one
         if 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
