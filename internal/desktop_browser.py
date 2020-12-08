@@ -69,9 +69,6 @@ class DesktopBrowser(BaseBrowser):
         self.task = None
         self.cpu_start = None
         self.throttling_cpu = False
-        self.screen_width = 1920
-        self.screen_height = 1200
-        self.device_pixel_ratio = None
         self.stopping = False
         self.is_chrome = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
@@ -389,14 +386,6 @@ class DesktopBrowser(BaseBrowser):
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         import psutil
-        if self.device_pixel_ratio is None:
-            self.device_pixel_ratio = 1.0
-            try:
-                ratio = self.execute_js('window.devicePixelRatio') #pylint: disable=assignment-from-none
-                if ratio is not None:
-                    self.device_pixel_ratio = max(1.0, float(ratio))
-            except Exception:
-                pass
         if task['log_data']:
             if not self.job['shaper'].configure(self.job, task):
                 self.task['error'] = "Error configuring traffic-shaping"
@@ -436,6 +425,9 @@ class DesktopBrowser(BaseBrowser):
 
             # Start video capture
             if self.job['capture_display'] is not None and not self.job['disable_video']:
+                screen_width = 1920
+                screen_height = 1280
+                device_pixel_ratio = None
                 self.profile_start('desktop.start_video')
                 if task['navigated']:
                     self.execute_js(SET_ORANGE)
@@ -443,20 +435,22 @@ class DesktopBrowser(BaseBrowser):
                 task['video_file'] = os.path.join(task['dir'], task['prefix']) + '_video.mp4'
                 if platform.system() == 'Windows':
                     from win32api import GetSystemMetrics #pylint: disable=import-error
-                    self.screen_width = GetSystemMetrics(0)
-                    self.screen_height = GetSystemMetrics(1)
+                    screen_width = GetSystemMetrics(0)
+                    screen_height = GetSystemMetrics(1)
                 elif platform.system() == 'Darwin':
                     try:
                         from AppKit import NSScreen #pylint: disable=import-error
-                        self.screen_width = int(NSScreen.screens()[0].frame().size.width)
-                        self.screen_height = int(NSScreen.screens()[0].frame().size.height)
+                        screen = NSScreen.screens()[0]
+                        screen_width = int(screen.frame().size.width)
+                        screen_height = int(screen.frame().size.height)
+                        device_pixel_ratio = float(screen.backingScaleFactor())
                     except Exception:
                         pass
-                task['width'] = min(task['width'], self.screen_width)
-                task['height'] = min(task['height'], self.screen_height)
+                task['width'] = min(task['width'], screen_width)
+                task['height'] = min(task['height'], screen_height)
                 if platform.system() == 'Darwin':
-                    width = int(math.ceil(task['width'] * self.device_pixel_ratio))
-                    height = int(math.ceil(task['height'] * self.device_pixel_ratio))
+                    width = task['width']
+                    height = task['height']
                     x = 0
                     y = 0
                     if 'capture_rect' in self.job:
@@ -464,6 +458,11 @@ class DesktopBrowser(BaseBrowser):
                         height = self.job['capture_rect']['height']
                         x = self.job['capture_rect']['x']
                         y = self.job['capture_rect']['y']
+                    if device_pixel_ratio is not None:
+                        width = int(math.ceil(width * device_pixel_ratio))
+                        height = int(math.ceil(height * device_pixel_ratio))
+                        x = int(math.ceil(x * device_pixel_ratio))
+                        y = int(math.ceil(y * device_pixel_ratio))
                     args = ['ffmpeg', '-f', 'avfoundation',
                             '-i', str(self.job['capture_display']),
                             '-r', str(self.job['fps']),
@@ -563,7 +562,7 @@ class DesktopBrowser(BaseBrowser):
                     self.ffmpeg.communicate(input='q'.encode('utf-8'))
                 else:
                     self.ffmpeg.communicate(input='q')
-                if self.ffmpeg.returncode is not 0:
+                if self.ffmpeg.returncode != 0:
                     logging.exception('ERROR: ffmpeg returned non-zero exit code %s\n', str(self.ffmpeg.returncode))
                 else:
                     logging.debug('ffmpeg shutdown gracefully\n')
