@@ -161,6 +161,8 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             os.remove(local_command_line)
+            # Disable SELinux enforcement
+            self.adb.su('setenforce 0')
             # try copying it to /data/local for rooted devices that need it there
             if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
                 self.adb.su('chmod 666 {0}'.format(root_command_line))
