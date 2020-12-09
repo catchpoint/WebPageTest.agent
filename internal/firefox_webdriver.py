@@ -39,11 +39,7 @@ class FirefoxWebDriver(Firefox):
             'binary': self.path,
             'args': ['-profile', task['profile']],
             'prefs': self.prepare_prefs(),
-            "log": {"level": "error"},
-            'env': {
-                "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
-                "MOZ_LOG": os.environ["MOZ_LOG"]
-            }
+            "log": {"level": "error"}
         }
         service_args = ["--marionette-port", "2828"]
 
