@@ -50,13 +50,15 @@ HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
     '"MAP clients1.google.com 127.0.0.1"',
     '"MAP update.googleapis.com 127.0.0.1"',
-    '"MAP redirector.gvt1.com 127.0.0.1"'
+    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP offlinepages-pa.googleapis.com 127.0.0.1"'
 ]
 
 DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
     'CalculateNativeWinOcclusion',
-    'TranslateUI'
+    'TranslateUI',
+    'OfflinePagesPrefetching'
 ]
 
 ENABLE_CHROME_FEATURES = [
