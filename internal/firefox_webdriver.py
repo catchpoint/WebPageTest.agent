@@ -6,6 +6,7 @@
 """Support for Firefox"""
 import logging
 import os
+import platform
 import re
 import sys
 
@@ -39,8 +40,15 @@ class FirefoxWebDriver(Firefox):
             'binary': self.path,
             'args': ['-profile', task['profile']],
             'prefs': self.prepare_prefs(),
-            "log": {"level": "error"}
+            'log': {'level': 'error'}
         }
+        # Avoid using env due to selenium.InvalidateArgument exception
+        # being throw complaining that moz:firefoxOptions does not contain
+        # field 'env'
+        if platform.system() != 'Darwin':
+            capabilities['moz:firefoxOptions']['env'] = {
+                'MOZ_LOG_FILE': os.environ['MOZ_LOG_FILE'],
+                'MOZ_LOG': os.environ['MOZ_LOG']}
         service_args = ["--marionette-port", "2828"]
 
         self.driver = webdriver.Firefox(desired_capabilities=capabilities, service_args=service_args)
