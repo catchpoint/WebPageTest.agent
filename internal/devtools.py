@@ -904,9 +904,11 @@ class DevTools(object):
             response = None
             data = None
             if self.is_webkit:
-                if 'actual_viewport' in self.task:
-                    width = self.task['actual_viewport']['width']
-                    height = self.task['actual_viewport']['height']
+                # Get the current viewport (depends on css scaling)
+                size = self.execute_js("[window.innerWidth, window.innerHeight]")
+                if size is not None and len(size) == 2:
+                    width = size[0]
+                    height = size[1]
                     response = self.send_command("Page.snapshotRect", {"x": 0, "y": 0, "width": width, "height": height, "coordinateSystem": "Viewport"}, wait=True, timeout=30)
                     if response is not None and 'result' in response and 'dataURL' in response['result'] and response['result']['dataURL'].startswith('data:image/png;base64,'):
                         data = response['result']['dataURL'][22:]
