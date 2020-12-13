@@ -898,7 +898,7 @@ class DevTools(object):
     
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        logging.debug('******************* grab_screenshot')
+        logging.debug('Grabbing Screenshot')
         if not self.main_thread_blocked:
             self.profile_start('screenshot')
             response = None
