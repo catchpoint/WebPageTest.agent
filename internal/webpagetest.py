@@ -55,6 +55,7 @@ class WebPageTest(object):
         self.log_handler = None
         # Configurable options
         self.work_servers = []
+        self.needs_zip = []
         self.url = ''
         if options.server is not None:
             self.work_servers_str = options.server
@@ -94,6 +95,7 @@ class WebPageTest(object):
         self.validate_server_certificate = options.validcertificate
         self.instance_id = None
         self.zone = None
+        self.cpu_pct = None
         # Get the screen resolution if we're in desktop mode
         self.screen_width = None
         self.screen_height = None
@@ -494,20 +496,17 @@ class WebPageTest(object):
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
-                    job['keep_lighthouse_trace'] = \
-                        bool('lighthouseTrace' in job and job['lighthouseTrace'])
-                    job['keep_lighthouse_screenshots'] = \
-                        bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
-                    job['lighthouse_throttle'] = \
-                        bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
-                    job['lighthouse_config'] = \
-                        str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
+                    job['keep_lighthouse_trace'] = bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                    job['keep_lighthouse_screenshots'] = bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
+                    job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                    job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
                     if 'video' not in job:
                         job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and
                                                 'disable_video' in job and
                                                 job['disable_video'])
+                    job['atomic'] = bool('atomic' in job and job['atomic'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
                     if 'throttle_cpu' in job:
@@ -550,6 +549,7 @@ class WebPageTest(object):
                 count -= 1
                 retry = True
         self.job = job
+        self.needs_zip = []
         return job
 
     def get_task(self, job):
@@ -711,13 +711,8 @@ class WebPageTest(object):
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
                 self.test_run_count += 1
-        self.profile_start(task, 'wpt.get_task')
-        if task is None and os.path.isdir(self.workdir):
-            try:
-                shutil.rmtree(self.workdir)
-            except Exception:
-                pass
-        self.profile_end(task, 'wpt.get_task')
+        if task is None and self.job is not None:
+            self.upload_test_result()
         return task
 
     def running_another_test(self, task):
@@ -1130,11 +1125,52 @@ class WebPageTest(object):
             logging.exception('Error backfilling bodies')
         self.profile_end(task, 'wpt.get_bodies')
 
+    def upload_test_result(self):
+        """Upload the full result if the test is not being sharded"""
+        if self.job is not None and 'run' not in self.job:
+            # Zip the files
+            zip_path = None
+            if len(self.needs_zip):
+                zip_path = os.path.join(self.workdir, "result.zip")
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
+                    for zipitem in self.needs_zip:
+                        logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
+                        zip_file.write(zipitem['path'], zipitem['name'])
+                        try:
+                            os.remove(zipitem['path'])
+                        except Exception:
+                            pass
+            data = {'id': self.job['Test ID'],
+                    'location': self.location,
+                    'pc': self.pc_name,
+                    'done': '1'}
+            if self.key is not None:
+                data['key'] = self.key
+            if self.instance_id is not None:
+                data['ec2'] = self.instance_id
+            if self.zone is not None:
+                data['ec2zone'] = self.zone
+            if self.cpu_pct is not None:
+                data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+            uploaded = False
+            if 'work_server' in self.job:
+                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+            if not uploaded:
+                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+        self.needs_zip = []
+        # Clean up the work directory
+        if os.path.isdir(self.workdir):
+            try:
+                shutil.rmtree(self.workdir)
+            except Exception:
+                pass
+        self.license_ping()
+
     def upload_task_result(self, task):
-        """Upload the result of an individual test run"""
+        """Upload the result of an individual test run if it is being sharded"""
         logging.info('Uploading result')
         self.profile_start(task, 'wpt.upload')
-        cpu_pct = None
+        self.cpu_pct = None
         self.update_browser_viewport(task)
         # Stop logging to the file
         if self.log_handler is not None:
@@ -1157,7 +1193,7 @@ class WebPageTest(object):
             logging.debug('Discarding warmup run')
         else:
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
-                cpu_pct = task['page_data']['fullyLoadedCPUpct']
+                self.cpu_pct = task['page_data']['fullyLoadedCPUpct']
             data = {'id': task['id'],
                     'location': self.location,
                     'run': str(task['run']),
@@ -1169,7 +1205,8 @@ class WebPageTest(object):
                 data['ec2'] = self.instance_id
             if self.zone is not None:
                 data['ec2zone'] = self.zone
-            needs_zip = []
+            if 'run' in self.job:
+                self.needs_zip = []
             zip_path = None
             if os.path.isdir(task['dir']):
                 # upload any video images
@@ -1181,8 +1218,8 @@ class WebPageTest(object):
                                 filepath = os.path.join(video_dir, filename)
                                 if os.path.isfile(filepath):
                                     name = video_subdirectory + '/' + filename
-                                    needs_zip.append({'path': filepath, 'name': name})
-                # Upload the separate large files (> 100KB)
+                                    self.needs_zip.append({'path': filepath, 'name': name})
+                # Upload the separate files
                 for filename in os.listdir(task['dir']):
                     filepath = os.path.join(task['dir'], filename)
                     if os.path.isfile(filepath):
@@ -1194,41 +1231,36 @@ class WebPageTest(object):
                             except Exception:
                                 pass
                         else:
-                            needs_zip.append({'path': filepath, 'name': filename})
-                # Zip the remaining files
-                if len(needs_zip):
+                            self.needs_zip.append({'path': filepath, 'name': filename})
+                # Zip the files
+                if len(self.needs_zip) and 'run' in self.job:
                     zip_path = os.path.join(task['dir'], "result.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
-                        for zipitem in needs_zip:
-                            logging.debug('Storing %s (%d bytes)', zipitem['name'],
-                                        os.path.getsize(zipitem['path']))
+                        for zipitem in self.needs_zip:
+                            logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
                             zip_file.write(zipitem['path'], zipitem['name'])
                             try:
                                 os.remove(zipitem['path'])
                             except Exception:
                                 pass
+                    self.needs_zip = []
             # Post the workdone event for the task (with the zip attached)
-            if task['done']:
-                data['done'] = '1'
-            if task['error'] is not None:
-                data['error'] = task['error']
-            if cpu_pct is not None:
-                data['cpu'] = '{0:0.2f}'.format(cpu_pct)
-            logging.debug('Uploading result zip')
-            uploaded = False
-            if 'work_server' in self.job:
-                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
-            if not uploaded:
-                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            if 'run' in self.job:
+                if task['done']:
+                    data['done'] = '1'
+                if task['error'] is not None:
+                    data['error'] = task['error']
+                if self.cpu_pct is not None:
+                    data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+                uploaded = False
+                if 'work_server' in self.job:
+                    uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+                if not uploaded:
+                    self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
         # Clean up so we don't leave directories lying around
-        if os.path.isdir(task['dir']):
+        if os.path.isdir(task['dir']) and 'run' in self.job:
             try:
                 shutil.rmtree(task['dir'])
-            except Exception:
-                pass
-        if task['done'] and os.path.isdir(self.workdir):
-            try:
-                shutil.rmtree(self.workdir)
             except Exception:
                 pass
         self.profile_end(task, 'wpt.upload')
@@ -1243,7 +1275,6 @@ class WebPageTest(object):
             except Exception:
                 logging.exception('Error uploading profile data')
             del task['profile_data']
-        self.license_ping()
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
@@ -1256,6 +1287,7 @@ class WebPageTest(object):
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
+                logging.debug('Uploading filename : %d bytes', os.path.getsize(file_path))
                 self.session.post(url,
                                   files={'file': (filename, open(file_path, 'rb'))},
                                   timeout=600)
