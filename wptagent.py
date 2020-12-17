@@ -801,6 +801,12 @@ def find_browsers(options):
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
             browsers['Chrome'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta'
+        if 'Chrome Beta' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Beta'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome Dev'
+        if 'Chrome Dev' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Dev'] = {'exe': chrome_path}
         canary_path = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
         if os.path.isfile(canary_path):
             if 'Chrome Dev' not in browsers:
