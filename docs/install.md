@@ -124,16 +124,28 @@ shutdown /r /f
 ```
 
 ### OS X (Mac)
-* Xcode should be installed as well as Network Link Conditioner (additional download)
-* The iOS simulator devices are automatically detected at startup and the browser names will be listed
-* Some permissions need to be manually configured to give the agent the ability to record the screen and manipulate the simulator (System Preferences -> Security & Privacy):
-  * "Screen Recording" - Add the terminal app that is used to run the agent (i.e. iTerm or Terminal)
-  * "Accessibility" - Add both scripts in <wptagent>/internal/support/osx
+* Xcode should be installed as well as Network Link Conditioner (additional download). Launch XCode and accept the license.
 * The user accounts needs to be able to run sudo commands without prompting for password:
 ```bash
 echo "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/wptagent"
 ```
-
+* The library dependencies should be installed through homebrew (using a rosetta terminal if running on ARM):
+```bash
+brew install libvpx ffmpeg imagemagick geckodriver ios-webkit-debug-proxy node git
+```
+* Python3 and pip3 should have been installed as part of the homebrew install. The Python 3 libraries should be installed through pip3:
+```bash
+pip3 install PyObjC ujson dnspython monotonic pillow psutil requests tornado wsaccel brotli fonttools selenium future usbmuxwrapper
+```
+* Install lighthouse through npm
+```bash
+npm -g install lighthouse
+```
+* Manually install the browsers you want to use for testing. Chrome release channels can all be installed side-by-side. Firefox can only have one channel installed.
+* Some permissions need to be manually configured to give the agent the ability to record the screen and manipulate the simulator (System Preferences -> Security & Privacy):
+  * "Screen Recording" - Add the terminal app that is used to run the agent (i.e. iTerm or Terminal)
+  * "Accessibility" - Add both scripts in <wptagent>/internal/support/osx
+* The iOS simulator devices are automatically detected at startup and the browser names will be listed as part of the agent startup
 
 ### Raspberry Pi
 The Raspberry Pi largely follows the Linux installation notes but there are a few additional config items that can be useful:
