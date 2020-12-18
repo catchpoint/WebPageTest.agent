@@ -414,7 +414,7 @@ class WebPageTest(object):
         while count < 3 and retry:
             retry = False
             count += 1
-            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1"
+            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1&testinfo=1"
             url += "&location=" + quote_plus(location)
             url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
@@ -521,6 +521,8 @@ class WebPageTest(object):
                             logging.debug("Servers changed to: %s", self.work_servers_str)
                     if 'wpthost' in job:
                         self.wpthost = job['wpthost']
+                    if 'testinfo' in job:
+                        job['testinfo']['started'] = time.time()
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0:
@@ -1128,6 +1130,43 @@ class WebPageTest(object):
     def upload_test_result(self):
         """Upload the full result if the test is not being sharded"""
         if self.job is not None and 'run' not in self.job:
+            # Write out the testinfo ini and json files if they are part of the job
+            if 'testinfo_ini' in self.job:
+                from datetime import datetime
+                self.job['testinfo_ini'] = self.job['testinfo_ini'].replace('[test]', '[test]\r\ncompleteTime={}'.format(datetime.now().strftime("%m/%d/%y %H:%M:%S")))
+                ini_path = os.path.join(self.workdir, 'testinfo.ini')
+                with open(ini_path, 'wt') as f_out:
+                    f_out.write(self.job['testinfo_ini'])
+                self.needs_zip.append({'path': ini_path, 'name': 'testinfo.ini'})
+            if 'testinfo' in self.job:
+                self.job['testinfo']['completed'] = time.time()
+                if 'test_runs' not in self.job['testinfo']:
+                    self.job['testinfo']['test_runs'] = {}
+                if 'runs' in self.job['testinfo']:
+                    max_steps = 0
+                    for run in range(self.job['testinfo']['runs']):
+                        run_num = run + 1
+                        # Count the number of steps in the test data
+                        step_count = 0
+                        if self.needs_zip:
+                            for zipitem in self.needs_zip:
+                                matches = re.match(r'^(\d+)_(\d+)_', zipitem['name'])
+                                if matches and run_num == int(matches.group(1)):
+                                    step = int(matches.group(2))
+                                    if step > step_count:
+                                        step_count = step
+                        run_info = {'done': True}
+                        if step_count > 0:
+                            run_info['steps'] = step_count
+                            if step_count > max_steps:
+                                max_steps = step_count
+                        self.job['testinfo']['test_runs'][run_num] = run_info
+                    self.job['testinfo']['steps'] = max_steps
+                json_path = os.path.join(self.workdir, 'testinfo.json')
+                with open(json_path, 'wt') as f_out:
+                    json.dump(self.job['testinfo'], f_out)
+                self.needs_zip.append({'path': json_path, 'name': 'testinfo.json'})
+
             # Zip the files
             zip_path = None
             if len(self.needs_zip):
@@ -1143,6 +1182,7 @@ class WebPageTest(object):
             data = {'id': self.job['Test ID'],
                     'location': self.location,
                     'pc': self.pc_name,
+                    'testinfo': '1',
                     'done': '1'}
             if self.key is not None:
                 data['key'] = self.key
@@ -1198,6 +1238,7 @@ class WebPageTest(object):
                     'location': self.location,
                     'run': str(task['run']),
                     'cached': str(task['cached']),
+                    'testinfo': 1,
                     'pc': self.pc_name}
             if self.key is not None:
                 data['key'] = self.key
