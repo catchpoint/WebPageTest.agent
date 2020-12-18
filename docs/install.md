@@ -124,7 +124,7 @@ shutdown /r /f
 ```
 
 ### OS X (Mac)
-* Xcode should be installed as well as Network Link Conditioner (additional download). Launch XCode and accept the license.
+* Xcode should be installed as well as [Network Link Conditioner (additional download)](https://swiftmania.io/network-link-conditioner/#simulator). Launch XCode and accept the license.
 * The user accounts needs to be able to run sudo commands without prompting for password:
 ```bash
 echo "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/wptagent"
