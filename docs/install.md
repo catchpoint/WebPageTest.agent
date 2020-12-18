@@ -129,8 +129,9 @@ shutdown /r /f
 ```bash
 echo "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/wptagent"
 ```
-* The library dependencies should be installed through homebrew (using a rosetta terminal if running on ARM):
+* The library dependencies should be installed through homebrew ([using a rosetta 2 terminal](https://stackoverflow.com/questions/64882584/how-to-run-the-homebrew-installer-under-rosetta-2-on-m1-macbook) if running on ARM):
 ```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install libvpx ffmpeg imagemagick geckodriver ios-webkit-debug-proxy node git
 ```
 * Python3 and pip3 should have been installed as part of the homebrew install. The Python 3 libraries should be installed through pip3:
