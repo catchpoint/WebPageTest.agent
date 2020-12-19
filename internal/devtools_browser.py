@@ -622,6 +622,14 @@ class DevtoolsBrowser(object):
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
+            # see what version of lighthouse we are running
+            lighthouse_version = 1
+            out = subprocess.check_output(['lighthouse', '--version'], universal_newlines=True)
+            if out is not None and len(out):
+                match = re.search(r'^\d+', out)
+                if match:
+                    lighthouse_version = int(match.group())
+            logging.debug("Lighthouse version %d", lighthouse_version)
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
@@ -652,13 +660,18 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
                 command.extend(['--skip-audits', 'screenshot-thumbnails'])
+            form_factor_command = '--form-factor' if lighthouse_version >= 7 else '--emulated-form-factor'
             if self.options.android:
-                command.extend(['--emulated-form-factor', 'none'])
+                command.extend([form_factor_command, 'none'])
+                if lighthouse_version >= 7:
+                    command.extend(['--screenEmulation.disabled'])
                 if 'user_agent_string' in self.job:
                     sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                     command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
             elif 'mobile' not in self.job or not self.job['mobile']:
-                command.extend(['--emulated-form-factor', 'desktop'])
+                command.extend([form_factor_command, 'desktop'])
+                if lighthouse_version >= 7:
+                    command.extend(['--screenEmulation.disabled'])
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
