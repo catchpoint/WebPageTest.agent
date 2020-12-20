@@ -4,6 +4,11 @@ import os
 import platform
 import re
 import subprocess
+import sys
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 
 if platform.system() != 'Darwin':
     print("This is only supported for MacOS")
@@ -45,16 +50,33 @@ def RecordScreen():
                 '-filter:v',
                 'crop={0:d}:{1:d}:{2:d}:{3:d}'.format(100, 100, 0, 0),
                 '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
-                '-t', '10',
                 '/tmp/wptagent.mp4']
-        subprocess.call(args, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        os.unlink('/tmp/wptagent.mp4')
+        ffmpeg = subprocess.Popen(args, stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        if ffmpeg:
+            # Wait up to 30 seconds for something to be captured
+            end_time = monotonic() + 30
+            started = False
+            while not started and monotonic() < end_time:
+                try:
+                    output = ffmpeg.stderr.readline().strip()
+                    if output:
+                        print(output)
+                        if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
+                            started = True
+                        elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
+                            started = True
+                except Exception:
+                    pass
+            ffmpeg.terminate()
+            subprocess.call(['killall', '-9', 'ffmpeg'])
+            os.unlink('/tmp/wptagent.mp4')
 
 
 # Launch the simulator
 id = GetSimulatorId()
 if id is not None:
     print('Starting the simulator...')
+    subprocess.call(['xcrun', 'simctl', 'erase', id])
     subprocess.call(['xcrun', 'simctl', 'boot', id])
     subprocess.call(['xcrun', 'simctl', 'openurl', id, 'https://www.webpagetest.org/orange.html'])
 
@@ -62,13 +84,13 @@ print("Triggering prompts for simulator automation scripts")
 subprocess.call(['open', '-W', '-a', os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'internal', 'support', 'osx', 'MoveSimulator.app')])
 subprocess.call(['open', '-W', '-a', os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'internal', 'support', 'osx', 'RotateSimulator.app')])
 
-print("Triggering ffmpeg screen record prompt")
-RecordScreen()
-
 if id is not None:
     print('Terminating the simulators')
     subprocess.call(['xcrun', 'simctl', 'terminate', id, 'com.apple.mobilesafari'])
     subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'])
     subprocess.call(['killall', 'Simulator'])
+
+print("Triggering ffmpeg screen record prompt")
+RecordScreen()
 
 print('Done')
