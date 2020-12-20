@@ -1238,7 +1238,7 @@ class WebPageTest(object):
                     'location': self.location,
                     'run': str(task['run']),
                     'cached': str(task['cached']),
-                    'testinfo': 1,
+                    'testinfo': '1',
                     'pc': self.pc_name}
             if self.key is not None:
                 data['key'] = self.key
@@ -1324,6 +1324,7 @@ class WebPageTest(object):
         url += "?"
         for key in data:
             if data[key] != None:
+                logging.debug('Key: %s', key)
                 url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
         try:
