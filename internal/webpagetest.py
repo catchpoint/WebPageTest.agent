@@ -1324,7 +1324,6 @@ class WebPageTest(object):
         url += "?"
         for key in data:
             if data[key] != None:
-                logging.debug('Key: %s', key)
                 url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
         try:
