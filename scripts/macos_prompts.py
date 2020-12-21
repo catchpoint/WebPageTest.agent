@@ -5,6 +5,7 @@ import platform
 import re
 import subprocess
 import sys
+import time
 if (sys.version_info >= (3, 0)):
     from time import monotonic
 else:
@@ -17,6 +18,7 @@ if platform.system() != 'Darwin':
 def GetSimulatorId():
     """Get the ID of a simulator to use"""
     try:
+        subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'])
         out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
         if out:
             devices = json.loads(out)
@@ -51,22 +53,9 @@ def RecordScreen():
                 'crop={0:d}:{1:d}:{2:d}:{3:d}'.format(100, 100, 0, 0),
                 '-codec:v', 'libx264rgb', '-crf', '0', '-preset', 'ultrafast',
                 '/tmp/wptagent.mp4']
-        ffmpeg = subprocess.Popen(args, stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        ffmpeg = subprocess.Popen(args, universal_newlines=True)
         if ffmpeg:
-            # Wait up to 30 seconds for something to be captured
-            end_time = monotonic() + 30
-            started = False
-            while not started and monotonic() < end_time:
-                try:
-                    output = ffmpeg.stderr.readline().strip()
-                    if output:
-                        print(output)
-                        if re.search(r'\]\sn\:\s+0\s+pts\:\s+', output) is not None:
-                            started = True
-                        elif re.search(r'^frame=\s+\d+\s+fps=[\s\d\.]+', output) is not None:
-                            started = True
-                except Exception:
-                    pass
+            time.sleep(10)
             ffmpeg.terminate()
             subprocess.call(['killall', '-9', 'ffmpeg'])
             os.unlink('/tmp/wptagent.mp4')
@@ -82,6 +71,7 @@ if id is not None:
 
 print("Triggering prompts for simulator automation scripts")
 subprocess.call(['open', '-W', '-a', os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'internal', 'support', 'osx', 'MoveSimulator.app')])
+time.sleep(10)
 subprocess.call(['open', '-W', '-a', os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'internal', 'support', 'osx', 'RotateSimulator.app')])
 
 if id is not None:
@@ -91,6 +81,7 @@ if id is not None:
     subprocess.call(['killall', 'Simulator'])
 
 print("Triggering ffmpeg screen record prompt")
+time.sleep(10)
 RecordScreen()
 
 print('Done')
