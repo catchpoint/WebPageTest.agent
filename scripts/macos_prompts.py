@@ -56,9 +56,15 @@ def RecordScreen():
         ffmpeg = subprocess.Popen(args, universal_newlines=True)
         if ffmpeg:
             time.sleep(10)
-            ffmpeg.terminate()
-            subprocess.call(['killall', '-9', 'ffmpeg'])
-            os.unlink('/tmp/wptagent.mp4')
+            try:
+                ffmpeg.terminate()
+                subprocess.call(['killall', '-9', 'ffmpeg'])
+            except Exception:
+                pass
+            try:
+                os.unlink('/tmp/wptagent.mp4')
+            except Exception:
+                pass
 
 
 # Launch the simulator

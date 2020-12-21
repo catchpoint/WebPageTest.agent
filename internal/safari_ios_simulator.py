@@ -27,6 +27,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def prepare(self, job, task):
         """ Prepare the OS and simulator """
+        subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'])
         if not task['cached']:
             logging.debug('Resetting simulator state')
             subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
