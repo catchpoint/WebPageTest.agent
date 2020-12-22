@@ -14,7 +14,6 @@ import re
 import shutil
 import signal
 import subprocess
-import errno
 import sys
 import threading
 import time
@@ -285,6 +284,13 @@ class DesktopBrowser(BaseBrowser):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
+        # Handle launching M1 Arm binaries on MacOS
+        if platform.system() == 'Darwin':
+            cpu = subprocess.check_output(['uname', '-m'], universal_newlines=True)
+            rosetta = subprocess.check_output(['sysctl', '-in', 'sysctl.proc_translated'], universal_newlines=True)
+            logging.debug("CPU Platform: %s, Translated: %s", cpu.strip(), rosetta.strip())
+            if cpu.startswith('arm') or int(rosetta) == 1:
+                command_line = 'arch -arm64 ' + command_line
         logging.debug(command_line)
         if platform.system() == 'Windows':
             self.proc = subprocess.Popen(command_line, shell=True)
