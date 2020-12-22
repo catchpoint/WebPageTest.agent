@@ -5,9 +5,14 @@
 import logging
 import os
 import subprocess
+import sys
 import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 
 class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
     """iOS Simulator"""
@@ -41,27 +46,36 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             logging.debug('Opening Safari')
             subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
 
+            # find the webinspector socket
+            webinspector_socket = None
+            end_time = monotonic() + 30
+            while webinspector_socket is None and monotonic() < end_time:
+                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
+                if out:
+                    for line in out.splitlines(keepends=False):
+                        if line.endswith('com.apple.webinspectord_sim.socket'):
+                            offset = line.find('/private')
+                            if offset >= 0:
+                                webinspector_socket = line[offset:]
+                                break
+                if webinspector_socket is None:
+                    time.sleep(2)
+
             # Try to move the simulator window
             logging.debug('Moving Simulator Window')
-            if self.rotate_simulator:
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
-            else:
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+            script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
             args = ['open', '-W', '-a', script]
             logging.debug(' '.join(args))
             subprocess.call(args)
+            if self.rotate_simulator:
+                time.sleep(1)
+                logging.debug('Rotating Simulator Window')
+                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
+                args = ['open', '-W', '-a', script]
+                logging.debug(' '.join(args))
+                subprocess.call(args)
             self.find_simulator_window()
 
-            # find the webinspector socket
-            webinspector_socket = None
-            out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
-            if out:
-                for line in out.splitlines(keepends=False):
-                    if line.endswith('com.apple.webinspectord_sim.socket'):
-                        offset = line.find('/private')
-                        if offset >= 0:
-                            webinspector_socket = line[offset:]
-                            break
             # Start the webinspector proxy
             if webinspector_socket is not None:
                 args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
