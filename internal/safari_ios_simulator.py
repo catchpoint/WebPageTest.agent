@@ -67,15 +67,10 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             args = ['open', '-W', '-a', script]
             logging.debug(' '.join(args))
             subprocess.call(args)
-            if self.rotate_simulator:
-                time.sleep(1)
-                logging.debug('Rotating Simulator Window')
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
-                args = ['open', '-W', '-a', script]
-                logging.debug(' '.join(args))
-                subprocess.call(args)
             time.sleep(2)
-            self.find_simulator_window()
+            if self.rotate_simulator:
+                self.rotate_simulator_window()
+                time.sleep(2)
 
             # Start the webinspector proxy
             if webinspector_socket is not None:
@@ -89,17 +84,39 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         self.connected = True
                         # Finish the startup init
                         DesktopBrowser.wait_for_idle(self)
+                        self.check_simulator_orientation()
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, self.start_page)
                         DesktopBrowser.wait_for_idle(self, 2)
         except Exception:
             logging.exception('Error starting the simulator')
 
+    def rotate_simulator_window(self):
+        """Run the apple script to rotate the window"""
+        logging.debug('Rotating Simulator Window')
+        script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
+        args = ['open', '-W', '-a', script]
+        logging.debug(' '.join(args))
+        subprocess.call(args)
+
+    def check_simulator_orientation(self):
+        """Make sure the simulator didn't remember an earlier rotation"""
+        self.find_simulator_window()
+        if 'capture_rect' in self.job:
+            rotated = self.job['capture_rect']['width'] > self.job['capture_rect']['height']
+            if rotated != self.rotate_simulator:
+                logging.debug("Fixing simulator rotation")
+                self.rotate_simulator_window()
+                time.sleep(5)
+                self.find_simulator_window()
+
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
         count = 0
         found = False
         attempts = 10
+        if 'capture_rect' in self.job:
+            del self.job['capture_rect']
         while count < attempts and not found:
             from Quartz import (
                 CGWindowListCopyWindowInfo,
@@ -114,15 +131,16 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                     y = int(window['kCGWindowBounds']['Y'])
                     width = int(window['kCGWindowBounds']['Width'])
                     height = int(window['kCGWindowBounds']['Height'])
-                    self.job['capture_rect'] = {
-                        'x': x,
-                        'y': y,
-                        'width': width,
-                        'height': height
-                    }
-                    logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
-                    found = True
-                    break
+                    # Use the biggest window belonging to Simulator
+                    if not found or (width * height) > (self.job['capture_rect']['width'] * self.job['capture_rect']['height']):
+                        self.job['capture_rect'] = {
+                            'x': x,
+                            'y': y,
+                            'width': width,
+                            'height': height
+                        }
+                        logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
+                        found = True
             if count < attempts and not found:
                 time.sleep(0.5)
 
@@ -136,6 +154,11 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         return DevtoolsBrowser.execute_js(self, script)
 
     def stop(self, job, task):
+        # Reset a rotated simulator
+        if self.rotate_simulator:
+            self.rotate_simulator_window()
+            self.rotate_simulator_window()
+            self.rotate_simulator_window()
         if self.connected:
             DevtoolsBrowser.disconnect(self)
         if self.webinspector_proxy:
