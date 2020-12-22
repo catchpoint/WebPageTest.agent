@@ -74,6 +74,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                 args = ['open', '-W', '-a', script]
                 logging.debug(' '.join(args))
                 subprocess.call(args)
+            time.sleep(2)
             self.find_simulator_window()
 
             # Start the webinspector proxy
