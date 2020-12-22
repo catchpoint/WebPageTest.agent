@@ -624,12 +624,15 @@ class DevtoolsBrowser(object):
             time_limit = min(int(task['time_limit']), 80)
             # see what version of lighthouse we are running
             lighthouse_version = 1
-            out = subprocess.check_output(['lighthouse', '--version'], universal_newlines=True)
-            if out is not None and len(out):
-                match = re.search(r'^\d+', out)
-                if match:
-                    lighthouse_version = int(match.group())
-            logging.debug("Lighthouse version %d", lighthouse_version)
+            try:
+                out = subprocess.check_output('lighthouse --version', shell=True, universal_newlines=True)
+                if out is not None and len(out):
+                    match = re.search(r'^\d+', out)
+                    if match:
+                        lighthouse_version = int(match.group())
+                logging.debug("Lighthouse version %d", lighthouse_version)
+            except Exception:
+                logging.exception('Error getting lighthouse version')
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
