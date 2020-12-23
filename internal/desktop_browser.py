@@ -351,9 +351,10 @@ class DesktopBrowser(BaseBrowser):
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 50. / float(cpu_count)
+            target_pct = max(50. / float(cpu_count), 10.)
             idle_start = None
             end_time = monotonic() + wait_time
+            last_update = monotonic()
             idle = False
             while not idle and monotonic() < end_time:
                 check_start = monotonic()
@@ -365,6 +366,9 @@ class DesktopBrowser(BaseBrowser):
                         idle = True
                 else:
                     idle_start = None
+                if not idle and monotonic() - last_update > 1:
+                    last_update = monotonic()
+                    logging.debug("CPU Utilization: %0.1f%% (%d CPU's, %0.1f%% target)", pct, cpu_count, target_pct)
 
     def clear_profile(self, task):
         """Delete the browser profile directory"""
