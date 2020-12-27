@@ -887,7 +887,7 @@ class Edge(DesktopBrowser):
         elif command['command'] == 'setminimumstepseconds':
             self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
-            self.task['user_agent_string'] = command['target']
+            self.job['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
             if 'target' in command and 'value' in command:
                 try:
