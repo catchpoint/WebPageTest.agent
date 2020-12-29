@@ -752,22 +752,6 @@ class Edge(DesktopBrowser):
                 with gzip.open(interactive_file, GZIP_TEXT, 7) as f_out:
                     f_out.write(interactive)
 
-    def collect_hero_elements(self, task):
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            logging.debug('Collecting hero element positions')
-            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.execute_js(script)
-            if hero_elements is not None:
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
-
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
         if task['current_step'] == 1:
@@ -810,7 +794,6 @@ class Edge(DesktopBrowser):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         DesktopBrowser.on_stop_capture(self, task)
-        self.collect_hero_elements(task)
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
