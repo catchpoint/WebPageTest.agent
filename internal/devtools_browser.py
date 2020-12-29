@@ -338,6 +338,9 @@ class DevtoolsBrowser(object):
             options['cpu'] = cpu if os.path.isfile(cpu) else None
             v8stats = path_base + '_v8stats.json.gz'
             options['v8stats'] = v8stats if os.path.isfile(v8stats) else None
+            options['noheaders'] = False
+            if 'noheaders' in self.job and self.job['noheaders']:
+                options['noheaders'] = True
             parser = DevToolsParser(options)
             parser.process()
             # Cleanup intermediate files that are not needed
@@ -350,6 +353,15 @@ class DevtoolsBrowser(object):
                     os.remove(coverage)
                 if os.path.isfile(devtools_file):
                     os.remove(devtools_file)
+            # remove files that might contain sensitive data
+            if options['noheaders']:
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
+                trace_file = path_base + '_trace.json.gz'
+                if os.path.isfile(trace_file):
+                    os.remove(trace_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
         self.profile_end('dtbrowser.process_devtools_requests')
