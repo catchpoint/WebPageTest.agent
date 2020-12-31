@@ -530,7 +530,7 @@ class DevTools(object):
         try:
             self.profile_start('snapshot_dom')
             styles = ['background-image']
-            response = self.send_command('DOMSnapshot.captureSnapshot', {'computedStyles': styles, 'includePaintOrder': False, 'includeDOMRects': False}, wait=True)
+            response = self.send_command('DOMSnapshot.captureSnapshot', {'computedStyles': styles, 'includePaintOrder': False, 'includeDOMRects': True}, wait=True)
             if response and 'result' in response:
                 self.dom_tree = response['result']
                 self.dom_tree['style_names'] = styles

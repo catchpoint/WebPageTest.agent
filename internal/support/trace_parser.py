@@ -425,7 +425,6 @@ class Trace():
                                                         string_index = document['layout']['styles'][index][style_index]
                                                         if string_index >= 0 and string_index < len(dom_tree['strings']):
                                                             info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
-                                                break
                                 return info
                                             
         except Exception:
