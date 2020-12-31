@@ -77,9 +77,9 @@ class Trace():
         except BaseException:
             logging.exception("Error writing to " + out_file)
 
-    def WriteUserTiming(self, out_file):
+    def WriteUserTiming(self, out_file, dom_tree=None):
         out = self.post_process_netlog_events()
-        out = self.post_process_user_timing()
+        out = self.post_process_user_timing(dom_tree)
         if out is not None:
             self.write_json(out_file, out)
 
@@ -296,7 +296,7 @@ class Trace():
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
-    def post_process_user_timing(self):
+    def post_process_user_timing(self, dom_tree):
         out = None
         if self.user_timing is not None:
             self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
@@ -348,8 +348,89 @@ class Trace():
                 out.append(lcp_event)
             for name in candidates:
                 out.append(candidates[name])
+            if dom_tree is not None:
+                for event in out:
+                    if 'args' in event and 'data' in event['args'] and 'DOMNodeId' in event['args']['data']:
+                        node_info = self.FindDomNodeInfo(dom_tree, event['args']['data']['DOMNodeId'])
+                        if node_info is not None:
+                            event['args']['data']['node'] = node_info
             out.append({'startTime': self.start_time})
         return out
+
+    def FindDomNodeInfo(self, dom_tree, node_id):
+        """Get the information for the given DOM node"""
+        info = None
+        try:
+            if dom_tree is not None:
+                if 'documents' in dom_tree:
+                    node_index = None
+                    for document in dom_tree['documents']:
+                        if 'nodes' in document and node_index is None:
+                            if 'backendNodeId' in document['nodes']:
+                                for index in range(len(document['nodes']['backendNodeId'])):
+                                    if document['nodes']['backendNodeId'][index] == node_id:
+                                        node_index = index
+                                        break
+                            if node_index is not None:
+                                info = {}
+                                if 'strings' in dom_tree:
+                                    if 'nodeName' in document['nodes'] and node_index < len(document['nodes']['nodeName']):
+                                        string_index = document['nodes']['nodeName'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeType'] = dom_tree['strings'][string_index]
+                                    if 'nodeValue' in document['nodes'] and node_index < len(document['nodes']['nodeValue']):
+                                        string_index = document['nodes']['nodeValue'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeValue'] = dom_tree['strings'][string_index]
+                                    if 'attributes' in document['nodes'] and node_index < len(document['nodes']['attributes']):
+                                        attribute = None
+                                        for string_index in document['nodes']['attributes'][node_index]:
+                                            string_value = ''
+                                            if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                string_value = dom_tree['strings'][string_index]
+                                            if attribute is None:
+                                                attribute = string_value
+                                            else:
+                                                if attribute:
+                                                    if 'attributes' not in info:
+                                                        info['attributes'] = {}
+                                                    if attribute in info['attributes']:
+                                                        info['attributes'][attribute] += ' ' + string_value
+                                                    else:
+                                                        info['attributes'][attribute] = string_value
+                                                attribute = None
+                                    if 'currentSourceURL' in document['nodes']:
+                                        if 'index' in document['nodes']['currentSourceURL'] and 'value' in document['nodes']['currentSourceURL']:
+                                            for index in range(len(document['nodes']['currentSourceURL']['index'])):
+                                                if document['nodes']['currentSourceURL']['index'][index] == node_index:
+                                                    if index < len(document['nodes']['currentSourceURL']['value']):
+                                                        string_index = document['nodes']['currentSourceURL']['value'][index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['sourceURL'] = dom_tree['strings'][string_index]
+                                                    break
+                                if 'layout' in document:
+                                    if 'nodeIndex' in document['layout']:
+                                        for index in range(len(document['layout']['nodeIndex'])):
+                                            if document['layout']['nodeIndex'][index] == node_index:
+                                                if 'bounds' in document['layout'] and index < len(document['layout']['bounds']):
+                                                    info['bounds'] = document['layout']['bounds'][index]
+                                                if 'text' in document['layout'] and index < len(document['layout']['text']):
+                                                    string_index = document['layout']['text'][index]
+                                                    if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                        info['layoutText'] = dom_tree['strings'][string_index]
+                                                if 'style_names' in dom_tree and 'styles' in document['layout'] and index < len(document['layout']['styles']) and len(document['layout']['styles'][index]) == len(dom_tree['style_names']):
+                                                    if 'styles' not in info:
+                                                        info['styles'] = {}
+                                                    for style_index in range(len(document['layout']['styles'][index])):
+                                                        string_index = document['layout']['styles'][index][style_index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
+                                                break
+                                return info
+                                            
+        except Exception:
+            logging.exception("Error looking up DOM Node")
+        return info
 
     ##########################################################################
     #   Timeline
