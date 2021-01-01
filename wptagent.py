@@ -842,7 +842,9 @@ def find_browsers(options):
                                 if 'name' in device:
                                     if device['name'] not in browsers:
                                         browsers[device['name']] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+                                        browsers[device['name'] + ' (simulator)'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
                                         browsers[device['name'] + ' - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
+                                        browsers[device['name'] + ' (simulator) - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
         except Exception:
             logging.exception('iOS Simulator devices unavailable')
 
