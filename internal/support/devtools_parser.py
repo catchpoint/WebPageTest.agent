@@ -45,6 +45,7 @@ class DevToolsParser(object):
         self.cpu_times = options['cpu'] if 'cpu' in options else None
         self.v8_stats = options['v8stats'] if 'v8stats' in options else None
         self.cached = options['cached'] if 'cached' in options else False
+        self.noheaders = options['noheaders'] if 'noheaders' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
         self.request_ids = {}
@@ -71,6 +72,12 @@ class DevToolsParser(object):
             self.process_cpu_times()
             logging.debug("Processing V8 stats")
             self.process_v8_stats()
+            if self.noheaders:
+                logging.debug('Stripping headers')
+                if 'requests' in self.result:
+                    for request in self.result['requests']:
+                        if 'headers' in request:
+                            del request['headers']
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
@@ -1461,8 +1468,8 @@ def main():
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
     parser.add_argument('--cpu', help="Input cpu time slices file (optional).")
     parser.add_argument('--v8stats', help="Input v8 stats file (optional).")
-    parser.add_argument('-c', '--cached', action='store_true', default=False,
-                        help="Test was of a cached page.")
+    parser.add_argument('-c', '--cached', action='store_true', default=False, help="Test was of a cached page.")
+    parser.add_argument('-h', '--noheaders', action='store_true', default=False, help="Strip headers from the request data.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
     options, _ = parser.parse_known_args()
 
@@ -1491,7 +1498,8 @@ def main():
            'cpu': options.cpu,
            'v8stats': options.v8stats,
            'cached': options.cached,
-           'out': options.out}
+           'out': options.out,
+           'noheaders': options.noheaders}
     devtools = DevToolsParser(opt)
     devtools.process()
     end = time.time()

@@ -1086,6 +1086,14 @@ class Firefox(DesktopBrowser):
                     request['objectSize'] = value
             except Exception:
                 logging.exception('Error processing headers')
+        # Strip the headers if necessary
+        noheaders = False
+        if 'noheaders' in self.job and self.job['noheaders']:
+            noheaders = True
+        if noheaders:
+            for request in requests:
+                if 'headers' in request:
+                    del request['headers']
         requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
         return requests
 

@@ -85,6 +85,7 @@ class DevTools(object):
         self.all_bodies = False
         self.request_sequence = 0
         self.default_target = None
+        self.dom_tree = None
 
     def prepare(self):
         """Set up the various paths and states"""
@@ -104,6 +105,7 @@ class DevTools(object):
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
             self.bodies_zip_file = None
+        self.dom_tree = None
         self.html_body = False
         self.all_bodies = False
         if 'bodies' in self.job and self.job['bodies']:
@@ -288,6 +290,7 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
+        self.send_command('DOMSnapshot.enable', {})
         self.enable_webkit_events()
         self.enable_target()
         if len(self.workers):
@@ -516,10 +519,24 @@ class DevTools(object):
             if 'discard_timeline' in self.job and self.job['discard_timeline']:
                 keep_timeline = False
             video_prefix = self.video_prefix if self.recording_video else None
+            self.snapshot_dom()
             self.websocket.start_processing_trace(self.path_base, video_prefix,
                                                   self.options, self.job, self.task,
-                                                  self.start_timestamp, keep_timeline)
+                                                  self.start_timestamp, keep_timeline, self.dom_tree)
             self.send_command('Tracing.end', {})
+
+    def snapshot_dom(self):
+        """Grab a snapshot of the DOM to use for processing element locations"""
+        try:
+            self.profile_start('snapshot_dom')
+            styles = ['background-image']
+            response = self.send_command('DOMSnapshot.captureSnapshot', {'computedStyles': styles, 'includePaintOrder': False, 'includeDOMRects': True}, wait=True)
+            if response and 'result' in response:
+                self.dom_tree = response['result']
+                self.dom_tree['style_names'] = styles
+            self.profile_end('snapshot_dom')
+        except Exception:
+            logging.exception("Error capturing DOM snapshot")
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
@@ -560,6 +577,7 @@ class DevTools(object):
             self.profile_end('collect_trace')
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
+        self.dom_tree = None
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
@@ -1467,7 +1485,7 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline):
+    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline, dom_tree):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
@@ -1480,6 +1498,7 @@ class DevToolsClient(WebSocketClient):
         self.job = job
         self.video_viewport = None
         self.keep_timeline = keep_timeline
+        self.dom_tree = dom_tree
 
     def stop_processing_trace(self, job):
         """All done"""
@@ -1504,7 +1523,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
             self.trace_parser.ProcessTimelineEvents()
-            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
+            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz', self.dom_tree)
             if 'timeline' in job and job['timeline']:
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
