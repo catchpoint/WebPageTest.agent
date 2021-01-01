@@ -6,6 +6,7 @@ pageData["document_origin"] = document.location.origin;
 pageData['viewport'] = {
   'width': window.innerWidth,
   'height': window.innerHeight,
+  'dpr': window.devicePixelRatio
 };
 var domCount = document.documentElement.getElementsByTagName("*").length;
 if (domCount === undefined)
