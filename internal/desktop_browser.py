@@ -369,6 +369,7 @@ class DesktopBrowser(BaseBrowser):
                 if not idle and monotonic() - last_update > 1:
                     last_update = monotonic()
                     logging.debug("CPU Utilization: %0.1f%% (%d CPU's, %0.1f%% target)", pct, cpu_count, target_pct)
+        logging.debug("Done waiting for Idle...")
 
     def clear_profile(self, task):
         """Delete the browser profile directory"""
