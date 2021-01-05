@@ -77,9 +77,9 @@ class Trace():
         except BaseException:
             logging.exception("Error writing to " + out_file)
 
-    def WriteUserTiming(self, out_file, dom_tree=None):
+    def WriteUserTiming(self, out_file, dom_tree=None, performance_timing=None):
         out = self.post_process_netlog_events()
-        out = self.post_process_user_timing(dom_tree)
+        out = self.post_process_user_timing(dom_tree, performance_timing)
         if out is not None:
             self.write_json(out_file, out)
 
@@ -296,7 +296,7 @@ class Trace():
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
-    def post_process_user_timing(self, dom_tree):
+    def post_process_user_timing(self, dom_tree, performance_timing):
         out = None
         if self.user_timing is not None:
             self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
@@ -354,6 +354,14 @@ class Trace():
                         node_info = self.FindDomNodeInfo(dom_tree, event['args']['data']['DOMNodeId'])
                         if node_info is not None:
                             event['args']['data']['node'] = node_info
+            if performance_timing:
+                for event in out:
+                    if 'args' in event and 'data' in event['args'] and 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
+                        for perf_entry in performance_timing:
+                            if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
+                                perf_entry['consumed'] = True
+                                if 'element' in perf_entry:
+                                    event['args']['data']['element'] = perf_entry['element']
             out.append({'startTime': self.start_time})
         return out
 
