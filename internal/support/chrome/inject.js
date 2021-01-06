@@ -15,6 +15,9 @@ var WptAgentFlatten = function(object) {
                 contents[key] = values;
             } else if (['element', 'node', 'currentRect', 'previousRect'].indexOf(key) >= 0) {
                 contents[key] = WptAgentFlatten(object[key]);
+                if (typeof object[key]['getBoundingClientRect'] === 'function') {
+                    contents[key]['boundingRect'] =  object[key].getBoundingClientRect();
+                }
             }
         } else if (typeof(object[key]) === 'string') {
             if (object[key].length > 0 && ignore.indexOf(key) === -1) {
