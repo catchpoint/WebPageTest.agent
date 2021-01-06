@@ -1469,7 +1469,7 @@ def main():
     parser.add_argument('--cpu', help="Input cpu time slices file (optional).")
     parser.add_argument('--v8stats', help="Input v8 stats file (optional).")
     parser.add_argument('-c', '--cached', action='store_true', default=False, help="Test was of a cached page.")
-    parser.add_argument('-h', '--noheaders', action='store_true', default=False, help="Strip headers from the request data.")
+    parser.add_argument('--noheaders', action='store_true', default=False, help="Strip headers from the request data.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
     options, _ = parser.parse_known_args()
 
