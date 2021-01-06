@@ -18,7 +18,11 @@ var WptAgentFlatten = function(object) {
             }
         } else if (typeof(object[key]) === 'string') {
             if (object[key].length > 0 && ignore.indexOf(key) === -1) {
-                contents[key] = object[key].substring(0,100);
+                if (object[key].substring(0,4) == 'http') {
+                    contents[key] = object[key];
+                } else {
+                    contents[key] = object[key].substring(0,200);
+                }
             }
         } else if (typeof(object[key]) !== 'function') {
             if (!key.match(/^[A-Z_]+$/)) {
