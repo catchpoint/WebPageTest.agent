@@ -350,7 +350,6 @@ class WPTAgent(object):
             ret = self.requires('selenium')
 
         # Optional imports
-        self.requires('brotli')
         self.requires('fontTools', 'fonttools')
 
         # Try patching ws4py with a faster lib
