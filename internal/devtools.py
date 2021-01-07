@@ -6,6 +6,7 @@
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
 import base64
 import gzip
+import io
 import logging
 import multiprocessing
 import os
@@ -48,6 +49,8 @@ class DevTools(object):
         self.command_responses = {}
         self.pending_body_requests = {}
         self.pending_commands = []
+        self.console_log = []
+        self.performance_timing = []
         self.workers = []
         self.page_loaded = None
         self.main_frame = None
@@ -91,6 +94,8 @@ class DevTools(object):
         """Set up the various paths and states"""
         self.requests = {}
         self.response_bodies = {}
+        self.console_log = []
+        self.performance_timing = []
         self.nav_error = None
         self.nav_error_code = None
         self.start_timestamp = None
@@ -291,6 +296,11 @@ class DevTools(object):
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('DOMSnapshot.enable', {})
+        inject_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'chrome', 'inject.js')
+        if os.path.isfile(inject_file_path):
+            with io.open(inject_file_path, 'r', encoding='utf-8') as inject_file:
+                inject_script = inject_file.read()
+                self.send_command('Page.addScriptToEvaluateOnNewDocument', {'source': inject_script})
         self.enable_webkit_events()
         self.enable_target()
         if len(self.workers):
@@ -483,6 +493,10 @@ class DevTools(object):
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
+        # Save the console logs
+        log_file = self.path_base + '_console_log.json.gz'
+        with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
+            json.dump(self.console_log, f_out)
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
@@ -522,7 +536,7 @@ class DevTools(object):
             self.snapshot_dom()
             self.websocket.start_processing_trace(self.path_base, video_prefix,
                                                   self.options, self.job, self.task,
-                                                  self.start_timestamp, keep_timeline, self.dom_tree)
+                                                  self.start_timestamp, keep_timeline, self.dom_tree, self.performance_timing)
             self.send_command('Tracing.end', {})
 
     def snapshot_dom(self):
@@ -1069,6 +1083,12 @@ class DevTools(object):
                 elif category == 'Network' and self.recording:
                     self.log_dev_tools_event(msg)
                     self.process_network_event(event, msg, target_id)
+                elif category == 'Console' and self.recording:
+                    self.log_dev_tools_event(msg)
+                    self.process_console_event(event, msg)
+                elif category == 'Log' and self.recording:
+                    self.log_dev_tools_event(msg)
+                    self.process_console_event(event, msg)
                 elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
@@ -1088,6 +1108,26 @@ class DevTools(object):
             if response_id in self.pending_commands:
                 self.pending_commands.remove(response_id)
                 self.command_responses[response_id] = msg
+
+    def process_console_event(self, event, msg):
+        """Handle Console.* and Log.* events"""
+        message = None
+        if event == 'messageAdded' and 'message' in msg['params']:
+            message = msg['params']['message']
+        elif event == 'entryAdded' and 'entry' in msg['params']:
+            message = msg['params']['entry']
+        
+        if message is not None:
+            if 'text' in message and message['text'].startswith('wptagent_message:'):
+                try:
+                    wpt_message = json.loads(message['text'][17:])
+                    if 'name' in wpt_message:
+                        if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
+                            self.performance_timing.append(wpt_message['data'])
+                except Exception:
+                    logging.exception('Error decoding console log message')
+            else:
+                self.console_log.append(message)
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
@@ -1485,7 +1525,7 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline, dom_tree):
+    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline, dom_tree, performance_timing):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
@@ -1499,6 +1539,7 @@ class DevToolsClient(WebSocketClient):
         self.video_viewport = None
         self.keep_timeline = keep_timeline
         self.dom_tree = dom_tree
+        self.performance_timing = performance_timing
 
     def stop_processing_trace(self, job):
         """All done"""
@@ -1523,7 +1564,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
             self.trace_parser.ProcessTimelineEvents()
-            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz', self.dom_tree)
+            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz', self.dom_tree, self.performance_timing)
             if 'timeline' in job and job['timeline']:
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
