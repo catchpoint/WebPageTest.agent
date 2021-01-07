@@ -67,7 +67,6 @@ RUN apt-get update && \
     tornado \
     wsaccel \
     xvfbwrapper \
-    brotli \
     'fonttools>=3.44.0,<4.0.0' \
     marionette_driver \
     selenium \

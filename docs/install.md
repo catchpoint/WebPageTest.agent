@@ -13,7 +13,6 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * ujson
     * tornado
     * wsaccel
-    * brotli
     * fonttools
     * future
     * bind9utils (Linux only, for rndc)
@@ -136,7 +135,7 @@ brew install libvpx ffmpeg imagemagick geckodriver ios-webkit-debug-proxy node g
 ```
 * Python3 and pip3 should have been installed as part of the homebrew install. The Python 3 libraries should be installed through pip3:
 ```bash
-pip3 install PyObjC ujson dnspython monotonic pillow psutil requests tornado wsaccel brotli fonttools selenium future usbmuxwrapper
+pip3 install PyObjC ujson dnspython monotonic pillow psutil requests tornado wsaccel fonttools selenium future usbmuxwrapper
 ```
 * Install lighthouse through npm
 ```bash
