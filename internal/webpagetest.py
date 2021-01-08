@@ -1192,6 +1192,8 @@ class WebPageTest(object):
                 data['ec2zone'] = self.zone
             if self.cpu_pct is not None:
                 data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+            if 'error' in self.job:
+                data['error'] = self.job['error']
             uploaded = False
             if 'work_server' in self.job:
                 uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
@@ -1298,6 +1300,10 @@ class WebPageTest(object):
                     uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
                 if not uploaded:
                     self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            else:
+                # Keep track of test-level errors for reporting
+                if task['error'] is not None:
+                    self.job['error'] = task['error']
         # Clean up so we don't leave directories lying around
         if os.path.isdir(task['dir']) and 'run' in self.job:
             try:
