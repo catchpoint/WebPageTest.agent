@@ -41,7 +41,8 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         """ Launch the browser using Selenium (only first view tests are supported) """
         try:
             logging.debug('Booting the simulator')
-            subprocess.call(['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', self.device_id], timeout=60)
+            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id], timeout=60)
+            subprocess.call(['open', '-a', 'Simulator'], timeout=60)
 
             logging.debug('Opening Safari')
             subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=60)
