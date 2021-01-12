@@ -170,14 +170,17 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy = None
         # Stop the browser
         subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'], timeout=60)
+        time.sleep(2)
         # Shutdown the simulator
         if self.device_id is not None:
             subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id], timeout=60)
         else:
             subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'], timeout=60)
         self.device_id = None
+        time.sleep(5)
         #Cleanup
         subprocess.call(['killall', 'Simulator'])
+        time.sleep(5)
         DesktopBrowser.stop(self, job, task)
 
     def on_start_recording(self, task):
