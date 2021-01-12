@@ -32,25 +32,26 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def prepare(self, job, task):
         """ Prepare the OS and simulator """
-        subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'])
+        subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'], timeout=60)
         if not task['cached']:
             logging.debug('Resetting simulator state')
-            subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
+            subprocess.call(['xcrun', 'simctl', 'erase', self.device_id], timeout=60)
 
     def launch(self, job, task):
         """ Launch the browser using Selenium (only first view tests are supported) """
         try:
             logging.debug('Booting the simulator')
-            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id])
+            subprocess.call(['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', self.device_id], timeout=60)
+            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id], timeout=60)
 
             logging.debug('Opening Safari')
-            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
+            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=60)
 
             # find the webinspector socket
             webinspector_socket = None
             end_time = monotonic() + 30
             while webinspector_socket is None and monotonic() < end_time:
-                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
+                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True, timeout=10)
                 if out:
                     for line in out.splitlines(keepends=False):
                         if line.endswith('com.apple.webinspectord_sim.socket'):
@@ -66,7 +67,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
             args = ['open', '-W', '-a', script]
             logging.debug(' '.join(args))
-            subprocess.call(args)
+            subprocess.call(args, timeout=60)
             time.sleep(2)
             if self.rotate_simulator:
                 self.rotate_simulator_window()
@@ -97,7 +98,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
         args = ['open', '-W', '-a', script]
         logging.debug(' '.join(args))
-        subprocess.call(args)
+        subprocess.call(args, timeout=60)
 
     def check_simulator_orientation(self):
         """Make sure the simulator didn't remember an earlier rotation"""
@@ -166,12 +167,12 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy.communicate()
             self.webinspector_proxy = None
         # Stop the browser
-        subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'])
+        subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'], timeout=60)
         # Shutdown the simulator
         if self.device_id is not None:
-            subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id])
+            subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id], timeout=60)
         else:
-            subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'])
+            subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'], timeout=60)
         self.device_id = None
         #Cleanup
         subprocess.call(['killall', 'Simulator'])
