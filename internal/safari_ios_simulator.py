@@ -51,14 +51,17 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             webinspector_socket = None
             end_time = monotonic() + 30
             while webinspector_socket is None and monotonic() < end_time:
-                out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True, timeout=10)
-                if out:
-                    for line in out.splitlines(keepends=False):
-                        if line.endswith('com.apple.webinspectord_sim.socket'):
-                            offset = line.find('/private')
-                            if offset >= 0:
-                                webinspector_socket = line[offset:]
-                                break
+                try:
+                    out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True, timeout=10)
+                    if out:
+                        for line in out.splitlines(keepends=False):
+                            if line.endswith('com.apple.webinspectord_sim.socket'):
+                                offset = line.find('/private')
+                                if offset >= 0:
+                                    webinspector_socket = line[offset:]
+                                    break
+                except Exception:
+                    pass
                 if webinspector_socket is None:
                     time.sleep(2)
 
