@@ -663,16 +663,16 @@ class DevtoolsBrowser(object):
                 command.extend(['--skip-audits', 'screenshot-thumbnails'])
             form_factor_command = '--form-factor' if lighthouse_version >= 7 else '--emulated-form-factor'
             if self.options.android:
-                command.extend([form_factor_command, 'none'])
+                command.extend([form_factor_command, 'mobile'])
+                if lighthouse_version >= 7:
+                    command.extend(['--screenEmulation.disabled'])
+            elif 'mobile' not in self.job or not self.job['mobile']:
+                command.extend([form_factor_command, 'desktop'])
                 if lighthouse_version >= 7:
                     command.extend(['--screenEmulation.disabled'])
             if 'user_agent_string' in self.job:
                 sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                 command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
-            elif 'mobile' not in self.job or not self.job['mobile']:
-                command.extend([form_factor_command, 'desktop'])
-                if lighthouse_version >= 7:
-                    command.extend(['--screenEmulation.disabled'])
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
