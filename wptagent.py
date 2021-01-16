@@ -430,16 +430,16 @@ class WPTAgent(object):
             except Exception:
                 pass
 
-        # Check for Node 10+
-        if self.get_node_version() < 10.0:
+        # Check for Node 12+
+        if self.get_node_version() < 12.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
                 logging.debug('Updating Node.js to 12.x')
-                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -',
-                                shell=True)
+                subprocess.call('sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates', shell=True)
+                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -', shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
-            if self.get_node_version() < 10.0:
-                logging.warning("Node.js 10 or newer is required for Lighthouse testing")
+            if self.get_node_version() < 12.0:
+                logging.warning("Node.js 12 or newer is required for Lighthouse testing")
 
         # Check the iOS install
         if self.ios is not None:
