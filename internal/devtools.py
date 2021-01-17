@@ -601,7 +601,7 @@ class DevTools(object):
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
-        if request_id not in self.response_bodies and self.body_fail_count < 3:
+        if request_id not in self.response_bodies and self.body_fail_count < 3 and not self.is_ios:
             request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request and 'url' in request and request['url'].startswith('http'):
