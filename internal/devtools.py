@@ -393,8 +393,8 @@ class DevTools(object):
         self.send_command('Page.disable', {})
         self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
-        # Process messages for up to 60 seconds in case we still have some pending async commands
-        self.wait_for_pending_commands(60)
+        # Process messages for up to 10 seconds in case we still have some pending async commands
+        self.wait_for_pending_commands(10)
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
