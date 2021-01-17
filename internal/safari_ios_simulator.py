@@ -94,6 +94,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         DesktopBrowser.wait_for_idle(self, 2)
         except Exception:
             logging.exception('Error starting the simulator')
+            self.job['reboot'] = True
 
     def rotate_simulator_window(self):
         """Run the apple script to rotate the window"""

@@ -46,6 +46,7 @@ class WebPageTest(object):
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
         self.first_failure = None
+        self.is_rebooting = False
         self.session = requests.Session()
         self.options = options
         self.fps = options.fps
@@ -385,6 +386,7 @@ class WebPageTest(object):
     # pylint: enable=E1101
 
     def reboot(self):
+        self.is_rebooting = True
         if platform.system() == 'Windows':
             subprocess.call(['shutdown', '/r', '/f'])
         else:
@@ -392,6 +394,8 @@ class WebPageTest(object):
 
     def get_test(self, browsers):
         """Get a job from the server"""
+        if self.is_rebooting:
+            return
         import requests
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
@@ -715,6 +719,8 @@ class WebPageTest(object):
                 self.test_run_count += 1
         if task is None and self.job is not None:
             self.upload_test_result()
+        if 'reboot' in job and job['reboot']:
+            self.reboot()
         return task
 
     def running_another_test(self, task):
