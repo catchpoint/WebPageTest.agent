@@ -393,6 +393,8 @@ class DevTools(object):
         self.send_command('Page.disable', {})
         self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
+        # Process messages for up to 60 seconds in case we still have some pending async commands
+        self.wait_for_pending_commands(60)
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
@@ -469,12 +471,7 @@ class DevTools(object):
                     logging.exception('Error stopping devtools')
         self.recording = False
         # Process messages for up to 10 seconds in case we still have some pending async commands
-        end_time = monotonic() + 10
-        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
-            try:
-                self.pump_message()
-            except Exception:
-                pass
+        self.wait_for_pending_commands(10)
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
@@ -511,6 +508,15 @@ class DevTools(object):
             self.trace_parser = None
         self.profile_end('stop_recording')
 
+    def wait_for_pending_commands(self, timeout):
+        """Wait for any queued commands"""
+        end_time = monotonic() + timeout
+        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
+            try:
+                self.pump_message()
+            except Exception:
+                pass
+
     def pump_message(self):
         """ Run the message pump """
         try:
@@ -518,7 +524,7 @@ class DevTools(object):
             try:
                 if raw is not None and len(raw):
                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                        logging.debug('-> %s', raw[:200])
+                        logging.debug('<- %s', raw[:200])
                     msg = json.loads(raw)
                     self.process_message(msg)
             except Exception:
@@ -789,7 +795,7 @@ class DevTools(object):
                         if raw is not None and len(raw):
                             if self.recording:
                                 if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                    logging.debug('-> %s', raw[:200])
+                                    logging.debug('<- %s', raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
                         if not raw:
@@ -828,7 +834,7 @@ class DevTools(object):
                             try:
                                 if raw is not None and len(raw):
                                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('-> %s', raw[:200])
+                                        logging.debug('<- %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -849,7 +855,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
                 out = json.dumps(msg)
-                logging.debug("<- %s", out[:1000])
+                logging.debug("-> %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
                     end_time = monotonic() + timeout
@@ -859,7 +865,7 @@ class DevTools(object):
                             try:
                                 if raw is not None and len(raw):
                                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('-> %s', raw[:200])
+                                        logging.debug('<- %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -891,7 +897,7 @@ class DevTools(object):
                     try:
                         if raw is not None and len(raw):
                             if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                logging.debug('-> %s', raw[:200])
+                                logging.debug('<- %s', raw[:200])
                             msg = json.loads(raw)
                             self.process_message(msg)
                     except Exception:
@@ -1350,7 +1356,7 @@ class DevTools(object):
                 target_id = msg['params']['targetId']
             if 'message' in msg['params'] and target_id is not None:
                 if msg['params']['message'].find("Timeline.eventRecorded") == -1:
-                    logging.debug('-> %s', msg['params']['message'][:200])
+                    logging.debug('<- %s', msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
         if event == 'targetCreated':
