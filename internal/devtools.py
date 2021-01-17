@@ -389,9 +389,6 @@ class DevTools(object):
 
     def stop_capture(self):
         """Do any quick work to stop things that are capturing data"""
-        self.send_command('Inspector.disable', {})
-        self.send_command('Page.disable', {})
-        self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
         # Process messages for up to 10 seconds in case we still have some pending async commands
         self.wait_for_pending_commands(10)
@@ -494,6 +491,9 @@ class DevTools(object):
         log_file = self.path_base + '_console_log.json.gz'
         with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
             json.dump(self.console_log, f_out)
+        self.send_command('Inspector.disable', {})
+        self.send_command('Page.disable', {})
+        self.send_command('Debugger.disable', {})
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
