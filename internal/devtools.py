@@ -1083,27 +1083,25 @@ class DevTools(object):
             if len(parts) >= 2:
                 category = parts[0]
                 event = parts[1]
+                log_event = bool(self.recording)
                 if category == 'Page' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_page_event(event, msg)
                 elif category == 'Network' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_network_event(event, msg, target_id)
                 elif category == 'Console' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_console_event(event, msg)
                 elif category == 'Log' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_console_event(event, msg)
                 elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
                     self.process_css_event(event, msg)
                 elif category == 'Target':
+                    log_event = False
                     self.process_target_event(event, msg)
                 elif category == 'Timeline' and self.recording and self.is_webkit:
                     self.process_timeline_event(event, msg)
-                elif self.recording:
+                if log_event:
                     self.log_dev_tools_event(msg)
         if 'id' in msg:
             response_id = int(re.search(r'\d+', str(msg['id'])).group())
