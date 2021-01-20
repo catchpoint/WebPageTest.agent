@@ -355,6 +355,9 @@ class DevTools(object):
                         trace_config["includedCategories"].append("disabled-by-default-devtools.timeline")
                     if "disabled-by-default-devtools.timeline.frame" not in trace_config["includedCategories"]:
                         trace_config["includedCategories"].append("disabled-by-default-devtools.timeline.frame")
+                if 'profiler' in self.job and self.job['profiler']:
+                    if "disabled-by-default-v8.cpu_profiler" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-v8.cpu_profiler")
             if 'v8rcs' in self.job and self.job['v8rcs']:
                 if "v8" not in trace_config["includedCategories"]:
                     trace_config["includedCategories"].append("v8")
