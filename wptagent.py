@@ -831,6 +831,7 @@ def find_browsers(options):
             browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
         # Get a list of all of the iOS simulator devices available
         try:
+            logging.debug('Scanning for iOS simulator devices...')
             out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
             if out:
                 devices = json.loads(out)
