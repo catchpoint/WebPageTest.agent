@@ -110,6 +110,15 @@ class DevtoolsBrowser(object):
                     self.devtools.send_command("Network.clearBrowserCache", {}, wait=True)
                     self.devtools.send_command("Network.clearBrowserCookies", {}, wait=True)
                 self.profile_end('dtbrowser.clear_cache')
+            
+            # Disable image types
+            disable_images = []
+            if 'disableAVIF' in self.job and self.job['disableAVIF']:
+                disable_images.append('avif')
+            if 'disableWEBP' in self.job and self.job['disableWEBP']:
+                disable_images.append('webp')
+            if len(disable_images):
+                self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
 
             # Mobile Emulation
             if not self.options.android and not self.is_webkit and \
