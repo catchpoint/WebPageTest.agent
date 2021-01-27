@@ -155,7 +155,7 @@ class WebPageTest(object):
                 if matches:
                     timestamp = int(matches.group(1))
                     git_date = datetime.utcfromtimestamp(timestamp)
-                    self.version = git_date.strftime('%y%m%d.%H%m%S')
+                    self.version = git_date.strftime('%y%m%d.%H%M%S')
         except Exception:
             pass
         # Load the discovered browser margins
