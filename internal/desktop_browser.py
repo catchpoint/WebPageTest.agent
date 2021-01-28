@@ -72,6 +72,19 @@ class DesktopBrowser(BaseBrowser):
         self.is_chrome = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.block_domains = []
+        self.rosetta = False
+        if platform.system() == 'Darwin':
+            try:
+                cpu = subprocess.check_output(['uname', '-m'], universal_newlines=True)
+                if cpu.startswith('arm'):
+                    self.rosetta = True
+                else:
+                    translated = subprocess.check_output(['sysctl', '-in', 'sysctl.proc_translated'], universal_newlines=True)
+                    logging.debug("CPU Platform: %s, Translated: %s", cpu.strip(), translated.strip())
+                    if translated and len(translated) and int(translated) == 1:
+                        self.rosetta = True
+            except Exception:
+                pass
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -285,18 +298,8 @@ class DesktopBrowser(BaseBrowser):
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
         # Handle launching M1 Arm binaries on MacOS
-        if platform.system() == 'Darwin':
-            try:
-                cpu = subprocess.check_output(['uname', '-m'], universal_newlines=True)
-                if cpu.startswith('arm'):
-                    command_line = 'arch -arm64 ' + command_line
-                else:
-                    rosetta = subprocess.check_output(['sysctl', '-in', 'sysctl.proc_translated'], universal_newlines=True)
-                    logging.debug("CPU Platform: %s, Translated: %s", cpu.strip(), rosetta.strip())
-                    if rosetta and len(rosetta) and int(rosetta) == 1:
-                        command_line = 'arch -arm64 ' + command_line
-            except Exception:
-                pass
+        if self.rosetta:
+            command_line = 'arch -arm64 ' + command_line
         logging.debug(command_line)
         if platform.system() == 'Windows':
             self.proc = subprocess.Popen(command_line, shell=True)
@@ -417,6 +420,13 @@ class DesktopBrowser(BaseBrowser):
             ver = platform.uname()
             task['page_data']['osVersion'] = '{0} {1}'.format(ver[0], ver[2])
             task['page_data']['os_version'] = '{0} {1}'.format(ver[0], ver[2])
+            if self.rosetta:
+                try:
+                    task['page_data']['osPlatform'] = subprocess.check_output(['arch', '-arm64', 'uname', '-mp'], universal_newlines=True).strip()
+                except Exception:
+                    task['page_data']['osPlatform'] = '{0} {1}'.format(ver[4], ver[5])
+            else:
+                task['page_data']['osPlatform'] = '{0} {1}'.format(ver[4], ver[5])
             # Spawn tcpdump
             if self.tcpdump_enabled:
                 self.profile_start('desktop.start_pcap')

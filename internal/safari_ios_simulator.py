@@ -45,7 +45,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             subprocess.call(['open', '-a', 'Simulator'], timeout=60)
 
             logging.debug('Opening Safari')
-            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=60)
+            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=240)
 
             # find the webinspector socket
             webinspector_socket = None
