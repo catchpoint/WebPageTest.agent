@@ -4,7 +4,6 @@
   var responseHeaders = %RESPONSE_HEADERS%;
   Wappalyzer.setTechnologies(json.technologies);
   Wappalyzer.setCategories(json.categories);
-  let wptagentWappalyzer = null;
 
   async function runWappalyzer() {
     // Get the script src URLs
@@ -82,7 +81,6 @@
       categories: categories,
       apps: apps
     });
-    console.log(wptResult);
     return wptResult;
   }
 
