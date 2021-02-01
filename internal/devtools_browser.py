@@ -853,7 +853,7 @@ class DevtoolsBrowser(object):
                     wappalyzer = f_in.read()
                 if wappalyzer is not None:
                     json_data = None
-                    with open(os.path.join(self.support_path, 'Wappalyzer', 'apps.json')) as f_in:
+                    with open(os.path.join(self.support_path, 'Wappalyzer', 'technologies.json')) as f_in:
                         json_data = f_in.read()
                     if json is not None:
                         # Format the headers as a dictionary of lists
