@@ -597,6 +597,7 @@ class DevTools(object):
                             no_message_count += 1
                             time.sleep(1)
                             pass
+                        elapsed = monotonic() - start
                 self.websocket.stop_processing_trace(self.job)
             except Exception:
                 logging.exception('Error processing trace events')
