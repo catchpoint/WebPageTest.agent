@@ -5,26 +5,33 @@
 Cross-platform WebPageTest agent
 
 ## Supported Platforms/Browsers
-Chrome is the only browser that currently supports manipulating requests (changing headers, blocking requests, etc).  Chrome, IE and Microsoft Edge are the only browsers that currently support capturing response bodies and running optimization checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
+Chromium-based browsers are the only browsers that currently supports manipulating requests (changing headers, blocking requests, etc).  Firefox and Safari do not currently support capturing response bodies and running optimization checks.  All browsers should support basic page loading, scripts and video capture on all platforms.  Traffic-shaping is supported on all platforms as well.
 
 ### Linux (with display or headless with Xvfb)
 * Chrome (Stable, Beta and Unstable)
 * Firefox (Stable and Nightly)
 * Opera (Stable, Beta and Developer)
+* Brave (Stable, Beta, Dev and Nightly)
+* Microsoft Edge (Dev)
+* Epiphany (Ubuntu 20.04+)
+* Vivaldi
 
 ### Windows
 * Chrome (Stable, Beta, Dev and Canary)
 * Firefox (Stable, ESR, Developer Edition, Beta and Nightly)
-* Microsoft Edge
+* Microsoft Edge (Legacy and Chromium-based)
 * Internet Explorer
 * Opera (Stable, Beta and Developer)
+* Brave (Stable, Beta, Dev and Nightly)
 
-### OSX
+### OSX - Intel and Apple Silicon
 * Chrome (Stable and Canary)
 * Firefox (Stable and Nightly)
+* Safari (iOS Simulator)
 
 ### Android (requires a tethered host - Raspberry Pi's preferred)
 * Chrome (Stable, Beta, Dev and Canary)
+* Samsung Internet
 * Several browsers run as "black box" tests (single page load, visual metrics only):
     * Chrome (Stable, Beta, Dev and Canary)
     * Samsung Browser
@@ -124,12 +131,7 @@ run the agent in a docker container.
     * setInnerText
     * setValue
     * submitForm
-
-## Not yet supported (actively being worked on)
-* Browser installs/updates
-* Windows general cleanup/health (temp files, downloads, killing processes, etc)
-* Script Commands:
-    * firefoxPref
+    * overrideHost
 
 ## Not Supported (no plans to implement)
 * Script Commands:
@@ -147,8 +149,7 @@ run the agent in a docker container.
     * requiredRequest
     * setDOMRequest
     * waitForJSDone (change semantics to console log message)
-    * overrideHost (depends on support being added to dev tools)
     * if/else/endif
 
 ## Contributing
-There are 2 separate lies of development under different licenses and pull requests are accepted to either of them.  The master branch where most active development is occurring is under the [Polyform Shield 1.0.0 license](LICENSE.md) and there is an "apache" branch which is under the more permissive Apache 2.0 license.
+There are 2 separate lines of development under different licenses and pull requests are accepted to either of them.  The master branch where most active development is occurring is under the [Polyform Shield 1.0.0 license](LICENSE.md) and there is an "apache" branch which is under the more permissive Apache 2.0 license.

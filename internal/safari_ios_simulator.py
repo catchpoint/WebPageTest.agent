@@ -5,9 +5,14 @@
 import logging
 import os
 import subprocess
+import sys
 import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 
 class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
     """iOS Simulator"""
@@ -27,40 +32,50 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def prepare(self, job, task):
         """ Prepare the OS and simulator """
+        subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'], timeout=60)
         if not task['cached']:
             logging.debug('Resetting simulator state')
-            subprocess.call(['xcrun', 'simctl', 'erase', self.device_id])
+            subprocess.call(['xcrun', 'simctl', 'erase', self.device_id], timeout=60)
 
     def launch(self, job, task):
         """ Launch the browser using Selenium (only first view tests are supported) """
         try:
             logging.debug('Booting the simulator')
-            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id])
+            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id], timeout=60)
+            subprocess.call(['open', '-a', 'Simulator'], timeout=60)
 
             logging.debug('Opening Safari')
-            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page])
-
-            # Try to move the simulator window
-            logging.debug('Moving Simulator Window')
-            if self.rotate_simulator:
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
-            else:
-                script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
-            args = ['open', '-W', '-a', script]
-            logging.debug(' '.join(args))
-            subprocess.call(args)
-            self.find_simulator_window()
+            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=240)
 
             # find the webinspector socket
             webinspector_socket = None
-            out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True)
-            if out:
-                for line in out.splitlines(keepends=False):
-                    if line.endswith('com.apple.webinspectord_sim.socket'):
-                        offset = line.find('/private')
-                        if offset >= 0:
-                            webinspector_socket = line[offset:]
-                            break
+            end_time = monotonic() + 30
+            while webinspector_socket is None and monotonic() < end_time:
+                try:
+                    out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True, timeout=10)
+                    if out:
+                        for line in out.splitlines(keepends=False):
+                            if line.endswith('com.apple.webinspectord_sim.socket'):
+                                offset = line.find('/private')
+                                if offset >= 0:
+                                    webinspector_socket = line[offset:]
+                                    break
+                except Exception:
+                    pass
+                if webinspector_socket is None:
+                    time.sleep(2)
+
+            # Try to move the simulator window
+            logging.debug('Moving Simulator Window')
+            script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'MoveSimulator.app')
+            args = ['open', '-W', '-a', script]
+            logging.debug(' '.join(args))
+            subprocess.call(args, timeout=60)
+            time.sleep(2)
+            if self.rotate_simulator:
+                self.rotate_simulator_window()
+                time.sleep(2)
+
             # Start the webinspector proxy
             if webinspector_socket is not None:
                 args = ['ios_webkit_debug_proxy', '-F', '-s', 'unix:' + webinspector_socket]
@@ -73,17 +88,40 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                         self.connected = True
                         # Finish the startup init
                         DesktopBrowser.wait_for_idle(self)
+                        self.check_simulator_orientation()
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, self.start_page)
                         DesktopBrowser.wait_for_idle(self, 2)
         except Exception:
             logging.exception('Error starting the simulator')
+            self.job['reboot'] = True
+
+    def rotate_simulator_window(self):
+        """Run the apple script to rotate the window"""
+        logging.debug('Rotating Simulator Window')
+        script = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'osx', 'RotateSimulator.app')
+        args = ['open', '-W', '-a', script]
+        logging.debug(' '.join(args))
+        subprocess.call(args, timeout=60)
+
+    def check_simulator_orientation(self):
+        """Make sure the simulator didn't remember an earlier rotation"""
+        self.find_simulator_window()
+        if 'capture_rect' in self.job:
+            rotated = self.job['capture_rect']['width'] > self.job['capture_rect']['height']
+            if rotated != self.rotate_simulator:
+                logging.debug("Fixing simulator rotation")
+                self.rotate_simulator_window()
+                time.sleep(5)
+                self.find_simulator_window()
 
     def find_simulator_window(self):
         """ Figure out where the simulator opened on screen for video capture """
         count = 0
         found = False
         attempts = 10
+        if 'capture_rect' in self.job:
+            del self.job['capture_rect']
         while count < attempts and not found:
             from Quartz import (
                 CGWindowListCopyWindowInfo,
@@ -98,15 +136,16 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
                     y = int(window['kCGWindowBounds']['Y'])
                     width = int(window['kCGWindowBounds']['Width'])
                     height = int(window['kCGWindowBounds']['Height'])
-                    self.job['capture_rect'] = {
-                        'x': x,
-                        'y': y,
-                        'width': width,
-                        'height': height
-                    }
-                    logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
-                    found = True
-                    break
+                    # Use the biggest window belonging to Simulator
+                    if not found or (width * height) > (self.job['capture_rect']['width'] * self.job['capture_rect']['height']):
+                        self.job['capture_rect'] = {
+                            'x': x,
+                            'y': y,
+                            'width': width,
+                            'height': height
+                        }
+                        logging.debug("Simulator window: %d,%d - %d x %d", x, y, width, height)
+                        found = True
             if count < attempts and not found:
                 time.sleep(0.5)
 
@@ -120,6 +159,11 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         return DevtoolsBrowser.execute_js(self, script)
 
     def stop(self, job, task):
+        # Reset a rotated simulator
+        if self.rotate_simulator:
+            self.rotate_simulator_window()
+            self.rotate_simulator_window()
+            self.rotate_simulator_window()
         if self.connected:
             DevtoolsBrowser.disconnect(self)
         if self.webinspector_proxy:
@@ -127,15 +171,18 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy.communicate()
             self.webinspector_proxy = None
         # Stop the browser
-        subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'])
+        subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'], timeout=60)
+        time.sleep(2)
         # Shutdown the simulator
         if self.device_id is not None:
-            subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id])
+            subprocess.call(['xcrun', 'simctl', 'shutdown', self.device_id], timeout=60)
         else:
-            subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'])
+            subprocess.call(['xcrun', 'simctl', 'shutdown', 'all'], timeout=60)
         self.device_id = None
+        time.sleep(5)
         #Cleanup
         subprocess.call(['killall', 'Simulator'])
+        time.sleep(5)
         DesktopBrowser.stop(self, job, task)
 
     def on_start_recording(self, task):

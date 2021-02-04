@@ -264,9 +264,10 @@ class WPTAgent(object):
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 50. / float(cpu_count)
+            target_pct = max(50. / float(cpu_count), 10.)
             idle_start = None
             end_time = monotonic() + timeout
+            last_update = monotonic()
             idle = False
             while not idle and monotonic() < end_time:
                 self.alive()
@@ -279,6 +280,9 @@ class WPTAgent(object):
                         idle = True
                 else:
                     idle_start = None
+                if not idle and monotonic() - last_update > 1:
+                    last_update = monotonic()
+                    logging.debug("CPU Utilization: %0.1f%% (%d CPU's, %0.1f%% target)", pct, cpu_count, target_pct)
 
     def alive(self):
         """Touch a watchdog file indicating we are still alive"""
@@ -346,7 +350,6 @@ class WPTAgent(object):
             ret = self.requires('selenium')
 
         # Optional imports
-        self.requires('brotli')
         self.requires('fontTools', 'fonttools')
 
         # Try patching ws4py with a faster lib
@@ -427,16 +430,16 @@ class WPTAgent(object):
             except Exception:
                 pass
 
-        # Check for Node 10+
-        if self.get_node_version() < 10.0:
+        # Check for Node 12+
+        if self.get_node_version() < 12.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
                 logging.debug('Updating Node.js to 12.x')
-                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -',
-                                shell=True)
+                subprocess.call('sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates', shell=True)
+                subprocess.call('curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -', shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
-            if self.get_node_version() < 10.0:
-                logging.warning("Node.js 10 or newer is required for Lighthouse testing")
+            if self.get_node_version() < 12.0:
+                logging.warning("Node.js 12 or newer is required for Lighthouse testing")
 
         # Check the iOS install
         if self.ios is not None:
@@ -801,6 +804,12 @@ def find_browsers(options):
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
             browsers['Chrome'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta'
+        if 'Chrome Beta' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Beta'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome Dev'
+        if 'Chrome Dev' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Dev'] = {'exe': chrome_path}
         canary_path = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
         if os.path.isfile(canary_path):
             if 'Chrome Dev' not in browsers:
@@ -822,6 +831,7 @@ def find_browsers(options):
             browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
         # Get a list of all of the iOS simulator devices available
         try:
+            logging.debug('Scanning for iOS simulator devices...')
             out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
             if out:
                 devices = json.loads(out)
@@ -832,7 +842,9 @@ def find_browsers(options):
                                 if 'name' in device:
                                     if device['name'] not in browsers:
                                         browsers[device['name']] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+                                        browsers[device['name'] + ' (simulator)'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
                                         browsers[device['name'] + ' - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
+                                        browsers[device['name'] + ' (simulator) - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
         except Exception:
             logging.exception('iOS Simulator devices unavailable')
 

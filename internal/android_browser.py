@@ -56,7 +56,6 @@ class AndroidBrowser(BaseBrowser):
         self.video_enabled = bool(job['video'])
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump_file = None
-        self.hosts_backup = '/data/local/tmp/hosts.bak'
         if self.config['type'] == 'blackbox':
             self.tcpdump_enabled = True
             self.video_enabled = True
@@ -121,7 +120,6 @@ class AndroidBrowser(BaseBrowser):
         # kill any running instances
         self.adb.shell(['am', 'force-stop', self.config['package']])
         # Modify the hosts file for non-Chrome browsers
-        self.restore_hosts()
         if 'dns_override' in task:
             self.modify_hosts(task, task['dns_override'])
         self.profile_end('desktop.prepare')
@@ -136,7 +134,7 @@ class AndroidBrowser(BaseBrowser):
             # Make sure the system files are writable
             self.adb.su('mount -o rw,remount /system')
             try:
-                hosts_text = self.adb.su('cat {}'.format(hosts_file))
+                hosts_text = "127.0.0.1       localhost\n::1             ip6-localhost"
                 if hosts_text is not None:
                     hosts_text += "\n"
                     for pair in hosts:
@@ -153,14 +151,9 @@ class AndroidBrowser(BaseBrowser):
             except Exception as err:
                 logging.exception("Exception modifying hosts file: %s", err.__str__())
 
-    def restore_hosts(self):
-        """See if we have a backup hosts file to restore"""
-        self.adb.su('cp {} {}'.format(self.hosts_backup, '/etc/hosts'))
-        self.adb.su('rm {}'.format(self.hosts_backup))
-
     def stop(self, job, task):
         """ Post-test cleanup """
-        self.restore_hosts()
+        pass
 
     def stop_all_browsers(self):
         """Kill all instances of known browsers"""
@@ -255,9 +248,6 @@ class AndroidBrowser(BaseBrowser):
                     '--progress', progress_file]
             if 'debug' in self.job and self.job['debug']:
                 args.append('-vvvv')
-            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-                hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
-                args.extend(['--herodata', hero_elements_file])
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])

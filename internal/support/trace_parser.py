@@ -77,9 +77,9 @@ class Trace():
         except BaseException:
             logging.exception("Error writing to " + out_file)
 
-    def WriteUserTiming(self, out_file):
+    def WriteUserTiming(self, out_file, dom_tree=None, performance_timing=None):
         out = self.post_process_netlog_events()
-        out = self.post_process_user_timing()
+        out = self.post_process_user_timing(dom_tree, performance_timing)
         if out is not None:
             self.write_json(out_file, out)
 
@@ -296,7 +296,7 @@ class Trace():
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
-    def post_process_user_timing(self):
+    def post_process_user_timing(self, dom_tree, performance_timing):
         out = None
         if self.user_timing is not None:
             self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
@@ -348,8 +348,96 @@ class Trace():
                 out.append(lcp_event)
             for name in candidates:
                 out.append(candidates[name])
+            if dom_tree is not None:
+                for event in out:
+                    if 'args' in event and 'data' in event['args'] and 'DOMNodeId' in event['args']['data']:
+                        node_info = self.FindDomNodeInfo(dom_tree, event['args']['data']['DOMNodeId'])
+                        if node_info is not None:
+                            event['args']['data']['node'] = node_info
+            if performance_timing:
+                for event in out:
+                    if 'args' in event and 'data' in event['args'] and 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
+                        for perf_entry in performance_timing:
+                            if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
+                                perf_entry['consumed'] = True
+                                if 'element' in perf_entry:
+                                    event['args']['data']['element'] = perf_entry['element']
             out.append({'startTime': self.start_time})
         return out
+
+    def FindDomNodeInfo(self, dom_tree, node_id):
+        """Get the information for the given DOM node"""
+        info = None
+        try:
+            if dom_tree is not None:
+                if 'documents' in dom_tree:
+                    node_index = None
+                    for document in dom_tree['documents']:
+                        if 'nodes' in document and node_index is None:
+                            if 'backendNodeId' in document['nodes']:
+                                for index in range(len(document['nodes']['backendNodeId'])):
+                                    if document['nodes']['backendNodeId'][index] == node_id:
+                                        node_index = index
+                                        break
+                            if node_index is not None:
+                                info = {}
+                                if 'strings' in dom_tree:
+                                    if 'nodeName' in document['nodes'] and node_index < len(document['nodes']['nodeName']):
+                                        string_index = document['nodes']['nodeName'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeType'] = dom_tree['strings'][string_index]
+                                    if 'nodeValue' in document['nodes'] and node_index < len(document['nodes']['nodeValue']):
+                                        string_index = document['nodes']['nodeValue'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeValue'] = dom_tree['strings'][string_index]
+                                    if 'attributes' in document['nodes'] and node_index < len(document['nodes']['attributes']):
+                                        attribute = None
+                                        for string_index in document['nodes']['attributes'][node_index]:
+                                            string_value = ''
+                                            if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                string_value = dom_tree['strings'][string_index]
+                                            if attribute is None:
+                                                attribute = string_value
+                                            else:
+                                                if attribute:
+                                                    if 'attributes' not in info:
+                                                        info['attributes'] = {}
+                                                    if attribute in info['attributes']:
+                                                        info['attributes'][attribute] += ' ' + string_value
+                                                    else:
+                                                        info['attributes'][attribute] = string_value
+                                                attribute = None
+                                    if 'currentSourceURL' in document['nodes']:
+                                        if 'index' in document['nodes']['currentSourceURL'] and 'value' in document['nodes']['currentSourceURL']:
+                                            for index in range(len(document['nodes']['currentSourceURL']['index'])):
+                                                if document['nodes']['currentSourceURL']['index'][index] == node_index:
+                                                    if index < len(document['nodes']['currentSourceURL']['value']):
+                                                        string_index = document['nodes']['currentSourceURL']['value'][index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['sourceURL'] = dom_tree['strings'][string_index]
+                                                    break
+                                if 'layout' in document:
+                                    if 'nodeIndex' in document['layout']:
+                                        for index in range(len(document['layout']['nodeIndex'])):
+                                            if document['layout']['nodeIndex'][index] == node_index:
+                                                if 'bounds' in document['layout'] and index < len(document['layout']['bounds']):
+                                                    info['bounds'] = document['layout']['bounds'][index]
+                                                if 'text' in document['layout'] and index < len(document['layout']['text']):
+                                                    string_index = document['layout']['text'][index]
+                                                    if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                        info['layoutText'] = dom_tree['strings'][string_index]
+                                                if 'style_names' in dom_tree and 'styles' in document['layout'] and index < len(document['layout']['styles']) and len(document['layout']['styles'][index]) == len(dom_tree['style_names']):
+                                                    if 'styles' not in info:
+                                                        info['styles'] = {}
+                                                    for style_index in range(len(document['layout']['styles'][index])):
+                                                        string_index = document['layout']['styles'][index][style_index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
+                                return info
+                                            
+        except Exception:
+            logging.exception("Error looking up DOM Node")
+        return info
 
     ##########################################################################
     #   Timeline
@@ -910,7 +998,7 @@ class Trace():
                             'h2_session' in request and \
                             request['h2_session'] in self.netlog['h2_session']:
                         h2_session = self.netlog['h2_session'][request['h2_session']]
-                        if 'socket' not in request and 'socket' in h2_session:
+                        if 'socket' in h2_session:
                             request['socket'] = h2_session['socket']
                         if 'stream_id' in request and \
                                 'stream' in h2_session and \
@@ -4648,7 +4736,438 @@ BLINK_FEATURES = {
     "3352": "V8PointerEvent_AltitudeAngle_AttributeGetter",
     "3353": "CrossBrowsingContextGroupMainFrameNulledNonEmptyNameAccessed",
     "3354": "PositionSticky",
-    "3355": "CommaSeparatorInAllowAttribute"
+    "3355": "CommaSeparatorInAllowAttribute",
+    "3359": "MainFrameCSPViaHTTP",
+    "3360": "MainFrameCSPViaMeta",
+    "3361": "MainFrameCSPViaOriginPolicy",
+    "3362": "HtmlClipboardApiRead",
+    "3363": "HtmlClipboardApiWrite",
+    "3364": "CSSSystemColorComputeToSelf",
+    "3365": "ConversionAPIAll",
+    "3366": "ImpressionRegistration",
+    "3367": "ConversionRegistration",
+    "3368": "WebSharePolicyAllow",
+    "3369": "WebSharePolicyDisallow",
+    "3370": "FormAssociatedCustomElement",
+    "3371": "WindowClosed",
+    "3372": "WrongBaselineOfMultiLineButton",
+    "3373": "WrongBaselineOfEmptyLineButton",
+    "3374": "V8RTCRtpTransceiver_Stopped_AttributeGetter",
+    "3375": "V8RTCRtpTransceiver_Stop_Method",
+    "3376": "SecurePaymentConfirmation",
+    "3377": "CSSInvalidVariableUnset",
+    "3378": "ElementInternalsShadowRoot",
+    "3379": "AnyPiiFieldDetected_PredictedTypeMatch",
+    "3380": "EmailFieldDetected_PredictedTypeMatch",
+    "3381": "PhoneFieldDetected_PredictedTypeMatch",
+    "3382": "EmailFieldDetected_PatternMatch",
+    "3383": "LastLetterSpacingAffectsRendering",
+    "3384": "V8FontMetadata_GetTables_Method",
+    "3385": "V8FontMetadata_Blob_Method",
+    "3386": "V8FontManager_Query_Method",
+    "3387": "AudioContextBaseLatency",
+    "3388": "V8Window_GetScreens_Method",
+    "3389": "V8Window_IsMultiScreen_Method",
+    "3390": "V8Window_Onscreenschange_AttributeGetter",
+    "3391": "V8Window_Onscreenschange_AttributeSetter",
+    "3392": "DOMWindowOpenPositioningFeaturesCrossScreen",
+    "3393": "DOMWindowSetWindowRectCrossScreen",
+    "3394": "FullscreenCrossScreen",
+    "3395": "BatterySavingsMeta",
+    "3396": "DigitalGoodsGetDigitalGoodsService",
+    "3397": "DigitalGoodsGetDetails",
+    "3398": "DigitalGoodsAcknowledge",
+    "3399": "MediaRecorder_MimeType",
+    "3400": "MediaRecorder_VideoBitsPerSecond",
+    "3401": "MediaRecorder_AudioBitsPerSecond",
+    "3402": "OBSOLETE_BluetoothRemoteGATTCharacteristic_Uuid",
+    "3403": "OBSOLETE_BluetoothRemoteGATTDescriptor_Uuid",
+    "3404": "OBSOLETE_BluetoothRemoteGATTService_Uuid",
+    "3405": "GPUAdapter_Name",
+    "3406": "WindowScreenInternal",
+    "3407": "WindowScreenPrimary",
+    "3408": "ThirdPartyCookieRead",
+    "3409": "ThirdPartyCookieWrite",
+    "3410": "RTCLegacyRtpDataChannelNegotiated",
+    "3411": "CrossSitePostMessage",
+    "3412": "SchemelesslySameSitePostMessage",
+    "3413": "SchemefulSameSitePostMessage",
+    "3414": "UnspecifiedTargetOriginPostMessage",
+    "3415": "SchemelesslySameSitePostMessageSecureToInsecure",
+    "3416": "SchemelesslySameSitePostMessageInsecureToSecure",
+    "3417": "OBSOLETE_BCPBroadcast",
+    "3418": "OBSOLETE_BCPRead",
+    "3419": "OBSOLETE_BCPWriteWithoutResponse",
+    "3420": "OBSOLETE_BCPWrite",
+    "3421": "OBSOLETE_BCPNotify",
+    "3422": "OBSOLETE_BCPIndicate",
+    "3423": "OBSOLETE_BCPAuthenticatedSignedWrites",
+    "3424": "OBSOLETE_BCPReliableWrite",
+    "3425": "OBSOLETE_BCPWritableAuxiliaries",
+    "3426": "TextAlignSpecifiedToLegend",
+    "3427": "V8Document_FragmentDirective_AttributeGetter",
+    "3428": "V8StorageManager_GetDirectory_Method",
+    "3429": "BeforematchHandlerRegistered",
+    "3430": "BluetoothAdvertisingEventName",
+    "3431": "BluetoothAdvertisingEventAppearance",
+    "3432": "BluetoothAdvertisingEventTxPower",
+    "3433": "CrossOriginOpenerPolicyReporting",
+    "3434": "GamepadId",
+    "3435": "ElementAttachInternals",
+    "3436": "BluetoothDeviceName",
+    "3437": "RTCIceCandidateAddress",
+    "3438": "RTCIceCandidateCandidate",
+    "3439": "RTCIceCandidatePort",
+    "3440": "RTCIceCandidateRelatedAddress",
+    "3441": "RTCIceCandidateRelatedPort",
+    "3442": "SlotAssignNode",
+    "3443": "PluginName",
+    "3444": "PluginFilename",
+    "3445": "PluginDescription",
+    "3446": "SubresourceWebBundles",
+    "3447": "RTCPeerConnectionSetRemoteDescriptionPromise",
+    "3448": "RTCPeerConnectionSetLocalDescriptionPromise",
+    "3449": "RTCPeerConnectionCreateOfferPromise",
+    "3450": "RTCPeerConnectionCreateAnswerPromise",
+    "3451": "RTCPeerConnectionSetRemoteDescription",
+    "3452": "RTCPeerConnectionSetLocalDescription",
+    "3453": "RTCPeerConnectionCreateOffer",
+    "3454": "RTCPeerConnectionCreateAnswer",
+    "3455": "V8AuthenticatorAttestationResponse_GetTransports_Method",
+    "3456": "WebCodecsAudioDecoder",
+    "3457": "WebCodecsVideoDecoder",
+    "3458": "WebCodecsVideoEncoder",
+    "3459": "WebCodecsVideoTrackReader",
+    "3460": "WebCodecsImageDecoder",
+    "3461": "BackForwardCacheExperimentHTTPHeader",
+    "3462": "V8Navigator_OpenTCPSocket_Method",
+    "3463": "V8Navigator_OpenUDPSocket_Method",
+    "3464": "WebCodecs",
+    "3465": "CredentialManagerCrossOriginPublicKeyGetRequest",
+    "3466": "CSSContainStrictWithoutContentVisibility",
+    "3467": "CSSContainAllWithoutContentVisibility",
+    "3468": "TimerInstallFromBeforeUnload",
+    "3469": "TimerInstallFromUnload",
+    "3470": "OBSOLETE_ElementAttachInternalsBeforeConstructor",
+    "3471": "SMILElementHasRepeatNEventListener",
+    "3472": "WebTransport",
+    "3477": "IdleDetectionPermissionRequested",
+    "3478": "IdentifiabilityStudyReserved3478",
+    "3479": "SpeechSynthesis_GetVoices_Method",
+    "3480": "IdentifiabilityStudyReserved3480",
+    "3481": "V8Navigator_JavaEnabled_Method",
+    "3482": "IdentifiabilityStudyReserved3482",
+    "3483": "IdentifiabilityStudyReserved3483",
+    "3484": "IdentifiabilityStudyReserved3484",
+    "3485": "IdentifiabilityStudyReserved3485",
+    "3486": "IdentifiabilityStudyReserved3486",
+    "3487": "IdentifiabilityStudyReserved3487",
+    "3488": "IdentifiabilityStudyReserved3488",
+    "3489": "IdentifiabilityStudyReserved3489",
+    "3490": "IdentifiabilityStudyReserved3490",
+    "3491": "IdentifiabilityStudyReserved3491",
+    "3492": "IdentifiabilityStudyReserved3492",
+    "3493": "IdentifiabilityStudyReserved3493",
+    "3494": "IdentifiabilityStudyReserved3494",
+    "3495": "IdentifiabilityStudyReserved3495",
+    "3496": "IdentifiabilityStudyReserved3496",
+    "3497": "IdentifiabilityStudyReserved3497",
+    "3498": "IdentifiabilityStudyReserved3498",
+    "3499": "V8BackgroundFetchRegistration_FailureReason_AttributeGetter",
+    "3500": "V8Document_ElementFromPoint_Method",
+    "3501": "V8Document_ElementsFromPoint_Method",
+    "3502": "V8ShadowRoot_ElementFromPoint_Method",
+    "3503": "V8ShadowRoot_ElementsFromPoint_Method",
+    "3504": "WindowScreenTouchSupport",
+    "3505": "IdentifiabilityStudyReserved3505",
+    "3506": "IdentifiabilityStudyReserved3506",
+    "3507": "V8PushManager_SupportedContentEncodings_AttributeGetter",
+    "3508": "IdentifiabilityStudyReserved3508",
+    "3509": "V8RTCRtpReceiver_GetCapabilities_Method",
+    "3510": "V8RTCRtpSender_GetCapabilities_Method",
+    "3511": "IdentifiabilityStudyReserved3511",
+    "3512": "IdentifiabilityStudyReserved3512",
+    "3513": "IdentifiabilityStudyReserved3513",
+    "3514": "IdentifiabilityStudyReserved3514",
+    "3515": "IdentifiabilityStudyReserved3515",
+    "3516": "IdentifiabilityStudyReserved3516",
+    "3517": "IdentifiabilityStudyReserved3517",
+    "3518": "IdentifiabilityStudyReserved3518",
+    "3519": "IdentifiabilityStudyReserved3519",
+    "3520": "IdentifiabilityStudyReserved3520",
+    "3521": "IdentifiabilityStudyReserved3521",
+    "3522": "IdentifiabilityStudyReserved3522",
+    "3523": "IdentifiabilityStudyReserved3523",
+    "3524": "IdentifiabilityStudyReserved3524",
+    "3525": "IdentifiabilityStudyReserved3525",
+    "3526": "IdentifiabilityStudyReserved3526",
+    "3527": "IdentifiabilityStudyReserved3527",
+    "3528": "IdentifiabilityStudyReserved3528",
+    "3529": "IdentifiabilityStudyReserved3529",
+    "3530": "IdentifiabilityStudyReserved3530",
+    "3531": "IdentifiabilityStudyReserved3531",
+    "3532": "IdentifiabilityStudyReserved3532",
+    "3533": "IdentifiabilityStudyReserved3533",
+    "3534": "IdentifiabilityStudyReserved3534",
+    "3535": "IdentifiabilityStudyReserved3535",
+    "3536": "IdentifiabilityStudyReserved3536",
+    "3537": "IdentifiabilityStudyReserved3537",
+    "3538": "IdentifiabilityStudyReserved3538",
+    "3539": "IdentifiabilityStudyReserved3539",
+    "3540": "IdentifiabilityStudyReserved3540",
+    "3541": "V8WheelEvent_DeltaMode_AttributeGetter",
+    "3542": "V8Touch_Force_AttributeGetter",
+    "3543": "WebGLRenderingContextMakeXRCompatible",
+    "3544": "V8WebGLCompressedTextureASTC_GetSupportedProfiles_Method",
+    "3545": "HTMLCanvasGetContext",
+    "3546": "V8BeforeInstallPromptEvent_Platforms_AttributeGetter",
+    "3547": "IdentifiabilityStudyReserved3547",
+    "3548": "IdentifiabilityStudyReserved3548",
+    "3549": "IdentifiabilityStudyReserved3549",
+    "3550": "IdentifiabilityStudyReserved3550",
+    "3551": "IdentifiabilityStudyReserved3551",
+    "3552": "IdentifiabilityStudyReserved3552",
+    "3553": "IdentifiabilityStudyReserved3553",
+    "3554": "IdentifiabilityStudyReserved3554",
+    "3555": "IdentifiabilityStudyReserved3555",
+    "3556": "IdentifiabilityStudyReserved3556",
+    "3557": "IdentifiabilityStudyReserved3557",
+    "3558": "IdentifiabilityStudyReserved3558",
+    "3559": "IdentifiabilityStudyReserved3559",
+    "3560": "IdentifiabilityStudyReserved3560",
+    "3561": "IdentifiabilityStudyReserved3561",
+    "3562": "IdentifiabilityStudyReserved3562",
+    "3563": "IdentifiabilityStudyReserved3563",
+    "3564": "IdentifiabilityStudyReserved3564",
+    "3565": "IdentifiabilityStudyReserved3565",
+    "3566": "V8BaseAudioContext_SampleRate_AttributeGetter",
+    "3567": "WindowScreenId",
+    "3568": "WebGLRenderingContextGetParameter",
+    "3569": "WebGLRenderingContextGetRenderbufferParameter",
+    "3570": "WebGLRenderingContextGetShaderPrecisionFormat",
+    "3571": "WebGL2RenderingContextGetInternalFormatParameter",
+    "3572": "IdentifiabilityStudyReserved3572",
+    "3573": "IdentifiabilityStudyReserved3573",
+    "3574": "IdentifiabilityStudyReserved3574",
+    "3575": "IdentifiabilityStudyReserved3575",
+    "3576": "IdentifiabilityStudyReserved3576",
+    "3577": "IdentifiabilityStudyReserved3577",
+    "3578": "CascadedCSSZoomNotEqualToOne",
+    "3579": "ForcedDarkMode",
+    "3580": "PreferredColorSchemeDark",
+    "3581": "PreferredColorSchemeDarkSetting",
+    "3582": "IdentifiabilityStudyReserved3582",
+    "3583": "IdentifiabilityStudyReserved3583",
+    "3584": "IdentifiabilityStudyReserved3584",
+    "3585": "IdentifiabilityStudyReserved3585",
+    "3586": "IdentifiabilityStudyReserved3586",
+    "3587": "IdentifiabilityStudyReserved3587",
+    "3588": "IdentifiabilityStudyReserved3588",
+    "3589": "IdentifiabilityStudyReserved3589",
+    "3590": "IdentifiabilityStudyReserved3590",
+    "3591": "IdentifiabilityStudyReserved3591",
+    "3592": "IdentifiabilityStudyReserved3592",
+    "3593": "IdentifiabilityStudyReserved3593",
+    "3594": "IdentifiabilityStudyReserved3594",
+    "3595": "IdentifiabilityStudyReserved3595",
+    "3596": "IdentifiabilityStudyReserved3596",
+    "3597": "IdentifiabilityStudyReserved3597",
+    "3598": "IdentifiabilityStudyReserved3598",
+    "3599": "IdentifiabilityStudyReserved3599",
+    "3600": "IdentifiabilityStudyReserved3600",
+    "3601": "IdentifiabilityStudyReserved3601",
+    "3602": "IdentifiabilityStudyReserved3602",
+    "3603": "IdentifiabilityStudyReserved3603",
+    "3604": "IdentifiabilityStudyReserved3604",
+    "3605": "IdentifiabilityStudyReserved3605",
+    "3606": "IdentifiabilityStudyReserved3606",
+    "3607": "IdentifiabilityStudyReserved3607",
+    "3608": "IdentifiabilityStudyReserved3608",
+    "3609": "IdentifiabilityStudyReserved3609",
+    "3610": "BarcodeDetector_GetSupportedFormats",
+    "3611": "IdentifiabilityStudyReserved3611",
+    "3612": "IdentifiabilityStudyReserved3612",
+    "3613": "IdentifiabilityStudyReserved3613",
+    "3614": "IdentifiabilityStudyReserved3614",
+    "3615": "IdentifiabilityStudyReserved3615",
+    "3616": "IdentifiabilityStudyReserved3616",
+    "3617": "IdentifiabilityStudyReserved3617",
+    "3618": "IdentifiabilityStudyReserved3618",
+    "3619": "IdentifiabilityStudyReserved3619",
+    "3620": "IdentifiabilityStudyReserved3620",
+    "3621": "IdentifiabilityStudyReserved3621",
+    "3622": "IdentifiabilityStudyReserved3622",
+    "3623": "IdentifiabilityStudyReserved3623",
+    "3624": "IdentifiabilityStudyReserved3624",
+    "3625": "IdentifiabilityStudyReserved3625",
+    "3626": "IdentifiabilityStudyReserved3626",
+    "3627": "IdentifiabilityStudyReserved3627",
+    "3628": "IdentifiabilityStudyReserved3628",
+    "3629": "IdentifiabilityStudyReserved3629",
+    "3630": "IdentifiabilityStudyReserved3630",
+    "3631": "IdentifiabilityStudyReserved3631",
+    "3632": "IdentifiabilityStudyReserved3632",
+    "3633": "IdentifiabilityStudyReserved3633",
+    "3634": "IdentifiabilityStudyReserved3634",
+    "3635": "IdentifiabilityStudyReserved3635",
+    "3636": "IdentifiabilityStudyReserved3636",
+    "3637": "IdentifiabilityStudyReserved3637",
+    "3638": "IdentifiabilityStudyReserved3638",
+    "3639": "IdentifiabilityStudyReserved3639",
+    "3640": "IdentifiabilityStudyReserved3640",
+    "3641": "IdentifiabilityStudyReserved3641",
+    "3642": "IdentifiabilityStudyReserved3642",
+    "3643": "IdentifiabilityStudyReserved3643",
+    "3644": "IdentifiabilityStudyReserved3644",
+    "3645": "IdentifiabilityStudyReserved3645",
+    "3646": "IdentifiabilityStudyReserved3646",
+    "3647": "IdentifiabilityStudyReserved3647",
+    "3648": "IdentifiabilityStudyReserved3648",
+    "3649": "IdentifiabilityStudyReserved3649",
+    "3650": "IdentifiabilityStudyReserved3650",
+    "3651": "IdentifiabilityStudyReserved3651",
+    "3652": "IdentifiabilityStudyReserved3652",
+    "3653": "IdentifiabilityStudyReserved3653",
+    "3654": "IdentifiabilityStudyReserved3654",
+    "3655": "IdentifiabilityStudyReserved3655",
+    "3656": "IdentifiabilityStudyReserved3656",
+    "3657": "IdentifiabilityStudyReserved3657",
+    "3658": "IdentifiabilityStudyReserved3658",
+    "3659": "IdentifiabilityStudyReserved3659",
+    "3660": "IdentifiabilityStudyReserved3660",
+    "3661": "IdentifiabilityStudyReserved3661",
+    "3662": "IdentifiabilityStudyReserved3662",
+    "3663": "IdentifiabilityStudyReserved3663",
+    "3664": "IdentifiabilityStudyReserved3664",
+    "3665": "IdentifiabilityStudyReserved3665",
+    "3666": "IdentifiabilityStudyReserved3666",
+    "3667": "IdentifiabilityStudyReserved3667",
+    "3668": "IdentifiabilityStudyReserved3668",
+    "3669": "IdentifiabilityStudyReserved3669",
+    "3670": "IdentifiabilityStudyReserved3670",
+    "3671": "IdentifiabilityStudyReserved3671",
+    "3672": "IdentifiabilityStudyReserved3672",
+    "3673": "IdentifiabilityStudyReserved3673",
+    "3674": "IdentifiabilityStudyReserved3674",
+    "3675": "IdentifiabilityStudyReserved3675",
+    "3676": "IdentifiabilityStudyReserved3676",
+    "3677": "IdentifiabilityStudyReserved3677",
+    "3678": "IdentifiabilityStudyReserved3678",
+    "3679": "IdentifiabilityStudyReserved3679",
+    "3680": "IdentifiabilityStudyReserved3680",
+    "3681": "IdentifiabilityStudyReserved3681",
+    "3682": "UndeferrableThirdPartySubresourceRequestWithCookie",
+    "3683": "XRDepthSensing",
+    "3684": "XRFrameGetDepthInformation",
+    "3685": "XRDepthInformationGetDepth",
+    "3686": "XRDepthInformationDataAttribute",
+    "3687": "InterestCohortAPI_interestCohort_Method",
+    "3688": "AddressSpaceLocalEmbeddedInPrivateSecureContext",
+    "3689": "AddressSpaceLocalEmbeddedInPrivateNonSecureContext",
+    "3690": "AddressSpaceLocalEmbeddedInPublicSecureContext",
+    "3691": "AddressSpaceLocalEmbeddedInPublicNonSecureContext",
+    "3692": "AddressSpaceLocalEmbeddedInUnknownSecureContext",
+    "3693": "AddressSpaceLocalEmbeddedInUnknownNonSecureContext",
+    "3694": "AddressSpacePrivateEmbeddedInPublicSecureContext",
+    "3695": "AddressSpacePrivateEmbeddedInPublicNonSecureContext",
+    "3696": "AddressSpacePrivateEmbeddedInUnknownSecureContext",
+    "3697": "AddressSpacePrivateEmbeddedInUnknownNonSecureContext",
+    "3698": "ThirdPartyAccess",
+    "3699": "ThirdPartyActivation",
+    "3700": "ThirdPartyAccessAndActivation",
+    "3701": "FullscreenAllowedByScreensChange",
+    "3702": "NewLayoutOverflowDifferentBlock",
+    "3703": "NewLayoutOverflowDifferentFlex",
+    "3704": "NewLayoutOverflowDifferentAndAlreadyScrollsBlock",
+    "3705": "NewLayoutOverflowDifferentAndAlreadyScrollsFlex",
+    "3706": "UnicodeBidiPlainText",
+    "3707": "ColorSchemeDarkSupportedOnRoot",
+    "3708": "WebBluetoothGetAvailability",
+    "3709": "DigitalGoodsListPurchases",
+    "3710": "CompositedSVG",
+    "3711": "BarcodeDetectorDetect",
+    "3712": "FaceDetectorDetect",
+    "3713": "TextDetectorDetect",
+    "3714": "LocalStorageFirstUsedBeforeFcp",
+    "3715": "LocalStorageFirstUsedAfterFcp",
+    "3716": "CSSPseudoHostCompoundList",
+    "3717": "CSSPseudoHostContextCompoundList",
+    "3718": "CSSPseudoHostDynamicSpecificity",
+    "3719": "GetCurrentBrowsingContextMedia",
+    "3720": "MouseEventRelativePositionForInlineElement",
+    "3721": "V8SharedArrayBufferConstructedWithoutIsolation",
+    "3722": "V8HTMLVideoElement_GetVideoPlaybackQuality_Method",
+    "3723": "XRWebGLBindingGetReflectionCubeMap",
+    "3724": "XRFrameGetLightEstimate",
+    "3725": "V8HTMLDialogElement_Show_Method",
+    "3726": "V8HTMLDialogElement_ShowModal_Method",
+    "3727": "AdFrameDetected",
+    "3728": "MediaStreamTrackGenerator",
+    "3729": "MediaStreamTrackProcessor",
+    "3730": "AddEventListenerWithAbortSignal",
+    "3731": "XRSessionRequestLightProbe",
+    "3732": "BeforematchRevealedHiddenMatchable",
+    "3733": "AddSourceBufferUsingConfig",
+    "3734": "ChangeTypeUsingConfig",
+    "3735": "V8SourceBuffer_AppendEncodedChunks_Method",
+    "3736": "OversrollBehaviorOnViewportBreaks",
+    "3737": "SameOriginJsonTypeForScript",
+    "3738": "CrossOriginJsonTypeForScript",
+    "3739": "SameOriginStrictNosniffWouldBlock",
+    "3740": "CrossOriginStrictNosniffWouldBlock",
+    "3741": "CSSSelectorPseudoDir",
+    "3742": "CrossOriginSubframeWithoutEmbeddingControl",
+    "3743": "ReadableStreamWithByteSource",
+    "3744": "ReadableStreamBYOBReader",
+    "3746": "SamePartyCookieAttribute",
+    "3747": "SamePartyCookieExclusionOverruledSameSite",
+    "3748": "SamePartyCookieInclusionOverruledSameSite",
+    "3749": "EmbedElementWithoutTypeSrcChanged",
+    "3750": "PaymentHandlerStandardizedPaymentMethodIdentifier",
+    "3751": "WebCodecsAudioEncoder",
+    "3752": "EmbeddedCrossOriginFrameWithoutFrameAncestorsOrXFO",
+    "3753": "AddressSpacePrivateSecureContextEmbeddedLocal",
+    "3754": "AddressSpacePrivateNonSecureContextEmbeddedLocal",
+    "3755": "AddressSpacePublicSecureContextEmbeddedLocal",
+    "3756": "AddressSpacePublicNonSecureContextEmbeddedLocal",
+    "3757": "AddressSpacePublicSecureContextEmbeddedPrivate",
+    "3758": "AddressSpacePublicNonSecureContextEmbeddedPrivate",
+    "3759": "AddressSpaceUnknownSecureContextEmbeddedLocal",
+    "3760": "AddressSpaceUnknownNonSecureContextEmbeddedLocal",
+    "3761": "AddressSpaceUnknownSecureContextEmbeddedPrivate",
+    "3762": "AddressSpaceUnknownNonSecureContextEmbeddedPrivate",
+    "3763": "AddressSpacePrivateSecureContextNavigatedToLocal",
+    "3764": "AddressSpacePrivateNonSecureContextNavigatedToLocal",
+    "3765": "AddressSpacePublicSecureContextNavigatedToLocal",
+    "3766": "AddressSpacePublicNonSecureContextNavigatedToLocal",
+    "3767": "AddressSpacePublicSecureContextNavigatedToPrivate",
+    "3768": "AddressSpacePublicNonSecureContextNavigatedToPrivate",
+    "3769": "AddressSpaceUnknownSecureContextNavigatedToLocal",
+    "3770": "AddressSpaceUnknownNonSecureContextNavigatedToLocal",
+    "3771": "AddressSpaceUnknownSecureContextNavigatedToPrivate",
+    "3772": "AddressSpaceUnknownNonSecureContextNavigatedToPrivate",
+    "3773": "RTCPeerConnectionSdpSemanticsPlanB",
+    "3774": "FetchRespondWithNoResponseWithUsedRequestBody",
+    "3775": "V8TCPSocket_Close_Method",
+    "3776": "V8TCPSocket_Readable_AttributeGetter",
+    "3777": "V8TCPSocket_Writable_AttributeGetter",
+    "3778": "V8TCPSocket_RemoteAddress_AttributeGetter",
+    "3779": "V8TCPSocket_RemotePort_AttributeGetter",
+    "3780": "CSSSelectorTargetText",
+    "3781": "PopupElement",
+    "3782": "V8HTMLPopupElement_Show_Method",
+    "3783": "V8HTMLPopupElement_Hide_Method",
+    "3784": "WindowOpenWithAdditionalBoolParameter",
+    "3785": "RTCPeerConnectionConstructedWithPlanB",
+    "3786": "RTCPeerConnectionConstructedWithUnifiedPlan",
+    "3787": "RTCPeerConnectionUsingComplexPlanB",
+    "3788": "RTCPeerConnectionUsingComplexUnifiedPlan",
+    "3789": "WindowScreenIsExtended",
+    "3790": "WindowScreenChange",
+    "3791": "XRWebGLDepthInformationTextureAttribute",
+    "3792": "XRWebGLBindingGetDepthInformation",
+    "3793": "SessionStorageFirstUsedBeforeFcp",
+    "3794": "SessionStorageFirstUsedAfterFcp"
 }
 
 ##########################################################################

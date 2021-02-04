@@ -6,6 +6,7 @@
 """Main entry point for interfacing with Chrome's remote debugging protocol"""
 import base64
 import gzip
+import io
 import logging
 import multiprocessing
 import os
@@ -48,6 +49,8 @@ class DevTools(object):
         self.command_responses = {}
         self.pending_body_requests = {}
         self.pending_commands = []
+        self.console_log = []
+        self.performance_timing = []
         self.workers = []
         self.page_loaded = None
         self.main_frame = None
@@ -85,11 +88,14 @@ class DevTools(object):
         self.all_bodies = False
         self.request_sequence = 0
         self.default_target = None
+        self.dom_tree = None
 
     def prepare(self):
         """Set up the various paths and states"""
         self.requests = {}
         self.response_bodies = {}
+        self.console_log = []
+        self.performance_timing = []
         self.nav_error = None
         self.nav_error_code = None
         self.start_timestamp = None
@@ -104,6 +110,7 @@ class DevTools(object):
         if self.bodies_zip_file is not None:
             self.bodies_zip_file.close()
             self.bodies_zip_file = None
+        self.dom_tree = None
         self.html_body = False
         self.all_bodies = False
         if 'bodies' in self.job and self.job['bodies']:
@@ -288,6 +295,12 @@ class DevTools(object):
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
+        self.send_command('DOMSnapshot.enable', {})
+        inject_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'chrome', 'inject.js')
+        if os.path.isfile(inject_file_path):
+            with io.open(inject_file_path, 'r', encoding='utf-8') as inject_file:
+                inject_script = inject_file.read()
+                self.send_command('Page.addScriptToEvaluateOnNewDocument', {'source': inject_script})
         self.enable_webkit_events()
         self.enable_target()
         if len(self.workers):
@@ -336,8 +349,15 @@ class DevTools(object):
                     trace_config["includedCategories"].append("blink.console")
                 if "devtools.timeline" not in trace_config["includedCategories"]:
                     trace_config["includedCategories"].append("devtools.timeline")
-                trace_config["enableSampling"] = True
                 if 'timeline_fps' in self.job and self.job['timeline_fps']:
+                    if "disabled-by-default-devtools.timeline" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-devtools.timeline")
+                    if "disabled-by-default-devtools.timeline.frame" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-devtools.timeline.frame")
+                if 'profiler' in self.job and self.job['profiler']:
+                    trace_config["enableSampling"] = True
+                    if "disabled-by-default-v8.cpu_profiler" not in trace_config["includedCategories"]:
+                        trace_config["includedCategories"].append("disabled-by-default-v8.cpu_profiler")
                     if "disabled-by-default-devtools.timeline" not in trace_config["includedCategories"]:
                         trace_config["includedCategories"].append("disabled-by-default-devtools.timeline")
                     if "disabled-by-default-devtools.timeline.frame" not in trace_config["includedCategories"]:
@@ -376,10 +396,9 @@ class DevTools(object):
 
     def stop_capture(self):
         """Do any quick work to stop things that are capturing data"""
-        self.send_command('Inspector.disable', {})
-        self.send_command('Page.disable', {})
-        self.send_command('Debugger.disable', {})
         self.start_collecting_trace()
+        # Process messages for up to 10 seconds in case we still have some pending async commands
+        self.wait_for_pending_commands(10)
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
@@ -456,12 +475,7 @@ class DevTools(object):
                     logging.exception('Error stopping devtools')
         self.recording = False
         # Process messages for up to 10 seconds in case we still have some pending async commands
-        end_time = monotonic() + 10
-        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
-            try:
-                self.pump_message()
-            except Exception:
-                pass
+        self.wait_for_pending_commands(10)
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
@@ -480,6 +494,13 @@ class DevTools(object):
             self.dev_tools_file.write("\n]")
             self.dev_tools_file.close()
             self.dev_tools_file = None
+        # Save the console logs
+        log_file = self.path_base + '_console_log.json.gz'
+        with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
+            json.dump(self.console_log, f_out)
+        self.send_command('Inspector.disable', {})
+        self.send_command('Page.disable', {})
+        self.send_command('Debugger.disable', {})
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
@@ -494,6 +515,15 @@ class DevTools(object):
             self.trace_parser = None
         self.profile_end('stop_recording')
 
+    def wait_for_pending_commands(self, timeout):
+        """Wait for any queued commands"""
+        end_time = monotonic() + timeout
+        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
+            try:
+                self.pump_message()
+            except Exception:
+                pass
+
     def pump_message(self):
         """ Run the message pump """
         try:
@@ -501,7 +531,7 @@ class DevTools(object):
             try:
                 if raw is not None and len(raw):
                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                        logging.debug('-> %s', raw[:200])
+                        logging.debug('<- %s', raw[:200])
                     msg = json.loads(raw)
                     self.process_message(msg)
             except Exception:
@@ -516,10 +546,24 @@ class DevTools(object):
             if 'discard_timeline' in self.job and self.job['discard_timeline']:
                 keep_timeline = False
             video_prefix = self.video_prefix if self.recording_video else None
+            self.snapshot_dom()
             self.websocket.start_processing_trace(self.path_base, video_prefix,
                                                   self.options, self.job, self.task,
-                                                  self.start_timestamp, keep_timeline)
+                                                  self.start_timestamp, keep_timeline, self.dom_tree, self.performance_timing)
             self.send_command('Tracing.end', {})
+
+    def snapshot_dom(self):
+        """Grab a snapshot of the DOM to use for processing element locations"""
+        try:
+            self.profile_start('snapshot_dom')
+            styles = ['background-image']
+            response = self.send_command('DOMSnapshot.captureSnapshot', {'computedStyles': styles, 'includePaintOrder': False, 'includeDOMRects': True}, wait=True)
+            if response and 'result' in response:
+                self.dom_tree = response['result']
+                self.dom_tree['style_names'] = styles
+            self.profile_end('snapshot_dom')
+        except Exception:
+            logging.exception("Error capturing DOM snapshot")
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
@@ -553,6 +597,7 @@ class DevTools(object):
                             no_message_count += 1
                             time.sleep(1)
                             pass
+                        elapsed = monotonic() - start
                 self.websocket.stop_processing_trace(self.job)
             except Exception:
                 logging.exception('Error processing trace events')
@@ -560,10 +605,11 @@ class DevTools(object):
             self.profile_end('collect_trace')
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
+        self.dom_tree = None
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
-        if request_id not in self.response_bodies and self.body_fail_count < 3:
+        if request_id not in self.response_bodies and self.body_fail_count < 3 and not self.is_ios:
             request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request and 'url' in request and request['url'].startswith('http'):
@@ -757,7 +803,7 @@ class DevTools(object):
                         if raw is not None and len(raw):
                             if self.recording:
                                 if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                    logging.debug('-> %s', raw[:200])
+                                    logging.debug('<- %s', raw[:200])
                                 msg = json.loads(raw)
                                 self.process_message(msg)
                         if not raw:
@@ -796,7 +842,7 @@ class DevTools(object):
                             try:
                                 if raw is not None and len(raw):
                                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('-> %s', raw[:200])
+                                        logging.debug('<- %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -817,7 +863,7 @@ class DevTools(object):
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
                 out = json.dumps(msg)
-                logging.debug("<- %s", out[:1000])
+                logging.debug("-> %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
                     end_time = monotonic() + timeout
@@ -827,7 +873,7 @@ class DevTools(object):
                             try:
                                 if raw is not None and len(raw):
                                     if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('-> %s', raw[:200])
+                                        logging.debug('<- %s', raw[:200])
                                     msg = json.loads(raw)
                                     self.process_message(msg)
                                     if command_id in self.command_responses:
@@ -859,7 +905,7 @@ class DevTools(object):
                     try:
                         if raw is not None and len(raw):
                             if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                logging.debug('-> %s', raw[:200])
+                                logging.debug('<- %s', raw[:200])
                             msg = json.loads(raw)
                             self.process_message(msg)
                     except Exception:
@@ -898,15 +944,17 @@ class DevTools(object):
     
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        logging.debug('******************* grab_screenshot')
+        logging.debug('Grabbing Screenshot')
         if not self.main_thread_blocked:
             self.profile_start('screenshot')
             response = None
             data = None
             if self.is_webkit:
-                if 'actual_viewport' in self.task:
-                    width = self.task['actual_viewport']['width']
-                    height = self.task['actual_viewport']['height']
+                # Get the current viewport (depends on css scaling)
+                size = self.execute_js("[window.innerWidth, window.innerHeight]")
+                if size is not None and len(size) == 2:
+                    width = size[0]
+                    height = size[1]
                     response = self.send_command("Page.snapshotRect", {"x": 0, "y": 0, "width": width, "height": height, "coordinateSystem": "Viewport"}, wait=True, timeout=30)
                     if response is not None and 'result' in response and 'dataURL' in response['result'] and response['result']['dataURL'].startswith('data:image/png;base64,'):
                         data = response['result']['dataURL'][22:]
@@ -1043,21 +1091,25 @@ class DevTools(object):
             if len(parts) >= 2:
                 category = parts[0]
                 event = parts[1]
+                log_event = bool(self.recording)
                 if category == 'Page' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_page_event(event, msg)
                 elif category == 'Network' and self.recording:
-                    self.log_dev_tools_event(msg)
                     self.process_network_event(event, msg, target_id)
+                elif category == 'Console' and self.recording:
+                    self.process_console_event(event, msg)
+                elif category == 'Log' and self.recording:
+                    self.process_console_event(event, msg)
                 elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
                     self.process_css_event(event, msg)
                 elif category == 'Target':
+                    log_event = False
                     self.process_target_event(event, msg)
                 elif category == 'Timeline' and self.recording and self.is_webkit:
                     self.process_timeline_event(event, msg)
-                elif self.recording:
+                if log_event:
                     self.log_dev_tools_event(msg)
         if 'id' in msg:
             response_id = int(re.search(r'\d+', str(msg['id'])).group())
@@ -1068,6 +1120,26 @@ class DevTools(object):
             if response_id in self.pending_commands:
                 self.pending_commands.remove(response_id)
                 self.command_responses[response_id] = msg
+
+    def process_console_event(self, event, msg):
+        """Handle Console.* and Log.* events"""
+        message = None
+        if event == 'messageAdded' and 'message' in msg['params']:
+            message = msg['params']['message']
+        elif event == 'entryAdded' and 'entry' in msg['params']:
+            message = msg['params']['entry']
+        
+        if message is not None:
+            if 'text' in message and message['text'].startswith('wptagent_message:'):
+                try:
+                    wpt_message = json.loads(message['text'][17:])
+                    if 'name' in wpt_message:
+                        if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
+                            self.performance_timing.append(wpt_message['data'])
+                except Exception:
+                    logging.exception('Error decoding console log message')
+            else:
+                self.console_log.append(message)
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
@@ -1290,7 +1362,7 @@ class DevTools(object):
                 target_id = msg['params']['targetId']
             if 'message' in msg['params'] and target_id is not None:
                 if msg['params']['message'].find("Timeline.eventRecorded") == -1:
-                    logging.debug('-> %s', msg['params']['message'][:200])
+                    logging.debug('<- %s', msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
                 self.process_message(target_message, target_id=target_id)
         if event == 'targetCreated':
@@ -1465,7 +1537,7 @@ class DevToolsClient(WebSocketClient):
             pass
         return message
 
-    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline):
+    def start_processing_trace(self, path_base, video_prefix, options, job, task, start_timestamp, keep_timeline, dom_tree, performance_timing):
         """Write any trace events to the given file"""
         self.last_image = None
         self.trace_ts_start = None
@@ -1478,6 +1550,8 @@ class DevToolsClient(WebSocketClient):
         self.job = job
         self.video_viewport = None
         self.keep_timeline = keep_timeline
+        self.dom_tree = dom_tree
+        self.performance_timing = performance_timing
 
     def stop_processing_trace(self, job):
         """All done"""
@@ -1502,7 +1576,7 @@ class DevToolsClient(WebSocketClient):
             self.trace_parser.post_process_netlog_events()
             logging.debug("Processing the trace timeline events")
             self.trace_parser.ProcessTimelineEvents()
-            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz')
+            self.trace_parser.WriteUserTiming(self.path_base + '_user_timing.json.gz', self.dom_tree, self.performance_timing)
             if 'timeline' in job and job['timeline']:
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')

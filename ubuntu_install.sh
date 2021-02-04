@@ -29,13 +29,13 @@ if [ "$UBUNTU_VERSION" \< "18" ]; then
 fi
 sudo dbus-uuidgen --ensure
 if [ "$UBUNTU_VERSION" \< "20" ]; then
-    until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli marionette_driver selenium future usbmuxwrapper
+    until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper marionette_driver selenium future usbmuxwrapper
     do
         sleep 1
     done
     sudo pip install 'fonttools>=3.44.0,<4.0.0'
 else
-    until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper brotli selenium future usbmuxwrapper
+    until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper selenium future usbmuxwrapper
     do
         sleep 1
     done

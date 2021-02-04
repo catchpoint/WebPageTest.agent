@@ -1328,7 +1328,7 @@ def sample_frames(frames, interval, start_ms, skip_frames):
 ##########################################################################
 
 
-def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, progress_file, hero_elements_file):
+def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, progress_file):
     metrics = None
     histograms = load_histograms(histograms_file, start, end)
     if histograms is not None and len(histograms) > 0:
@@ -1353,34 +1353,6 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if perceptual:
                 metrics.append({'name': 'Perceptual Speed Index',
                                 'value': calculate_perceptual_speed_index(progress, dirs)})
-            if hero_elements_file is not None and os.path.isfile(hero_elements_file):
-                logging.debug('Calculating hero element times')
-                hero_data = None
-                with gzip.open(hero_elements_file, GZIP_READ_TEXT) as hero_f_in:
-                    try:
-                        hero_data = json.load(hero_f_in)
-                    except Exception:
-                        logging.exception('Could not load hero elements data')
-
-                if hero_data is not None and hero_data['heroes'] is not None and \
-                        hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:
-                    viewport = hero_data['viewport']
-                    hero_timings = []
-                    for hero in hero_data['heroes']:
-                        hero_timings.append({'name': hero['name'],
-                                             'value': calculate_hero_time(progress, dirs, hero, viewport)})
-                    hero_timings_sorted = sorted(hero_timings, key=lambda timing: timing['value'])
-                    hero_timings.append({'name': 'FirstPaintedHero',
-                                         'value': hero_timings_sorted[0]['value']})
-                    hero_timings.append({'name': 'LastPaintedHero',
-                                         'value': hero_timings_sorted[-1]['value']})
-                    hero_data['timings'] = hero_timings
-                    metrics += hero_timings
-
-                    with gzip.open(hero_elements_file, GZIP_TEXT, 7) as hero_f_out:
-                        json.dump(hero_data, hero_f_out)
-            else:
-                logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
         else:
             metrics = [
                 {'name': 'First Visual Change',
@@ -1515,96 +1487,6 @@ def calculate_perceptual_speed_index(progress, directory):
         gc.collect()
         last_ms = p['time']
     return int(per_si)
-
-
-def calculate_hero_time(progress, directory, hero, viewport):
-    hero_time = None
-    abs_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
-    n = len(progress)
-    target_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(progress[n - 1]['time']))
-
-    extension = None
-    if os.path.isfile(target_frame + '.png'):
-        extension = '.png'
-    elif os.path.isfile(target_frame + '.jpg'):
-        extension = '.jpg'
-    if extension is not None:
-        hero_width = int(hero['width'])
-        hero_height = int(hero['height'])
-        hero_x = int(hero['x'])
-        hero_y = int(hero['y'])
-        target_frame = target_frame + extension
-        logging.debug('Target image for hero %s is %s' % (hero['name'], target_frame))
-
-        from PIL import Image
-        with Image.open(target_frame) as im:
-            width, height = im.size
-        if width != viewport['width']:
-            scale = float(width) / float(viewport['width'])
-            logging.debug('Frames are %dpx wide but viewport was %dpx. Scaling by %f' % (width, viewport['width'], scale))
-            hero_width = int(hero['width'] * scale)
-            hero_height = int(hero['height'] * scale)
-            hero_x = int(hero['x'] * scale)
-            hero_y = int(hero['y'] * scale)
-
-        logging.debug('Calculating render time for hero element "%s" at position [%d, %d, %d, %d]' % (hero['name'], hero['x'], hero['y'], hero['width'], hero['height']))
-
-        # Create a rectangular mask of the hero element position
-        hero_mask = os.path.join(abs_directory, 'hero_{0}_mask.png'.format(hero['name']))
-        command = '{0} -size {1}x{2} xc:black -fill white -draw "rectangle {3},{4} {5},{6}" PNG24:"{7}"'.format(
-            image_magick['convert'], width, height, hero_x, hero_y, hero_x + hero_width, hero_y + hero_height, hero_mask)
-        subprocess.call(command, shell=True)
-
-        # Apply the mask to the target frame to create the reference frame
-        target_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], progress[n - 1]['time']))
-        command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
-            image_magick['convert'], target_frame, hero_mask, target_mask)
-        subprocess.call(command, shell=True)
-
-        # Allow for small differences like scrollbars and overlaid UI elements
-        # by applying a 10% fuzz and allowing for up to 2% of the pixels to be
-        # different.
-        fuzz = 10
-        max_pixel_diff = math.ceil(hero_width * hero_height * 0.02)
-
-        for p in progress:
-            current_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(p['time']))
-            extension = None
-            if os.path.isfile(current_frame + '.png'):
-                extension = '.png'
-            elif os.path.isfile(current_frame + '.jpg'):
-                extension = '.jpg'
-            if extension is not None:
-                current_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], p['time']))
-                # Apply the mask to the current frame
-                command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
-                    image_magick['convert'], current_frame + extension, hero_mask, current_mask)
-                logging.debug(command)
-                subprocess.call(command, shell=True)
-                if os.path.isfile(current_mask):
-                    match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
-                    # Remove each mask after using it
-                    try:
-                        os.remove(current_mask)
-                    except Exception:
-                        pass
-
-                if match:
-                    hero_time = p['time']
-                    break
-
-        # Cleanup the masks
-        try:
-            os.remove(hero_mask)
-        except Exception:
-            pass
-        try:
-            if os.path.isfile(target_mask):
-                os.remove(target_mask)
-        except Exception:
-            pass
-
-    return hero_time
 
 
 ##########################################################################
@@ -1764,7 +1646,6 @@ def main():
     parser.add_argument('-j', '--json', action='store_true', default=False,
                         help="Set output format to JSON")
     parser.add_argument('--progress', help="Visual progress output file.")
-    parser.add_argument('--herodata', help="Hero elements data file.")
 
     options = parser.parse_args()
 
@@ -1870,8 +1751,7 @@ def main():
                 # Calculate the histograms and visual metrics
                 calculate_histograms(directory, histogram_file, options.force)
                 metrics = calculate_visual_metrics(histogram_file, options.start, options.end,
-                                                   options.perceptual, directory, options.progress,
-                                                   options.herodata)
+                                                   options.perceptual, directory, options.progress)
 
                 if options.screenshot is not None:
                     quality = 30

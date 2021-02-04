@@ -110,6 +110,15 @@ class DevtoolsBrowser(object):
                     self.devtools.send_command("Network.clearBrowserCache", {}, wait=True)
                     self.devtools.send_command("Network.clearBrowserCookies", {}, wait=True)
                 self.profile_end('dtbrowser.clear_cache')
+            
+            # Disable image types
+            disable_images = []
+            if 'disableAVIF' in self.job and self.job['disableAVIF']:
+                disable_images.append('avif')
+            if 'disableWEBP' in self.job and self.job['disableWEBP']:
+                disable_images.append('webp')
+            if len(disable_images):
+                self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
 
             # Mobile Emulation
             if not self.options.android and not self.is_webkit and \
@@ -173,18 +182,21 @@ class DevtoolsBrowser(object):
                     match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
                 if match:
                     self.browser_version = match.group(1)
-            if 'uastring' in self.job and 'mobile' in self.job and self.job['mobile']:
-                # Replace the requested Chrome version with the actual Chrome version so Mobile emulation is always up to date
-                original_version = None
-                if ua_string is not None:
-                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
-                    if match:
-                        original_version = match.group(1)
-                ua_string = self.job['uastring']
-                if original_version is not None:
-                    match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
-                    if match:
-                        ua_string = ua_string.replace(match.group(1), original_version)
+            if 'uastring' in self.job:
+                if 'mobile' in self.job and self.job['mobile']:
+                    # Replace the requested Chrome version with the actual Chrome version so Mobile emulation is always up to date
+                    original_version = None
+                    if ua_string is not None:
+                        match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                        if match:
+                            original_version = match.group(1)
+                    ua_string = self.job['uastring']
+                    if original_version is not None:
+                        match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                        if match:
+                            ua_string = ua_string.replace(match.group(1), original_version)
+                else:
+                    ua_string = self.job['uastring']
             if ua_string is not None and 'AppendUA' in task:
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
@@ -216,7 +228,6 @@ class DevtoolsBrowser(object):
         """Do any quick work to stop things that are capturing data"""
         if self.devtools is not None:
             self.devtools.stop_capture()
-        self.collect_hero_elements(task)
 
     def on_stop_recording(self, task):
         """Stop recording"""
@@ -336,6 +347,9 @@ class DevtoolsBrowser(object):
             options['cpu'] = cpu if os.path.isfile(cpu) else None
             v8stats = path_base + '_v8stats.json.gz'
             options['v8stats'] = v8stats if os.path.isfile(v8stats) else None
+            options['noheaders'] = False
+            if 'noheaders' in self.job and self.job['noheaders']:
+                options['noheaders'] = True
             parser = DevToolsParser(options)
             parser.process()
             # Cleanup intermediate files that are not needed
@@ -348,6 +362,15 @@ class DevtoolsBrowser(object):
                     os.remove(coverage)
                 if os.path.isfile(devtools_file):
                     os.remove(devtools_file)
+            # remove files that might contain sensitive data
+            if options['noheaders']:
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
+                trace_file = path_base + '_trace.json.gz'
+                if os.path.isfile(trace_file):
+                    os.remove(trace_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
         self.profile_end('dtbrowser.process_devtools_requests')
@@ -455,22 +478,6 @@ class DevtoolsBrowser(object):
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
 
-    def collect_hero_elements(self, task):
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            with io.open(os.path.join(self.script_dir, 'hero_elements.js'), 'r', encoding='utf-8') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.devtools.execute_js(script)
-            if hero_elements is not None:
-                logging.debug('Hero Elements: %s', json.dumps(hero_elements))
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
-
     def process_command(self, command):
         """Process an individual script command"""
         logging.debug("Processing script command:")
@@ -535,7 +542,7 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'setminimumstepseconds':
             self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
-            self.task['user_agent_string'] = command['target']
+            self.job['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie' and not self.is_webkit:
             if 'target' in command and 'value' in command:
                 try:
@@ -622,6 +629,17 @@ class DevtoolsBrowser(object):
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
+            # see what version of lighthouse we are running
+            lighthouse_version = 1
+            try:
+                out = subprocess.check_output('lighthouse --version', shell=True, universal_newlines=True)
+                if out is not None and len(out):
+                    match = re.search(r'^\d+', out)
+                    if match:
+                        lighthouse_version = int(match.group())
+                logging.debug("Lighthouse version %d", lighthouse_version)
+            except Exception:
+                logging.exception('Error getting lighthouse version')
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
@@ -652,13 +670,18 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
                 command.extend(['--skip-audits', 'screenshot-thumbnails'])
+            form_factor_command = '--form-factor' if lighthouse_version >= 7 else '--emulated-form-factor'
             if self.options.android:
-                command.extend(['--emulated-form-factor', 'none'])
-                if 'user_agent_string' in self.job:
-                    sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
-                    command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
+                command.extend([form_factor_command, 'mobile'])
+                if lighthouse_version >= 7:
+                    command.extend(['--screenEmulation.disabled'])
             elif 'mobile' not in self.job or not self.job['mobile']:
-                command.extend(['--emulated-form-factor', 'desktop'])
+                command.extend([form_factor_command, 'desktop'])
+                if lighthouse_version >= 7:
+                    command.extend(['--screenEmulation.disabled'])
+            if 'user_agent_string' in self.job:
+                sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
+                command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
@@ -830,7 +853,7 @@ class DevtoolsBrowser(object):
                     wappalyzer = f_in.read()
                 if wappalyzer is not None:
                     json_data = None
-                    with open(os.path.join(self.support_path, 'Wappalyzer', 'apps.json')) as f_in:
+                    with open(os.path.join(self.support_path, 'Wappalyzer', 'technologies.json')) as f_in:
                         json_data = f_in.read()
                     if json is not None:
                         # Format the headers as a dictionary of lists

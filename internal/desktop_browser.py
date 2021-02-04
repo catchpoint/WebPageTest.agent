@@ -14,7 +14,6 @@ import re
 import shutil
 import signal
 import subprocess
-import errno
 import sys
 import threading
 import time
@@ -73,6 +72,19 @@ class DesktopBrowser(BaseBrowser):
         self.is_chrome = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.block_domains = []
+        self.rosetta = False
+        if platform.system() == 'Darwin':
+            try:
+                cpu = subprocess.check_output(['uname', '-m'], universal_newlines=True)
+                if cpu.startswith('arm'):
+                    self.rosetta = True
+                else:
+                    translated = subprocess.check_output(['sysctl', '-in', 'sysctl.proc_translated'], universal_newlines=True)
+                    logging.debug("CPU Platform: %s, Translated: %s", cpu.strip(), translated.strip())
+                    if translated and len(translated) and int(translated) == 1:
+                        self.rosetta = True
+            except Exception:
+                pass
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -285,6 +297,9 @@ class DesktopBrowser(BaseBrowser):
 
     def launch_browser(self, command_line):
         """Launch the browser and keep track of the process"""
+        # Handle launching M1 Arm binaries on MacOS
+        if self.rosetta:
+            command_line = 'arch -arm64 ' + command_line
         logging.debug(command_line)
         if platform.system() == 'Windows':
             self.proc = subprocess.Popen(command_line, shell=True)
@@ -345,9 +360,10 @@ class DesktopBrowser(BaseBrowser):
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 50. / float(cpu_count)
+            target_pct = max(50. / float(cpu_count), 10.)
             idle_start = None
             end_time = monotonic() + wait_time
+            last_update = monotonic()
             idle = False
             while not idle and monotonic() < end_time:
                 check_start = monotonic()
@@ -359,6 +375,10 @@ class DesktopBrowser(BaseBrowser):
                         idle = True
                 else:
                     idle_start = None
+                if not idle and monotonic() - last_update > 1:
+                    last_update = monotonic()
+                    logging.debug("CPU Utilization: %0.1f%% (%d CPU's, %0.1f%% target)", pct, cpu_count, target_pct)
+        logging.debug("Done waiting for Idle...")
 
     def clear_profile(self, task):
         """Delete the browser profile directory"""
@@ -400,6 +420,13 @@ class DesktopBrowser(BaseBrowser):
             ver = platform.uname()
             task['page_data']['osVersion'] = '{0} {1}'.format(ver[0], ver[2])
             task['page_data']['os_version'] = '{0} {1}'.format(ver[0], ver[2])
+            if self.rosetta:
+                try:
+                    task['page_data']['osPlatform'] = subprocess.check_output(['arch', '-arm64', 'uname', '-mp'], universal_newlines=True).strip()
+                except Exception:
+                    task['page_data']['osPlatform'] = '{0} {1}'.format(ver[4], ver[5])
+            else:
+                task['page_data']['osPlatform'] = '{0} {1}'.format(ver[4], ver[5])
             # Spawn tcpdump
             if self.tcpdump_enabled:
                 self.profile_start('desktop.start_pcap')
@@ -656,9 +683,6 @@ class DesktopBrowser(BaseBrowser):
                 args.append('-vvvv')
             if not task['navigated']:
                 args.append('--forceblank')
-            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-                hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
-                args.extend(['--herodata', hero_elements_file])
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])

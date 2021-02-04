@@ -205,7 +205,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             os.makedirs(dest_dir)
             shutil.copy(src, os.path.join(dest_dir, 'Preferences'))
         except Exception:
-            logging.exception('Error copying prefs file')
+            pass
 
     def install_policy(self):
         """Install the required policy list (Linux only right now)"""

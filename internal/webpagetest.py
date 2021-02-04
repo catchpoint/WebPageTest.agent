@@ -46,6 +46,7 @@ class WebPageTest(object):
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
         self.first_failure = None
+        self.is_rebooting = False
         self.session = requests.Session()
         self.options = options
         self.fps = options.fps
@@ -55,6 +56,7 @@ class WebPageTest(object):
         self.log_handler = None
         # Configurable options
         self.work_servers = []
+        self.needs_zip = []
         self.url = ''
         if options.server is not None:
             self.work_servers_str = options.server
@@ -94,6 +96,7 @@ class WebPageTest(object):
         self.validate_server_certificate = options.validcertificate
         self.instance_id = None
         self.zone = None
+        self.cpu_pct = None
         # Get the screen resolution if we're in desktop mode
         self.screen_width = None
         self.screen_height = None
@@ -152,7 +155,7 @@ class WebPageTest(object):
                 if matches:
                     timestamp = int(matches.group(1))
                     git_date = datetime.utcfromtimestamp(timestamp)
-                    self.version = git_date.strftime('%y%m%d.%H%m%S')
+                    self.version = git_date.strftime('%y%m%d.%H%M%S')
         except Exception:
             pass
         # Load the discovered browser margins
@@ -383,6 +386,7 @@ class WebPageTest(object):
     # pylint: enable=E1101
 
     def reboot(self):
+        self.is_rebooting = True
         if platform.system() == 'Windows':
             subprocess.call(['shutdown', '/r', '/f'])
         else:
@@ -390,6 +394,8 @@ class WebPageTest(object):
 
     def get_test(self, browsers):
         """Get a job from the server"""
+        if self.is_rebooting:
+            return
         import requests
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
@@ -412,7 +418,7 @@ class WebPageTest(object):
         while count < 3 and retry:
             retry = False
             count += 1
-            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1"
+            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1&testinfo=1"
             url += "&location=" + quote_plus(location)
             url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
@@ -494,19 +500,17 @@ class WebPageTest(object):
                     if job['type'] == 'lighthouse':
                         job['fvonly'] = 1
                         job['lighthouse'] = 1
-                    job['keep_lighthouse_trace'] = \
-                        bool('lighthouseTrace' in job and job['lighthouseTrace'])
-                    job['keep_lighthouse_screenshots'] = \
-                        bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
-                    job['lighthouse_throttle'] = \
-                        bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
-                    job['lighthouse_config'] = \
-                        str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
-                    job['video'] = bool('Capture Video' in job and job['Capture Video'])
+                    job['keep_lighthouse_trace'] = bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                    job['keep_lighthouse_screenshots'] = bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
+                    job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                    job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
+                    if 'video' not in job:
+                        job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                     job['disable_video'] = bool(not job['video'] and
                                                 'disable_video' in job and
                                                 job['disable_video'])
+                    job['atomic'] = bool('atomic' in job and job['atomic'])
                     job['interface'] = None
                     job['persistent_dir'] = self.persistent_dir
                     if 'throttle_cpu' in job:
@@ -521,6 +525,8 @@ class WebPageTest(object):
                             logging.debug("Servers changed to: %s", self.work_servers_str)
                     if 'wpthost' in job:
                         self.wpthost = job['wpthost']
+                    if 'testinfo' in job:
+                        job['testinfo']['started'] = time.time()
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0:
@@ -549,6 +555,7 @@ class WebPageTest(object):
                 count -= 1
                 retry = True
         self.job = job
+        self.needs_zip = []
         return job
 
     def get_task(self, job):
@@ -598,7 +605,7 @@ class WebPageTest(object):
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],
-                        'page_data': {},
+                        'page_data': {'tester': self.pc_name},
                         'navigated': False,
                         'page_result': None,
                         'script_step_count': 1}
@@ -710,13 +717,10 @@ class WebPageTest(object):
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
                 self.test_run_count += 1
-        self.profile_start(task, 'wpt.get_task')
-        if task is None and os.path.isdir(self.workdir):
-            try:
-                shutil.rmtree(self.workdir)
-            except Exception:
-                pass
-        self.profile_end(task, 'wpt.get_task')
+        if task is None and self.job is not None:
+            self.upload_test_result()
+        if 'reboot' in job and job['reboot']:
+            self.reboot()
         return task
 
     def running_another_test(self, task):
@@ -1129,11 +1133,92 @@ class WebPageTest(object):
             logging.exception('Error backfilling bodies')
         self.profile_end(task, 'wpt.get_bodies')
 
+    def upload_test_result(self):
+        """Upload the full result if the test is not being sharded"""
+        if self.job is not None and 'run' not in self.job:
+            # Write out the testinfo ini and json files if they are part of the job
+            if 'testinfo_ini' in self.job:
+                from datetime import datetime
+                self.job['testinfo_ini'] = self.job['testinfo_ini'].replace('[test]', '[test]\r\ncompleteTime={}'.format(datetime.now().strftime("%m/%d/%y %H:%M:%S")))
+                ini_path = os.path.join(self.workdir, 'testinfo.ini')
+                with open(ini_path, 'wt') as f_out:
+                    f_out.write(self.job['testinfo_ini'])
+                self.needs_zip.append({'path': ini_path, 'name': 'testinfo.ini'})
+            if 'testinfo' in self.job:
+                self.job['testinfo']['completed'] = time.time()
+                if 'test_runs' not in self.job['testinfo']:
+                    self.job['testinfo']['test_runs'] = {}
+                if 'runs' in self.job['testinfo']:
+                    max_steps = 0
+                    for run in range(self.job['testinfo']['runs']):
+                        run_num = run + 1
+                        # Count the number of steps in the test data
+                        step_count = 0
+                        if self.needs_zip:
+                            for zipitem in self.needs_zip:
+                                matches = re.match(r'^(\d+)_(\d+)_', zipitem['name'])
+                                if matches and run_num == int(matches.group(1)):
+                                    step = int(matches.group(2))
+                                    if step > step_count:
+                                        step_count = step
+                        run_info = {'done': True}
+                        if step_count > 0:
+                            run_info['steps'] = step_count
+                            if step_count > max_steps:
+                                max_steps = step_count
+                        self.job['testinfo']['test_runs'][run_num] = run_info
+                    self.job['testinfo']['steps'] = max_steps
+                json_path = os.path.join(self.workdir, 'testinfo.json')
+                with open(json_path, 'wt') as f_out:
+                    json.dump(self.job['testinfo'], f_out)
+                self.needs_zip.append({'path': json_path, 'name': 'testinfo.json'})
+
+            # Zip the files
+            zip_path = None
+            if len(self.needs_zip):
+                zip_path = os.path.join(self.workdir, "result.zip")
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
+                    for zipitem in self.needs_zip:
+                        logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
+                        zip_file.write(zipitem['path'], zipitem['name'])
+                        try:
+                            os.remove(zipitem['path'])
+                        except Exception:
+                            pass
+            data = {'id': self.job['Test ID'],
+                    'location': self.location,
+                    'pc': self.pc_name,
+                    'testinfo': '1',
+                    'done': '1'}
+            if self.key is not None:
+                data['key'] = self.key
+            if self.instance_id is not None:
+                data['ec2'] = self.instance_id
+            if self.zone is not None:
+                data['ec2zone'] = self.zone
+            if self.cpu_pct is not None:
+                data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+            if 'error' in self.job:
+                data['error'] = self.job['error']
+            uploaded = False
+            if 'work_server' in self.job:
+                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+            if not uploaded:
+                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+        self.needs_zip = []
+        # Clean up the work directory
+        if os.path.isdir(self.workdir):
+            try:
+                shutil.rmtree(self.workdir)
+            except Exception:
+                pass
+        self.license_ping()
+
     def upload_task_result(self, task):
-        """Upload the result of an individual test run"""
+        """Upload the result of an individual test run if it is being sharded"""
         logging.info('Uploading result')
         self.profile_start(task, 'wpt.upload')
-        cpu_pct = None
+        self.cpu_pct = None
         self.update_browser_viewport(task)
         # Stop logging to the file
         if self.log_handler is not None:
@@ -1156,11 +1241,12 @@ class WebPageTest(object):
             logging.debug('Discarding warmup run')
         else:
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
-                cpu_pct = task['page_data']['fullyLoadedCPUpct']
+                self.cpu_pct = task['page_data']['fullyLoadedCPUpct']
             data = {'id': task['id'],
                     'location': self.location,
                     'run': str(task['run']),
                     'cached': str(task['cached']),
+                    'testinfo': '1',
                     'pc': self.pc_name}
             if self.key is not None:
                 data['key'] = self.key
@@ -1168,7 +1254,8 @@ class WebPageTest(object):
                 data['ec2'] = self.instance_id
             if self.zone is not None:
                 data['ec2zone'] = self.zone
-            needs_zip = []
+            if 'run' in self.job:
+                self.needs_zip = []
             zip_path = None
             if os.path.isdir(task['dir']):
                 # upload any video images
@@ -1180,8 +1267,8 @@ class WebPageTest(object):
                                 filepath = os.path.join(video_dir, filename)
                                 if os.path.isfile(filepath):
                                     name = video_subdirectory + '/' + filename
-                                    needs_zip.append({'path': filepath, 'name': name})
-                # Upload the separate large files (> 100KB)
+                                    self.needs_zip.append({'path': filepath, 'name': name})
+                # Upload the separate files
                 for filename in os.listdir(task['dir']):
                     filepath = os.path.join(task['dir'], filename)
                     if os.path.isfile(filepath):
@@ -1193,41 +1280,40 @@ class WebPageTest(object):
                             except Exception:
                                 pass
                         else:
-                            needs_zip.append({'path': filepath, 'name': filename})
-                # Zip the remaining files
-                if len(needs_zip):
+                            self.needs_zip.append({'path': filepath, 'name': filename})
+                # Zip the files
+                if len(self.needs_zip) and 'run' in self.job:
                     zip_path = os.path.join(task['dir'], "result.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
-                        for zipitem in needs_zip:
-                            logging.debug('Storing %s (%d bytes)', zipitem['name'],
-                                        os.path.getsize(zipitem['path']))
+                        for zipitem in self.needs_zip:
+                            logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
                             zip_file.write(zipitem['path'], zipitem['name'])
                             try:
                                 os.remove(zipitem['path'])
                             except Exception:
                                 pass
+                    self.needs_zip = []
             # Post the workdone event for the task (with the zip attached)
-            if task['done']:
-                data['done'] = '1'
-            if task['error'] is not None:
-                data['error'] = task['error']
-            if cpu_pct is not None:
-                data['cpu'] = '{0:0.2f}'.format(cpu_pct)
-            logging.debug('Uploading result zip')
-            uploaded = False
-            if 'work_server' in self.job:
-                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
-            if not uploaded:
-                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            if 'run' in self.job:
+                if task['done']:
+                    data['done'] = '1'
+                if task['error'] is not None:
+                    data['error'] = task['error']
+                if self.cpu_pct is not None:
+                    data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+                uploaded = False
+                if 'work_server' in self.job:
+                    uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+                if not uploaded:
+                    self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            else:
+                # Keep track of test-level errors for reporting
+                if task['error'] is not None:
+                    self.job['error'] = task['error']
         # Clean up so we don't leave directories lying around
-        if os.path.isdir(task['dir']):
+        if os.path.isdir(task['dir']) and 'run' in self.job:
             try:
                 shutil.rmtree(task['dir'])
-            except Exception:
-                pass
-        if task['done'] and os.path.isdir(self.workdir):
-            try:
-                shutil.rmtree(self.workdir)
             except Exception:
                 pass
         self.profile_end(task, 'wpt.upload')
@@ -1242,7 +1328,6 @@ class WebPageTest(object):
             except Exception:
                 logging.exception('Error uploading profile data')
             del task['profile_data']
-        self.license_ping()
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
@@ -1255,6 +1340,7 @@ class WebPageTest(object):
         logging.debug(url)
         try:
             if file_path is not None and os.path.isfile(file_path):
+                logging.debug('Uploading filename : %d bytes', os.path.getsize(file_path))
                 self.session.post(url,
                                   files={'file': (filename, open(file_path, 'rb'))},
                                   timeout=600)
