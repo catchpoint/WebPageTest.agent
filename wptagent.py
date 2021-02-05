@@ -1008,6 +1008,12 @@ def main():
     parser.add_argument('--cert', help="Client certificate if using certificates to "
                         "authenticate the WebPageTest server connection.")
     parser.add_argument('--certkey', help="Client-side private key (if not embedded in the cert).")
+
+    # Scheduler configs
+    parser.add_argument('--scheduler', help="Scheduler URL (including trailing slash i.e. http://scheduler.webpagetest.org/).")
+    parser.add_argument('--schedulersalt', help="Secret salt to use with the scheduler.")
+    parser.add_argument('--schedulernode', help="Scheduler node ID for the queue.")
+
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)

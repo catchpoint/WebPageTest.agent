@@ -4,8 +4,10 @@
 # Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
 # found in the LICENSE.md file.
 """Main entry point for interfacing with WebPageTest server"""
+import base64
 from datetime import datetime
 import gzip
+import hashlib
 import logging
 import multiprocessing
 import os
@@ -48,6 +50,7 @@ class WebPageTest(object):
         self.first_failure = None
         self.is_rebooting = False
         self.session = requests.Session()
+        self.scheduler_session = requests.Session()
         self.options = options
         self.fps = options.fps
         self.test_run_count = 0
@@ -72,6 +75,9 @@ class WebPageTest(object):
         self.wpthost = None
         self.license_pinged = False
         self.key = options.key
+        self.scheduler = options.scheduler
+        self.scheduler_salt = options.schedulersalt
+        self.scheduler_node = options.schedulernode
         self.time_limit = 120
         self.cpu_scale_multiplier = None
         # get the hostname or build one automatically if we are on a vmware system
@@ -352,6 +358,12 @@ class WebPageTest(object):
                         self.validate_server_certificate = True
                     elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
+                    elif key == 'wpt_scheduler':
+                        self.scheduler = value
+                    elif key == 'wpt_scheduler_salt':
+                        self.scheduler_salt = value
+                    elif key == 'wpt_scheduler_node':
+                        self.scheduler_node = value
                     elif key == 'wpt_fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
                     elif key == 'fps':
@@ -391,6 +403,14 @@ class WebPageTest(object):
             subprocess.call(['shutdown', '/r', '/f'])
         else:
             subprocess.call(['sudo', 'reboot'])
+
+    def get_cpid(self):
+        """Get a salt-signed header for the scheduler"""
+        entity = self.scheduler_node
+        hash_src = entity.upper() + ';' + datetime.now().strftime('%Y%m') + self.scheduler_salt
+        hash_string = base64.b64encode(hashlib.sha1(hash_src.encode('ascii')).digest()).decode('ascii')
+        cpid_header = 'm;' + entity + ';' + hash_string
+        return cpid_header
 
     def get_test(self, browsers):
         """Get a job from the server"""
@@ -448,9 +468,14 @@ class WebPageTest(object):
                                 browsers[name]['version']))
                 browser_versions = ','.join(versions)
                 url += '&browsers=' + quote_plus(browser_versions)
-            logging.info("Checking for work: %s", url)
             try:
-                response = self.session.get(url, timeout=30, proxies=proxies)
+                if self.scheduler and self.scheduler_salt and self.scheduler_node:
+                    url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
+                    logging.info("Checking for work: %s", url)
+                    response = self.scheduler_session.get(url, timeout=30, proxies=proxies, headers={'CPID': self.get_cpid()})
+                else:
+                    logging.info("Checking for work: %s", url)
+                    response = self.session.get(url, timeout=30, proxies=proxies)
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
@@ -465,6 +490,13 @@ class WebPageTest(object):
                             self.work_servers_str = servers_str
                             self.work_servers = self.work_servers_str.split(',')
                             logging.debug("Servers changed to: %s", self.work_servers_str)
+                    elif response.text.startswith('Scheduler:'):
+                        scheduler_parts = response.text[10:].split(' ')
+                        if scheduler_parts and len(scheduler_parts) == 3:
+                            self.scheduler = scheduler_parts[0].strip()
+                            self.scheduler_salt = scheduler_parts[1].strip()
+                            self.scheduler_node = scheduler_parts[2].strip()
+                            logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # set some default options
@@ -556,7 +588,19 @@ class WebPageTest(object):
                 retry = True
         self.job = job
         self.needs_zip = []
+        if job is not None and 'work_server' in job and 'jobID' in job:
+            self.notify_test_started(job)
         return job
+
+    def notify_test_started(self, job):
+        """Tell the server that we have started the test. Used when the queueing isn't handled directly by the server responsible for a test"""
+        if 'work_server' in job:
+            try:
+                url = job['work_server'] + 'started.php?id=' + quote_plus(job['Test ID'])
+                proxies = {"http": None, "https": None}
+                self.session.get(url, timeout=30, proxies=proxies)
+            except Exception:
+                logging.exception('Error notifying test start')
 
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
@@ -1212,7 +1256,19 @@ class WebPageTest(object):
                 shutil.rmtree(self.workdir)
             except Exception:
                 pass
+        self.scheduler_job_done()
         self.license_ping()
+
+    def scheduler_job_done(self):
+        """Signal to the scheduler that the test is complete"""
+        if self.job is not None and 'jobID' in self.job and self.scheduler and self.scheduler_salt and self.scheduler_node:
+            try:
+                proxies = {"http": None, "https": None}
+                url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
+                payload = '{"test":"' + self.job['jobID'] +'","update":0}'
+                self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies)
+            except Exception:
+                logging.exception("Error reporting job done to scheduler")
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run if it is being sharded"""
