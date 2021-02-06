@@ -994,14 +994,14 @@ class OptimizationChecks(object):
                             pos = 0
                             try:
                                 while pos < content_length:
-                                    block = struct.unpack('B', body[pos])[0]
+                                    block = struct.unpack('B', body[pos: pos + 1])[0]
                                     pos += 1
                                     if block != 0xff:
                                         break
-                                    block = struct.unpack('B', body[pos])[0]
+                                    block = struct.unpack('B', body[pos: pos + 1])[0]
                                     pos += 1
                                     while block == 0xff:
-                                        block = struct.unpack('B', body[pos])[0]
+                                        block = struct.unpack('B', body[pos: pos + 1])[0]
                                         pos += 1
                                     if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
                                         continue
@@ -1010,10 +1010,10 @@ class OptimizationChecks(object):
                                         # Seek to the next non-padded 0xff to find the next marker
                                         found = False
                                         while not found and pos < content_length:
-                                            value = struct.unpack('B', body[pos])[0]
+                                            value = struct.unpack('B', body[pos: pos + 1])[0]
                                             pos += 1
                                             if value == 0xff:
-                                                value = struct.unpack('B', body[pos])[0]
+                                                value = struct.unpack('B', body[pos: pos + 1])[0]
                                                 pos += 1
                                                 if value != 0x00:
                                                     found = True
