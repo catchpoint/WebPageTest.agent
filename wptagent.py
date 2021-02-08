@@ -38,6 +38,7 @@ class WPTAgent(object):
         self.needs_shutdown = False
         self.options = options
         self.capture_display = None
+        self.health_check_server = None
         self.job = None
         self.task = None
         self.xvfb = None
@@ -94,6 +95,14 @@ class WPTAgent(object):
             if not message_server.is_ok():
                 logging.error("Unable to start the local message server")
                 return
+        if self.options.healthcheckport:
+            from internal.health_check_server import HealthCheckServer
+            self.health_check_server = HealthCheckServer(self.options.healthcheckport)
+            self.health_check_server.start()
+            if not self.health_check_server.is_ok():
+                logging.error("Unable to start the health check server")
+                return
+            self.wpt.health_check_server = self.health_check_server
         while not self.must_exit:
             try:
                 self.alive()
@@ -112,9 +121,11 @@ class WPTAgent(object):
                     self.must_exit = True
                     self.needs_shutdown = True
                     break
-                if message_server is not None and self.options.exit > 0 and \
-                        not message_server.is_ok():
+                if message_server is not None and self.options.exit > 0 and not message_server.is_ok():
                     logging.error("Message server not responding, exiting")
+                    break
+                if self.health_check_server is not None and self.options.exit > 0 and not self.health_check_server.is_ok():
+                    logging.error("Health check server not responding, exiting")
                     break
                 if self.browsers.is_ready():
                     self.job = self.wpt.get_test(self.browsers.browsers)
@@ -186,6 +197,8 @@ class WPTAgent(object):
 
     def run_single_test(self):
         """Run a single test run"""
+        if self.health_check_server is not None:
+            self.health_check_server.healthy()
         self.alive()
         browser = self.browsers.get_browser(self.job['browser'], self.job)
         if browser is not None:
@@ -922,6 +935,7 @@ def main():
                         help="Do not wait for system idle at startup.")
     parser.add_argument('--collectversion', action='store_true', default=False,
                         help="Collection browser versions and submit to controller.")
+    parser.add_argument('--healthcheckport', type=int, default=0, help='Run a HTTP health check server on the given port.')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,

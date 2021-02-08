@@ -49,6 +49,7 @@ class WebPageTest(object):
         self.job = None
         self.first_failure = None
         self.is_rebooting = False
+        self.health_check_server = None
         self.session = requests.Session()
         self.scheduler_session = requests.Session()
         self.options = options
@@ -479,6 +480,8 @@ class WebPageTest(object):
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
+                if self.health_check_server is not None:
+                    self.health_check_server.healthy()
                 self.first_failure = None
                 if len(response.text):
                     if response.text == 'Reboot':
@@ -559,6 +562,8 @@ class WebPageTest(object):
                         self.wpthost = job['wpthost']
                     if 'testinfo' in job:
                         job['testinfo']['started'] = time.time()
+                    if self.health_check_server is not None:
+                        job['health_check_server'] = self.health_check_server
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0:
