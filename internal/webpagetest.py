@@ -36,6 +36,14 @@ try:
     import ujson as json
 except BaseException:
     import json
+"""
+try:
+    import http.client as http_client
+except ImportError:
+    # Python 2
+    import httplib as http_client
+http_client.HTTPConnection.debuglevel = 1
+"""
 
 DEFAULT_JPEG_QUALITY = 30
 
@@ -79,6 +87,7 @@ class WebPageTest(object):
         self.scheduler = options.scheduler
         self.scheduler_salt = options.schedulersalt
         self.scheduler_node = options.schedulernode
+        self.last_diagnostics = None
         self.time_limit = 120
         self.cpu_scale_multiplier = None
         # get the hostname or build one automatically if we are on a vmware system
@@ -434,6 +443,7 @@ class WebPageTest(object):
         # Shuffle the list order
         if len(self.test_locations) > 1:
             self.test_locations.append(str(self.test_locations.pop(0)))
+        self.report_diagnostics()
         count = 0
         retry = True
         while count < 3 and retry:
@@ -609,6 +619,7 @@ class WebPageTest(object):
 
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
+        self.report_diagnostics()
         task = None
         if self.log_handler is not None:
             try:
@@ -1436,3 +1447,40 @@ class WebPageTest(object):
                 if event_name in task['profile_data']:
                     task['profile_data'][event_name]['e'] = round(monotonic() - task['profile_data']['start'], 3)
                     task['profile_data'][event_name]['d'] = round(task['profile_data'][event_name]['e'] - task['profile_data'][event_name]['s'], 3)
+
+    def report_diagnostics(self):
+        """Send a periodic diagnostics report"""
+        if self.scheduler and self.scheduler_salt and self.scheduler_node:
+            # Don't report more often than once per minute
+            now = monotonic()
+            if self.last_diagnostics and now < self.last_diagnostics + 60:
+                return
+            self.last_diagnostics = now
+            try:
+                import psutil
+                import json as json_native
+                disk = psutil.disk_usage(__file__)
+                mem = psutil.virtual_memory()
+                ver = platform.uname()
+                os = '{0} {1}'.format(ver[0], ver[2])
+                cpu = self.cpu_pct if self.cpu_pct else psutil.cpu_percent(interval=1)
+                cpu = min(max(int(round(cpu)), 0), 100)
+                info = {
+                    'Machine': self.pc_name,
+                    'Version': self.version,
+                    'Instance': self.instance_id if self.instance_id else '',
+                    'Cpu': cpu,
+                    'Memcap': mem.total,
+                    'Memused': mem.total - mem.available,
+                    'Diskcap': disk.total,
+                    'Diskused': disk.used,
+                    'Os': os
+                }
+                payload = json_native.dumps(info, separators=(',', ':'))
+                logging.debug(payload)
+                proxies = {"http": None, "https": None}
+                url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
+                response = self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies)
+                logging.debug(response.headers)
+            except Exception:
+                logging.exception('Error reporting diagnostics')
