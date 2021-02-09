@@ -293,7 +293,6 @@ class DevTools(object):
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
-        self.send_command('Debugger.enable', {})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('DOMSnapshot.enable', {})
         inject_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'chrome', 'inject.js')
@@ -500,7 +499,6 @@ class DevTools(object):
             json.dump(self.console_log, f_out)
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
-        self.send_command('Debugger.disable', {})
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
