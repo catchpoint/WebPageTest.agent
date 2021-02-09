@@ -293,6 +293,8 @@ class DevTools(object):
         self.flush_pending_messages()
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
+        self.send_command('Debugger.enable', {})
+        self.send_command('Debugger.setSkipAllPauses', {'skip': True})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('DOMSnapshot.enable', {})
         inject_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'chrome', 'inject.js')
@@ -499,6 +501,7 @@ class DevTools(object):
             json.dump(self.console_log, f_out)
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
+        self.send_command('Debugger.disable', {})
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
@@ -1102,6 +1105,8 @@ class DevTools(object):
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
                     self.process_css_event(event, msg)
+                elif category == 'Debugger':
+                    self.process_debugger_event(event, msg)
                 elif category == 'Target':
                     log_event = False
                     self.process_target_event(event, msg)
@@ -1210,6 +1215,11 @@ class DevTools(object):
                         entry['styleSheetId'] not in self.stylesheets and \
                         'sourceURL' in entry and entry['sourceURL']:
                     self.stylesheets[entry['styleSheetId']] = entry['sourceURL']
+
+    def process_debugger_event(self, event, msg):
+        """Handle Debugger.* events"""
+        if event == 'paused':
+            self.send_command('Debugger.resume', {})
 
     def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""
