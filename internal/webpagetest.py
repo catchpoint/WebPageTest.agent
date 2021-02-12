@@ -1282,7 +1282,7 @@ class WebPageTest(object):
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
                 payload = '{"test":"' + self.job['jobID'] +'","update":0}'
-                self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies)
+                self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
             except Exception:
                 logging.exception("Error reporting job done to scheduler")
 
@@ -1417,7 +1417,7 @@ class WebPageTest(object):
                                   files={'file': (filename, open(file_path, 'rb'))},
                                   timeout=600)
             else:
-                self.session.post(url)
+                self.session.post(url, timeout=600)
         except Exception:
             logging.exception("Upload Exception")
             ret = False
@@ -1480,7 +1480,7 @@ class WebPageTest(object):
                 logging.debug(payload)
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
-                response = self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies)
+                response = self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
                 logging.debug(response.headers)
             except Exception:
                 logging.exception('Error reporting diagnostics')
