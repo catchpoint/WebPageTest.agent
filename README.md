@@ -61,6 +61,7 @@ run the agent in a docker container.
 * **--ec2** : Load config settings from EC2 user data.
 * **--gce** : Load config settings from GCE user data.
 * **--log** : Log critical errors to the given file.
+* **--healthcheckport** : HTTP Health check port. Defaults to 8889, set to 0 to disable. Returns 200 if the agent is running and communicating with the server, 503 otherwise.
 
 ### Video capture/display settings
 * **--xvfb** : Use an xvfb virtual display for headless testing (Linux only).

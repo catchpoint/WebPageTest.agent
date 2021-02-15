@@ -935,7 +935,7 @@ def main():
                         help="Do not wait for system idle at startup.")
     parser.add_argument('--collectversion', action='store_true', default=False,
                         help="Collection browser versions and submit to controller.")
-    parser.add_argument('--healthcheckport', type=int, default=0, help='Run a HTTP health check server on the given port.')
+    parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
