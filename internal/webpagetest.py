@@ -1525,3 +1525,4 @@ class WebPageTest(object):
                     url += '&jobID=' + quote_plus(self.raw_job['jobID'])
                 proxies = {"http": None, "https": None}
                 self.session.post(url, headers={'Content-Type': 'text/plain'}, data=self.raw_job['payload'], timeout=30, proxies=proxies)
+                self.scheduler_job_done()
