@@ -48,10 +48,13 @@ class WPTAgent(object):
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
         self.ios = iOSDevice(self.options.device) if self.options.iOS else None
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
+        self.browser = None
         self.shaper = TrafficShaper(options, self.root_path)
-        atexit.register(self.cleanup)
+        # Install the signal handlers
         signal.signal(signal.SIGTERM, self.signal_handler)
+        signal.signal(signal.SIGHUP, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
+        atexit.register(self.cleanup)
         self.image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
         if platform.system() == "Windows":
             paths = [os.getenv('ProgramFiles'), os.getenv('ProgramFiles(x86)')]
@@ -103,6 +106,7 @@ class WPTAgent(object):
                 logging.error("Unable to start the health check server")
                 return
             self.wpt.health_check_server = self.health_check_server
+
         while not self.must_exit:
             try:
                 self.alive()
@@ -200,16 +204,15 @@ class WPTAgent(object):
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
-        browser = self.browsers.get_browser(self.job['browser'], self.job)
-        if browser is not None:
-            browser.prepare(self.job, self.task)
-            browser.launch(self.job, self.task)
+        self.browser = self.browsers.get_browser(self.job['browser'], self.job)
+        if self.browser is not None:
+            self.browser.prepare(self.job, self.task)
+            self.browser.launch(self.job, self.task)
             try:
                 if self.task['running_lighthouse']:
-                    self.task['lighthouse_log'] = \
-                        'Lighthouse testing is not supported with this browser.'
+                    self.task['lighthouse_log'] = 'Lighthouse testing is not supported with this browser.'
                     try:
-                        browser.run_lighthouse_test(self.task)
+                        self.browser.run_lighthouse_test(self.task)
                     except Exception:
                         logging.exception('Error running lighthouse test')
                     if self.task['lighthouse_log']:
@@ -220,7 +223,7 @@ class WPTAgent(object):
                         except Exception:
                             logging.exception('Error compressing lighthouse log')
                 else:
-                    browser.run_task(self.task)
+                    self.browser.run_task(self.task)
             except Exception as err:
                 msg = ''
                 if err is not None and err.__str__() is not None:
@@ -229,29 +232,38 @@ class WPTAgent(object):
                     '{0}'.format(msg)
                 logging.exception("Unhandled exception in test run: %s", msg)
                 traceback.print_exc(file=sys.stdout)
-            browser.stop(self.job, self.task)
+            self.browser.stop(self.job, self.task)
             # Delete the browser profile if needed
             if self.task['cached'] or self.job['fvonly']:
-                browser.clear_profile(self.task)
+                self.browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
             logging.critical(err)
             self.task['error'] = err
-        browser = None
+        self.browser = None
 
-    def signal_handler(self, *_):
+    def signal_handler(self, signum, frame):
         """Ctrl+C handler"""
-        if self.must_exit:
-            exit(1)
-        if self.job is None:
-            print("Exiting...")
-        else:
-            print("Will exit after test completes.  Hit Ctrl+C again to exit immediately")
-        self.must_exit = True
+        try:
+            if not self.must_exit:
+                logging.info("Exiting...")
+                self.must_exit = True
+                if self.wpt is not None:
+                    self.wpt.shutdown()
+                if self.browser is not None:
+                    self.browser.shutdown()
+            else:
+                logging.info("Waiting for graceful exit...")
+        except Exception as e:
+            logging.exception("Error in signal handler")
 
     def cleanup(self):
         """Do any cleanup that needs to be run regardless of how we exit"""
         logging.debug('Cleaning up')
+        if self.wpt:
+            self.wpt.shutdown()
+        if self.browser:
+            self.browser.shutdown()
         self.shaper.remove()
         if self.xvfb is not None:
             self.xvfb.stop()
@@ -1095,12 +1107,14 @@ def main():
     if options.collectversion and platform.system() == "Windows":
         get_browser_versions(browsers)
 
+
     agent = WPTAgent(options, browsers)
     if agent.startup(browsers):
         # Create a work directory relative to where we are running
         print("Running agent, hit Ctrl+C to exit")
         agent.run_testing()
         print("Done")
+    agent = None
 
 
 if __name__ == '__main__':

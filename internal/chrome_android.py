@@ -117,6 +117,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.devtools_screenshot = False
         self.connected = False
 
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        AndroidBrowser.shutdown(self)
+
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.task = task

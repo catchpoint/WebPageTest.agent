@@ -78,6 +78,8 @@ class Edge(DesktopBrowser):
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
+        if self.must_exit:
+            return
         self.kill()
         self.page = {}
         self.requests = {}
@@ -147,6 +149,8 @@ class Edge(DesktopBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
+        if self.must_exit:
+            return
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         try:
@@ -270,14 +274,13 @@ class Edge(DesktopBrowser):
 
     def run_task(self, task):
         """Run an individual test"""
-        if self.driver is not None and self.extension_loaded:
+        if self.driver is not None and self.extension_loaded and not self.must_exit:
             self.task = task
             logging.debug("Running test")
             end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and task['error'] is None and \
-                    monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and monotonic() < end_time and not self.must_exit:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -313,7 +316,7 @@ class Edge(DesktopBrowser):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
             end_time = monotonic()  + 30
-            while monotonic() < end_time:
+            while monotonic() < end_time and not self.must_exit:
                 try:
                     message = self.job['message_server'].get_message(1)
                     logging.debug(message)
@@ -331,7 +334,7 @@ class Edge(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             self.last_activity = None
-            while not done:
+            while not done and not self.must_exit:
                 try:
                     self.process_message(self.job['message_server'].get_message(1))
                 except Exception:
@@ -659,6 +662,8 @@ class Edge(DesktopBrowser):
 
     def execute_js(self, script):
         """Run javascipt"""
+        if self.must_exit:
+            return
         ret = None
         if self.driver is not None:
             try:
@@ -670,6 +675,8 @@ class Edge(DesktopBrowser):
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
+        if self.must_exit:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -691,6 +698,8 @@ class Edge(DesktopBrowser):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit:
+            return
         # Trigger a message to start writing the interactive periods asynchronously
         if self.supports_interactive:
             self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
@@ -912,7 +921,7 @@ class Edge(DesktopBrowser):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        if self.driver is not None:
+        if self.driver is not None and not self.must_exit:
             try:
                 data = self.driver.get_screenshot_as_png()
                 if data is not None:
@@ -1227,6 +1236,8 @@ class Edge(DesktopBrowser):
 
     def check_optimization(self, task, requests, page_data):
         """Run the optimization checks"""
+        if self.must_exit:
+            return
         # build an dictionary of the requests
         opt_requests = {}
         for request in requests:
@@ -1349,6 +1360,8 @@ class Edge(DesktopBrowser):
 
     def calculate_page_stats(self, requests):
         """Calculate the page-level stats"""
+        if self.must_exit:
+            return
         page = {'loadTime': 0,
                 'docTime': 0,
                 'fullyLoaded': 0,

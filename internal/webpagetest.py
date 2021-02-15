@@ -55,8 +55,10 @@ class WebPageTest(object):
         self.fetch_queue = multiprocessing.JoinableQueue()
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
+        self.raw_job = None
         self.first_failure = None
         self.is_rebooting = False
+        self.is_dead = False
         self.health_check_server = None
         self.session = requests.Session()
         self.scheduler_session = requests.Session()
@@ -424,7 +426,7 @@ class WebPageTest(object):
 
     def get_test(self, browsers):
         """Get a job from the server"""
-        if self.is_rebooting:
+        if self.is_rebooting or self.is_dead:
             return
         import requests
         proxies = {"http": None, "https": None}
@@ -434,6 +436,7 @@ class WebPageTest(object):
         if len(self.work_servers) == 0:
             return None
         job = None
+        self.raw_job = None
         servers = list(self.work_servers)
         random.shuffle(servers)
         self.url = str(servers.pop(0))
@@ -512,6 +515,17 @@ class WebPageTest(object):
                             logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
+                    # Store the raw job info in case we need to re-queue it
+                    if 'Test ID' in job and 'signature' in job and 'work_server' in job:
+                        self.raw_job = {
+                            'id': job['Test ID'],
+                            'signature': job['signature'],
+                            'work_server': job['work_server'],
+                            'location': location,
+                            'payload': str(response.text)
+                        }
+                        if 'jobID' in job:
+                            self.raw_job['jobID'] = job['jobID']
                     # set some default options
                     job['agent_version'] = self.version
                     if 'imageQuality' not in job:
@@ -619,6 +633,8 @@ class WebPageTest(object):
 
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
+        if self.is_dead:
+            return None
         self.report_diagnostics()
         task = None
         if self.log_handler is not None:
@@ -1031,7 +1047,7 @@ class WebPageTest(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         try:
-            while True:
+            while not self.is_dead:
                 task = self.fetch_queue.get(5)
                 if task is None:
                     break
@@ -1071,6 +1087,8 @@ class WebPageTest(object):
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
+        if self.is_dead:
+            return
         self.profile_start(task, 'wpt.get_bodies')
         all_bodies = False
         html_body = False
@@ -1195,6 +1213,8 @@ class WebPageTest(object):
 
     def upload_test_result(self):
         """Upload the full result if the test is not being sharded"""
+        if self.is_dead:
+            return
         if self.job is not None and 'run' not in self.job:
             # Write out the testinfo ini and json files if they are part of the job
             if 'testinfo_ini' in self.job:
@@ -1265,6 +1285,7 @@ class WebPageTest(object):
                 uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
             if not uploaded:
                 self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+        self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
         if os.path.isdir(self.workdir):
@@ -1277,7 +1298,7 @@ class WebPageTest(object):
 
     def scheduler_job_done(self):
         """Signal to the scheduler that the test is complete"""
-        if self.job is not None and 'jobID' in self.job and self.scheduler and self.scheduler_salt and self.scheduler_node:
+        if self.job is not None and 'jobID' in self.job and self.scheduler and self.scheduler_salt and self.scheduler_node and not self.is_dead:
             try:
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
@@ -1288,6 +1309,8 @@ class WebPageTest(object):
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run if it is being sharded"""
+        if self.is_dead:
+            return
         logging.info('Uploading result')
         self.profile_start(task, 'wpt.upload')
         self.cpu_pct = None
@@ -1403,6 +1426,8 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
+        if self.is_dead:
+            return False
         ret = True
         # pass the data fields as query params and any files as post data
         url += "?"
@@ -1425,7 +1450,7 @@ class WebPageTest(object):
 
     def license_ping(self):
         """Ping the license server"""
-        if not self.license_pinged:
+        if not self.license_pinged and not self.is_dead:
             self.license_pinged = True
             parts = urlsplit(self.url)
             data = {
@@ -1450,7 +1475,7 @@ class WebPageTest(object):
 
     def report_diagnostics(self):
         """Send a periodic diagnostics report"""
-        if self.scheduler and self.scheduler_salt and self.scheduler_node:
+        if self.scheduler and self.scheduler_salt and self.scheduler_node and not self.is_dead:
             # Don't report more often than once per minute
             now = monotonic()
             if self.last_diagnostics and now < self.last_diagnostics + 60:
@@ -1484,3 +1509,19 @@ class WebPageTest(object):
                 logging.debug(response.headers)
             except Exception:
                 logging.exception('Error reporting diagnostics')
+
+    def shutdown(self):
+        """Agent is dying.  Re-queue the test if possible and if we have one"""
+        if not self.is_dead:
+            self.is_dead = True
+            # requeue the raw test through the original server
+            if self.raw_job is not None:
+                url = self.raw_job['work_server'] + 'requeue.php?id=' + quote_plus(self.raw_job['id'])
+                url += '&sig=' + quote_plus(self.raw_job['signature'])
+                url += '&location=' + quote_plus(self.raw_job['location'])
+                if self.scheduler_node is not None:
+                    url += '&node=' + quote_plus(self.scheduler_node)
+                if 'jobID' in self.raw_job:
+                    url += '&jobID=' + quote_plus(self.raw_job['jobID'])
+                proxies = {"http": None, "https": None}
+                self.session.post(url, headers={'Content-Type': 'text/plain'}, data=self.raw_job['payload'], timeout=30, proxies=proxies)

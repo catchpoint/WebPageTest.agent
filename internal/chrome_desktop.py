@@ -78,6 +78,11 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.connected = False
         self.is_chrome = True
 
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        DesktopBrowser.shutdown(self)
+
     def launch(self, job, task):
         """Launch the browser"""
         self.install_policy()

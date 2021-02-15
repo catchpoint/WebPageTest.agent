@@ -20,6 +20,11 @@ class WebKitGTK(DesktopBrowser, DevtoolsBrowser):
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
 
+    def shutdown(self):
+        """Agent is dying NOW"""
+        DevtoolsBrowser.shutdown(self)
+        DesktopBrowser.shutdown(self)
+
     def launch(self, job, task):
         """Launch the browser (only first view tests are supported)"""
         if not self.task['cached']:

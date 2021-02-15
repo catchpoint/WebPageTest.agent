@@ -30,6 +30,11 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         if 'rotate' in browser_info and browser_info['rotate']:
             self.rotate_simulator = True
 
+    def shutdown(self):
+        """Agent is dying NOW"""
+        DevtoolsBrowser.shutdown(self)
+        DesktopBrowser.shutdown(self)
+
     def prepare(self, job, task):
         """ Prepare the OS and simulator """
         subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'], timeout=60)
@@ -50,7 +55,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             # find the webinspector socket
             webinspector_socket = None
             end_time = monotonic() + 30
-            while webinspector_socket is None and monotonic() < end_time:
+            while webinspector_socket is None and monotonic() < end_time and not self.must_exit:
                 try:
                     out = subprocess.check_output(['lsof', '-aUc', 'launchd_sim'], universal_newlines=True, timeout=10)
                     if out:
@@ -122,7 +127,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         attempts = 10
         if 'capture_rect' in self.job:
             del self.job['capture_rect']
-        while count < attempts and not found:
+        while count < attempts and not found and not self.must_exit:
             from Quartz import (
                 CGWindowListCopyWindowInfo,
                 kCGWindowListOptionOnScreenOnly,
@@ -151,7 +156,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
 
     def run_task(self, task):
         """Run an individual test (only first view is supported)"""
-        if self.connected:
+        if self.connected and not self.must_exit:
             DevtoolsBrowser.run_task(self, task)
 
     def execute_js(self, script):

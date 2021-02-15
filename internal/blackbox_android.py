@@ -75,6 +75,8 @@ class BlackBoxAndroid(AndroidBrowser):
     def launch(self, job, task):
         """Launch the browser"""
         # copy the Chrome command-line just in case it is needed
+        if self.must_exit:
+            return
         args = list(CHROME_COMMAND_LINE_OPTIONS)
         host_rules = list(HOST_RULES)
         if 'host_rules' in task:
@@ -109,6 +111,8 @@ class BlackBoxAndroid(AndroidBrowser):
 
     def run_task(self, task):
         """Skip anything that isn't a navigate command"""
+        if self.must_exit:
+            return
         logging.debug("Running test")
         end_time = monotonic() + task['test_time_limit']
         task['log_data'] = True
@@ -120,7 +124,7 @@ class BlackBoxAndroid(AndroidBrowser):
         task['step_name'] = 'Navigate'
         task['run_start_time'] = monotonic()
         self.on_start_recording(task)
-        while len(task['script']) and monotonic() < end_time:
+        while len(task['script']) and monotonic() < end_time and not self.must_exit:
             command = task['script'].pop(0)
             if command['command'] == 'navigate':
                 task['page_data']['URL'] = command['target']
@@ -221,7 +225,7 @@ class BlackBoxAndroid(AndroidBrowser):
         end_time = monotonic() + 60
         self.adb.get_bytes_rx()
         idle_count = 0
-        while idle_count < 5 and monotonic() < end_time:
+        while idle_count < 5 and monotonic() < end_time and not self.must_exit:
             time.sleep(1)
             bytes_rx = self.adb.get_bytes_rx()
             logging.debug("Bytes received: %d", bytes_rx)
@@ -239,7 +243,7 @@ class BlackBoxAndroid(AndroidBrowser):
         last_size = self.adb.get_video_size()
         video_started = False
         bytes_rx = self.adb.get_bytes_rx()
-        while not video_started and monotonic() < end_startup:
+        while not video_started and monotonic() < end_startup and not self.must_exit:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()
@@ -250,7 +254,7 @@ class BlackBoxAndroid(AndroidBrowser):
                 video_started = True
         # Wait for the activity to stop
         video_idle_count = 0
-        while video_idle_count <= 3 and monotonic() < end_time:
+        while video_idle_count <= 3 and monotonic() < end_time and not self.must_exit:
             time.sleep(5)
             video_size = self.adb.get_video_size()
             bytes_rx = self.adb.get_bytes_rx()

@@ -117,6 +117,8 @@ class iWptBrowser(BaseBrowser):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        if self.must_exit:
+            return
         self.connected = False
         self.flush_messages()
         self.ios_version = self.ios.get_os_version()
@@ -153,7 +155,7 @@ class iWptBrowser(BaseBrowser):
         ret = False
         self.default_target = None
         end_time = monotonic() + timeout
-        while not ret and monotonic() < end_time:
+        while not ret and monotonic() < end_time and not self.must_exit:
             try:
                 response = requests.get("http://localhost:9222/json", timeout=timeout, proxies=proxies)
                 if response.text:
@@ -218,8 +220,7 @@ class iWptBrowser(BaseBrowser):
             end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while task['script'] and task['error'] is None and \
-                    monotonic() < end_time:
+            while task['script'] and task['error'] is None and monotonic() < end_time and not self.must_exit:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -252,7 +253,7 @@ class iWptBrowser(BaseBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
-            while not done:
+            while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
@@ -292,6 +293,8 @@ class iWptBrowser(BaseBrowser):
 
     def execute_js(self, script):
         """Run javascipt (stub for overriding"""
+        if self.must_exit:
+            return
         ret = None
         if self.connected:
             result = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
@@ -301,6 +304,8 @@ class iWptBrowser(BaseBrowser):
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
+        if self.must_exit:
+            return
         ret = None
         if self.connected:
             script = None
@@ -342,6 +347,8 @@ class iWptBrowser(BaseBrowser):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit:
+            return
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         logging.debug(user_timing)
@@ -687,7 +694,7 @@ class iWptBrowser(BaseBrowser):
 
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
-        if original_id not in self.response_bodies and self.body_fail_count < 3:
+        if original_id not in self.response_bodies and self.body_fail_count < 3 and not self.must_exit:
             request = self.requests[request_id]
             if 'status' in request and request['status'] == 200 and 'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 logging.debug('Getting body for %s (%d) - %s', request_id,
@@ -1086,7 +1093,7 @@ class iWptBrowser(BaseBrowser):
         """Clear out any pending websocket messages"""
         if self.websocket:
             try:
-                while True:
+                while True and not self.must_exit:
                     msg = self.messages.get(timeout=0)
                     try:
                         if msg:
@@ -1173,7 +1180,7 @@ class iWptBrowser(BaseBrowser):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        if self.connected:
+        if self.connected and not self.must_exit:
             data = self.ios.screenshot()
             if data:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
@@ -1462,7 +1469,7 @@ class iWptBrowser(BaseBrowser):
 
     def process_optimization_results(self, page_data, requests, optimization_results):
         """Merge the data from the optimization checks file"""
-        if optimization_results:
+        if optimization_results and not self.must_exit:
             page_data['score_cache'] = -1
             page_data['score_cdn'] = -1
             page_data['score_gzip'] = -1

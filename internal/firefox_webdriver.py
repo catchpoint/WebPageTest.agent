@@ -27,6 +27,8 @@ class FirefoxWebDriver(Firefox):
 
     def start_firefox(self, job, task):
         """Start Firefox using WebDriver"""
+        if self.must_exit:
+            return
         from selenium import webdriver # pylint: disable=import-error
 
         capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
@@ -123,6 +125,8 @@ class FirefoxWebDriver(Firefox):
 
     def execute_js(self, script):
         """Run JavaScript"""
+        if self.must_exit:
+            return
         ret = None
         if self.driver is not None:
             try:
@@ -134,6 +138,8 @@ class FirefoxWebDriver(Firefox):
 
     def run_js_file(self, file_name):
         """Execute one of our JS scripts"""
+        if self.must_exit:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -152,4 +158,6 @@ class FirefoxWebDriver(Firefox):
 
     def grab_raw_screenshot(self):
         """Grab a screenshot using Marionette"""
+        if self.must_exit:
+            return
         return self.driver.get_screenshot_as_png()
