@@ -20,30 +20,24 @@ from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-fre',
-    '--enable-benchmarking',
     '--metrics-recording-only',
-    '--disable-geolocation',
     '--disable-background-networking',
     '--disable-component-update',
     '--no-default-browser-check',
     '--no-first-run',
-    '--disable-infobars',
-    '--disable-translate',
     '--allow-running-insecure-content',
-    '--disable-save-password-bubble',
-    '--disable-background-downloads',
-    '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
-    '--disable-datasaver-prompt',
     '--disable-device-discovery-notifications',
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--safebrowsing-disable-auto-update',
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
-    '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeSensitive'
+    '--net-log-capture-mode=IncludeSensitive',
+    '--mute-audio',
+    '--disable-hang-monitor',
+    '--password-store=basic',
+    '--disable-breakpad'
 ]
 
 HOST_RULES = [
