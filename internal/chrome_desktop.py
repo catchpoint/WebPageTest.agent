@@ -60,6 +60,7 @@ DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
     'CalculateNativeWinOcclusion',
     'TranslateUI',
+    'Translate',
     'OfflinePagesPrefetching'
 ]
 
