@@ -39,6 +39,7 @@ class iOSDevice(object):
         self.last_video_data = None
         self.video_size = 0
         self.last_restart = monotonic()
+        self.device_connected = True
 
     def check_install(self):
         """Check to make sure usbmux is installed and the device is available"""
@@ -81,6 +82,7 @@ class iOSDevice(object):
         is_ready = False
         response = self.send_message("battery")
         if response:
+            self.device_connected = True
             level = int(round(float(response) * 100))
             if level > 75:
                 logging.debug("Battery level = %d%%", level)
@@ -90,6 +92,7 @@ class iOSDevice(object):
         else:
             logging.debug("Device is not connected (or iWptBrowser is not running)")
             self.disconnect()
+            self.device_connected = False
         return is_ready
 
     def get_os_version(self):

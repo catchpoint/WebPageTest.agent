@@ -171,6 +171,8 @@ class WPTAgent(object):
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
+                elif self.options.exit > 0 and self.browsers.should_exit():
+                    self.must_exit = True
                 if self.job is not None:
                     self.job = None
                 else:
