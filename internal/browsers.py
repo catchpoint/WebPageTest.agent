@@ -21,10 +21,15 @@ class Browsers(object):
             self.browsers = {k.lower(): v for k, v in browsers.items()}
         self.adb = adb
         self.ios = ios
+        self.needs_exit = False
         android_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'android_browsers.json')
         with open(android_file, 'r') as f_in:
             self.android_browsers = {k.lower(): v for k, v in json.load(f_in).items()}
+
+    def should_exit(self):
+        """Tell the agent if we have device issues and need a reboot"""
+        return self.needs_exit
 
     def is_ready(self):
         """Check to see if the configured browsers are ready to go"""
@@ -33,6 +38,8 @@ class Browsers(object):
             ready = self.adb.is_device_ready()
         elif self.options.iOS and self.ios is not None:
             ready = self.ios.is_device_ready()
+            if not ready and not self.ios.device_connected:
+                self.needs_exit = True
         else:
             for browser in self.browsers:
                 if 'exe' in self.browsers[browser]:
