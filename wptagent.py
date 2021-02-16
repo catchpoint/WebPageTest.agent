@@ -52,8 +52,9 @@ class WPTAgent(object):
         self.shaper = TrafficShaper(options, self.root_path)
         # Install the signal handlers
         signal.signal(signal.SIGTERM, self.signal_handler)
-        signal.signal(signal.SIGHUP, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
+        if sys.platform != "win32":
+            signal.signal(signal.SIGHUP, self.signal_handler)
         atexit.register(self.cleanup)
         self.image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
         if platform.system() == "Windows":
