@@ -47,9 +47,16 @@ class DevtoolsBrowser(object):
         self.use_devtools_video = use_devtools_video
         self.lighthouse_command = None
         self.devtools_screenshot = True
+        self.must_exit_now = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.webkit_context = None
+
+    def shutdown(self):
+        """Agent is dying NOW"""
+        self.must_exit_now = True
+        if self.devtools is not None:
+            self.devtools.shutdown()
 
     def connect(self, task):
         """Connect to the dev tools interface"""
@@ -82,7 +89,7 @@ class DevtoolsBrowser(object):
 
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
-        if self.devtools is not None:
+        if self.devtools is not None and not self.must_exit_now:
             # Move the WebKit window
             if self.is_webkit and not self.is_ios:
                 result = self.devtools.send_command('Automation.getBrowsingContexts', {}, wait=True)
@@ -209,6 +216,8 @@ class DevtoolsBrowser(object):
 
     def on_start_recording(self, task):
         """Start recording"""
+        if self.must_exit_now:
+            return
         if 'page_data' not in task:
             task['page_data'] = {}
         task['page_data']['date'] = time.time()
@@ -231,7 +240,7 @@ class DevtoolsBrowser(object):
 
     def on_stop_recording(self, task):
         """Stop recording"""
-        if self.devtools is not None:
+        if self.devtools is not None and not self.must_exit_now:
             self.devtools.collect_trace()
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
@@ -253,8 +262,7 @@ class DevtoolsBrowser(object):
             end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and task['error'] is None and \
-                    monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and monotonic() < end_time and not self.must_exit_now:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -280,6 +288,8 @@ class DevtoolsBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        if self.must_exit_now:
+            return
         if task['log_data']:
             # Start the processing that can run in a background thread
             optimization = OptimizationChecks(self.job, task, self.get_requests(True))
@@ -320,6 +330,8 @@ class DevtoolsBrowser(object):
 
     def process_video(self):
         """Post process the video"""
+        if self.must_exit_now:
+            return
         from internal.video_processing import VideoProcessing
         self.profile_start('dtbrowser.process_video')
         video = VideoProcessing(self.options, self.job, self.task)
@@ -328,6 +340,8 @@ class DevtoolsBrowser(object):
 
     def process_devtools_requests(self, task):
         """Process the devtools log and pull out the requests information"""
+        if self.must_exit_now:
+            return
         self.profile_start('dtbrowser.process_devtools_requests')
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
@@ -377,6 +391,8 @@ class DevtoolsBrowser(object):
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
+        if self.must_exit_now:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -444,6 +460,8 @@ class DevtoolsBrowser(object):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit_now:
+            return
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
@@ -617,6 +635,8 @@ class DevtoolsBrowser(object):
         proc.communicate()
 
     def run_lighthouse_test(self, task):
+        if self.must_exit_now:
+            return
         self.profile_start('dtbrowser.run_lighthouse_test')
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
@@ -810,6 +830,8 @@ class DevtoolsBrowser(object):
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
+        if self.must_exit_now:
+            return
         self.profile_start('dtbrowser.wappalyzer_detect')
         # Run the Wappalyzer detection (give it 30 seconds at most)
         completed = False

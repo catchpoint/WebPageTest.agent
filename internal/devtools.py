@@ -39,6 +39,7 @@ class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, options, job, task, use_devtools_video, is_webkit, is_ios):
         self.url = "http://localhost:{0:d}/json".format(task['port'])
+        self.must_exit = False
         self.websocket = None
         self.options = options
         self.job = job
@@ -90,6 +91,10 @@ class DevTools(object):
         self.default_target = None
         self.dom_tree = None
 
+    def shutdown(self):
+        """The agent is dying NOW"""
+        self.must_exit = True
+
     def prepare(self):
         """Set up the various paths and states"""
         self.requests = {}
@@ -131,7 +136,7 @@ class DevTools(object):
         proxies = {"http": None, "https": None}
         ret = False
         end_time = monotonic() + timeout
-        while not ret and monotonic() < end_time:
+        while not ret and monotonic() < end_time and not self.must_exit:
             try:
                 response = requests.get(self.url, timeout=timeout, proxies=proxies)
                 if len(response.text):
@@ -157,7 +162,7 @@ class DevTools(object):
         if self.is_webkit and not self.is_ios:
             ret = False
             end_time = monotonic() + timeout
-            while not ret and monotonic() < end_time:
+            while not ret and monotonic() < end_time and not self.must_exit:
                 try:
                     self.websocket = WebKitGTKInspector()
                     self.websocket.connect(self.task['port'], timeout)
@@ -175,7 +180,7 @@ class DevTools(object):
             proxies = {"http": None, "https": None}
             ret = False
             end_time = monotonic() + timeout
-            while not ret and monotonic() < end_time:
+            while not ret and monotonic() < end_time and not self.must_exit:
                 try:
                     response = session.get(self.url, timeout=timeout, proxies=proxies)
                     if len(response.text):
@@ -225,7 +230,7 @@ class DevTools(object):
                     time.sleep(0.5)
             # Wait for the default target to be created for iOS
             if ret and self.is_ios:
-                while self.default_target is None and monotonic() < end_time:
+                while self.default_target is None and monotonic() < end_time and not self.must_exit:
                     self.pump_message()
         self.profile_end('connect')
         return ret
@@ -294,6 +299,7 @@ class DevTools(object):
         self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Debugger.enable', {})
+        self.send_command('Debugger.setSkipAllPauses', {'skip': True})
         self.send_command('ServiceWorker.enable', {})
         self.send_command('DOMSnapshot.enable', {})
         inject_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'chrome', 'inject.js')
@@ -396,12 +402,16 @@ class DevTools(object):
 
     def stop_capture(self):
         """Do any quick work to stop things that are capturing data"""
+        if self.must_exit:
+            return
         self.start_collecting_trace()
         # Process messages for up to 10 seconds in case we still have some pending async commands
         self.wait_for_pending_commands(10)
 
     def stop_recording(self):
         """Stop capturing dev tools, timeline and trace data"""
+        if self.must_exit:
+            return
         self.profile_start('stop_recording')
         if self.task['log_data']:
             if 'coverage' in self.job and self.job['coverage']:
@@ -518,7 +528,7 @@ class DevTools(object):
     def wait_for_pending_commands(self, timeout):
         """Wait for any queued commands"""
         end_time = monotonic() + timeout
-        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands)):
+        while monotonic() < end_time and (len(self.pending_body_requests) or len(self.pending_commands))and not self.must_exit:
             try:
                 self.pump_message()
             except Exception:
@@ -541,7 +551,7 @@ class DevTools(object):
 
     def start_collecting_trace(self):
         """Kick off the trace processing asynchronously"""
-        if self.trace_enabled:
+        if self.trace_enabled and not self.must_exit:
             keep_timeline = True
             if 'discard_timeline' in self.job and self.job['discard_timeline']:
                 keep_timeline = False
@@ -554,6 +564,8 @@ class DevTools(object):
 
     def snapshot_dom(self):
         """Grab a snapshot of the DOM to use for processing element locations"""
+        if self.must_exit:
+            return
         try:
             self.profile_start('snapshot_dom')
             styles = ['background-image']
@@ -567,6 +579,8 @@ class DevTools(object):
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
+        if self.must_exit:
+            return
         if self.trace_enabled:
             self.trace_enabled = False
             self.profile_start('collect_trace')
@@ -609,7 +623,7 @@ class DevTools(object):
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
-        if request_id not in self.response_bodies and self.body_fail_count < 3 and not self.is_ios:
+        if request_id not in self.response_bodies and self.body_fail_count < 3 and not self.is_ios and not self.must_exit:
             request = self.get_request(request_id, True)
             if request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request and 'url' in request and request['url'].startswith('http'):
@@ -710,6 +724,8 @@ class DevTools(object):
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
+        if self.must_exit:
+            return
         self.profile_start('get_response_bodies')
         requests = self.get_requests(True)
         if self.task['error'] is None and requests:
@@ -897,7 +913,7 @@ class DevTools(object):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
-            while not done:
+            while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
@@ -945,7 +961,7 @@ class DevTools(object):
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
         logging.debug('Grabbing Screenshot')
-        if not self.main_thread_blocked:
+        if not self.main_thread_blocked and not self.must_exit:
             self.profile_start('screenshot')
             response = None
             data = None
@@ -1009,6 +1025,8 @@ class DevTools(object):
 
     def execute_js(self, script):
         """Run the provided JS in the browser and return the result"""
+        if self.must_exit:
+            return
         ret = None
         if self.task['error'] is None and not self.main_thread_blocked:
             if self.is_webkit:
@@ -1104,6 +1122,8 @@ class DevTools(object):
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
                     self.process_css_event(event, msg)
+                elif category == 'Debugger':
+                    self.process_debugger_event(event, msg)
                 elif category == 'Target':
                     log_event = False
                     self.process_target_event(event, msg)
@@ -1212,6 +1232,11 @@ class DevTools(object):
                         entry['styleSheetId'] not in self.stylesheets and \
                         'sourceURL' in entry and entry['sourceURL']:
                     self.stylesheets[entry['styleSheetId']] = entry['sourceURL']
+
+    def process_debugger_event(self, event, msg):
+        """Handle Debugger.* events"""
+        if event == 'paused':
+            self.send_command('Debugger.resume', {})
 
     def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""

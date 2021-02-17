@@ -188,6 +188,8 @@ class AndroidBrowser(BaseBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.must_exit:
+            return
         if task['log_data']:
             task['page_data']['osVersion'] = self.adb.version
             task['page_data']['os_version'] = self.adb.version
@@ -225,6 +227,8 @@ class AndroidBrowser(BaseBrowser):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        if self.must_exit:
+            return
         # kick off the video processing (async)
         if 'video_file' in task and task['video_file'] is not None and \
                 os.path.isfile(task['video_file']):
@@ -336,6 +340,8 @@ class AndroidBrowser(BaseBrowser):
 
     def screenshot(self, task):
         """Grab a screenshot using adb"""
+        if self.must_exit:
+            return
         png_file = os.path.join(task['dir'], task['prefix'] + '_screen.png')
         self.adb.screenshot(png_file, self.job['image_magick']['mogrify'])
         task['page_data']['result'] = 0

@@ -19,26 +19,19 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-default-browser-check',
     '--no-first-run',
     '--new-window',
-    '--disable-infobars',
-    '--disable-translate',
-    '--disable-notifications',
-    '--disable-desktop-notifications',
-    '--disable-save-password-bubble',
     '--allow-running-insecure-content',
     '--disable-component-update',
-    '--disable-background-downloads',
-    '--disable-component-update',
-    '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
-    '--disable-datasaver-prompt',
     '--disable-default-apps',
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
-    '--safebrowsing-disable-auto-update',
     '--disable-background-timer-throttling',
-    '--disable-browser-side-navigation',
     '--net-log-capture-mode=IncludeSensitive',
-    '--load-media-router-component-extension=0'
+    '--load-media-router-component-extension=0',
+    '--mute-audio',
+    '--disable-hang-monitor',
+    '--password-store=basic',
+    '--disable-breakpad'
 ]
 
 HOST_RULES = [
@@ -60,6 +53,7 @@ DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
     'CalculateNativeWinOcclusion',
     'TranslateUI',
+    'Translate',
     'OfflinePagesPrefetching'
 ]
 
@@ -77,6 +71,11 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
         self.is_chrome = True
+
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        DesktopBrowser.shutdown(self)
 
     def launch(self, job, task):
         """Launch the browser"""

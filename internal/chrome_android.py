@@ -20,30 +20,24 @@ from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-fre',
-    '--enable-benchmarking',
     '--metrics-recording-only',
-    '--disable-geolocation',
     '--disable-background-networking',
     '--disable-component-update',
     '--no-default-browser-check',
     '--no-first-run',
-    '--disable-infobars',
-    '--disable-translate',
     '--allow-running-insecure-content',
-    '--disable-save-password-bubble',
-    '--disable-background-downloads',
-    '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
-    '--disable-datasaver-prompt',
     '--disable-device-discovery-notifications',
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--safebrowsing-disable-auto-update',
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
-    '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeSensitive'
+    '--net-log-capture-mode=IncludeSensitive',
+    '--mute-audio',
+    '--disable-hang-monitor',
+    '--password-store=basic',
+    '--disable-breakpad'
 ]
 
 HOST_RULES = [
@@ -58,6 +52,7 @@ DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
     'CalculateNativeWinOcclusion',
     'TranslateUI',
+    'Translate',
     'OfflinePagesPrefetching'
 ]
 
@@ -116,6 +111,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         DevtoolsBrowser.__init__(self, options, job, use_devtools_video=False)
         self.devtools_screenshot = False
         self.connected = False
+
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        AndroidBrowser.shutdown(self)
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""

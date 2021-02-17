@@ -16,6 +16,7 @@ class BaseBrowser(object):
     def __init__(self):
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.task = None
+        self.must_exit = False
 
     def execute_js(self, script):
         """Stub to be overridden"""
@@ -32,3 +33,7 @@ class BaseBrowser(object):
                 if event_name in self.task['profile_data']:
                     self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
                     self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)
+
+    def shutdown(self):
+        """Agent is dying, close as much as possible gracefully"""
+        self.must_exit = True

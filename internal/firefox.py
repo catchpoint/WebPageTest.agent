@@ -139,6 +139,8 @@ class Firefox(DesktopBrowser):
 
     def start_firefox(self, job, task):
         """Start Firefox using Marionette"""
+        if self.must_exit:
+            return
         from marionette_driver.marionette import Marionette
         from marionette_driver.addons import Addons
         args = ['-profile', '"{0}"'.format(task['profile']),
@@ -171,6 +173,8 @@ class Firefox(DesktopBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
+        if self.must_exit:
+            return
         if self.job['message_server'] is not None:
             self.job['message_server'].flush_messages()
         self.connected = False
@@ -319,8 +323,7 @@ class Firefox(DesktopBrowser):
             end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and task['error'] is None and \
-                    monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and monotonic() < end_time and not self.must_exit:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -356,7 +359,7 @@ class Firefox(DesktopBrowser):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
             end_time = monotonic() + 30
-            while monotonic() < end_time and not self.connected:
+            while monotonic() < end_time and not self.connected and not self.must_exit:
                 try:
                     message = self.job['message_server'].get_message(1)
                     try:
@@ -373,7 +376,7 @@ class Firefox(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
-            while not done:
+            while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
@@ -421,6 +424,8 @@ class Firefox(DesktopBrowser):
 
     def execute_js(self, script):
         """Run JavaScript"""
+        if self.must_exit:
+            return
         ret = None
         if self.marionette is not None:
             try:
@@ -431,6 +436,8 @@ class Firefox(DesktopBrowser):
 
     def run_js_file(self, file_name):
         """Execute one of our JS scripts"""
+        if self.must_exit:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -451,6 +458,8 @@ class Firefox(DesktopBrowser):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit:
+            return
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
@@ -721,7 +730,7 @@ class Firefox(DesktopBrowser):
         if not len(task['script']):
             self.close_browser(self.job, task)
         # Copy the log files
-        if self.moz_log is not None:
+        if self.moz_log is not None and not self.must_exit:
             task['moz_log'] = os.path.join(task['dir'], task['prefix'] + '_moz.log')
             files = sorted(glob.glob(self.moz_log + '*'))
             for path in files:
@@ -750,6 +759,8 @@ class Firefox(DesktopBrowser):
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
         DesktopBrowser.on_start_processing(self, task)
+        if self.must_exit:
+            return
         # Parse the moz log for the accurate request timings
         request_timings = []
         if 'moz_log' in task:

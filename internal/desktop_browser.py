@@ -365,7 +365,7 @@ class DesktopBrowser(BaseBrowser):
             end_time = monotonic() + wait_time
             last_update = monotonic()
             idle = False
-            while not idle and monotonic() < end_time:
+            while not idle and monotonic() < end_time and not self.must_exit:
                 check_start = monotonic()
                 pct = psutil.cpu_percent(interval=0.1)
                 if pct <= target_pct:
@@ -384,7 +384,7 @@ class DesktopBrowser(BaseBrowser):
         """Delete the browser profile directory"""
         if os.path.isdir(task['profile']):
             end_time = monotonic() + 30
-            while monotonic() < end_time:
+            while monotonic() < end_time and not self.must_exit:
                 try:
                     shutil.rmtree(task['profile'])
                 except Exception:
@@ -411,6 +411,8 @@ class DesktopBrowser(BaseBrowser):
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.must_exit:
+            return
         import psutil
         if task['log_data']:
             if not self.job['shaper'].configure(self.job, task):
@@ -660,6 +662,8 @@ class DesktopBrowser(BaseBrowser):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        if self.must_exit:
+            return
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
             self.profile_start('desktop.video_processing')
@@ -756,6 +760,8 @@ class DesktopBrowser(BaseBrowser):
 
     def process_pcap(self):
         """Process the pcap in a background thread"""
+        if self.must_exit:
+            return
         pcap_file = self.pcap_file + '.gz'
         if os.path.isfile(pcap_file):
             self.profile_start('desktop.pcap_processing')
@@ -803,7 +809,7 @@ class DesktopBrowser(BaseBrowser):
         last_bytes = self.get_net_bytes()
         snapshot = {'time': 0, 'cpu': 0.0, 'bw': 0}
         self.usage_queue.put(snapshot)
-        while self.recording:
+        while self.recording and not self.must_exit:
             snapshot = {'bw': 0}
             snapshot['cpu'] = psutil.cpu_percent(interval=0.1)
             now = monotonic()

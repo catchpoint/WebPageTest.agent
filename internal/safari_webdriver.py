@@ -127,6 +127,8 @@ class SafariWebDriver(DesktopBrowser):
 
     def start_safari(self, job, task):
         """Start Safari using webdriver"""
+        if self.must_exit:
+            return
         args = ['-profile', '"{0}"'.format(task['profile']),
                 'about:blank']
         if self.path.find(' ') > -1:
@@ -277,8 +279,7 @@ class SafariWebDriver(DesktopBrowser):
             end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and task['error'] is None and \
-                    monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and monotonic() < end_time and not self.must_exit:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -315,7 +316,7 @@ class SafariWebDriver(DesktopBrowser):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
             end_time = monotonic() + 30
-            while monotonic() < end_time and not self.connected:
+            while monotonic() < end_time and not self.connected and not self.must_exit:
                 try:
                     message = self.job['message_server'].get_message(1)
                     try:
@@ -333,7 +334,7 @@ class SafariWebDriver(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
-            while not done:
+            while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
@@ -379,6 +380,8 @@ class SafariWebDriver(DesktopBrowser):
                         done = True
     def execute_js(self, script):
         """Run JavaScript"""
+        if self.must_exit:
+            return
         ret = None
         if self.webdriver:
             try:
@@ -389,6 +392,8 @@ class SafariWebDriver(DesktopBrowser):
 
     def run_js_file(self, file_name):
         """Execute one of our JS scripts"""
+        if self.must_exit:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
@@ -409,6 +414,8 @@ class SafariWebDriver(DesktopBrowser):
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit:
+            return
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:

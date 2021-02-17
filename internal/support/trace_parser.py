@@ -78,7 +78,7 @@ class Trace():
             logging.exception("Error writing to " + out_file)
 
     def WriteUserTiming(self, out_file, dom_tree=None, performance_timing=None):
-        out = self.post_process_netlog_events()
+        self.post_process_netlog_events()
         out = self.post_process_user_timing(dom_tree, performance_timing)
         if out is not None:
             self.write_json(out_file, out)
@@ -307,6 +307,7 @@ class Trace():
                 try:
                     consumed = False
                     if event['cat'].find('loading') >= 0 and 'name' in event:
+                        event['name'] = event['name'].replace('GlobalFirstContentfulPaint', 'FirstContentfulPaint')
                         if event['name'].startswith('NavStartToLargestContentfulPaint'):
                             consumed = True
                             if event['name'].find('Invalidate') >= 0:
