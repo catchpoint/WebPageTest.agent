@@ -51,6 +51,7 @@ class DevTools(object):
         self.pending_body_requests = {}
         self.pending_commands = []
         self.console_log = []
+        self.audit_issues = []
         self.performance_timing = []
         self.workers = []
         self.page_loaded = None
@@ -100,6 +101,7 @@ class DevTools(object):
         self.requests = {}
         self.response_bodies = {}
         self.console_log = []
+        self.audit_issues = []
         self.performance_timing = []
         self.nav_error = None
         self.nav_error_code = None
@@ -314,7 +316,6 @@ class DevTools(object):
                 self.enable_target(target['targetId'])
         if self.task['log_data']:
             self.send_command('Security.enable', {})
-            self.send_command('Console.enable', {})
             if 'coverage' in self.job and self.job['coverage']:
                 self.send_command('DOM.enable', {})
                 self.send_command('CSS.enable', {})
@@ -489,6 +490,7 @@ class DevTools(object):
         self.flush_pending_messages()
         if self.task['log_data']:
             self.send_command('Security.disable', {})
+            self.send_command('Audits.disable', {})
             self.send_command('Console.disable', {})
             self.send_command('Timeline.stop', {})
             self.get_response_bodies()
@@ -511,6 +513,9 @@ class DevTools(object):
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         self.send_command('Debugger.disable', {})
+        # Add the audit issues to the page data
+        if len(self.audit_issues):
+            self.task['page_data']['audit_issues'] = self.audit_issues
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
@@ -1080,6 +1085,9 @@ class DevTools(object):
         """Hook up the necessary network (or other) events for the given target"""
         try:
             self.send_command('Network.enable', {}, target_id=target_id)
+            self.send_command('Console.enable', {}, target_id=target_id)
+            self.send_command('Log.enable', {}, target_id=target_id)
+            self.send_command('Audits.enable', {}, target_id=target_id)
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
@@ -1118,6 +1126,8 @@ class DevTools(object):
                     self.process_console_event(event, msg)
                 elif category == 'Log' and self.recording:
                     self.process_console_event(event, msg)
+                elif category == 'Audits' and self.recording:
+                    self.process_audit_event(event, msg)
                 elif category == 'Inspector' and target_id is None:
                     self.process_inspector_event(event)
                 elif category == 'CSS' and self.recording:
@@ -1160,6 +1170,11 @@ class DevTools(object):
                     logging.exception('Error decoding console log message')
             else:
                 self.console_log.append(message)
+
+    def process_audit_event(self, event, msg):
+        """Handle Audits.* events"""
+        if event == 'issueAdded' and 'issue' in msg['params']:
+            self.audit_issues.append(msg['params']['issue'])
 
     def process_page_event(self, event, msg):
         """Process Page.* dev tools events"""
