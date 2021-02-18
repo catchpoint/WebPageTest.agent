@@ -21,7 +21,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--new-window',
     '--allow-running-insecure-content',
     '--disable-component-update',
-    '--disable-client-side-phishing-detection',
     '--disable-default-apps',
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
@@ -54,7 +53,8 @@ DISABLE_CHROME_FEATURES = [
     'CalculateNativeWinOcclusion',
     'TranslateUI',
     'Translate',
-    'OfflinePagesPrefetching'
+    'OfflinePagesPrefetching',
+    'HeavyAdPrivacyMitigations'
 ]
 
 ENABLE_BLINK_FEATURES = [
