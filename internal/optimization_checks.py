@@ -138,6 +138,7 @@ class OptimizationChecks(object):
                        '.fastlylb.net',
                        '.nocookie.net'],
             'GoCache': ['.cdn.gocache.net'],
+            'G-Core CDN': ['.gcdn.co'],
             'Google': ['.google.',
                        'googlesyndication.',
                        'youtube.',
