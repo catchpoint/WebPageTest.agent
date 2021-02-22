@@ -1,5 +1,16 @@
 {
   "TranslateEnabled": false,
   "PasswordManagerEnabled": false,
-  "EnableMediaRouter": false
+  "EnableMediaRouter": false,
+  "CommandLineFlagSecurityWarningsEnabled": false,
+  "AllowFileSelectionDialogs": false,
+  "AllowNativeNotifications": false,
+  "DNSInterceptionChecksEnabled": false,
+  "SpellcheckEnabled": false,
+  "SuggestedContentEnabled": false,
+  "DefaultGeolocationSetting": 1,
+  "DefaultNotificationsSetting": 2,
+  "DefaultSensorsSetting": 1,
+  "DefaultWebBluetoothGuardSetting": 2,
+  "DefaultWebUsbGuardSetting": 2
 }
