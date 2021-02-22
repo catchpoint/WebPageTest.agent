@@ -593,7 +593,7 @@ class DevTools(object):
                     done = False
                     no_message_count = 0
                     elapsed = monotonic() - start
-                    while not done and no_message_count < 30 and elapsed < 60:
+                    while not done and no_message_count < 30 and elapsed < 600:
                         try:
                             raw = self.websocket.get_message(1)
                             try:
