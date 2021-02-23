@@ -61,7 +61,6 @@ class WebPageTest(object):
         self.is_dead = False
         self.health_check_server = None
         self.session = requests.Session()
-        self.scheduler_session = requests.Session()
         self.options = options
         self.fps = options.fps
         self.test_run_count = 0
@@ -136,6 +135,24 @@ class WebPageTest(object):
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                 except Exception:
                     logging.exception('Error getting screen resolution')
+            elif platform.system() == 'Linux':
+                out = subprocess.check_output(['xprop','-notype','-len','16','-root','_NET_DESKTOP_GEOMETRY'], universal_newlines=True)
+                if out is not None:
+                    logging.debug(out)
+                    parts = out.split('=', 1)
+                    if len(parts) == 2:
+                        dimensions = parts[1].split(',', 1)
+                        if len(dimensions) == 2:
+                            self.screen_width = int(dimensions[0].strip())
+                            self.screen_height = int(dimensions[1].strip())
+        # Grab the list of configured DNS servers
+        self.dns_servers = None
+        try:
+            from dns import resolver
+            dns_resolver = resolver.Resolver()
+            self.dns_servers = '-'.join(dns_resolver.nameservers)
+        except Exception:
+            pass
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()
@@ -446,7 +463,6 @@ class WebPageTest(object):
         # Shuffle the list order
         if len(self.test_locations) > 1:
             self.test_locations.append(str(self.test_locations.pop(0)))
-        self.report_diagnostics()
         count = 0
         retry = True
         while count < 3 and retry:
@@ -468,6 +484,8 @@ class WebPageTest(object):
                 url += '&screenwidth={0:d}'.format(self.screen_width)
             if self.screen_height is not None:
                 url += '&screenheight={0:d}'.format(self.screen_height)
+            if self.dns_servers is not None:
+                url += '&dns=' + quote_plus(self.dns_servers)
             free_disk = get_free_disk_space()
             url += '&freedisk={0:0.3f}'.format(free_disk)
             uptime = self.get_uptime_minutes()
@@ -486,7 +504,7 @@ class WebPageTest(object):
                 if self.scheduler and self.scheduler_salt and self.scheduler_node:
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
                     logging.info("Checking for work: %s", url)
-                    response = self.scheduler_session.get(url, timeout=30, proxies=proxies, headers={'CPID': self.get_cpid()})
+                    response = self.session.get(url, timeout=30, proxies=proxies, headers={'CPID': self.get_cpid()})
                 else:
                     logging.info("Checking for work: %s", url)
                     response = self.session.get(url, timeout=30, proxies=proxies)
@@ -500,19 +518,23 @@ class WebPageTest(object):
                     if response.text == 'Reboot':
                         self.reboot()
                         return None
-                    elif response.text.startswith('Servers:'):
-                        servers_str = response.text[8:]
-                        if servers_str and servers_str != self.work_servers_str:
-                            self.work_servers_str = servers_str
-                            self.work_servers = self.work_servers_str.split(',')
-                            logging.debug("Servers changed to: %s", self.work_servers_str)
-                    elif response.text.startswith('Scheduler:'):
-                        scheduler_parts = response.text[10:].split(' ')
-                        if scheduler_parts and len(scheduler_parts) == 3:
-                            self.scheduler = scheduler_parts[0].strip()
-                            self.scheduler_salt = scheduler_parts[1].strip()
-                            self.scheduler_node = scheduler_parts[2].strip()
-                            logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
+                    elif response.text.startswith('Servers:') or response.text.startswith('Scheduler:'):
+                        for line in response.text.splitlines():
+                            line = line.strip()
+                            if line.startswith('Servers:'):
+                                servers_str = line[8:]
+                                if servers_str and servers_str != self.work_servers_str:
+                                    self.work_servers_str = servers_str
+                                    self.work_servers = self.work_servers_str.split(',')
+                                    logging.debug("Servers changed to: %s", self.work_servers_str)
+                            elif line.startswith('Scheduler:'):
+                                scheduler_parts = line[10:].split(' ')
+                                if scheduler_parts and len(scheduler_parts) == 3:
+                                    self.scheduler = scheduler_parts[0].strip()
+                                    self.scheduler_salt = scheduler_parts[1].strip()
+                                    self.scheduler_node = scheduler_parts[2].strip()
+                                    retry = True
+                                    logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
                     job = response.json()
                     logging.debug("Job: %s", json.dumps(job))
                     # Store the raw job info in case we need to re-queue it
@@ -590,7 +612,7 @@ class WebPageTest(object):
                         job['health_check_server'] = self.health_check_server
 
                 # Rotate through the list of locations
-                if job is None and len(locations) > 0:
+                if job is None and len(locations) > 0 and not self.scheduler:
                     location = str(locations.pop(0))
                     count -= 1
                     retry = True
@@ -608,7 +630,7 @@ class WebPageTest(object):
             except Exception:
                 pass
             # Rotate through the list of servers
-            if not retry and job is None and len(servers) > 0:
+            if not retry and job is None and len(servers) > 0 and not self.scheduler:
                 self.url = str(servers.pop(0))
                 locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
                 random.shuffle(locations)
@@ -619,6 +641,7 @@ class WebPageTest(object):
         self.needs_zip = []
         if job is not None and 'work_server' in job and 'jobID' in job:
             self.notify_test_started(job)
+        self.report_diagnostics()
         return job
 
     def notify_test_started(self, job):
@@ -1303,7 +1326,7 @@ class WebPageTest(object):
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
                 payload = '{"test":"' + self.job['jobID'] +'","update":0}'
-                self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                self.session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
             except Exception:
                 logging.exception("Error reporting job done to scheduler")
 
@@ -1475,20 +1498,23 @@ class WebPageTest(object):
 
     def report_diagnostics(self):
         """Send a periodic diagnostics report"""
-        if self.scheduler and self.scheduler_salt and self.scheduler_node and not self.is_dead:
-            # Don't report more often than once per minute
-            now = monotonic()
-            if self.last_diagnostics and now < self.last_diagnostics + 60:
-                return
-            self.last_diagnostics = now
+        if self.is_dead:
+            return
+        # Don't report more often than once per minute
+        now = monotonic()
+        if self.last_diagnostics and now < self.last_diagnostics + 60:
+            return
+        import psutil
+        self.last_diagnostics = now
+        cpu = self.cpu_pct if self.cpu_pct else psutil.cpu_percent(interval=1)
+        # Ping the scheduler diagnostics endpoint
+        if self.scheduler and self.scheduler_salt and self.scheduler_node:
             try:
-                import psutil
                 import json as json_native
                 disk = psutil.disk_usage(__file__)
                 mem = psutil.virtual_memory()
                 ver = platform.uname()
                 os = '{0} {1}'.format(ver[0], ver[2])
-                cpu = self.cpu_pct if self.cpu_pct else psutil.cpu_percent(interval=1)
                 cpu = min(max(int(round(cpu)), 0), 100)
                 info = {
                     'Machine': self.pc_name,
@@ -1505,8 +1531,47 @@ class WebPageTest(object):
                 logging.debug(payload)
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
-                response = self.scheduler_session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                response = self.session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
                 logging.debug(response.headers)
+            except Exception:
+                logging.exception('Error reporting diagnostics')
+        # Ping the WPT servers if there are multiple (a single doesn't need a separate ping)
+        if len(self.work_servers) and len(self.test_locations):
+            try:
+                from .os_util import get_free_disk_space
+                proxies = {"http": None, "https": None}
+                for server in self.work_servers:
+                    for location in self.test_locations:
+                        url = server + 'ping.php?'
+                        url += "location=" + quote_plus(location)
+                        url += "&pc=" + quote_plus(self.pc_name)
+                        url += "&cpu={0:0.2f}".format(cpu)
+                        if self.key is not None:
+                            url += "&key=" + quote_plus(self.key)
+                        if self.instance_id is not None:
+                            url += "&ec2=" + quote_plus(self.instance_id)
+                        if self.zone is not None:
+                            url += "&ec2zone=" + quote_plus(self.zone)
+                        if self.options.android:
+                            url += '&apk=1'
+                        url += '&version={0}'.format(self.version)
+                        if self.screen_width is not None:
+                            url += '&screenwidth={0:d}'.format(self.screen_width)
+                        if self.screen_height is not None:
+                            url += '&screenheight={0:d}'.format(self.screen_height)
+                        if self.dns_servers is not None:
+                            url += '&dns=' + quote_plus(self.dns_servers)
+                        free_disk = get_free_disk_space()
+                        url += '&freedisk={0:0.3f}'.format(free_disk)
+                        uptime = self.get_uptime_minutes()
+                        if uptime is not None:
+                            url += '&upminutes={0:d}'.format(uptime)
+                        if self.job is not None and 'Test ID' in self.job:
+                            url += '&test=' + quote_plus(self.job['Test ID'])
+                        try:
+                            self.session.get(url, timeout=5, proxies=proxies)
+                        except Exception:
+                            pass
             except Exception:
                 logging.exception('Error reporting diagnostics')
 
