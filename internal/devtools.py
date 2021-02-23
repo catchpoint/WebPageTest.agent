@@ -918,6 +918,7 @@ class DevTools(object):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
+            max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
@@ -953,6 +954,12 @@ class DevTools(object):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['page_data']['result'] = 99997
+                elif max_requests > 0 and len(self.requests) > max_requests:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Exceeded Maximum Requests"
                         self.task['page_data']['result'] = 99997
                 else:
                     elapsed_activity = now - self.last_activity
