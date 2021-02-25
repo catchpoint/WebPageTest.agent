@@ -504,10 +504,10 @@ class WebPageTest(object):
                 if self.scheduler and self.scheduler_salt and self.scheduler_node:
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
                     logging.info("Checking for work: %s", url)
-                    response = self.session.get(url, timeout=30, proxies=proxies, headers={'CPID': self.get_cpid()})
+                    response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid()})
                 else:
                     logging.info("Checking for work: %s", url)
-                    response = self.session.get(url, timeout=30, proxies=proxies)
+                    response = self.session.get(url, timeout=10, proxies=proxies)
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
@@ -618,7 +618,6 @@ class WebPageTest(object):
                     retry = True
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
-                retry = True
                 now = monotonic()
                 if self.first_failure is None:
                     self.first_failure = now
