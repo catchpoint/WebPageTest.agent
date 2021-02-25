@@ -49,6 +49,7 @@ class Edge(DesktopBrowser):
         self.navigating = False
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.last_activity = None
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.wpt_etw_done = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -74,6 +75,7 @@ class Edge(DesktopBrowser):
         self.sockets = {}
         self.socket_ports = {}
         self.requests = {}
+        self.request_count = 0
         self.CMarkup = []
 
     def prepare(self, job, task):
@@ -334,6 +336,7 @@ class Edge(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             self.last_activity = None
+            max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 try:
                     self.process_message(self.job['message_server'].get_message(1))
@@ -358,6 +361,12 @@ class Edge(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99998
+                elif max_requests > 0 and self.request_count > max_requests:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['page_data']['result'] = 99997
                 elif self.last_activity is not None:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -659,6 +668,7 @@ class Edge(DesktopBrowser):
                 self.page['start'] = message['ts']
             if 'end' not in self.requests[event_id]:
                 self.requests[event_id]['end'] = message['ts'] - self.page['start']
+            self.request_count += 1
 
     def execute_js(self, script):
         """Run javascipt"""

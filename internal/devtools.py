@@ -63,6 +63,7 @@ class DevTools(object):
         self.trace_file = None
         self.trace_enabled = False
         self.requests = {}
+        self.request_count = 0
         self.response_bodies = {}
         self.body_fail_count = 0
         self.body_index = 0
@@ -99,6 +100,7 @@ class DevTools(object):
     def prepare(self):
         """Set up the various paths and states"""
         self.requests = {}
+        self.request_count = 0
         self.response_bodies = {}
         self.console_log = []
         self.audit_issues = []
@@ -955,7 +957,7 @@ class DevTools(object):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99997
-                elif max_requests > 0 and len(self.requests) > max_requests:
+                elif max_requests > 0 and self.request_count > max_requests:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
@@ -1360,6 +1362,8 @@ class DevTools(object):
             elif event == 'loadingFinished':
                 self.response_started = True
                 request['finished'] = msg['params']
+                if 'fromNet' in request and request['fromNet']:
+                    self.request_count += 1
                 self.get_response_body(request_id, False)
             elif event == 'loadingFailed':
                 request['failed'] = msg['params']
