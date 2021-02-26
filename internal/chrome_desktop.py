@@ -32,7 +32,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--password-store=basic',
     '--disable-breakpad',
     '--dont-require-litepage-redirect-infobar',
-    '--override-https-image-compression-infobar'
+    '--override-https-image-compression-infobar',
+    '--disable-fetching-hints-at-navigation-start'
 ]
 
 HOST_RULES = [
