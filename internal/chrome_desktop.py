@@ -20,6 +20,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-first-run',
     '--new-window',
     '--allow-running-insecure-content',
+    '--disable-client-side-phishing-detection',
     '--disable-component-update',
     '--disable-default-apps',
     '--disable-device-discovery-notifications',

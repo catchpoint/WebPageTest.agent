@@ -26,6 +26,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-default-browser-check',
     '--no-first-run',
     '--allow-running-insecure-content',
+    '--disable-client-side-phishing-detection',
     '--disable-device-discovery-notifications',
     '--disable-default-apps',
     '--disable-domain-reliability',
