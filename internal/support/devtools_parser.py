@@ -931,6 +931,8 @@ class DevToolsParser(object):
                             if 'bytes_in' in entry:
                                 request['bytesIn'] = int(entry['bytes_in'])
                                 request['objectSize'] = int(entry['bytes_in'])
+                            if 'uncompressed_bytes_in' in entry:
+                                request['objectSizeUncompressed'] = int(entry['uncompressed_bytes_in'])
                             if 'server_address' in entry:
                                 parts = entry['server_address'].rsplit(':', 1)
                                 if len(parts) == 2:
