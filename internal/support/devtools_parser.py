@@ -848,7 +848,8 @@ class DevToolsParser(object):
                    'tls_version': 'tls_version',
                    'tls_resumed': 'tls_resumed',
                    'tls_next_proto': 'tls_next_proto',
-                   'tls_cipher_suite': 'tls_cipher_suite'}
+                   'tls_cipher_suite': 'tls_cipher_suite',
+                   'uncompressed_bytes_in': 'objectSizeUncompressed'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
@@ -931,8 +932,6 @@ class DevToolsParser(object):
                             if 'bytes_in' in entry:
                                 request['bytesIn'] = int(entry['bytes_in'])
                                 request['objectSize'] = int(entry['bytes_in'])
-                            if 'uncompressed_bytes_in' in entry:
-                                request['objectSizeUncompressed'] = int(entry['uncompressed_bytes_in'])
                             if 'server_address' in entry:
                                 parts = entry['server_address'].rsplit(':', 1)
                                 if len(parts) == 2:
