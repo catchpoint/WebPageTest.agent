@@ -1328,13 +1328,21 @@ class Trace():
                     stream['response_headers'] = params['headers']
             if name == 'HTTP2_STREAM_ADOPTED_PUSH_STREAM' and 'url' in params and \
                     'url_request' in self.netlog:
-                # Find the phantom request with the matching url and mark it
+                # Clone the fake urlrequest entry to the real one and delete the fake entry
+                old_request = stream['url_request'] if 'url_request' in stream else None
                 url = params['url'].split('#', 1)[0]
                 for request_id in self.netlog['url_request']:
                     request = self.netlog['url_request'][request_id]
                     if 'url' in request and url == request['url'] and 'start' not in request:
-                        request['phantom'] = True
+                        new_request = request_id
                         break
+                if old_request and new_request and old_request != new_request and old_request in self.netlog['url_request'] and new_request in self.netlog['url_request']:
+                    old = self.netlog['url_request'][old_request]
+                    new = self.netlog['url_request'][new_request]
+                    for key in old:
+                        new[key] = old[key]
+                    stream['url_request'] = new_request
+                    del self.netlog['url_request'][old_request]
         if name == 'HTTP2_SESSION_RECV_PUSH_PROMISE' and 'promised_stream_id' in params:
             # Create a fake request to match the push
             if 'url_request' not in self.netlog:
