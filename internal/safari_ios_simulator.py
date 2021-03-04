@@ -27,6 +27,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         self.webinspector_proxy = None
         self.device_id = browser_info['device']['udid']
         self.rotate_simulator = False
+        self.driver = None
         if 'rotate' in browser_info and browser_info['rotate']:
             self.rotate_simulator = True
 
@@ -38,19 +39,31 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
     def prepare(self, job, task):
         """ Prepare the OS and simulator """
         subprocess.call(['sudo', 'xcode-select', '-s', '/Applications/Xcode.app'], timeout=60)
-        if not task['cached']:
+        if not task['cached'] and not self.options.ioswebdriver:
             logging.debug('Resetting simulator state')
             subprocess.call(['xcrun', 'simctl', 'erase', self.device_id], timeout=60)
 
     def launch(self, job, task):
         """ Launch the browser using Selenium (only first view tests are supported) """
         try:
-            logging.debug('Booting the simulator')
-            subprocess.call(['xcrun', 'simctl', 'boot', self.device_id], timeout=60)
-            subprocess.call(['open', '-a', 'Simulator'], timeout=60)
+            if self.options.ioswebdriver:
+                if task['cached']:
+                    raise Exception('Webdriver not supported for repeat view tests')
+                logging.debug('Starting the simulator with webdriver')
+                from selenium import webdriver
+                capabilities = webdriver.DesiredCapabilities.SAFARI.copy()
+                capabilities['platformName'] = 'iOS'
+                capabilities['safari:useSimulator'] = True
+                capabilities['safari:deviceUDID'] = self.device_id
+                self.driver = webdriver.Safari(desired_capabilities=capabilities)
+                self.driver.get(self.start_page)
+            else:
+                logging.debug('Booting the simulator')
+                subprocess.call(['xcrun', 'simctl', 'boot', self.device_id], timeout=60)
+                subprocess.call(['open', '-a', 'Simulator'], timeout=60)
 
-            logging.debug('Opening Safari')
-            subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=240)
+                logging.debug('Opening Safari')
+                subprocess.call(['xcrun', 'simctl', 'openurl', self.device_id, self.start_page], timeout=240)
 
             # find the webinspector socket
             webinspector_socket = None
@@ -175,6 +188,8 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
             self.webinspector_proxy.terminate()
             self.webinspector_proxy.communicate()
             self.webinspector_proxy = None
+        if self.driver is not None:
+            self.driver.quit()
         # Stop the browser
         subprocess.call(['xcrun', 'simctl', 'terminate', self.device_id, 'com.apple.mobilesafari'], timeout=60)
         time.sleep(2)
