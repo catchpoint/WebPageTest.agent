@@ -57,6 +57,7 @@ class iWptBrowser(BaseBrowser):
         self.main_request = None
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.connections = {}
         self.last_connection_id = 0
         self.console_log = []
@@ -86,6 +87,7 @@ class iWptBrowser(BaseBrowser):
         self.task = task
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.console_log = []
         if self.timeline is not None:
             self.timeline.close()
@@ -253,6 +255,7 @@ class iWptBrowser(BaseBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
+            max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
@@ -283,6 +286,12 @@ class iWptBrowser(BaseBrowser):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                elif max_requests > 0 and self.request_count > max_requests:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['page_data']['result'] = 99997
                 else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -622,6 +631,7 @@ class iWptBrowser(BaseBrowser):
                             request['objectSizeUncompressed'] = \
                                     metrics['responseBodyDecodedSize']
                 if request['fromNet']:
+                    self.request_count += 1
                     self.get_response_body(request_id, original_request_id)
             elif event == 'loadingFailed':
                 if timestamp and 'start' in request and timestamp > request['start']:

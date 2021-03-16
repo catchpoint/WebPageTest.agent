@@ -20,8 +20,8 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-first-run',
     '--new-window',
     '--allow-running-insecure-content',
-    '--disable-component-update',
     '--disable-client-side-phishing-detection',
+    '--disable-component-update',
     '--disable-default-apps',
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
@@ -31,7 +31,10 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--mute-audio',
     '--disable-hang-monitor',
     '--password-store=basic',
-    '--disable-breakpad'
+    '--disable-breakpad',
+    '--dont-require-litepage-redirect-infobar',
+    '--override-https-image-compression-infobar',
+    '--disable-fetching-hints-at-navigation-start'
 ]
 
 HOST_RULES = [
@@ -54,7 +57,8 @@ DISABLE_CHROME_FEATURES = [
     'CalculateNativeWinOcclusion',
     'TranslateUI',
     'Translate',
-    'OfflinePagesPrefetching'
+    'OfflinePagesPrefetching',
+    'HeavyAdPrivacyMitigations'
 ]
 
 ENABLE_BLINK_FEATURES = [

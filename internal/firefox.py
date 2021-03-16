@@ -61,6 +61,7 @@ class Firefox(DesktopBrowser):
             self.log_level = job['browser_info']['log_level']
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.long_tasks = []
         self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -78,6 +79,7 @@ class Firefox(DesktopBrowser):
         self.log_pos = {}
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
         moz_log_env = 'timestamp,nsHttp:{0:d},nsSocketTransport:{0:d}'\
@@ -407,6 +409,7 @@ class Firefox(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
+            max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
@@ -445,6 +448,12 @@ class Firefox(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
                         self.task['page_data']['result'] = 99998
+                elif max_requests > 0 and self.request_count > max_requests:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['page_data']['result'] = 99997
                 else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -668,6 +677,8 @@ class Firefox(DesktopBrowser):
                     request['first_byte'] = evt['timeStamp']
                 if 'end' not in request or evt['timeStamp'] > request['end']:
                     request['end'] = evt['timeStamp']
+                if 'from_net' in request and request['from_net']:
+                    self.request_count += 1
             elif message == 'onErrorOccurred':
                 if 'end' not in request or evt['timeStamp'] > request['end']:
                     request['end'] = evt['timeStamp']

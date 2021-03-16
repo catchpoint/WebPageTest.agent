@@ -1024,6 +1024,8 @@ def main():
                         "(specify serial number in --device).")
     parser.add_argument('--list', action='store_true', default=False,
                         help="List available iOS devices.")
+    parser.add_argument('--ioswebdriver', action='store_true', default=False,
+                        help="Use WebDriver for launching the iOS simulator.")
 
     # Firefox
     parser.add_argument('--webdriver', action='store_true', default=False,
