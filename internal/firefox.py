@@ -96,9 +96,6 @@ class Firefox(DesktopBrowser):
                 shutil.copytree(profile_template, task['profile'])
             except Exception:
                 logging.exception('Error copying Firefox profile')
-        # Create a new cert9.db file and a new key4.db file
-        self.copy_cert_db(task['profile'])
-
         # Delete any unsent crash reports
         crash_dir = None
         if platform.system() == 'Windows':
@@ -129,34 +126,6 @@ class Firefox(DesktopBrowser):
                         config = {}
                     config[name] = task[name]
             self.job['message_server'].config = config
-
-    def clear_profile(self, task):
-        """Backs up the certX.db, keyX.db file to support/Firefox/cert"""
-        cert_folder = os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
-                'support', 'Firefox', 'cert')
-        for root, dirs, files in os.walk(task['profile']):
-            for file in files:
-                if file.endswith('.db'):
-                    shutil.copy(
-                            os.path.join(root, file),
-                            cert_folder)
-        super(Firefox, self).clear_profile(task)
-
-    def copy_cert_db(self, profile_directory):
-        """Copies the certX.db, keyX.db back to profile directory"""
-        cert_folder = os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
-                'support', 'Firefox', 'cert')
-
-        for root, dirs, files in os.walk(cert_folder):
-            for file in files:
-                if file.endswith('.db'):
-                    base_name = os.path.basename(file)
-                    if os.path.exists(os.path.join(cert_folder, base_name)):
-                        shutil.copy(
-                                os.path.join(cert_folder, base_name),
-                                os.path.join(profile_directory, base_name))
 
     def disable_fsync(self, command_line):
         """Use eatmydata if it is installed to disable fsync"""
