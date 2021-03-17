@@ -783,7 +783,17 @@ class WebPageTest(object):
                             task['block_domains'].append(domain)
                             task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                             if re.match(r'^[a-zA-Z0-9\-\.]+$', domain):
-                                task['dns_override'].append([domain, "127.0.0.1"])
+                                task['dns_override'].append([domain, "0.0.0.0"])
+                # Load the crypto mining block list
+                crypto_list = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'support', 'adblock', 'nocoin', 'hosts.txt')
+                if os.path.exists(crypto_list):
+                    with open(crypto_list, 'rt') as f_in:
+                        if 'dns_override' not in task:
+                            task['dns_override'] = []
+                        for line in f_in:
+                            if line.startswith('0.0.0.0'):
+                                domain = line[8:].strip()
+                                task['dns_override'].append([domain, "0.0.0.0"])
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']

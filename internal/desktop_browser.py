@@ -125,8 +125,7 @@ class DesktopBrowser(BaseBrowser):
             logging.exception("Exception preparing Browser: %s", err.__str__())
         # Modify the hosts file for non-Chrome browsers
         self.restore_hosts()
-        if not self.is_chrome and 'dns_override' in task:
-            self.modify_hosts(task, task['dns_override'])
+        self.modify_hosts(task, task['dns_override'])
         self.profile_end('desktop.prepare')
 
     def modify_hosts(self, task, hosts):
@@ -138,15 +137,17 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Modifying hosts file:')
             try:
                 hosts_text = None
-                with open(hosts_file, 'r') as f_in:
-                    hosts_text = f_in.read()
+                with open(hosts_file, 'rt') as f_in:
+                    hosts_text = ''
+                    for line in f_in:
+                        if not line.startswith('0.0.0.0'):
+                            hosts_text += line.strip() + '\n'
                 if hosts_text is not None:
-                    hosts_text += "\n"
                     for pair in hosts:
                         hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
                     for domain in self.block_domains:
-                        hosts_text += "127.0.0.1    {0}\n".format(domain)
-                    with open(hosts_tmp, 'w') as f_out:
+                        hosts_text += "0.0.0.0    {0}\n".format(domain)
+                    with open(hosts_tmp, 'wt') as f_out:
                         f_out.write(hosts_text)
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])
                     subprocess.call(['sudo', 'cp', hosts_tmp, hosts_file])
