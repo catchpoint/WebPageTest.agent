@@ -103,6 +103,7 @@ user_pref("privacy.trackingprotection.fingerprinting.enabled", false);
 user_pref("privacy.trackingprotection.pbmode.enabled", false);
 user_pref("privacy.trackingprotection.socialtracking.enabled", false);
 user_pref("reader.parse-on-load.enabled", false);
+user_pref("security.OCSP.enabled", 0);
 user_pref("security.certerrors.mitm.priming.enabled", false);
 user_pref("security.certerrors.mitm.priming.endpoint", "");
 user_pref("security.enable_java", false);
