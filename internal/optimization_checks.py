@@ -156,6 +156,8 @@ class OptimizationChecks(object):
                               '.inscname.net'],
             'Internap': ['.internapcdn.net'],
             'jsDelivr': ['cdn.jsdelivr.net'],
+            'JuraganCDN': ['.b.juragancdn.com',
+                          'juragancdn.com'],
             'KeyCDN': ['.kxcdn.com'],
             'KINX CDN': ['.kinxcdn.com',
                          '.kinxcdn.net'],
