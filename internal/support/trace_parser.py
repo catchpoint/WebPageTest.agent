@@ -357,12 +357,19 @@ class Trace():
                             event['args']['data']['node'] = node_info
             if performance_timing:
                 for event in out:
-                    if 'args' in event and 'data' in event['args'] and 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
-                        for perf_entry in performance_timing:
-                            if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
-                                perf_entry['consumed'] = True
-                                if 'element' in perf_entry:
-                                    event['args']['data']['element'] = perf_entry['element']
+                    if 'args' in event and 'data' in event['args']:
+                        if 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'element' in perf_entry:
+                                        event['args']['data']['element'] = perf_entry['element']
+                        elif 'score' in event['args']['data'] and event['name'].startswith('LayoutShift'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'layout-shift' and 'value' in perf_entry and perf_entry['value'] == event['args']['data']['score'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'sources' in perf_entry:
+                                        event['args']['data']['sources'] = perf_entry['sources']
             out.append({'startTime': self.start_time})
         return out
 
