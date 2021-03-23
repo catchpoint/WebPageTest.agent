@@ -87,7 +87,10 @@ class WebPageTest(object):
         self.key = options.key
         self.scheduler = options.scheduler
         self.scheduler_salt = options.schedulersalt
-        self.scheduler_node = options.schedulernode
+        self.scheduler_nodes = []
+        if options.schedulernode is not None:
+            self.scheduler_nodes = options.schedulernode.split(',')
+        self.scheduler_node = None
         self.last_diagnostics = None
         self.time_limit = 120
         self.cpu_scale_multiplier = None
@@ -392,7 +395,7 @@ class WebPageTest(object):
                     elif key == 'wpt_scheduler_salt':
                         self.scheduler_salt = value
                     elif key == 'wpt_scheduler_node':
-                        self.scheduler_node = value
+                        self.scheduler_nodes = value.split(',')
                     elif key == 'wpt_fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
                     elif key == 'fps':
@@ -454,6 +457,10 @@ class WebPageTest(object):
             return None
         job = None
         self.raw_job = None
+        scheduler_nodes = list(self.scheduler_nodes)
+        random.shuffle(scheduler_nodes)
+        if len(scheduler_nodes):
+            self.scheduler_node = str(scheduler_nodes.pop(0)).strip(', ')
         servers = list(self.work_servers)
         random.shuffle(servers)
         self.url = str(servers.pop(0))
@@ -625,6 +632,10 @@ class WebPageTest(object):
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0 and not self.scheduler:
                     location = str(locations.pop(0))
+                    count -= 1
+                    retry = True
+                if job is None and len(scheduler_nodes) > 0 and self.scheduler:
+                    self.scheduler_node = str(scheduler_nodes.pop(0)).strip(', ')
                     count -= 1
                     retry = True
             except requests.exceptions.RequestException as err:
