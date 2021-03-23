@@ -540,6 +540,7 @@ class WebPageTest(object):
                                     self.scheduler = scheduler_parts[0].strip()
                                     self.scheduler_salt = scheduler_parts[1].strip()
                                     self.scheduler_node = scheduler_parts[2].strip()
+                                    self.scheduler_nodes = [self.scheduler_node]
                                     retry = True
                                     logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
                     job = response.json()
