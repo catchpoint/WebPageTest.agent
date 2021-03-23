@@ -436,9 +436,9 @@ class WebPageTest(object):
         else:
             subprocess.call(['sudo', 'reboot'])
 
-    def get_cpid(self):
+    def get_cpid(self, node = None):
         """Get a salt-signed header for the scheduler"""
-        entity = self.scheduler_node
+        entity = node if node else self.scheduler_node
         hash_src = entity.upper() + ';' + datetime.now().strftime('%Y%m') + self.scheduler_salt
         hash_string = base64.b64encode(hashlib.sha1(hash_src.encode('ascii')).digest()).decode('ascii')
         cpid_header = 'm;' + entity + ';' + hash_string
@@ -513,7 +513,7 @@ class WebPageTest(object):
                 if self.scheduler and self.scheduler_salt and self.scheduler_node:
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
                     logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
-                    response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid()})
+                    response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid(self.scheduler_node)})
                 else:
                     logging.info("Checking for work: %s", url)
                     response = self.session.get(url, timeout=10, proxies=proxies)
@@ -1360,7 +1360,7 @@ class WebPageTest(object):
                 proxies = {"http": None, "https": None}
                 url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
                 payload = '{"test":"' + self.job['jobID'] +'","update":0}'
-                self.session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                self.session.post(url, headers={'CPID': self.get_cpid(self.scheduler_node), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
             except Exception:
                 logging.exception("Error reporting job done to scheduler")
 
@@ -1542,33 +1542,34 @@ class WebPageTest(object):
         self.last_diagnostics = now
         cpu = self.cpu_pct if self.cpu_pct else psutil.cpu_percent(interval=1)
         # Ping the scheduler diagnostics endpoint
-        if self.scheduler and self.scheduler_salt and self.scheduler_node:
-            try:
-                import json as json_native
-                disk = psutil.disk_usage(__file__)
-                mem = psutil.virtual_memory()
-                ver = platform.uname()
-                os = '{0} {1}'.format(ver[0], ver[2])
-                cpu = min(max(int(round(cpu)), 0), 100)
-                info = {
-                    'Machine': self.pc_name,
-                    'Version': self.version,
-                    'Instance': self.instance_id if self.instance_id else '',
-                    'Cpu': cpu,
-                    'Memcap': mem.total,
-                    'Memused': mem.total - mem.available,
-                    'Diskcap': disk.total,
-                    'Diskused': disk.used,
-                    'Os': os
-                }
-                payload = json_native.dumps(info, separators=(',', ':'))
-                logging.debug(payload)
-                proxies = {"http": None, "https": None}
-                url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
-                response = self.session.post(url, headers={'CPID': self.get_cpid(), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
-                logging.debug(response.headers)
-            except Exception:
-                logging.exception('Error reporting diagnostics')
+        if self.scheduler and self.scheduler_salt and len(self.scheduler_nodes) > 0:
+            for node in self.scheduler_nodes:
+                try:
+                    import json as json_native
+                    disk = psutil.disk_usage(__file__)
+                    mem = psutil.virtual_memory()
+                    ver = platform.uname()
+                    os = '{0} {1}'.format(ver[0], ver[2])
+                    cpu = min(max(int(round(cpu)), 0), 100)
+                    info = {
+                        'Machine': self.pc_name,
+                        'Version': self.version,
+                        'Instance': self.instance_id if self.instance_id else '',
+                        'Cpu': cpu,
+                        'Memcap': mem.total,
+                        'Memused': mem.total - mem.available,
+                        'Diskcap': disk.total,
+                        'Diskused': disk.used,
+                        'Os': os
+                    }
+                    payload = json_native.dumps(info, separators=(',', ':'))
+                    logging.debug(payload)
+                    proxies = {"http": None, "https": None}
+                    url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
+                    response = self.session.post(url, headers={'CPID': self.get_cpid(node), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                    logging.debug(response.headers)
+                except Exception:
+                    logging.exception('Error reporting diagnostics')
         # Ping the WPT servers if there are multiple (a single doesn't need a separate ping)
         if len(self.work_servers) and len(self.test_locations):
             try:
