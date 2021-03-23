@@ -453,20 +453,22 @@ class WebPageTest(object):
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
-        if len(self.work_servers) == 0:
+        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0:
             return None
         job = None
         self.raw_job = None
         scheduler_nodes = list(self.scheduler_nodes)
-        random.shuffle(scheduler_nodes)
-        if len(scheduler_nodes):
+        if len(scheduler_nodes) > 0:
+            random.shuffle(scheduler_nodes)
             self.scheduler_node = str(scheduler_nodes.pop(0)).strip(', ')
         servers = list(self.work_servers)
-        random.shuffle(servers)
-        self.url = str(servers.pop(0))
+        if len(servers) >0 :
+            random.shuffle(servers)
+            self.url = str(servers.pop(0))
         locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
-        random.shuffle(locations)
-        location = str(locations.pop(0))
+        if len(locations) > 0:
+            random.shuffle(locations)
+            location = str(locations.pop(0))
         # Shuffle the list order
         if len(self.test_locations) > 1:
             self.test_locations.append(str(self.test_locations.pop(0)))
