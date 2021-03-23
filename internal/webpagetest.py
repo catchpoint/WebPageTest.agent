@@ -567,7 +567,7 @@ class WebPageTest(object):
                     if 'fvonly' not in job:
                         job['fvonly'] = 0
                     if 'width' not in job:
-                        job['width'] = 1024
+                        job['width'] = 1376
                     if 'height' not in job:
                         job['height'] = 768
                     if 'browser_width' in job:
