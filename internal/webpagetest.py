@@ -510,7 +510,7 @@ class WebPageTest(object):
             try:
                 if self.scheduler and self.scheduler_salt and self.scheduler_node:
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
-                    logging.info("Checking for work: %s", url)
+                    logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
                     response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid()})
                 else:
                     logging.info("Checking for work: %s", url)
