@@ -610,6 +610,17 @@ class WebPageTest(object):
                         job['testinfo']['started'] = time.time()
                     if self.health_check_server is not None:
                         job['health_check_server'] = self.health_check_server
+                    # Add the security insights custom metrics locally if requested
+                    if 'securityInsights' in job:
+                        js_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+                        if 'custom_metrics' not in job:
+                            job['custom_metrics'] = {}
+                        if 'jsLibsVulns' not in job['custom_metrics']:
+                            with open(os.path.join(js_directory, 'jsLibsVulns.js'), 'rt') as f_in:
+                                job['custom_metrics']['jsLibsVulns'] = f_in.read()
+                        if 'securityHeaders' not in job['custom_metrics']:
+                            with open(os.path.join(js_directory, 'securityHeaders.js'), 'rt') as f_in:
+                                job['custom_metrics']['securityHeaders'] = f_in.read()
 
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0 and not self.scheduler:
