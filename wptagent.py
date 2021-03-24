@@ -433,20 +433,24 @@ class WPTAgent(object):
                 self.xvfb.start()
 
         # Figure out which display to capture from
-        if platform.system() == "Linux" and 'DISPLAY' in os.environ:
-            logging.debug('Display: %s', os.environ['DISPLAY'])
-            self.capture_display = os.environ['DISPLAY']
-        elif platform.system() == "Darwin":
-            proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            _, err = proc.communicate()
-            for line in err.splitlines():
-                matches = re.search(r'\[(\d+)\] Capture screen', line.decode('utf-8'))
-                if matches:
-                    self.capture_display = matches.group(1)
-                    break
-        elif platform.system() == "Windows":
-            self.capture_display = 'desktop'
+        if not self.options.android and not self.options.iOS:
+            if platform.system() == "Linux" and 'DISPLAY' in os.environ:
+                logging.debug('Display: %s', os.environ['DISPLAY'])
+                self.capture_display = os.environ['DISPLAY']
+            elif platform.system() == "Darwin":
+                proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                _, err = proc.communicate()
+                for line in err.splitlines():
+                    matches = re.search(r'\[(\d+)\] Capture screen', line.decode('utf-8'))
+                    if matches:
+                        self.capture_display = matches.group(1)
+                        break
+            elif platform.system() == "Windows":
+                self.capture_display = 'desktop'
+            if self.capture_display is None:
+                print('No capture display available')
+                ret = False
 
         # Fix Lighthouse install permissions
         if platform.system() != "Windows" and sys.version_info < (3, 0):
