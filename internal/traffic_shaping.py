@@ -504,6 +504,8 @@ class NetEm(object):
             args.extend(['rate', '{0:d}kbit'.format(int(kbps))])
         if plr > 0:
             args.extend(['loss', '{0:.2f}%'.format(float(plr))])
+        else:
+            args.extend(['loss', '0.000001%'])
         if shaperLimit > 0:
             args.extend(['limit', '{0:d}'.format(shaperLimit)])
         return args
