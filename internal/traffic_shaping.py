@@ -504,9 +504,6 @@ class NetEm(object):
             args.extend(['rate', '{0:d}kbit'.format(int(kbps))])
         if plr > 0:
             args.extend(['loss', '{0:.2f}%'.format(float(plr))])
-        elif os.uname()[4].startswith('arm'):
-            # Raspberry pi's seem to mess up the throttling when there is 0 loss.  Introduce a trivial amount
-            args.extend(['loss', '0.000001%'])
         if shaperLimit > 0:
             args.extend(['limit', '{0:d}'.format(shaperLimit)])
         return args
