@@ -824,6 +824,10 @@ def find_browsers(options):
                 browsers['Microsoft Edge Dev'] = {'exe': edge_path}
             if 'Edge Dev' not in browsers:
                 browsers['Edge Dev'] = {'exe': edge_path}
+            if 'Microsoft Edge (Chromium)' not in browsers:
+                browsers['Microsoft Edge (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge' not in browsers:
+                browsers['Microsoft Edge'] = {'exe': edge_path}
         # Epiphany (WebKit)
         epiphany_path = '/usr/bin/epiphany'
         if os.path.isfile(epiphany_path):
