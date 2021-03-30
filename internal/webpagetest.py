@@ -1351,7 +1351,7 @@ class WebPageTest(object):
             except Exception:
                 pass
         self.scheduler_job_done()
-        self.license_ping()
+        #self.license_ping()
 
     def scheduler_job_done(self):
         """Signal to the scheduler that the test is complete"""
