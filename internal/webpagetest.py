@@ -61,6 +61,7 @@ class WebPageTest(object):
         self.is_dead = False
         self.health_check_server = None
         self.session = requests.Session()
+        self.session.headers.update({'User-Agent': 'wptagent'})
         self.options = options
         self.fps = options.fps
         self.test_run_count = 0
