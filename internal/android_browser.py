@@ -7,10 +7,12 @@
 import gzip
 import hashlib
 import logging
+import multiprocessing
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 if (sys.version_info >= (3, 0)):
     from time import monotonic
@@ -50,6 +52,9 @@ class AndroidBrowser(BaseBrowser):
         self.job = job
         self.options = options
         self.config = config
+        self.recording = False
+        self.usage_queue = None
+        self.thread = None
         self.video_processing = None
         self.tcpdump_processing = None
         self.task = None
@@ -191,6 +196,7 @@ class AndroidBrowser(BaseBrowser):
         if self.must_exit:
             return
         if task['log_data']:
+            self.recording = True
             task['page_data']['osVersion'] = self.adb.version
             task['page_data']['os_version'] = self.adb.version
             version = self.adb.get_package_version(self.config['package'])
@@ -211,12 +217,42 @@ class AndroidBrowser(BaseBrowser):
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(2)
 
+            # start the background thread for monitoring bandwidth if reverse-tethered
+            if self.options.simplert or self.options.vpntether or self.options.vpntether2:
+                self.usage_queue = multiprocessing.JoinableQueue()
+                self.thread = threading.Thread(target=self.background_thread)
+                self.thread.daemon = True
+                self.thread.start()
+
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         pass
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
+        if self.thread is not None:
+            self.thread.join(10)
+            self.thread = None
+        # record the CPU/Bandwidth/memory info
+        self.recording = False
+        if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
+            file_path = os.path.join(task['dir'], task['prefix']) + '_progress.csv.gz'
+            gzfile = gzip.open(file_path, GZIP_TEXT, 7)
+            if gzfile:
+                logline = "Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n"
+                logging.debug(logline)
+                gzfile.write(logline)
+                try:
+                    while True:
+                        snapshot = self.usage_queue.get(5)
+                        if snapshot is None:
+                            break
+                        logline = '{0:d},{1:d},-1,-1\n'.format(snapshot['time'], snapshot['bw'])
+                        logging.debug(logline)
+                        gzfile.write(logline)
+                except Exception:
+                    logging.Exception("Error processing usage queue")
+                gzfile.close()
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
@@ -360,3 +396,48 @@ class AndroidBrowser(BaseBrowser):
                         os.remove(png_file)
                     except Exception:
                         pass
+
+    def wait_for_network_idle(self, timeout=60, threshold=1000):
+        """Wait for 5 one-second intervals that receive less than 1KB"""
+        logging.debug('Waiting for network idle')
+        end_time = monotonic() + timeout
+        self.adb.get_bytes_rx()
+        idle_count = 0
+        while idle_count < 5 and monotonic() < end_time and not self.must_exit:
+            time.sleep(1)
+            bytes_rx = self.adb.get_bytes_rx()
+            logging.debug("Bytes received: %d", bytes_rx)
+            if bytes_rx > threshold:
+                idle_count = 0
+            else:
+                idle_count += 1
+
+    def get_net_bytes(self):
+        """Get the bytes "received" on the tun0 interface when reberse tethering"""
+        import psutil
+        bytes_in = 0
+        net = psutil.net_io_counters(True)
+        for interface in net:
+            if interface[:3] == 'tun':
+                bytes_in += net[interface].bytes_sent
+        return bytes_in
+
+    def background_thread(self):
+        """Background thread for monitoring CPU and bandwidth usage"""
+        import psutil
+        last_time = start_time = monotonic()
+        last_bytes = self.get_net_bytes()
+        snapshot = {'time': 0, 'bw': 0}
+        self.usage_queue.put(snapshot)
+        while self.recording and not self.must_exit:
+            snapshot = {'bw': 0}
+            now = monotonic()
+            snapshot['time'] = int((now - start_time) * 1000)
+            # calculate the bandwidth over the last interval in Kbps
+            bytes_in = self.get_net_bytes()
+            if now > last_time:
+                snapshot['bw'] = int((bytes_in - last_bytes) * 8.0 / (now - last_time))
+            last_time = now
+            last_bytes = bytes_in
+            self.usage_queue.put(snapshot)
+        self.usage_queue.put(None)

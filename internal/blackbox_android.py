@@ -219,21 +219,6 @@ class BlackBoxAndroid(AndroidBrowser):
                 self.adb.su('cp /data/local/tmp/user_settings.xml ' + settings_file)
             os.remove(local_settings)
 
-    def wait_for_network_idle(self):
-        """Wait for 5 one-second intervals that receive less than 1KB"""
-        logging.debug('Waiting for network idle')
-        end_time = monotonic() + 60
-        self.adb.get_bytes_rx()
-        idle_count = 0
-        while idle_count < 5 and monotonic() < end_time and not self.must_exit:
-            time.sleep(1)
-            bytes_rx = self.adb.get_bytes_rx()
-            logging.debug("Bytes received: %d", bytes_rx)
-            if bytes_rx > 1000:
-                idle_count = 0
-            else:
-                idle_count += 1
-
     def wait_for_page_load(self):
         """Once the video starts growing, wait for it to stop"""
         logging.debug('Waiting for the page to load')

@@ -18,6 +18,9 @@ class TrafficShaper(object):
         shaper_name = options.shaper
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.shaper = None
+        plat = platform.system()
+        if shaper_name is None and plat == "Linux":
+            shaper_name = 'netem'
         if shaper_name is not None:
             if shaper_name == 'none':
                 self.shaper = NoShaper()
@@ -40,7 +43,6 @@ class TrafficShaper(object):
         elif options.rndis:
             self.shaper = NoShaper()
         else:
-            plat = platform.system()
             if plat == "Windows":
                 winver = float(".".join(platform.version().split('.')[:2]))
                 if winver >= 6.3:
