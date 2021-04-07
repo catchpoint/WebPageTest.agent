@@ -27,11 +27,13 @@ if (sys.version_info >= (3, 0)):
     from urllib.parse import quote_plus # pylint: disable=import-error
     from urllib.parse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'rt'
+    GZIP_TEXT = 'wt'
 else:
     from monotonic import monotonic
     from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
     from urlparse import urlsplit # pylint: disable=import-error
     GZIP_READ_TEXT = 'r'
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -1364,6 +1366,40 @@ class WebPageTest(object):
             except Exception:
                 logging.exception("Error reporting job done to scheduler")
 
+    def collect_crux_data(self, task):
+        """Collect CrUX data for the URL that was tested"""
+        if self.job is not None and 'url' in self.job and 'crux_api_key' in self.job:
+            form_factor = 'DESKTOP'
+            if self.options.iOS or self.options.android:
+                form_factor = 'PHONE'
+            if 'mobile' in self.job and self.job['mobile']:
+                form_factor = 'PHONE'
+            if 'browser' in self.job:
+                if self.job['browser'].startswith('iPhone') or self.job['browser'].startswith('iPod'):
+                    form_factor = 'PHONE'
+            try:
+                proxies = {"http": None, "https": None}
+                url = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=' + self.job['crux_api_key']
+                test_url = self.job['url']
+                if not test_url.startswith('http'):
+                    test_url = 'http://' + test_url
+                req = {
+                    'url': test_url,
+                    'formFactor': form_factor
+                }
+                payload = json.dumps(req)
+                logging.debug(payload)
+                response = self.session.post(url, headers={'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                if response:
+                    crux_data = response.text
+                    if crux_data and len(crux_data):
+                        logging.debug(crux_data)
+                        path = os.path.join(task['dir'], 'crux.json.gz')
+                        with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                            outfile.write(crux_data)
+            except Exception:
+                logging.exception("Error fetching CrUX data")
+
     def upload_task_result(self, task):
         """Upload the result of an individual test run if it is being sharded"""
         if self.is_dead:
@@ -1372,6 +1408,8 @@ class WebPageTest(object):
         self.profile_start(task, 'wpt.upload')
         self.cpu_pct = None
         self.update_browser_viewport(task)
+        if task['run'] == 1 and not task['cached']:
+            self.collect_crux_data(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:
