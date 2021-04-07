@@ -5262,11 +5262,11 @@ BLINK_FEATURES = {
     "3870": "ForcedColorsMediaFeature",
     "3871": "PaymentRequestCSPViolation",
     "3872": "WorkerControlledByServiceWorkerWithFetchEventHandlerOutOfScope",
-    "3873": "AuthorizationCoveredByWildcard",
+    "3873": "AuthorizationCoveredByWildcard"
 }
 
 ##########################################################################
-#   CSS feature names from https://cs.chromium.org/chromium/src/third_party/blink/renderer/core/frame/use_counter_helper.cc
+#   CSS feature names from https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/public/mojom/use_counter/css_property_id.mojom
 ##########################################################################
 CSS_FEATURES = {
     "2": "CSSPropertyColor",
@@ -5867,7 +5867,55 @@ CSS_FEATURES = {
     "640": "CSSPropertyForcedColorAdjust",
     "641": "CSSPropertyInherits",
     "642": "CSSPropertyInitialValue",
-    "643": "CSSPropertykSyntax"
+    "643": "CSSPropertySyntax",
+    "644": "CSSPropertyOverscrollBehaviorInline",
+    "645": "CSSPropertyOverscrollBehaviorBlock",
+    "647": "CSSPropertyFontOpticalSizing",
+    "648": "CSSPropertyContainIntrinsicBlockSize",
+    "649": "CSSPropertyContainIntrinsicHeight",
+    "650": "CSSPropertyContainIntrinsicInlineSize",
+    "651": "CSSPropertyContainIntrinsicSize",
+    "652": "CSSPropertyContainIntrinsicWidth",
+    "654": "CSSPropertyOriginTrialTestProperty",
+    "656": "CSSPropertyMathStyle",
+    "657": "CSSPropertyAspectRatio",
+    "658": "CSSPropertyAppearance",
+    "660": "CSSPropertyRubyPosition",
+    "661": "CSSPropertyTextUnderlineOffset",
+    "662": "CSSPropertyContentVisibility",
+    "663": "CSSPropertyTextDecorationThickness",
+    "664": "CSSPropertyPageOrientation",
+    "665": "CSSPropertyAnimationTimeline",
+    "666": "CSSPropertyCounterSet",
+    "667": "CSSPropertySource",
+    "668": "CSSPropertyStart",
+    "669": "CSSPropertyEnd",
+    "670": "CSSPropertyTimeRange",
+    "671": "CSSPropertyScrollbarGutter",
+    "672": "CSSPropertyAscentOverride",
+    "673": "CSSPropertyDescentOverride",
+    "674": "CSSPropertyAdvanceOverride",
+    "675": "CSSPropertyLineGapOverride",
+    "676": "CSSPropertyMathShift",
+    "677": "CSSPropertyMathDepth",
+    "679": "CSSPropertyOverflowClipMargin",
+    "680": "CSSPropertyScrollbarWidth",
+    "681": "CSSPropertySystem",
+    "682": "CSSPropertyNegative",
+    "683": "CSSPropertyPrefix",
+    "684": "CSSPropertySuffix",
+    "685": "CSSPropertyRange",
+    "686": "CSSPropertyPad",
+    "687": "CSSPropertyFallback",
+    "688": "CSSPropertySymbols",
+    "689": "CSSPropertyAdditiveSymbols",
+    "690": "CSSPropertySpeakAs",
+    "691": "CSSPropertyBorderStartStartRadius",
+    "692": "CSSPropertyBorderStartEndRadius",
+    "693": "CSSPropertyBorderEndStartRadius",
+    "694": "CSSPropertyBorderEndEndRadius",
+    "695": "CSSPropertyAccentColor",
+    "696": "CSSPropertySizeAdjust"
 }
 
 if '__main__' == __name__:
