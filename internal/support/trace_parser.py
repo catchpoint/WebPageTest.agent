@@ -43,6 +43,7 @@ class Trace():
         self.event_name_lookup = {}
         self.scripts = None
         self.timeline_events = []
+        self.timeline_requests = {}
         self.trace_events = []
         self.interactive = None
         self.long_tasks = None
@@ -124,6 +125,10 @@ class Trace():
         out = self.post_process_netlog_events()
         if out is not None:
             self.write_json(out_file, out)
+    
+    def WriteTimelineRequests(self, out_file):
+        if self.timeline_requests:
+            self.write_json(out_file, self.timeline_requests)
 
     def WriteV8Stats(self, out_file):
         if self.v8stats is not None:
@@ -496,6 +501,20 @@ class Trace():
                 thread not in self.ignore_threads and \
                 trace_event['name'] != 'Program':
             self.threads[thread] = {}
+        
+        # Keep track of request events reported by the timeline
+        if 'args' in trace_event and 'data' in trace_event['args'] and 'requestId' in trace_event['args']['data']:
+            request_id = trace_event['args']['data']['requestId']
+            if request_id not in self.timeline_requests:
+                self.timeline_requests[request_id] = {}
+            request = self.timeline_requests[request_id]
+            if trace_event['name'] == 'ResourceSendRequest':
+                if 'priority' in trace_event['args']['data']:
+                    request['priority'] = trace_event['args']['data']['priority']
+                if 'frame' in trace_event['args']['data']:
+                    request['frame'] = trace_event['args']['data']['frame']
+                if 'renderBlocking' in trace_event['args']['data']:
+                    request['renderBlocking'] = trace_event['args']['data']['renderBlocking']
 
         # Build timeline events on a stack. 'B' begins an event, 'E' ends an
         # event
@@ -1566,6 +1585,8 @@ class Trace():
         name = trace_event['name']
         if 'priority' in params:
             entry['priority'] = params['priority']
+            if 'initial_priority' not in entry:
+                entry['initial_priority'] = params['priority']
         if 'method' in params:
             entry['method'] = params['method']
         if 'url' in params:
@@ -1703,6 +1724,7 @@ def main():
                         help="Output list of interactive times.")
     parser.add_argument('-x', '--longtasks', help="Output list of long main thread task times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
+    parser.add_argument('-r', '--requests', help="Output timeline requests file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
     options, _ = parser.parse_known_args()
 
@@ -1749,6 +1771,9 @@ def main():
 
     if options.netlog:
         trace.WriteNetlog(options.netlog)
+    
+    if options.requests:
+        trace.WriteTimelineRequests(options.requests)
 
     if options.stats:
         trace.WriteV8Stats(options.stats)

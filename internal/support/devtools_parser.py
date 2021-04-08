@@ -39,6 +39,7 @@ class DevToolsParser(object):
     def __init__(self, options):
         self.devtools_file = options['devtools']
         self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
+        self.timeline_requests_file = options['requests'] if 'requests' in options else None
         self.optimization = options['optimization'] if 'optimization' in options else None
         self.user_timing_file = options['user'] if 'user' in options else None
         self.coverage = options['coverage'] if 'coverage' in options else None
@@ -60,6 +61,8 @@ class DevToolsParser(object):
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
             self.process_netlog_requests()
+            logging.debug("Adding timeline request data")
+            self.process_timeline_requests()
             logging.debug("Updating page-level stats from user timing")
             self.process_user_timing()
             logging.debug("Calculating page-level stats")
@@ -1086,6 +1089,21 @@ class DevToolsParser(object):
                         break
                 index += 1
 
+    def process_timeline_requests(self):
+        """Process the timeline request data for render-blocking indicators"""
+        if self.timeline_requests_file is not None and os.path.isfile(self.timeline_requests_file):
+            _, ext = os.path.splitext(self.timeline_requests_file)
+            if ext.lower() == '.gz':
+                f_in = gzip.open(self.timeline_requests_file, GZIP_READ_TEXT)
+            else:
+                f_in = open(self.timeline_requests_file, 'r')
+            timeline_requests = json.load(f_in)
+            f_in.close()
+            requests = self.result['requests']
+            for request in requests:
+                if 'request_id' in request and request['request_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['request_id']]:
+                    request['renderBlocking'] = timeline_requests[request['request_id']]['renderBlocking']
+
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
         page_data = self.result['pageData']
@@ -1464,6 +1482,7 @@ def main():
                              ". -vvvv for full debug output.")
     parser.add_argument('-d', '--devtools', help="Input devtools file.")
     parser.add_argument('-n', '--netlog', help="Input netlog requests file (optional).")
+    parser.add_argument('-r', '--requests', help="Input timeline requests file (optional).")
     parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
     parser.add_argument('-u', '--user', help="Input user timing file (optional).")
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
@@ -1493,6 +1512,7 @@ def main():
     start = time.time()
     opt = {'devtools': options.devtools,
            'netlog': options.netlog,
+           'requests': options.requests,
            'optimization': options.optimization,
            'user': options.user,
            'coverage': options.coverage,

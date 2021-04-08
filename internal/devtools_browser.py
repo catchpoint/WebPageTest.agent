@@ -351,6 +351,8 @@ class DevtoolsBrowser(object):
             options = {'devtools': devtools_file, 'cached': task['cached'], 'out': out_file}
             netlog = path_base + '_netlog_requests.json.gz'
             options['netlog'] = netlog if os.path.isfile(netlog) else None
+            timeline_requests = path_base + '_timeline_requests.json.gz'
+            options['requests'] = timeline_requests if os.path.isfile(timeline_requests) else None
             optimization = path_base + '_optimization.json.gz'
             options['optimization'] = optimization if os.path.isfile(optimization) else None
             user_timing = path_base + '_user_timing.json.gz'
@@ -370,6 +372,8 @@ class DevtoolsBrowser(object):
             if 'debug' not in self.job or not self.job['debug']:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
+                if os.path.isfile(timeline_requests):
+                    os.remove(timeline_requests)
                 if os.path.isfile(optimization):
                     os.remove(optimization)
                 if os.path.isfile(coverage):
