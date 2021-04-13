@@ -124,6 +124,8 @@ class DevtoolsBrowser(object):
                 disable_images.append('avif')
             if 'disableWEBP' in self.job and self.job['disableWEBP']:
                 disable_images.append('webp')
+            if 'disableJXL' in self.job and self.job['disableJXL']:
+                disable_images.append('jxl')
             if len(disable_images):
                 self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
 
