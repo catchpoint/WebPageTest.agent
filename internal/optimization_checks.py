@@ -315,7 +315,7 @@ class OptimizationChecks(object):
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}],
-            'Zycada Networks': [{'X-Zy-Server': ''}]
+            'Zycada Networks': [{'Zy-Server': ''}]
         }
         # spell-checker: enable
 
