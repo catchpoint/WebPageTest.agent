@@ -43,35 +43,45 @@
     // Parse the results into something useful
     let categories = {};
     let apps = {};
+    let dedupe = {};
 
-    for (let index in detected) {
+    for (let entry of detected) {
       try {
-        const entry = detected[index];
-        const app = entry.name.trim();
-        const version = entry.version;
-        for (let catIndex in entry.categories) {
-          const catEntry = entry.categories[catIndex];
-          const category = catEntry.name.trim();
-          if (categories[category] === undefined) {
-            categories[category] = '';
-          }
-          if (apps[app] === undefined) {
-            apps[app] = '';
-          }
-          let app_name = app;
-          if (version && version.length) {
-            app_name += ' ' + version;
-            if (!apps[app].length || apps[app].indexOf(version) === -1) {
-              if (apps[app].length) {
-                apps[app] += ',';
+        if (entry) {
+          const app = entry.name.trim();
+          const version = entry.version;
+          for (let catEntry of entry.categories) {
+            let category = catEntry.name.trim();
+            if (!category.length) {
+              category = catEntry.slug.trim();
+            }
+            if (category.length) {
+              const key = category + ';' + app + ';' + version;
+              if (dedupe[key] === undefined) {
+                dedupe[key] = true;
+                if (categories[category] === undefined) {
+                  categories[category] = '';
+                }
+                if (apps[app] === undefined) {
+                  apps[app] = '';
+                }
+                let app_name = app;
+                if (version && version.length) {
+                  app_name += ' ' + version;
+                  if (!apps[app].length || apps[app].indexOf(version) === -1) {
+                    if (apps[app].length) {
+                      apps[app] += ',';
+                    }
+                    apps[app] += version;
+                  }
+                }
+                if (categories[category].length) {
+                  categories[category] += ',';
+                }
+                categories[category] += app_name;
               }
-              apps[app] += version;
             }
           }
-          if (categories[category].length) {
-            categories[category] += ',';
-          }
-          categories[category] += app_name;
         }
       } catch(e) {
       }
