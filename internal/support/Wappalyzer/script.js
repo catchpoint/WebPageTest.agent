@@ -48,12 +48,12 @@
     for (let entry of detected) {
       try {
         if (entry) {
-          const app = entry.name.trim();
+          const app = entry.name;
           const version = entry.version;
           for (let catEntry of entry.categories) {
-            let category = catEntry.name.trim();
+            let category = catEntry.name;
             if (!category.length) {
-              category = catEntry.slug.trim();
+              category = catEntry.slug;
             }
             if (category.length) {
               const key = category + ';' + app + ';' + version;
