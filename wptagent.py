@@ -453,7 +453,7 @@ class WPTAgent(object):
                 ret = False
 
         # Fix Lighthouse install permissions
-        if platform.system() != "Windows" and sys.version_info < (3, 0):
+        if platform.system() != "Windows":
             from internal.os_util import run_elevated
             run_elevated('chmod', '-R 777 ~/.config/configstore/')
             try:
