@@ -18,6 +18,10 @@ var WptAgentFlatten = function(object) {
                 if (typeof object[key]['getBoundingClientRect'] === 'function') {
                     contents[key]['boundingRect'] =  object[key].getBoundingClientRect();
                 }
+                let style = window.getComputedStyle(object[key]);
+                if (style.backgroundImage && style.backgroundImage != 'none') {
+                    contents[key]['background-image'] = style.backgroundImage;
+                }
             }
         } else if (typeof(object[key]) === 'string') {
             if (object[key].length > 0 && ignore.indexOf(key) === -1) {
