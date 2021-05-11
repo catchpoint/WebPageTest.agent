@@ -18,9 +18,14 @@ var WptAgentFlatten = function(object) {
                 if (typeof object[key]['getBoundingClientRect'] === 'function') {
                     contents[key]['boundingRect'] =  object[key].getBoundingClientRect();
                 }
-                let style = window.getComputedStyle(object[key]);
-                if (style.backgroundImage && style.backgroundImage != 'none') {
-                    contents[key]['background-image'] = style.backgroundImage;
+                if (key == 'element') {
+                    try {
+                        let style = window.getComputedStyle(object[key]);
+                        if (style.backgroundImage && style.backgroundImage != 'none') {
+                            contents[key]['background-image'] = style.backgroundImage;
+                        }
+                    } catch (err) {
+                    }
                 }
             }
         } else if (typeof(object[key]) === 'string') {
