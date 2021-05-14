@@ -501,6 +501,13 @@ class DevtoolsBrowser(object):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        # Grab the accessibility tree
+        if 'accessibility' in self.job and self.job['accessibility']:
+            self.devtools.send_command('Accessibility.enable', {}, wait=True, timeout=30)
+            result = self.devtools.send_command('Accessibility.getFullAXTree', {}, wait=True, timeout=30)
+            if result is not None and 'result' in result and 'nodes' in result['result']:
+                task['page_data']['accessibility_tree'] = result['result']['nodes']
+            self.devtools.send_command('Accessibility.disable', {}, wait=True, timeout=30)
 
     def process_command(self, command):
         """Process an individual script command"""
