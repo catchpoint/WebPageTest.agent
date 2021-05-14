@@ -480,6 +480,7 @@ class DevtoolsBrowser(object):
             custom_metrics = {}
             requests = None
             bodies = None
+            accessibility_tree = None
             for name in self.job['customMetrics']:
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_REQUESTS') >= 0:
@@ -496,18 +497,22 @@ class DevtoolsBrowser(object):
                         custom_script = custom_script.replace('$WPT_BODIES', bodies)
                     except Exception:
                         logging.exception('Error substituting request data with bodies into custom script')
+                if custom_script.find('$WPT_ACCESSIBILITY_TREE') >= 0:
+                    if accessibility_tree is None:
+                        self.devtools.send_command('Accessibility.enable', {}, wait=True, timeout=30)
+                        result = self.devtools.send_command('Accessibility.getFullAXTree', {}, wait=True, timeout=30)
+                        if result is not None and 'result' in result and 'nodes' in result['result']:
+                            accessibility_tree = json.dumps(result['result']['nodes'])
+                        self.devtools.send_command('Accessibility.disable', {}, wait=True, timeout=30)
+                    try:
+                        custom_script = custom_script.replace('$WPT_ACCESSIBILITY_TREE', accessibility_tree)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
-        # Grab the accessibility tree
-        if 'accessibility' in self.job and self.job['accessibility']:
-            self.devtools.send_command('Accessibility.enable', {}, wait=True, timeout=30)
-            result = self.devtools.send_command('Accessibility.getFullAXTree', {}, wait=True, timeout=30)
-            if result is not None and 'result' in result and 'nodes' in result['result']:
-                task['page_data']['accessibility_tree'] = result['result']['nodes']
-            self.devtools.send_command('Accessibility.disable', {}, wait=True, timeout=30)
 
     def process_command(self, command):
         """Process an individual script command"""
