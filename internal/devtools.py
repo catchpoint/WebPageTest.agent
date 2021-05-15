@@ -571,6 +571,8 @@ class DevTools(object):
 
     def snapshot_dom(self):
         """Grab a snapshot of the DOM to use for processing element locations"""
+        if self.dom_tree is not None:
+            return self.dom_tree
         if self.must_exit:
             return
         try:
@@ -583,6 +585,7 @@ class DevTools(object):
             self.profile_end('snapshot_dom')
         except Exception:
             logging.exception("Error capturing DOM snapshot")
+        return self.dom_tree
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
@@ -626,7 +629,6 @@ class DevTools(object):
             self.profile_end('collect_trace')
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
-        self.dom_tree = None
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""

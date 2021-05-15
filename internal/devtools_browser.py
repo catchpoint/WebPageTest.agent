@@ -464,6 +464,80 @@ class DevtoolsBrowser(object):
             requests_json = 'null'
         return requests_json
 
+    def find_dom_node_info(self, dom_tree, node_id):
+        """Get the information for the given DOM node"""
+        info = None
+        try:
+            if dom_tree is not None:
+                if 'documents' in dom_tree:
+                    node_index = None
+                    for document in dom_tree['documents']:
+                        if 'nodes' in document and node_index is None:
+                            if 'backendNodeId' in document['nodes']:
+                                for index in range(len(document['nodes']['backendNodeId'])):
+                                    if document['nodes']['backendNodeId'][index] == node_id:
+                                        node_index = index
+                                        break
+                            if node_index is not None:
+                                info = {}
+                                if 'strings' in dom_tree:
+                                    if 'nodeName' in document['nodes'] and node_index < len(document['nodes']['nodeName']):
+                                        string_index = document['nodes']['nodeName'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeType'] = dom_tree['strings'][string_index]
+                                    if 'nodeValue' in document['nodes'] and node_index < len(document['nodes']['nodeValue']):
+                                        string_index = document['nodes']['nodeValue'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeValue'] = dom_tree['strings'][string_index]
+                                    if 'attributes' in document['nodes'] and node_index < len(document['nodes']['attributes']):
+                                        attribute = None
+                                        for string_index in document['nodes']['attributes'][node_index]:
+                                            string_value = ''
+                                            if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                string_value = dom_tree['strings'][string_index]
+                                            if attribute is None:
+                                                attribute = string_value
+                                            else:
+                                                if attribute:
+                                                    if 'attributes' not in info:
+                                                        info['attributes'] = {}
+                                                    if attribute in info['attributes']:
+                                                        info['attributes'][attribute] += ' ' + string_value
+                                                    else:
+                                                        info['attributes'][attribute] = string_value
+                                                attribute = None
+                                    if 'currentSourceURL' in document['nodes']:
+                                        if 'index' in document['nodes']['currentSourceURL'] and 'value' in document['nodes']['currentSourceURL']:
+                                            for index in range(len(document['nodes']['currentSourceURL']['index'])):
+                                                if document['nodes']['currentSourceURL']['index'][index] == node_index:
+                                                    if index < len(document['nodes']['currentSourceURL']['value']):
+                                                        string_index = document['nodes']['currentSourceURL']['value'][index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['sourceURL'] = dom_tree['strings'][string_index]
+                                                    break
+                                if 'layout' in document:
+                                    if 'nodeIndex' in document['layout']:
+                                        for index in range(len(document['layout']['nodeIndex'])):
+                                            if document['layout']['nodeIndex'][index] == node_index:
+                                                if 'bounds' in document['layout'] and index < len(document['layout']['bounds']):
+                                                    info['bounds'] = document['layout']['bounds'][index]
+                                                if 'text' in document['layout'] and index < len(document['layout']['text']):
+                                                    string_index = document['layout']['text'][index]
+                                                    if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                        info['layoutText'] = dom_tree['strings'][string_index]
+                                                if 'style_names' in dom_tree and 'styles' in document['layout'] and index < len(document['layout']['styles']) and len(document['layout']['styles'][index]) == len(dom_tree['style_names']):
+                                                    if 'styles' not in info:
+                                                        info['styles'] = {}
+                                                    for style_index in range(len(document['layout']['styles'][index])):
+                                                        string_index = document['layout']['styles'][index][style_index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
+                                return info
+                                            
+        except Exception:
+            logging.exception("Error looking up DOM Node")
+        return info
+
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit_now:
@@ -480,6 +554,7 @@ class DevtoolsBrowser(object):
             custom_metrics = {}
             requests = None
             bodies = None
+            accessibility_tree = None
             for name in self.job['customMetrics']:
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_REQUESTS') >= 0:
@@ -494,6 +569,27 @@ class DevtoolsBrowser(object):
                         bodies = self.get_sorted_requests_json(True)
                     try:
                         custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
+                if custom_script.find('$WPT_ACCESSIBILITY_TREE') >= 0:
+                    if accessibility_tree is None:
+                        try:
+                            self.devtools.send_command('Accessibility.enable', {}, wait=True, timeout=30)
+                            result = self.devtools.send_command('Accessibility.getFullAXTree', {}, wait=True, timeout=30)
+                            if result is not None and 'result' in result and 'nodes' in result['result']:
+                                tree = result['result']['nodes']
+                                dom_tree = self.devtools.snapshot_dom()
+                                # Populate the node details
+                                if dom_tree is not None:
+                                    for node in tree:
+                                        if 'backendDOMNodeId' in node:
+                                            node['node_info'] = self.find_dom_node_info(dom_tree, node['backendDOMNodeId'])
+                                accessibility_tree = json.dumps(tree)
+                            self.devtools.send_command('Accessibility.disable', {}, wait=True, timeout=30)
+                        except Exception:
+                            logging.exception('Error processing accessibility tree')
+                    try:
+                        custom_script = custom_script.replace('$WPT_ACCESSIBILITY_TREE', accessibility_tree)
                     except Exception:
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
