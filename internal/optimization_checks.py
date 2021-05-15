@@ -287,6 +287,7 @@ class OptimizationChecks(object):
             'NetDNA': [{'Server': 'NetDNA'}],
             'Netlify': [{'Server': 'Netlify'}],
             'NGENIX': [{'x-ngenix-cache': ''}],
+            'NOC.org': [{'Server': 'noc.org/cdn'}],
             'NYI FTW': [{'X-Powered-By': 'NYI FTW'},
                         {'X-Delivered-By': 'NYI FTW'}],
             'Optimal CDN': [{'Server': 'Optimal CDN'}],
