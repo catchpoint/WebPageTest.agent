@@ -1251,7 +1251,7 @@ class WebPageTest(object):
                                 # check to see if it is text or utf-8 data
                                 try:
                                     data = ''
-                                    with open(task['file'], 'r') as f_in:
+                                    with open(task['file'], 'r',errors="ignore") as f_in:
                                         data = f_in.read()
                                     json.loads('"' + data.replace('"', '\\"') + '"')
                                     body_index += 1

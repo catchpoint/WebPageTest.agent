@@ -413,7 +413,7 @@ class WPTAgent(object):
                 logging.debug("Traceroute is missing, installing...")
                 subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
 
-        if not self.options.android and not self.options.iOS and self.options.webdriver and 'Firefox' in detected_browsers:
+        if not self.options.android and not self.options.iOS and self.options.webdriver and  platform.system() != 'Windows' and 'Firefox' in detected_browsers:
             try:
                 subprocess.check_output(['geckodriver', '-V'])
             except Exception:

@@ -596,6 +596,7 @@ class DesktopBrowser(BaseBrowser):
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
                 if platform.system() == 'Windows':
                     self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                    os.system('taskkill /im ffmpeg.exe /t /f')
                 else:
                     self.ffmpeg.communicate(input='q')
                 if self.ffmpeg.returncode != 0:
