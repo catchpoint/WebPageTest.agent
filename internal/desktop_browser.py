@@ -61,6 +61,7 @@ class DesktopBrowser(BaseBrowser):
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump = None
         self.ffmpeg = None
+        self.stop_ffmpeg = False
         self.ffmpeg_output_thread = None
         self.video_capture_running = False
         self.video_processing = None
@@ -414,7 +415,7 @@ class DesktopBrowser(BaseBrowser):
     def pump_ffmpeg_output(self):
         """Pump the ffmpeg output messages so the buffers don't fill"""
         try:
-            while self.ffmpeg is not None:
+            while self.ffmpeg is not None and not self.stop_ffmpeg:
                 output = self.ffmpeg.stderr.readline().strip()
                 if output and not output.startswith('['):
                     logging.debug("ffmpeg: %s", output)
@@ -579,6 +580,7 @@ class DesktopBrowser(BaseBrowser):
                     self.video_capture_running = True
                     # Start a background thread to pump the ffmpeg output
                     if platform.system() != 'Windows':
+                        self.stop_ffmpeg = False
                         self.ffmpeg_output_thread = threading.Thread(target=self.pump_ffmpeg_output)
                         self.ffmpeg_output_thread.start()
                 except Exception:
@@ -608,6 +610,7 @@ class DesktopBrowser(BaseBrowser):
             self.profile_start('desktop.stop_video')
             logging.debug('Stopping video capture')
             self.video_capture_running = False
+            self.stop_ffmpeg = True
             if platform.system() == 'Windows':
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
                 if platform.system() == 'Windows':
@@ -664,12 +667,16 @@ class DesktopBrowser(BaseBrowser):
                 wait_for_all('tcpdump')
             self.tcpdump = None
         if self.ffmpeg is not None:
-            logging.debug('Waiting for video capture to finish')
-            if platform.system() == 'Windows':
-                self.ffmpeg.communicate(input='q'.encode('utf-8'))
-            else:
-                self.ffmpeg.communicate(input='q')
-            self.ffmpeg.wait(10)
+            self.stop_ffmpeg = True
+            try:
+                logging.debug('Waiting for video capture to finish')
+                if platform.system() == 'Windows':
+                    self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                else:
+                    self.ffmpeg.communicate(input='q')
+                self.ffmpeg.wait(10)
+            except Exception:
+                logging.exception('Error terminating ffmpeg')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
@@ -677,7 +684,10 @@ class DesktopBrowser(BaseBrowser):
         else:
             subprocess.call(['killall', '-9', 'ffmpeg'])
         if self.ffmpeg_output_thread is not None:
-            self.ffmpeg_output_thread.join(10)
+            try:
+                self.ffmpeg_output_thread.join(10)
+            except Exception:
+                logging.exception('Error waiting for ffmpeg output')
             self.ffmpeg_output_thread = None
         self.job['shaper'].reset()
 
