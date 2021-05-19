@@ -61,6 +61,7 @@ class DesktopBrowser(BaseBrowser):
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump = None
         self.ffmpeg = None
+        self.ffmpeg_output_thread = None
         self.video_capture_running = False
         self.video_processing = None
         self.pcap_file = None
@@ -410,6 +411,17 @@ class DesktopBrowser(BaseBrowser):
                "});" \
                "})();"
 
+    def pump_ffmpeg_output(self):
+        """Pump the ffmpeg output messages so the buffers don't fill"""
+        try:
+            while self.ffmpeg is not None:
+                output = self.ffmpeg.stderr.readline().strip()
+                if output and not output.startswith('['):
+                    logging.debug("ffmpeg: %s", output)
+        except Exception:
+            pass
+        logging.debug('Done pumping ffmpeg messages')
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if self.must_exit:
@@ -565,6 +577,10 @@ class DesktopBrowser(BaseBrowser):
                         except Exception:
                             logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True
+                    # Start a background thread to pump the ffmpeg output
+                    if platform.system() != 'Windows':
+                        self.ffmpeg_output_thread = threading.Thread(target=self.pump_ffmpeg_output)
+                        self.ffmpeg_output_thread.start()
                 except Exception:
                     logging.exception('Error starting video capture')
                 self.profile_end('desktop.start_video')
@@ -653,12 +669,16 @@ class DesktopBrowser(BaseBrowser):
                 self.ffmpeg.communicate(input='q'.encode('utf-8'))
             else:
                 self.ffmpeg.communicate(input='q')
+            self.ffmpeg.wait(10)
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
             kill_all('ffmpeg.exe', True)
         else:
             subprocess.call(['killall', '-9', 'ffmpeg'])
+        if self.ffmpeg_output_thread is not None:
+            self.ffmpeg_output_thread.join(10)
+            self.ffmpeg_output_thread = None
         self.job['shaper'].reset()
 
     def on_start_processing(self, task):
