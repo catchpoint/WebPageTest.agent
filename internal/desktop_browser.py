@@ -674,7 +674,6 @@ class DesktopBrowser(BaseBrowser):
                     self.ffmpeg.communicate(input='q'.encode('utf-8'))
                 else:
                     self.ffmpeg.communicate(input='q')
-                self.ffmpeg.wait(10)
             except Exception:
                 logging.exception('Error terminating ffmpeg')
             self.ffmpeg = None
