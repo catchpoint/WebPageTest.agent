@@ -31,7 +31,7 @@
       }
     }
     // Run the analysis        
-    const detections = Wappalyzer.analyze({
+    const detections = await Wappalyzer.analyze({
       url: window.top.location.href,
       html: new window.XMLSerializer().serializeToString(document),
       headers: responseHeaders,
