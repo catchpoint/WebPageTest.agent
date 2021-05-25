@@ -493,6 +493,8 @@ class DevTools(object):
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Audits.disable', {})
+            self.send_command('Log.disable', {})
+            self.send_command('Log.stopViolationsReport', {})
             self.send_command('Console.disable', {})
             self.send_command('Timeline.stop', {})
             self.get_response_bodies()
@@ -1098,6 +1100,7 @@ class DevTools(object):
             self.send_command('Network.enable', {}, target_id=target_id)
             self.send_command('Console.enable', {}, target_id=target_id)
             self.send_command('Log.enable', {}, target_id=target_id)
+            self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
