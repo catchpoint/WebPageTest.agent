@@ -62,6 +62,7 @@ class WebPageTest(object):
         self.is_rebooting = False
         self.is_dead = False
         self.health_check_server = None
+        self.metadata_blocked = False
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': 'wptagent'})
         self.options = options
@@ -164,9 +165,7 @@ class WebPageTest(object):
             self.load_from_ec2()
         elif self.options.gce:
             self.load_from_gce()
-        # Block access to the metadata server in case we are on a cloud provider
-        if platform.system() == "Linux" and not self.options.gce and (' '.join(self.test_locations)).find('gce') == -1:
-            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
+        self.block_metadata()
         # Set the session authentication options
         if self.auth_name is not None:
             self.session.auth = (self.auth_name, self.auth_password)
@@ -287,6 +286,10 @@ class WebPageTest(object):
                 pass
             if not ok:
                 time.sleep(10)
+        # Block access to the metadata server
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
+            self.metadata_blocked = True
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
@@ -342,6 +345,27 @@ class WebPageTest(object):
                     pass
                 if not ok:
                     time.sleep(10)
+
+    def block_metadata(self):
+        """Block access to the metadata service if we are on EC2 or Azure"""
+        if not self.metadata_blocked:
+            import requests
+            needs_block = False
+            session = requests.Session()
+            proxies = {"http": None, "https": None}
+            try:
+                response = session.get('http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance', timeout=10, proxies=proxies)
+                if len(response.text):
+                    needs_block = True
+                else:
+                    response = session.get('http://169.254.169.254/metadata/instance?api-version=2017-04-02', timeout=10, proxies=proxies)
+                    if len(response.text):
+                        needs_block = True
+            except Exception:
+                pass
+            if needs_block:
+                subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
+                self.metadata_blocked = True
 
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
