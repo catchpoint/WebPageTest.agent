@@ -165,7 +165,7 @@ class WebPageTest(object):
         elif self.options.gce:
             self.load_from_gce()
         # Block access to the metadata server in case we are on a cloud provider
-        if platform.system() == "Linux":
+        if platform.system() == "Linux" and not self.options.gce and (' '.join(self.test_locations)).find('gce') == -1:
             subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
         # Set the session authentication options
         if self.auth_name is not None:
