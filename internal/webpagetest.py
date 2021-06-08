@@ -164,6 +164,9 @@ class WebPageTest(object):
             self.load_from_ec2()
         elif self.options.gce:
             self.load_from_gce()
+        # Block access to the metadata server in case we are on a cloud provider
+        if platform.system() == "Linux":
+            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
         # Set the session authentication options
         if self.auth_name is not None:
             self.session.auth = (self.auth_name, self.auth_password)
@@ -284,9 +287,6 @@ class WebPageTest(object):
                 pass
             if not ok:
                 time.sleep(10)
-        # Block access to the metadata server
-        if platform.system() == "Linux":
-            subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
