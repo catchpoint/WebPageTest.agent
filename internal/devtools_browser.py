@@ -51,6 +51,7 @@ class DevtoolsBrowser(object):
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.webkit_context = None
+        self.total_sleep = 0
 
     def shutdown(self):
         """Agent is dying NOW"""
@@ -648,8 +649,10 @@ class DevtoolsBrowser(object):
                 self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = bool('target' in command and

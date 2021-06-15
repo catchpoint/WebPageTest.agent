@@ -81,6 +81,7 @@ class iWptBrowser(BaseBrowser):
         self.ios_version = None
         self.workers = []
         self.default_target = None
+        self.total_sleep = 0
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
@@ -1143,8 +1144,10 @@ class iWptBrowser(BaseBrowser):
                 self.is_navigating = True
             self.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = \
