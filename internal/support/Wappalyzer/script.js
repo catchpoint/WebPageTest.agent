@@ -30,12 +30,24 @@
         }
       }
     }
+    // Meta tags
+    const meta = Array.from(document.querySelectorAll('meta')).reduce(
+      (metas, meta) => {
+        const key = meta.getAttribute('name') || meta.getAttribute('property')
+        if (key) {
+          metas[key.toLowerCase()] = [meta.getAttribute('content')]
+        }
+        return metas
+      },
+      {}
+    )
     // Run the analysis        
     const detections = await Wappalyzer.analyze({
       url: window.top.location.href,
       html: new window.XMLSerializer().serializeToString(document),
       headers: responseHeaders,
       js: js,
+      meta: meta,
       scripts: scripts
     });
     const detected = Wappalyzer.resolve(detections);
