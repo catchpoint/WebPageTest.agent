@@ -29,7 +29,7 @@ const Wappalyzer = {
    * @param {Array} detections
    */
   resolve(detections = []) {
-    const resolved = detections.reduce((resolved, { technology }) => {
+    const resolved = detections.reduce((resolved, { technology, lastUrl }) => {
       if (
         resolved.findIndex(
           ({ technology: { name } }) => name === technology.name
@@ -52,7 +52,7 @@ const Wappalyzer = {
             }
           )
 
-        resolved.push({ technology, confidence, version })
+        resolved.push({ technology, confidence, version, lastUrl })
       }
 
       return resolved
@@ -74,6 +74,7 @@ const Wappalyzer = {
           technology: { name, slug, categories, icon, website, cpe },
           confidence,
           version,
+          lastUrl,
         }) => ({
           name,
           slug,
@@ -83,6 +84,7 @@ const Wappalyzer = {
           icon,
           website,
           cpe,
+          lastUrl,
         })
       )
   },
@@ -158,10 +160,10 @@ const Wappalyzer = {
   resolveImplies(resolved) {
     let done = false
 
-    while (resolved.length && !done) {
-      resolved.forEach(({ technology, confidence }) => {
-        done = true
+    do {
+      done = true
 
+      resolved.forEach(({ technology, confidence, lastUrl }) => {
         technology.implies.forEach(({ name, confidence: _confidence }) => {
           const implied = Wappalyzer.getTechnology(name)
 
@@ -178,13 +180,14 @@ const Wappalyzer = {
               technology: implied,
               confidence: Math.min(confidence, _confidence),
               version: '',
+              lastUrl,
             })
 
             done = false
           }
         })
       })
-    }
+    } while (resolved.length && !done)
   },
 
   /**
@@ -197,6 +200,7 @@ const Wappalyzer = {
     html,
     css,
     robots,
+    magento,
     meta,
     headers,
     dns,
@@ -222,6 +226,7 @@ const Wappalyzer = {
               oo(technology, 'html', html),
               oo(technology, 'css', css),
               oo(technology, 'robots', robots),
+              oo(technology, 'magento', magento),
               oo(technology, 'certIssuer', certIssuer),
               om(technology, 'scripts', scripts),
               mm(technology, 'cookies', cookies),
@@ -255,6 +260,7 @@ const Wappalyzer = {
         html,
         css,
         robots,
+        magento,
         meta,
         headers,
         dns,
@@ -295,6 +301,7 @@ const Wappalyzer = {
         css: transform(css),
         certIssuer: transform(certIssuer),
         robots: transform(robots),
+        magento: transform(magento),
         meta: transform(meta),
         scripts: transform(scripts),
         js: transform(js, true),
