@@ -68,6 +68,7 @@ class Edge(DesktopBrowser):
         self.start_page = 'http://127.0.0.1:8888/config.html'
         self.edge_registry_path = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
         self.edge_registry_key_value = 0
+        self.total_sleep = 0
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -875,8 +876,10 @@ class Edge(DesktopBrowser):
             except Exception:
                 logging.exception('Error executing script command')
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = \
