@@ -6,11 +6,24 @@
   Wappalyzer.setCategories(json.categories);
 
   async function runWappalyzer() {
-    // Get the script src URLs
-    var scripts = Array.prototype.slice
-      .apply(document.scripts)
-      .filter(s => s.src)
-      .map(s => s.src);
+    // CSS rules
+    let css = []
+    try {
+      for (const sheet of Array.from(document.styleSheets)) {
+        for (const rules of Array.from(sheet.cssRules)) {
+          css.push(rules.cssText)
+        }
+      }
+    } catch (error) {
+      // Continue
+    }
+    css = css.join('\n')
+      
+    // Script tags
+    const scripts = Array.from(document.scripts)
+      .filter(({ src }) => src)
+      .map(({ src }) => src)
+      .filter((script) => script.indexOf('data:text/javascript;') !== 0)    
     // Find the JS variables
     const patterns = Wappalyzer.jsPatterns || {};
     const js = {};
@@ -45,6 +58,7 @@
     const detections = await Wappalyzer.analyze({
       url: window.top.location.href,
       html: new window.XMLSerializer().serializeToString(document),
+      css: css,
       headers: responseHeaders,
       js: js,
       meta: meta,
