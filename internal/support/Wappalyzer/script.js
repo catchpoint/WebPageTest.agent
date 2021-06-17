@@ -24,25 +24,6 @@
       .filter(({ src }) => src)
       .map(({ src }) => src)
       .filter((script) => script.indexOf('data:text/javascript;') !== 0)    
-    // Find the JS variables
-    const patterns = Wappalyzer.jsPatterns || {};
-    const js = {};
-    for ( let appName in patterns ) {
-      if ( patterns.hasOwnProperty(appName) ) {
-        js[appName] = {};
-        for ( let chain in patterns[appName] ) {
-          if ( patterns[appName].hasOwnProperty(chain) ) {
-            js[appName][chain] = {};
-            for ( let index in patterns[appName][chain] ) {
-              const value = detectJs(chain);
-              if ( value && patterns[appName][chain].hasOwnProperty(index) ) {
-                js[appName][chain][index] = value;
-              }
-            }
-          }
-        }
-      }
-    }
     // Meta tags
     const meta = Array.from(document.querySelectorAll('meta')).reduce(
       (metas, meta) => {
@@ -60,11 +41,13 @@
       html: new window.XMLSerializer().serializeToString(document),
       css: css,
       headers: responseHeaders,
-      js: js,
       meta: meta,
       scripts: scripts
     });
-    const detected = Wappalyzer.resolve(detections);
+    const dom_detections = await analyzeDom(Wappalyzer.technologies);
+    const js_detections = await analyzeJS();
+    const all_detections = detections.concat(dom_detections).concat(js_detections);
+    const detected = Wappalyzer.resolve(all_detections);
 
     // Parse the results into something useful
     let categories = {};
@@ -118,6 +101,198 @@
       apps: apps
     });
     return wptResult;
+  }
+
+  async function analyzeJS() {
+      const js_tech = {
+          technologies: Wappalyzer.technologies
+            .filter(({ js }) => Object.keys(js).length)
+            .map(({ name, js }) => ({ name, chains: Object.keys(js) })),
+      };
+      const { technologies } = js_tech;
+      const js_data = {
+          js: technologies.reduce((technologies, { name, chains }) => {
+              chains.forEach((chain) => {
+                const value = chain
+                  .split('.')
+                  .reduce(
+                    (value, method) =>
+                      value &&
+                      value instanceof Object &&
+                      Object.prototype.hasOwnProperty.call(value, method)
+                        ? value[method]
+                        : undefined,
+                    window
+                  )
+  
+                if (value !== undefined) {
+                  technologies.push({
+                    name,
+                    chain,
+                    value:
+                      typeof value === 'string' || typeof value === 'number'
+                        ? value
+                        : !!value,
+                  })
+                }
+              })
+  
+              return technologies
+            }, [])
+      };
+      const detected = Array.prototype.concat.apply(
+          [],
+          await Promise.all(
+            js_data.js.map(async ({ name, chain, value }) => {
+              await next()
+              return Wappalyzer.analyzeManyToMany(
+                Wappalyzer.technologies.find(({ name: _name }) => name === _name),
+                'js',
+                { [chain]: [value] }
+              )
+            })
+          )
+        );
+      return detected;
+  }
+
+  async function analyzeDom(technologies) {
+      // DOM
+      const dom = technologies
+        .filter(({ dom }) => dom && dom.constructor === Object)
+        .map(({ name, dom }) => ({ name, dom }))
+        .reduce((technologies, { name, dom }) => {
+          const toScalar = (value) =>
+            typeof value === 'string' || typeof value === 'number'
+              ? value
+              : !!value
+  
+          Object.keys(dom).forEach((selector) => {
+            let nodes = []
+  
+            try {
+              nodes = document.querySelectorAll(selector)
+            } catch (error) {
+              // Ignore
+            }
+  
+            if (!nodes.length) {
+              return
+            }
+  
+            dom[selector].forEach(({ exists, text, properties, attributes }) => {
+              nodes.forEach((node) => {
+                if (exists) {
+                  technologies.push({
+                    name,
+                    selector,
+                    exists: '',
+                  })
+                }
+  
+                if (text) {
+                  const value = node.textContent.trim()
+  
+                  if (value) {
+                    technologies.push({
+                      name,
+                      selector,
+                      text: value,
+                    })
+                  }
+                }
+  
+                if (properties) {
+                  Object.keys(properties).forEach((property) => {
+                    if (Object.prototype.hasOwnProperty.call(node, property)) {
+                      const value = node[property]
+  
+                      if (typeof value !== 'undefined') {
+                        technologies.push({
+                          name,
+                          selector,
+                          property,
+                          value: toScalar(value),
+                        })
+                      }
+                    }
+                  })
+                }
+  
+                if (attributes) {
+                  Object.keys(attributes).forEach((attribute) => {
+                    if (node.hasAttribute(attribute)) {
+                      const value = node.getAttribute(attribute)
+  
+                      technologies.push({
+                        name,
+                        selector,
+                        attribute,
+                        value: toScalar(value),
+                      })
+                    }
+                  })
+                }
+              })
+            })
+          })
+  
+          return technologies
+        }, []);
+  
+      const detected = Array.prototype.concat.apply(
+        [],
+        await Promise.all(
+          dom.map(
+            async (
+              { name, selector, exists, text, property, attribute, value },
+              index
+            ) => {
+              await next()
+  
+              const technology = Wappalyzer.technologies.find(
+                ({ name: _name }) => name === _name
+              )
+  
+              if (typeof exists !== 'undefined') {
+                return Wappalyzer.analyzeManyToMany(technology, 'dom.exists', {
+                  [selector]: [''],
+                })
+              }
+  
+              if (typeof text !== 'undefined') {
+                return Wappalyzer.analyzeManyToMany(technology, 'dom.text', {
+                  [selector]: [text],
+                })
+              }
+  
+              if (typeof property !== 'undefined') {
+                return Wappalyzer.analyzeManyToMany(
+                  technology,
+                  `dom.properties.${property}`,
+                  {
+                    [selector]: [value],
+                  }
+                )
+              }
+  
+              if (typeof attribute !== 'undefined') {
+                return Wappalyzer.analyzeManyToMany(
+                  technology,
+                  `dom.attributes.${attribute}`,
+                  {
+                    [selector]: [value],
+                  }
+                )
+              }
+  
+              return []
+            }
+          )
+        )
+      );
+  
+      return detected;
   }
 
   return runWappalyzer();
