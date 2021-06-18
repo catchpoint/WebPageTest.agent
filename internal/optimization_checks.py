@@ -195,6 +195,7 @@ class OptimizationChecks(object):
             'Optimal CDN': ['.optimalcdn.com'],
             'PageCDN': ['pagecdn.io'],
             'PageRain': ['.pagerain.net'],
+            'Parspack CDN': ['.parspack.net'],
             'Pressable CDN': ['.pressablecdn.com'],
             'PUSHR': ['.pushrcdn.com'],
             'Rackspace': ['.raxcdn.com'],
