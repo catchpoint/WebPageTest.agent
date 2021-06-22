@@ -711,6 +711,10 @@ class DevtoolsBrowser(object):
                                  int(re.search(r'\d+',
                                                str(command['target'])).group()) == 1)
             self.devtools.disable_cache(disable_cache)
+        elif command['command'] == 'type':
+            self.devtools.type_text(command['target'])
+        elif command['command'] == 'keypress':
+            self.devtools.keypress(command['target'])
 
     def navigate(self, url):
         """Navigate to the given URL"""

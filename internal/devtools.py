@@ -92,6 +92,13 @@ class DevTools(object):
         self.request_sequence = 0
         self.default_target = None
         self.dom_tree = None
+        self.key_definitions = {}
+        keyfile = os.path.join(os.path.dirname(__file__), 'support', 'keys.json')
+        try:
+            with open(keyfile, 'rt') as f_in:
+                self.key_definitions = json.load(f_in)
+        except Exception:
+            logging.exception('Error loading keyboard definitions')
 
     def shutdown(self):
         """The agent is dying NOW"""
@@ -1093,6 +1100,82 @@ class DevTools(object):
             self.send_command('Network.setResourceCachingDisabled', {'disabled': disable}, wait=True)
         else:
             self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
+
+    def send_character(self, char):
+        """Send a non-keyboard character directly to the page"""
+        self.send_command('Input.insertText', {'text': char}, wait=True)
+
+    def key_info(self, key):
+        """Build the details needed for the keypress commands for the given key"""
+        info = {
+            'key': '',
+            'keyCode': 0,
+            'code': '',
+            'location': 0
+        }
+        if key in self.key_definitions:
+            definition = self.key_definitions[key]
+            if 'key' in definition:
+                info['key'] = definition['key']
+                if len(definition['key']) == 1:
+                    info['text'] = definition['key']
+            if 'keyCode' in definition:
+                info['keyCode'] = definition['keyCode']
+            if 'code' in definition:
+                info['code'] = definition['code']
+            if 'location' in definition:
+                info['location'] = definition['location']
+            if 'text' in definition:
+                info['text'] = definition['text']
+        return info
+
+    def key_down(self, key):
+        """Press down a key"""
+        info = self.key_info(key)
+        params = {
+            'type': 'rawKeyDown',
+            'key': info['key'],
+            'windowsVirtualKeyCode': info['keyCode'],
+            'code': info['code'],
+            'location': info['location']
+        }
+        if 'text' in info:
+            params['type'] = 'keyDown'
+            params['text'] = info['text']
+            params['unmodifiedText'] = info['text']
+        if info['location'] == 3:
+            params['isKeypad'] = True
+        self.send_command('Input.dispatchKeyEvent', params)
+
+    def key_up(self, key):
+        """Let up a key"""
+        info = self.key_info(key)
+        self.send_command('Input.dispatchKeyEvent', {
+            'type': 'keyUp',
+            'key': info['key'],
+            'windowsVirtualKeyCode': info['keyCode'],
+            'code': info['code'],
+            'location': info['location']
+        })
+
+    def keypress(self, key):
+        """Simulate pressing a keyboard key"""
+        try:
+            self.key_down(key)
+            self.key_up(key)
+        except Exception:
+            logging.exception('Error running keypress command')
+
+    def type_text(self, string):
+        """Simulate typing text input"""
+        try:
+            for char in string:
+                if char in self.key_definitions:
+                    self.keypress(char)
+                else:
+                    self.send_character(char)
+        except Exception:
+            logging.exception('Error running type command')
 
     def enable_target(self, target_id=None):
         """Hook up the necessary network (or other) events for the given target"""
