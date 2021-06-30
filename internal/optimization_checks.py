@@ -284,6 +284,8 @@ class OptimizationChecks(object):
             'LeaseWeb CDN': [{'Server': 'leasewebcdn'}],
             'Medianova': [{'Server': 'MNCDN'}],
             'MerlinCDN': [{'Server': 'MerlinCDN'}],
+            'Microsoft Azure': [{'x-azure-ref': ''},
+                                {'x-azure-ref-originshield': ''}],
             'Myra Security CDN': [{'Server': 'myracloud'}],
             'Naver': [{'Server': 'Testa/'}],
             'NetDNA': [{'Server': 'NetDNA'}],
