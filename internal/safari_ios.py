@@ -843,8 +843,9 @@ class iWptBrowser(BaseBrowser):
         self.flush_messages()
         self.enable_safari_events()
         if self.task['log_data']:
-            if not self.job['shaper'].configure(self.job, task):
-                self.task['error'] = "Error configuring traffic-shaping"
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
                 self.bodies_zip_file.close()
                 self.bodies_zip_file = None

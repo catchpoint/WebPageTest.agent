@@ -78,6 +78,7 @@ run the agent in a docker container.
     * none - Disable traffic-shaping (i.e. when root is not available).
     * netem,\<interface\> - Use NetEm for bridging rndis traffic (specify outbound interface).  i.e. --shaper netem,eth0
     * remote,\<server\>,\<down pipe\>,\<up pipe\> - Connect to the remote server over ssh and use pre-configured dummynet pipes (ssh keys for root user should be pre-authorized).
+    * chrome - Use Chrome's dev tools traffic-shaping. Only supports Chromium browsers and should be used as a last resort.
 
 ### Android testing options
 * **--android** : Run tests on an attached android device.

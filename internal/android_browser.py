@@ -203,9 +203,10 @@ class AndroidBrowser(BaseBrowser):
             if version is not None:
                 task['page_data']['browserVersion'] = version
                 task['page_data']['browser_version'] = version
-            if not self.job['shaper'].configure(self.job, task):
-                task['error'] = "Error configuring traffic-shaping"
-                task['page_data']['result'] = 12999
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    task['error'] = "Error configuring traffic-shaping"
+                    task['page_data']['result'] = 12999
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled and not self.job['disable_video']:
