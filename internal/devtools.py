@@ -220,6 +220,7 @@ class DevTools(object):
                                 try:
                                     self.websocket = DevToolsClient(websocket_url)
                                     self.websocket.connect()
+                                    self.job['shaper'].set_devtools(self)
                                     ret = True
                                 except Exception as err:
                                     logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
@@ -251,6 +252,7 @@ class DevTools(object):
             self.send_command('Inspector.enable', {})
             self.send_command('Network.enable', {})
             self.send_command('Runtime.enable', {})
+            self.job['shaper'].apply()
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
             if len(self.workers):
@@ -281,6 +283,7 @@ class DevTools(object):
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
+        self.job['shaper'].set_devtools(None)
         if self.websocket:
             try:
                 self.websocket.close()
@@ -1185,6 +1188,7 @@ class DevTools(object):
             self.send_command('Log.enable', {}, target_id=target_id)
             self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
+            self.job['shaper'].apply()
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
