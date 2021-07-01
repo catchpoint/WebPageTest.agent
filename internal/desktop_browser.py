@@ -429,8 +429,9 @@ class DesktopBrowser(BaseBrowser):
             return
         import psutil
         if task['log_data']:
-            if not self.job['shaper'].configure(self.job, task):
-                self.task['error'] = "Error configuring traffic-shaping"
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    self.task['error'] = "Error configuring traffic-shaping"
             self.cpu_start = psutil.cpu_times()
             self.recording = True
             ver = platform.uname()

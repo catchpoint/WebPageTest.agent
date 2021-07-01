@@ -750,7 +750,7 @@ class DevtoolsBrowser(object):
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
         if 'url' in self.job and self.job['url'] is not None and not self.is_webkit:
-            if not self.job['lighthouse_config']:
+            if not self.job['lighthouse_config'] and not self.job['dtShaper']:
                 self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')

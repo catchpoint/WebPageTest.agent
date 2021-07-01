@@ -625,6 +625,7 @@ class WebPageTest(object):
                     if 'video' not in job:
                         job['video'] = bool('Capture Video' in job and job['Capture Video'])
                     job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
+                    job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
                     job['disable_video'] = bool(not job['video'] and
                                                 'disable_video' in job and
                                                 job['disable_video'])

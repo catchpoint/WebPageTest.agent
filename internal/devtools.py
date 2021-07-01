@@ -247,12 +247,35 @@ class DevTools(object):
         self.profile_end('connect')
         return ret
 
+    def _to_int(self, s):
+        return int(re.search(r'\d+', str(s)).group())
+
+    def enable_shaper(self, target_id=None):
+        """Enable the Chromium dev tools traffic shaping"""
+        if self.job['dtShaper']:
+            in_Bps = -1
+            if 'bwIn' in self.job:
+                in_Bps = (self._to_int(self.job['bwIn']) * 1000) / 8
+            out_Bps = -1
+            if 'bwOut' in self.job:
+                out_Bps = (self._to_int(self.job['bwOut']) * 1000) / 8
+            rtt = 0
+            if 'latency' in self.job:
+                rtt = self._to_int(self.job['latency'])
+            self.send_command('Network.emulateNetworkConditions', {
+                'offline': False,
+                'latency': rtt,
+                'downloadThroughput': in_Bps,
+                'uploadThroughput': out_Bps
+                }, wait=True, target_id=target_id)
+
     def enable_webkit_events(self):
         if self.is_webkit:
             self.send_command('Inspector.enable', {})
             self.send_command('Network.enable', {})
             self.send_command('Runtime.enable', {})
             self.job['shaper'].apply()
+            self.enable_shaper()
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
             if len(self.workers):
@@ -1189,6 +1212,7 @@ class DevTools(object):
             self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
             self.job['shaper'].apply(target_id=target_id)
+            self.enable_shaper(target_id=target_id)
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
