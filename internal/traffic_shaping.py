@@ -121,10 +121,10 @@ class TrafficShaper(object):
             logging.exception('Error setting shaper devtools interface')
         return
 
-    def apply(self):
+    def apply(self, target_id=None):
         """Apply the traffic-shaping for Chrome"""
         try:
-            self.shaper.apply()
+            self.shaper.apply(target_id)
         except Exception:
             logging.exception('Error applying traffic shaping')
 
@@ -158,7 +158,7 @@ class NoShaper(object):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return
 #
@@ -201,7 +201,7 @@ class ChromeShaper(object):
         """Stub for configuring the devtools interface"""
         self.devtools = devtools
 
-    def apply(self):
+    def apply(self, target_id=None):
         """Stub for applying Chrome traffic-shaping"""
         if self.devtools is not None:
             self.devtools.send_command('Network.emulateNetworkConditions', {
@@ -209,7 +209,7 @@ class ChromeShaper(object):
                 'latency': self.rtt,
                 'downloadThroughput': self.in_Bps,
                 'uploadThroughput': self.out_Bps
-                }, wait=True)
+                }, wait=True, target_id=target_id)
         return
 
 #
@@ -258,7 +258,7 @@ class WinShaper(object):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return
 
@@ -359,7 +359,7 @@ class Dummynet(object):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return
 
@@ -469,7 +469,7 @@ class MacDummynet(Dummynet):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return
 
@@ -513,7 +513,7 @@ class RemoteDummynet(Dummynet):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return
 
@@ -626,6 +626,6 @@ class NetEm(object):
         """Stub for configuring the devtools interface"""
         return
 
-    def apply(self):
+    def apply(self, target_id):
         """Stub for applying Chrome traffic-shaping"""
         return

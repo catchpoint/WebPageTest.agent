@@ -1188,7 +1188,7 @@ class DevTools(object):
             self.send_command('Log.enable', {}, target_id=target_id)
             self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
-            self.job['shaper'].apply()
+            self.job['shaper'].apply(target_id=target_id)
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
@@ -1495,8 +1495,8 @@ class DevTools(object):
                 target = msg['params']['targetInfo']
                 if 'type' in target and target['type'] == 'service_worker':
                     self.workers.append(target)
-                    if self.recording:
-                        self.enable_target(target['targetId'])
+                if self.recording:
+                    self.enable_target(target['targetId'])
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
         if event == 'receivedMessageFromTarget' or event == 'dispatchMessageFromTarget':
