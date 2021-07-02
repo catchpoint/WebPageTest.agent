@@ -186,7 +186,7 @@ class WebPageTest(object):
                 pass
         # If we are running in a git clone, grab the date of the last
         # commit as the version
-        self.version = '20.06'
+        self.version = '21.07'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
             if (sys.version_info >= (3, 0)):

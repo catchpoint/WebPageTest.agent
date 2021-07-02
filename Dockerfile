@@ -33,9 +33,6 @@ RUN apt-get update && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
 # Set repos
   add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free' && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free' && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free' && \
 # Install browsers
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -yq \
@@ -45,9 +42,6 @@ RUN apt-get update && \
   firefox \
   firefox-trunk \
   firefox-geckodriver \
-  opera-stable \
-  opera-beta \
-  opera-developer \
   nodejs && \
 # Get fonts
   echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
