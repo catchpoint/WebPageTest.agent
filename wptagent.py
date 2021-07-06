@@ -142,8 +142,14 @@ class WPTAgent(object):
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
                             start = monotonic()
+
+                            self.task['running_lighthouse'] = False
+                            self.browser = self.browsers.get_browser(self.job['browser'], self.job)
+                            if self.browser is not None:
+                                self.browser.prepare(self.job, self.task)
+                                self.browser.launch(self.job, self.task)
+
                             try:
-                                self.task['running_lighthouse'] = False
                                 if self.job['type'] != 'lighthouse':
                                     self.run_single_test()
                                     self.wpt.get_bodies(self.task)
@@ -156,8 +162,8 @@ class WPTAgent(object):
                                             self.task['page_result'] == 0 or \
                                             self.task['page_result'] == 99999:
                                         self.task['running_lighthouse'] = True
-                                        self.wpt.running_another_test(self.task)
                                         self.run_single_test()
+                                        self.wpt.running_another_test(self.task)
                                 elapsed = monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
@@ -169,6 +175,14 @@ class WPTAgent(object):
                                 logging.exception("Unhandled exception running test: %s", msg)
                                 traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
+
+                            if self.browser is not None:
+                                self.browser.stop(self.job, self.task)
+                            # Delete the browser profile if needed
+                            if self.task['cached'] or self.job['fvonly']:
+                                self.browser.clear_profile(self.task)
+                            self.browser = None
+
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
                 elif self.options.exit > 0 and self.browsers.should_exit():
@@ -207,10 +221,7 @@ class WPTAgent(object):
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
-        self.browser = self.browsers.get_browser(self.job['browser'], self.job)
         if self.browser is not None:
-            self.browser.prepare(self.job, self.task)
-            self.browser.launch(self.job, self.task)
             try:
                 if self.task['running_lighthouse']:
                     self.task['lighthouse_log'] = 'Lighthouse testing is not supported with this browser.'
@@ -235,15 +246,11 @@ class WPTAgent(object):
                     '{0}'.format(msg)
                 logging.exception("Unhandled exception in test run: %s", msg)
                 traceback.print_exc(file=sys.stdout)
-            self.browser.stop(self.job, self.task)
-            # Delete the browser profile if needed
-            if self.task['cached'] or self.job['fvonly']:
-                self.browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
             logging.critical(err)
             self.task['error'] = err
-        self.browser = None
+
 
     def signal_handler(self, signum, frame):
         """Ctrl+C handler"""

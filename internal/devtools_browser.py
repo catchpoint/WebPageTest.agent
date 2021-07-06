@@ -744,6 +744,7 @@ class DevtoolsBrowser(object):
         proc.communicate()
 
     def run_lighthouse_test(self, task):
+        self.task = task
         if self.must_exit_now:
             return
         self.profile_start('dtbrowser.run_lighthouse_test')
