@@ -16,6 +16,7 @@ import random
 import re
 import shutil
 import socket
+import string
 import subprocess
 import sys
 import threading
@@ -471,6 +472,93 @@ class WebPageTest(object):
         cpid_header = 'm;' + entity + ';' + hash_string
         return cpid_header
 
+    def process_job_json(self, test_json):
+        """Process the JSON of a test into a job file"""
+        job = test_json
+        if job is not None:
+            try:
+                logging.debug("Job: %s", json.dumps(job))
+                # set some default options
+                job['agent_version'] = self.version
+                if 'imageQuality' not in job:
+                    job['imageQuality'] = DEFAULT_JPEG_QUALITY
+                if 'pngScreenShot' not in job:
+                    job['pngScreenShot'] = 0
+                if 'fvonly' not in job:
+                    job['fvonly'] = 0
+                if 'width' not in job:
+                    job['width'] = 1366
+                if 'height' not in job:
+                    job['height'] = 768
+                if 'browser_width' in job:
+                    job['width'] = job['browser_width']
+                if 'browser_height' in job:
+                    job['height'] = job['browser_height']
+                if 'timeout' not in job:
+                    job['timeout'] = self.time_limit
+                if 'noscript' not in job:
+                    job['noscript'] = 0
+                if 'type' not in job:
+                    job['type'] = ''
+                if job['type'] == 'traceroute':
+                    job['fvonly'] = 1
+                if 'fps' not in job:
+                    job['fps'] = self.fps
+                if 'warmup' not in job:
+                    job['warmup'] = 0
+                if job['type'] == 'lighthouse':
+                    job['fvonly'] = 1
+                    job['lighthouse'] = 1
+                job['keep_lighthouse_trace'] = bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                job['keep_lighthouse_screenshots'] = bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
+                job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
+                if 'video' not in job:
+                    job['video'] = bool('Capture Video' in job and job['Capture Video'])
+                job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
+                job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
+                job['disable_video'] = bool(not job['video'] and
+                                            'disable_video' in job and
+                                            job['disable_video'])
+                job['atomic'] = bool('atomic' in job and job['atomic'])
+                job['interface'] = None
+                job['persistent_dir'] = self.persistent_dir
+                if 'throttle_cpu' in job:
+                    throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
+                    if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
+                        throttle *= self.cpu_scale_multiplier
+                    job['throttle_cpu_requested'] = job['throttle_cpu']
+                    job['throttle_cpu'] = throttle
+                if 'work_servers' in job and job['work_servers'] != self.work_servers_str:
+                        self.work_servers_str = job['work_servers']
+                        self.work_servers = self.work_servers_str.split(',')
+                        logging.debug("Servers changed to: %s", self.work_servers_str)
+                if 'wpthost' in job:
+                    self.wpthost = job['wpthost']
+                if 'testinfo' in job:
+                    job['testinfo']['started'] = time.time()
+                if self.health_check_server is not None:
+                    job['health_check_server'] = self.health_check_server
+                # Add the security insights custom metrics locally if requested
+                if 'securityInsights' in job:
+                    js_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+                    if 'customMetrics' not in job:
+                        job['customMetrics'] = {}
+                    if 'jsLibsVulns' not in job['customMetrics']:
+                        with open(os.path.join(js_directory, 'jsLibsVulns.js'), 'rt') as f_in:
+                            job['customMetrics']['jsLibsVulns'] = f_in.read()
+                    if 'securityHeaders' not in job['customMetrics']:
+                        with open(os.path.join(js_directory, 'securityHeaders.js'), 'rt') as f_in:
+                            job['customMetrics']['securityHeaders'] = f_in.read()
+                if 'browser' not in job:
+                    job['browser'] = 'Chrome'
+                if 'runs' not in job:
+                    job['runs'] = 1
+            except Exception:
+                logging.exception("Error processing job json")
+        self.job = job
+        return job
+
     def get_test(self, browsers):
         """Get a job from the server"""
         if self.is_rebooting or self.is_dead:
@@ -572,10 +660,9 @@ class WebPageTest(object):
                                     self.scheduler_nodes = [self.scheduler_node]
                                     retry = True
                                     logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
-                    job = response.json()
-                    logging.debug("Job: %s", json.dumps(job))
+                    job = self.process_job_json(response.json())
                     # Store the raw job info in case we need to re-queue it
-                    if 'Test ID' in job and 'signature' in job and 'work_server' in job:
+                    if job is not None and 'Test ID' in job and 'signature' in job and 'work_server' in job:
                         self.raw_job = {
                             'id': job['Test ID'],
                             'signature': job['signature'],
@@ -585,81 +672,6 @@ class WebPageTest(object):
                         }
                         if 'jobID' in job:
                             self.raw_job['jobID'] = job['jobID']
-                    # set some default options
-                    job['agent_version'] = self.version
-                    if 'imageQuality' not in job:
-                        job['imageQuality'] = DEFAULT_JPEG_QUALITY
-                    if 'pngScreenShot' not in job:
-                        job['pngScreenShot'] = 0
-                    if 'fvonly' not in job:
-                        job['fvonly'] = 0
-                    if 'width' not in job:
-                        job['width'] = 1366
-                    if 'height' not in job:
-                        job['height'] = 768
-                    if 'browser_width' in job:
-                        job['width'] = job['browser_width']
-                    if 'browser_height' in job:
-                        job['height'] = job['browser_height']
-                    if 'timeout' not in job:
-                        job['timeout'] = self.time_limit
-                    if 'noscript' not in job:
-                        job['noscript'] = 0
-                    if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
-                        job = None
-                    if 'type' not in job:
-                        job['type'] = ''
-                    if job['type'] == 'traceroute':
-                        job['fvonly'] = 1
-                    if 'fps' not in job:
-                        job['fps'] = self.fps
-                    if 'warmup' not in job:
-                        job['warmup'] = 0
-                    if job['type'] == 'lighthouse':
-                        job['fvonly'] = 1
-                        job['lighthouse'] = 1
-                    job['keep_lighthouse_trace'] = bool('lighthouseTrace' in job and job['lighthouseTrace'])
-                    job['keep_lighthouse_screenshots'] = bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
-                    job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
-                    job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
-                    if 'video' not in job:
-                        job['video'] = bool('Capture Video' in job and job['Capture Video'])
-                    job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
-                    job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
-                    job['disable_video'] = bool(not job['video'] and
-                                                'disable_video' in job and
-                                                job['disable_video'])
-                    job['atomic'] = bool('atomic' in job and job['atomic'])
-                    job['interface'] = None
-                    job['persistent_dir'] = self.persistent_dir
-                    if 'throttle_cpu' in job:
-                        throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
-                        if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
-                            throttle *= self.cpu_scale_multiplier
-                        job['throttle_cpu_requested'] = job['throttle_cpu']
-                        job['throttle_cpu'] = throttle
-                    if 'work_servers' in job and job['work_servers'] != self.work_servers_str:
-                            self.work_servers_str = job['work_servers']
-                            self.work_servers = self.work_servers_str.split(',')
-                            logging.debug("Servers changed to: %s", self.work_servers_str)
-                    if 'wpthost' in job:
-                        self.wpthost = job['wpthost']
-                    if 'testinfo' in job:
-                        job['testinfo']['started'] = time.time()
-                    if self.health_check_server is not None:
-                        job['health_check_server'] = self.health_check_server
-                    # Add the security insights custom metrics locally if requested
-                    if 'securityInsights' in job:
-                        js_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
-                        if 'customMetrics' not in job:
-                            job['customMetrics'] = {}
-                        if 'jsLibsVulns' not in job['customMetrics']:
-                            with open(os.path.join(js_directory, 'jsLibsVulns.js'), 'rt') as f_in:
-                                job['customMetrics']['jsLibsVulns'] = f_in.read()
-                        if 'securityHeaders' not in job['customMetrics']:
-                            with open(os.path.join(js_directory, 'securityHeaders.js'), 'rt') as f_in:
-                                job['customMetrics']['securityHeaders'] = f_in.read()
-
                 # Rotate through the list of locations
                 if job is None and len(locations) > 0 and not self.scheduler:
                     location = str(locations.pop(0))
@@ -689,7 +701,6 @@ class WebPageTest(object):
                 location = str(locations.pop(0))
                 count -= 1
                 retry = True
-        self.job = job
         self.needs_zip = []
         if job is not None and 'work_server' in job and 'jobID' in job:
             self.notify_test_started(job)
@@ -698,7 +709,7 @@ class WebPageTest(object):
 
     def notify_test_started(self, job):
         """Tell the server that we have started the test. Used when the queueing isn't handled directly by the server responsible for a test"""
-        if 'work_server' in job:
+        if 'work_server' in job and 'Test ID' in job:
             try:
                 url = job['work_server'] + 'started.php?id=' + quote_plus(job['Test ID'])
                 proxies = {"http": None, "https": None}
@@ -743,7 +754,10 @@ class WebPageTest(object):
                     job['current_state']['run'] += 1
                 job['current_state']['repeat_view'] = False
             if job['current_state']['run'] <= job['runs']:
-                test_id = job['Test ID']
+                if 'Test ID' in job:
+                    test_id = job['Test ID']
+                else:
+                    test_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
                 run = job['current_state']['run']
                 profile_dir = '{0}.{1}.{2:d}'.format(self.profile_dir, test_id, run)
                 task = {'id': test_id,
@@ -1350,11 +1364,12 @@ class WebPageTest(object):
                             os.remove(zipitem['path'])
                         except Exception:
                             pass
-            data = {'id': self.job['Test ID'],
-                    'location': self.location,
+            data = {'location': self.location,
                     'pc': self.pc_name,
                     'testinfo': '1',
                     'done': '1'}
+            if 'Test ID' in self.job:
+                data['id'] = self.job['Test ID']
             if self.key is not None:
                 data['key'] = self.key
             if self.instance_id is not None:

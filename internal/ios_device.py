@@ -51,9 +51,9 @@ class iOSDevice(object):
             if os.path.exists('/var/run/usbmuxd'):
                 ret = True
             else:
-                print("usbmuxd is not available, please try installing it manually")
+                logging.critical("usbmuxd is not available, please try installing it manually")
         else:
-            print("iOS is only supported on Mac and Linux")
+            logging.critical("iOS is only supported on Mac and Linux")
         return ret
 
     def startup(self):
