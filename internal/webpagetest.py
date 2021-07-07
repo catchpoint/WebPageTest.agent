@@ -485,7 +485,7 @@ class WebPageTest(object):
                 if 'pngScreenShot' not in job:
                     job['pngScreenShot'] = 0
                 if 'fvonly' not in job:
-                    job['fvonly'] = 0
+                    job['fvonly'] = 1
                 if 'width' not in job:
                     job['width'] = 1366
                 if 'height' not in job:
@@ -514,7 +514,7 @@ class WebPageTest(object):
                 job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
                 job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
                 if 'video' not in job:
-                    job['video'] = bool('Capture Video' in job and job['Capture Video'])
+                    job['video'] = bool('Capture Video' not in job or job['Capture Video'])
                 job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                 job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
                 job['disable_video'] = bool(not job['video'] and
@@ -554,6 +554,8 @@ class WebPageTest(object):
                     job['browser'] = 'Chrome'
                 if 'runs' not in job:
                     job['runs'] = 1
+                if 'timeline' not in job:
+                    job['timeline'] = 1
             except Exception:
                 logging.exception("Error processing job json")
         self.job = job
