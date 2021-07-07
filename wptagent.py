@@ -143,8 +143,10 @@ class WPTAgent(object):
                                     test_json = json.load(f_in)
                             if self.options.testurl:
                                 test_json['url'] = self.options.testurl
-                            test_json['runs'] = self.options.testruns
-                            test_json['fvonly'] = not self.options.testrv
+                            if 'runs' not in test_json:
+                                test_json['runs'] = self.options.testruns
+                            if 'fvonly' not in test_json:
+                                test_json['fvonly'] = not self.options.testrv
                             self.job = self.wpt.process_job_json(test_json)
                         except Exception:
                             logging.exception('Error processing test options')

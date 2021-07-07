@@ -1,1 +1,111 @@
 # JSON test options
+
+## Common Options
+* **Test ID** : 
+* **url** : 
+* **script** : 
+
+## Video Settings
+* **Capture Video** : 
+* **continuousVideo** : 
+* **disable_video** : 
+* **fps** : 
+* **fullSizeVideo** : 
+
+## Connection and Device Emulation
+* **bwIn** : 
+* **bwOut** : 
+* **bypass_cpu_normalization** : 
+* **dpr** : 
+
+## Browser Settings
+* **addCmdLine** : 
+* **AppendUA** : 
+* **browser_height** : 
+* **browser_width** : 
+* **browser** : 
+* **browserExe** : 
+* **customBrowser_$setting** : 
+* **customBrowserMD5** : 
+* **customBrowserUrl** : 
+
+## Chrome-specific settings
+* **cmdLine** : 
+* **coverage** : 
+* **disableAVIF** : 
+* **disableJXL** : 
+* **disableWEBP** : 
+* **discard_timeline** : 
+
+## Everything Else
+* **APIKey** : 
+* **block** : 
+* **blockads** : 
+* **blockDomains** : 
+* **bodies** : 
+* **clearcerts** : 
+* **clearRV** : 
+* **crux_api_key** : 
+* **customMetrics** : 
+* **debug** : 
+* **discard** : 
+* **dtShaper** : 
+* **fvonly** : 
+* **height** : 
+* **htmlbody** : 
+* **ignoreSSL** : 
+* **imageQuality** : 
+* **injectScript** : 
+* **IPAddr** : 
+* **keepua** : 
+* **keepvideo** : 
+* **lat** : 
+* **latency** : 
+* **lighthouse** : 
+* **lighthouseConfig** : 
+* **lighthouseScreenshots** : 
+* **lighthouseThrottle** : 
+* **lighthouseTrace** : 
+* **lng** : 
+* **max_requests** : 
+* **minimalResults** : 
+* **mobile** : 
+* **netlog** : 
+* **noheaders** : 
+* **noimages** : 
+* **noopt** : 
+* **noscript** : 
+* **orientation** : 
+* **plr** : 
+* **pngScreenShot** : 
+* **priority** : 
+* **profiler** : 
+* **renderVideo** : 
+* **responsive** : 
+* **run_time_limit** : 
+* **runs** : 
+* **securityInsights** : 
+* **shaperLimit** : 
+* **signature** : 
+* **spdy3** : 
+* **standards** : 
+* **swRender** : 
+* **tcpdump** : 
+* **throttle_cpu** : 
+* **thumbsize** : 
+* **time** : 
+* **timeline_fps** : 
+* **timeline** : 
+* **timelineStackDepth** : 
+* **timeout** : 
+* **trace** : 
+* **traceCategories** : 
+* **type** : 
+* **UAModifier** : 
+* **uastring** : 
+* **v8rcs** : 
+* **warmup** : 
+* **web10** : 
+* **width** : 
+* **work_server** : 
+* **wpthost** : 
