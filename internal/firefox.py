@@ -72,7 +72,8 @@ class Firefox(DesktopBrowser):
             "shavar.services.mozilla.com",
             "firefox.settings.services.mozilla.com",
             "snippets.cdn.mozilla.net",
-            "content-signature-2.cdn.mozilla.net"]
+            "content-signature-2.cdn.mozilla.net",
+            "aus5.mozilla.org"]
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
