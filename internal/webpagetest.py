@@ -115,6 +115,15 @@ class WebPageTest(object):
                         server = match.group(1)
                         machine = match.group(2)
                         hostname = 'VM{0}-{1}'.format(server, machine)
+        if platform.system() == 'Linux':
+            try:
+                out = subprocess.check_output(["ip", "-o", "route", "get", "1.1.1.1"],
+                                        universal_newlines=True)
+                addr = (out.split(" ")[6]).strip()
+                if addr is not None and len(addr):
+                    hostname += '-' + addr
+            except Exception:
+                pass
         self.pc_name = hostname if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
