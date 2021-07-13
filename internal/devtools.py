@@ -635,18 +635,13 @@ class DevTools(object):
                 # we get a gap of 30 seconds between messages
                 if self.websocket:
                     logging.info('Collecting trace events')
-                    done = False
                     no_message_count = 0
-                    elapsed = monotonic() - start
-                    while not done and no_message_count < 30 and elapsed < 600:
+                    while not self.websocket.trace_done and no_message_count < 30 and monotonic() - start < 600:
                         try:
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
                                     no_message_count = 0
-                                    msg = json.loads(raw)
-                                    if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
-                                        done = True
                                 else:
                                     no_message_count += 1
                             except Exception:
@@ -655,8 +650,6 @@ class DevTools(object):
                         except Exception:
                             no_message_count += 1
                             time.sleep(1)
-                            pass
-                        elapsed = monotonic() - start
                 self.websocket.stop_processing_trace(self.job)
             except Exception:
                 logging.exception('Error processing trace events')
@@ -1652,6 +1645,7 @@ class DevToolsClient(WebSocketClient):
         self.processed_event_count = 0
         self.last_data = None
         self.keep_timeline = True
+        self.trace_done = True
 
     def opened(self):
         """WebSocket interface - connection opened"""
@@ -1686,6 +1680,7 @@ class DevToolsClient(WebSocketClient):
                     self.trace_file.write("\n]}")
                     self.trace_file.close()
                     self.trace_file = None
+                    self.trace_done = True
                 if message is not None:
                     self.messages.put(message)
         except Exception:
@@ -1719,6 +1714,7 @@ class DevToolsClient(WebSocketClient):
         self.keep_timeline = keep_timeline
         self.dom_tree = dom_tree
         self.performance_timing = performance_timing
+        self.trace_done = False
 
     def stop_processing_trace(self, job):
         """All done"""
