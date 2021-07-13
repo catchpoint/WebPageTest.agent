@@ -81,6 +81,23 @@ class WPTAgent(object):
                                 self.image_magick['mogrify'] = mogrify
                                 break
 
+    def reuse_session_in_lighthouse(self):
+        return len(self.task['script']) > 0
+
+    def launch_browser(self):
+        self.browser = self.browsers.get_browser(self.job['browser'], self.job)
+        if self.browser is not None:
+            self.browser.prepare(self.job, self.task)
+            self.browser.launch(self.job, self.task)
+
+    def stop_browser(self):
+        if self.browser is not None:
+            self.browser.stop(self.job, self.task)
+            # Delete the browser profile if needed
+            if self.task['cached'] or self.job['fvonly']:
+                self.browser.clear_profile(self.task)
+            self.browser = None
+
     def run_testing(self):
         """Main testing flow"""
         if (sys.version_info >= (3, 0)):
@@ -143,13 +160,12 @@ class WPTAgent(object):
                         while self.task is not None:
                             start = monotonic()
 
-                            self.task['running_lighthouse'] = False
-                            self.browser = self.browsers.get_browser(self.job['browser'], self.job)
-                            if self.browser is not None:
-                                self.browser.prepare(self.job, self.task)
-                                self.browser.launch(self.job, self.task)
-
                             try:
+                                self.task['running_lighthouse'] = False
+                                self.task['reuse_session_in_lighthouse'] = self.reuse_session_in_lighthouse()
+                                if self.task['reuse_session_in_lighthouse']:
+                                    self.launch_browser()
+
                                 if self.job['type'] != 'lighthouse':
                                     self.run_single_test()
                                     self.wpt.get_bodies(self.task)
@@ -162,8 +178,18 @@ class WPTAgent(object):
                                             self.task['page_result'] == 0 or \
                                             self.task['page_result'] == 99999:
                                         self.task['running_lighthouse'] = True
+
+                                        if not self.task['reuse_session_in_lighthouse']:
+                                            self.wpt.running_another_test(self.task)
+
                                         self.run_single_test()
-                                        self.wpt.running_another_test(self.task)
+
+                                        if self.task['reuse_session_in_lighthouse']:
+                                            self.wpt.running_another_test(self.task)
+
+                                if self.task['reuse_session_in_lighthouse']:
+                                    self.stop_browser()
+
                                 elapsed = monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
@@ -175,13 +201,6 @@ class WPTAgent(object):
                                 logging.exception("Unhandled exception running test: %s", msg)
                                 traceback.print_exc(file=sys.stdout)
                             self.wpt.upload_task_result(self.task)
-
-                            if self.browser is not None:
-                                self.browser.stop(self.job, self.task)
-                            # Delete the browser profile if needed
-                            if self.task['cached'] or self.job['fvonly']:
-                                self.browser.clear_profile(self.task)
-                            self.browser = None
 
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
@@ -221,6 +240,10 @@ class WPTAgent(object):
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
+
+        if not self.task['reuse_session_in_lighthouse']:
+            self.launch_browser()
+
         if self.browser is not None:
             try:
                 if self.task['running_lighthouse']:
@@ -251,6 +274,8 @@ class WPTAgent(object):
             logging.critical(err)
             self.task['error'] = err
 
+        if not self.task['reuse_session_in_lighthouse']:
+            self.stop_browser()
 
     def signal_handler(self, signum, frame):
         """Ctrl+C handler"""
