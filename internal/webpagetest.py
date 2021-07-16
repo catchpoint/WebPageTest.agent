@@ -772,7 +772,7 @@ class WebPageTest(object):
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],
-                        'page_data': {'tester': self.pc_name},
+                        'page_data': {'tester': self.pc_name, 'start_epoch': time.time()},
                         'navigated': False,
                         'page_result': None,
                         'script_step_count': 1}

@@ -421,7 +421,6 @@ class DevToolsParser(object):
         page_data['testStartOffset'] = 0
         page_data['cached'] = 1 if self.cached else 0
         page_data['optimization_checked'] = 0
-        page_data['start_epoch'] = raw_page_data['startTime']
         if 'main_frame' in raw_page_data:
             page_data['main_frame'] = raw_page_data['main_frame']
         if 'onload' in raw_page_data:

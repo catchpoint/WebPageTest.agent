@@ -1077,9 +1077,7 @@ class SafariWebDriver(DesktopBrowser):
                 'result': 0,
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
-                'optimization_checked': 0,
-                'start_epoch': int((self.task['start_time'] -
-                                    datetime.utcfromtimestamp(0)).total_seconds())
+                'optimization_checked': 0
                 }
         if 'loaded' in self.page:
             page['loadTime'] = int(round(self.page['loaded'] * 1000.0))

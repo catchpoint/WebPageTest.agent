@@ -1391,9 +1391,7 @@ class Edge(DesktopBrowser):
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
                 'optimization_checked': 0,
-                'connections': 0,
-                'start_epoch': int((self.task['start_time'] - \
-                                    datetime.utcfromtimestamp(0)).total_seconds())
+                'connections': 0
                }
         if 'loadEventStart' in self.page:
             page['loadTime'] = int(round(self.page['loadEventStart']))
