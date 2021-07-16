@@ -67,6 +67,7 @@ class WebPageTest(object):
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': 'wptagent'})
         self.options = options
+        self.last_test_id = None
         self.fps = options.fps
         self.test_run_count = 0
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
@@ -115,6 +116,15 @@ class WebPageTest(object):
                         server = match.group(1)
                         machine = match.group(2)
                         hostname = 'VM{0}-{1}'.format(server, machine)
+        if platform.system() == 'Linux':
+            try:
+                out = subprocess.check_output(["ip", "-o", "route", "get", "1.1.1.1"],
+                                        universal_newlines=True)
+                addr = (out.split(" ")[6]).strip()
+                if addr is not None and len(addr):
+                    hostname += '-' + addr
+            except Exception:
+                pass
         self.pc_name = hostname if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
@@ -517,9 +527,7 @@ class WebPageTest(object):
                     job['video'] = bool('Capture Video' not in job or job['Capture Video'])
                 job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
                 job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
-                job['disable_video'] = bool(not job['video'] and
-                                            'disable_video' in job and
-                                            job['disable_video'])
+                job['disable_video'] = bool(not job['video'] and 'disable_video' in job and job['disable_video'])
                 job['atomic'] = bool('atomic' in job and job['atomic'])
                 job['interface'] = None
                 job['persistent_dir'] = self.persistent_dir
@@ -535,10 +543,9 @@ class WebPageTest(object):
                         logging.debug("Servers changed to: %s", self.work_servers_str)
                 if 'wpthost' in job:
                     self.wpthost = job['wpthost']
+                job['started'] = time.time()
                 if 'testinfo' in job:
-                    job['testinfo']['started'] = time.time()
-                if self.health_check_server is not None:
-                    job['health_check_server'] = self.health_check_server
+                    job['testinfo']['started'] = job['started']
                 # Add the security insights custom metrics locally if requested
                 if 'securityInsights' in job:
                     js_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -556,6 +563,20 @@ class WebPageTest(object):
                     job['runs'] = 1
                 if 'timeline' not in job:
                     job['timeline'] = 1
+                if self.options.location is not None:
+                    job['location'] = self.options.location
+                # For CLI tests, write out the raw job file
+                if self.options.testurl or self.options.testspec:
+                    if not os.path.isdir(self.workdir):
+                        os.makedirs(self.workdir)
+                    job_path = os.path.join(self.workdir, 'job.json')
+                    logging.debug('Job Path: {}'.format(job_path))
+                    with open(job_path, 'wt') as f_out:
+                        json.dump(job, f_out)
+                    self.needs_zip.append({'path': job_path, 'name': 'job.json'})
+                # Add the non-serializable members
+                if self.health_check_server is not None:
+                    job['health_check_server'] = self.health_check_server
             except Exception:
                 logging.exception("Error processing job json")
         self.job = job
@@ -1573,17 +1594,20 @@ class WebPageTest(object):
             if data[key] != None:
                 url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
+        response = None
         try:
             if file_path is not None and os.path.isfile(file_path):
                 logging.debug('Uploading filename : %d bytes', os.path.getsize(file_path))
-                self.session.post(url,
+                response = self.session.post(url,
                                   files={'file': (filename, open(file_path, 'rb'))},
                                   timeout=600)
             else:
-                self.session.post(url, timeout=600)
+                response = self.session.post(url, timeout=600)
         except Exception:
             logging.exception("Upload Exception")
             ret = False
+        if ret and response is not None:
+            self.last_test_id = response.text
         return ret
 
     def license_ping(self):

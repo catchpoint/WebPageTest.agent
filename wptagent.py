@@ -189,6 +189,7 @@ class WPTAgent(object):
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
+                        self.output_test_result()
                 elif self.options.exit > 0 and self.browsers.should_exit():
                     self.must_exit = True
                 if self.job is not None:
@@ -219,6 +220,15 @@ class WPTAgent(object):
         if self.needs_shutdown:
             if platform.system() == "Linux":
                 subprocess.call(['sudo', 'poweroff'])
+
+    def output_test_result(self):
+        """Dump the result of a CLI test to stdout"""
+        if self.options.testout is not None:
+            test_id = self.wpt.last_test_id
+            if self.options.testout == 'id':
+                print("{}".format(test_id))
+            elif self.options.testout == 'url' and self.options.server is not None:
+                print("{0}result/{1}/".format(self.options.server[:-5], test_id))
 
     def run_single_test(self):
         """Run a single test run"""
@@ -1087,6 +1097,7 @@ def main():
     parser.add_argument('--testurl', help="URL to test (CLI).")
     parser.add_argument('--testspec', help="JSON test definition file (CLI).")
     parser.add_argument('--testoutdir', help="Output directory for test artifacts (CLI).")
+    parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
     parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
     parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
 
