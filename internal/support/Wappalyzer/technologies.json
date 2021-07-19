@@ -320,6 +320,10 @@
     "83": {
       "name": "Browser fingerprinting",
       "priority": 9
+    },
+    "84": {
+      "name": "Loyalty & rewards",
+      "priority": 9
     }
   },
   "technologies": {
@@ -329,14 +333,24 @@
         6
       ],
       "description": "1C-Bitrix is a system of web project management, universal software for the creation, support and successful development of corporate websites and online stores.",
+      "icon": "1C-Bitrix.svg",
       "headers": {
         "Set-Cookie": "BITRIX_",
         "X-Powered-CMS": "Bitrix Site Manager"
       },
-      "html": "(?:<link[^>]+components/bitrix|(?:src|href)=\"/bitrix/(?:js|templates))",
-      "icon": "1C-Bitrix.svg",
+      "cookies": {
+        "BITRIX_SM_LAST_IP": "",
+        "BITRIX_SM_SALE_UID": "",
+        "BITRIX_SM_GUEST_ID": ""
+      },
+      "scripts": "bitrix(?:\\.info/|/js/main/core)",
       "implies": "PHP",
-      "scripts": "1c-bitrix",
+      "saas": true,
+      "pricing": [
+        "onetime",
+        "mid",
+        "recurring"
+      ],
       "website": "http://www.1c-bitrix.ru"
     },
     "33Across": {
@@ -444,27 +458,22 @@
     },
     "AD EBiS": {
       "cats": [
-        10
+        36,
+        32
       ],
-      "html": [
-        "<!-- EBiS contents tag",
-        "<!--EBiS tag",
-        "<!-- Tag EBiS",
-        "<!-- EBiS common tag"
-      ],
+      "description": "AD EBiS is an advertising and marketing platform that offers advertisement effectiveness measurement, access and user analysis.",
       "icon": "ebis.png",
+      "dom": "a[href*='.ebis.ne.jp/'][target='_blank']",
+      "js": {
+        "ebis.c.pageurl": ""
+      },
+      "scripts": "\\.ebis\\.ne\\.jp/",
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "payg"
+      ],
       "website": "http://www.ebis.ne.jp"
-    },
-    "ADPLAN": {
-      "cats": [
-        10
-      ],
-      "icon": "ADPLAN.png",
-      "scripts": [
-        "^https?://[^.]+\\.adplan7\\.com/\\;version:7",
-        "^https?://(?!o\\.)\\w+\\.advg\\.jp/"
-      ],
-      "website": "https://www.adplan7.com/"
     },
     "AMP": {
       "cats": [
@@ -815,6 +824,23 @@
       "saas": true,
       "scripts": "(?:a|s)\\.adroll\\.com",
       "website": "http://adroll.com"
+    },
+    "AdRoll CMP System": {
+      "cats": [
+        67
+      ],
+      "description": "AdRoll CMP System is a consent management solution.",
+      "icon": "AdRoll.svg",
+      "js": {
+        "__adroll_consent": "",
+        "__adroll_consent_is_gdpr": ""
+      },
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "website": "https://www.adroll.com/features/consent-management"
     },
     "AdThrive": {
       "cats": [
@@ -1226,6 +1252,21 @@
         "jQuery"
       ],
       "website": "http://blogengine.ru"
+    },
+    "Aero Commerce": {
+      "cats": [
+        6
+      ],
+      "description": "Aero Commerce is a performance-based platform designed with the evolving needs of retailers in mind.",
+      "icon": "Aero Commerce.svg",
+      "js": {
+        "AeroEvents.on": ""
+      },
+      "saas": true,
+      "pricing": [
+        "poa"
+      ],
+      "website": "https://www.aerocommerce.com"
     },
     "Affiliate B": {
       "cats": [
@@ -2102,6 +2143,7 @@
         "__APOLLO_CLIENT__": "",
         "__APOLLO_CLIENT__.version": "^(.+)$\\;version:\\1"
       },
+      "dom": "script#__APOLLO_STATE__",
       "website": "https://www.apollographql.com"
     },
     "ApostropheCMS": {
@@ -2528,11 +2570,20 @@
       "cats": [
         68
       ],
-      "description": "AudioEye automatically evaluates and adjusts website content to be accessible.",
-      "html": "<iframe[^>]*audioeye\\.com/frame/cookieStorage",
+      "description": "AudioEye is a software solution delivering immediate ADA and WCAG accessibility compliance at scale.",
       "icon": "AudioEye.svg",
-      "scripts": "audioeye\\.com/ae\\.js",
-      "website": "https://www.audioeye.com/"
+      "js": {
+        "window.AudioEye.version": "^([\\d.]+)-\\d+$\\;version:\\1",
+        "$ae.attrHooks": ""
+      },
+      "dom": "iframe[scr*='.audioeye.com/']",
+      "scripts": "(?:\\.)?audioeye\\.com/(?:ae\\.js)?",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.audioeye.com"
     },
     "Aurelia": {
       "cats": [
@@ -2671,7 +2722,6 @@
       "cats": [
         31
       ],
-      "description": "",
       "dns": {
         "CNAME": "azioncdn\\.net\\.?$"
       },
@@ -2899,7 +2949,8 @@
       "cats": [
         6
       ],
-      "icon": "bigcartel.png",
+      "description": "Big Cartel is a cloud-hosted ecommerce platform.",
+      "icon": "Big Cartel.svg",
       "meta": {
         "generator": "Big Cartel"
       },
@@ -2967,6 +3018,29 @@
         "birdeye\\.com"
       ],
       "website": "https://birdeye.com"
+    },
+    "Bitrix24": {
+      "cats": [
+       53
+      ],
+      "description": "Bitrix24 is a set of tools for the organization and management of business processes.",
+      "icon": "Bitrix24.svg",
+      "js": {
+        "Bitrix24FormObject": "",
+        "Bitrix24FormLoader": "",
+        "b24Tracker": ""
+      },
+      "scripts": [
+        "cdn\\.bitrix24\\.com",
+        "\\.bitrix24\\..+/bitrix/js/crm/form_loader\\.js"
+      ],
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.bitrix24.com"
     },
     "BittAds": {
       "cats": [
@@ -3991,7 +4065,8 @@
         "&nbsp;Powered by (?:<a href=[^>]+cs-cart\\.com|CS-Cart)",
         "\\.cm-noscript[^>]+</style>"
       ],
-      "icon": "CS Cart.png",
+      "description": "CS Cart is a turnkey ecommerce shopping cart software solution.",
+      "icon": "CS Cart.svg",
       "implies": "PHP",
       "js": {
         "fn_compare_strings": ""
@@ -4030,6 +4105,7 @@
       "cats": [
         6
       ],
+      "description": "Cafe24 is a ecommerce hosting platform that provides everything you need to build an online DTC store in one-stop.",
       "icon": "Cafe24.png",
       "js": {
         "EC_GLOBAL_DATETIME": "",
@@ -4122,7 +4198,7 @@
     },
     "CartStack": {
       "cats": [
-        6,
+        75,
         10
       ],
       "description": "CartStack is a SaaS solution that allows any company with an ecommerce site or reservation system to increase revenue through reminding/encouraging consumers to return to their abandoned cart and complete their purchase.",
@@ -4862,6 +4938,7 @@
       "cats": [
         6
       ],
+      "description": "ColorMeShop is an ecommerce platform from Japan.",
       "icon": "colormeshop.png",
       "js": {
         "Colorme": ""
@@ -4935,7 +5012,7 @@
       "website": "https://commerce7.com",
       "xhr": "api\\.commerce7\\.com"
     },
-    "Concrete5": {
+    "Concrete CMS": {
       "cats": [
         1
       ],
@@ -4943,7 +5020,7 @@
         "CONCRETE5": ""
       },
       "cpe": "cpe:/a:concrete5:concrete5",
-      "icon": "Concrete5.png",
+      "icon": "Concrete CMS.svg",
       "implies": "PHP",
       "js": {
         "CCM_IMAGE_PATH": ""
@@ -4952,7 +5029,7 @@
         "generator": "^concrete5 - ([\\d.]+)$\\;version:\\1"
       },
       "scripts": "/concrete/js/",
-      "website": "https://concrete5.org"
+      "website": "https://www.concretecms.com"
     },
     "Conekta": {
       "cats": [
@@ -5711,7 +5788,7 @@
     },
     "Dealer Spike": {
       "cats": [
-        6,
+        36,
         32
       ],
       "description": "Dealer Spike is a digital marketing and advertising company focused that helps dealers grow their business.",
@@ -5833,15 +5910,23 @@
     },
     "DigitalRiver": {
       "cats": [
-        6
+        6,
+        41
       ],
+      "description": "Digital River provides global ecommerce, payments and marketing services.",
+      "icon": "DigitalRiver.svg",
       "cookies": {
         "X-DR-SHOPPER-ets": "",
         "X-DR-THEME": "^\\d+$"
       },
-      "description": "Digital River provides global ecommerce, payments and marketing services.",
-      "icon": "DigitalRiver.svg",
-      "scripts": "/drh\\.img\\.digitalriver\\.\\w+/DRHM/",
+      "js": {
+        "DigitalRiver": ""
+      },
+      "scripts": "\\.digitalriver\\.com/",
+      "saas": true,
+      "pricing": [
+        "poa"
+      ],
       "website": "https://www.digitalriver.com"
     },
     "DirectAdmin": {
@@ -6249,13 +6334,29 @@
       "icon": "duda.png",
       "js": {
         "SystemID": "^.*DIRECT.*$",
-        "version": "^(.*)$\\;version:\\1\\;confidence:0"
+        "d_version": "^(.*)$\\;version:\\1\\;confidence:0"
       },
       "pricing": [
         "low"
       ],
       "saas": true,
       "website": "https://www.duda.co/website-builder"
+    },
+    "Dukaan": {
+      "cats": [
+        6
+      ],
+      "description": "Dukaan is a hosted ecommerce solution made in India.",
+      "icon": "Dukaan.svg",
+      "meta": {
+        "apple-mobile-web-app-title": "^MyDukaan$"
+      },
+      "scripts": "apps\\.mydukaan\\.io/",
+      "pricing": [
+        "poa"
+      ],
+      "saas": true,
+      "website": "https://mydukaan.io"
     },
     "Duopana": {
       "cats": [
@@ -6282,20 +6383,26 @@
       "description": "Dynamic Yield is a provider of automated conversion optimisation tools for marketers and retailers.",
       "icon": "DynamicYield.svg",
       "js": {
-        "recommendationContext": ""
+        "_dy_memStore": "",
+        "DY.AdDetection": "",
+        "DYExps.sectionConfig": ""
       },
-      "scripts": "cdn\\.dynamicyield\\.\\w+/",
+      "scripts": "cdn(?:-eu)?\\.dynamicyield\\.\\w+/",
+      "saas": true,
+      "pricing": [
+        "poa"
+      ],
       "website": "https://www.dynamicyield.com"
     },
     "Dynamicweb": {
       "cats": [
         1,
-        6,
-        10
+        6
       ],
       "cookies": {
         "Dynamicweb": ""
       },
+      "description": "Dynamicweb is a all-in-one platform for content management, ecommerce, digital marketing​, product information management (PIM) and integration.",
       "icon": "Dynamicweb.svg",
       "implies": "Microsoft ASP.NET",
       "meta": {
@@ -6321,7 +6428,8 @@
         6
       ],
       "cpe": "cpe:/a:lockon:ec-cube",
-      "icon": "ec-cube.png",
+      "description": "EC-CUBE is an open source package used to build ecommerce sites.",
+      "icon": "EC-CUBE.svg",
       "implies": "PHP",
       "oss": true,
       "scripts": [
@@ -6334,13 +6442,19 @@
       "cats": [
         6
       ],
+      "description": "EKM is an all-in-one online store builder, with the company based in the UK.",
+      "icon": "EKM.png",
       "cookies": {
         "ekmpowershop": ""
       },
-      "icon": "EKM.png",
       "js": {
         "_ekmpinpoint": ""
       },
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
       "website": "https://www.ekm.com"
     },
     "ELOG": {
@@ -6362,14 +6476,15 @@
       "implies": "ELOG",
       "website": "http://midas.psi.ch/elog"
     },
-    "EPages": {
+    "ePages": {
       "cats": [
         6
       ],
+      "description": "ePages is a provider of cloud-based online shop solutions.",
+      "icon": "ePages.svg",
       "headers": {
         "X-epages-RequestId": ""
       },
-      "icon": "epages.png",
       "js": {
         "epages": ""
       },
@@ -6438,6 +6553,7 @@
       ],
       "description": "Easy Digital Downloads is a WordPress ecommerce plugin that focuses purely on digital products.",
       "icon": "EasyDigitalDownloads.svg",
+      "requires": "WordPress",
       "meta": {
         "generator": "^Easy Digital Downloads v(.*)$\\;version:\\1"
       },
@@ -6465,13 +6581,16 @@
       "cats": [
         6
       ],
+      "description": "Ecwid is a shopping cart plugin that turns any existing website into an online store.",
       "icon": "ecwid.svg",
       "js": {
         "Ecwid": "",
         "EcwidCart": ""
       },
       "pricing": [
-        "freemium"
+        "freemium",
+        "low",
+        "recurring"
       ],
       "saas": true,
       "scripts": [
@@ -6491,6 +6610,22 @@
       "icon": "EdgeCast.png",
       "url": "https?://(?:[^/]+\\.)?edgecastcdn\\.net/",
       "website": "http://www.edgecast.com"
+    },
+    "Elastic APM": {
+      "cats": [
+        10,
+        13,
+        78
+      ],
+      "implies": [
+        "Elasticsearch"
+      ],
+      "description": "Elastic APM offers free and open application performance monitoring.",
+      "icon": "ElasticAPM.png",
+      "js": {
+        "elasticApm": ""
+      },
+      "website": "https://www.elastic.co/apm"
     },
     "Elasticsearch": {
       "cats": [
@@ -6858,6 +6993,23 @@
       "scripts": "expertrec\\.com/api/js/ci_common\\.js\\?id=.*",
       "website": "https://www.expertrec.com"
     },
+    "Exponea": {
+      "cats": [
+        32
+      ],
+
+      "description": "Exponea is a cloud-based marketing analysis platform suitable for large and midsize organisations in a variety of industries.",
+      "icon": "Exponea.svg",
+      "js": {
+        "exponea.version": "^v([\\d.]+)$\\;version:\\1"
+      },
+      "scripts": "(?:\\.exponea\\.com)?/js/exponea\\.min\\.js",
+      "saas": true,
+      "pricing": [
+        "poa"
+      ],
+      "website": "https://go.exponea.com"
+    },
     "Express": {
       "cats": [
         18,
@@ -7179,6 +7331,25 @@
       "saas": true,
       "website": "https://www.financeads.com"
     },
+    "Findify": {
+      "cats": [
+        29,
+        76
+      ],
+      "description": "Findify is an intelligent ecommerce search, navigation and personalisation solution.",
+      "icon": "Findify.svg",
+      "js": {
+        "findify": "",
+        "FindifyAnalytics": ""
+      },
+      "scripts": "@findify/bundle@([\\d.]+)/dist/.+\\.js\\;version:\\1",
+      "saas": true,
+      "pricing": [
+        "mid",
+        "recurring"
+      ],
+      "website": "https://www.findify.io"
+    },
     "FingerprintJS": {
       "cats": [
         59,
@@ -7356,10 +7527,16 @@
       "cats": [
         6
       ],
-      "icon": "flow.png",
-      "scripts": [
-        "shopify-cdn\\.flow\\.io",
-        "flow\\.min\\.js"
+      "description": "Flow is an ecommerce platform that enables brands and retailers to sell their merchandise to customers internationally by creating localized shopping experiences.",
+      "icon": "Flow.png",
+      "js": {
+        "flow.countryPicker": "",
+        "flow_cart_localize": ""
+      },
+      "scripts": "(?:shopify-)?cdn\\.flow\\.io/",
+      "saas": true,
+      "pricing": [
+        "poa"
       ],
       "website": "https://www.flow.io/"
     },
@@ -7457,7 +7634,6 @@
     "Formitable": {
       "cats": [
         5,
-        6,
         72
       ],
       "description": "Formitable is an reservation management system for restaurants.",
@@ -7502,7 +7678,6 @@
     },
     "Forter": {
       "cats": [
-        6,
         16
       ],
       "cookies": {
@@ -7557,6 +7732,20 @@
       },
       "website": "http://foswiki.org"
     },
+    "FOXY.IO": {
+      "cats": [
+        6
+      ],
+      "description": "FOXY.IO is a software company that specialises in hosted ecommerce software for small to enterprise level businesses.",
+      "icon": "FOXY.IO.svg",
+      "saas": true,
+      "scripts": "cdn\\.foxycart\\.com",
+      "pricing": [
+        "payg",
+        "recurring"
+      ],
+      "website": "https://www.foxy.io"
+    },
     "FreeBSD": {
       "cats": [
         28
@@ -7604,6 +7793,26 @@
       "saas": true,
       "scripts": "wchat\\.freshchat\\.com/js/widget\\.js",
       "website": "https://www.freshworks.com/live-chat-software/"
+    },
+    "Freshop": {
+      "cats": [
+        6
+      ],
+      "description": "Freshop is an online platform for grocers.",
+      "icon": "Freshop.png",
+      "meta": {
+        "author": "^Freshop, Inc\\.$"
+      },
+      "js": {
+        "freshop": "",
+        "freshopInitialized": ""
+      },
+      "scripts": "asset(?:cdn)?\\.freshop\\.com/",
+      "saas": true,
+      "pricing": [
+        "payg"
+      ],
+      "website": "https://www.freshop.com"
     },
     "Freshworks CRM": {
       "cats": [
@@ -7820,6 +8029,7 @@
         6
       ],
       "html": "(?:<link[^>]* href=\"templates/gambio/|<a[^>]content\\.php\\?coID=\\d|<!-- gambio eof -->|<!--[\\s=]+Shopsoftware by Gambio GmbH \\(c\\))",
+      "description": "Gambio is an all-in-one shopping cart solution for small to medium sized businesses.",
       "icon": "Gambio.png",
       "implies": "PHP",
       "js": {
@@ -8971,7 +9181,8 @@
       "cats": [
         6
       ],
-      "icon": "Haravan.png",
+      "description": "Haravan is a multi-channel ecommerce services provider from Vietnam.",
+      "icon": "Haravan.svg",
       "js": {
         "Haravan": ""
       },
@@ -9068,7 +9279,6 @@
       },
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -9356,6 +9566,18 @@
       "scripts": "js\\.usemessages\\.com",
       "website": "https://www.hubspot.com/products/crm/live-chat"
     },
+    "HubSpot Cookie": {
+      "cats": [
+        67
+      ],
+      "description": "HubSpot Cookie is a cookie compliance tool from HubSpot.",
+      "icon": "HubSpot.png",
+      "js": {
+        "_hsp": ""
+      },
+      "scripts": "js\\.hs-banner\\.com/\\d+\\.js",
+      "website": "https://knowledge.hubspot.com/reports/what-cookies-does-hubspot-set-in-a-visitor-s-browser"
+    },
     "Hugo": {
       "cats": [
         57
@@ -9486,6 +9708,7 @@
       "cats": [
         6
       ],
+      "description": "IdoSell Shop is a fully functional ecommerce software platform.",
       "icon": "idosellshop.png",
       "js": {
         "IAI_Ajax": ""
@@ -9919,8 +10142,9 @@
       "cats": [
         6
       ],
+      "description": "J2Store is a Joomla shopping cart and ecommerce extension.",
       "icon": "j2store.png",
-      "implies": "Joomla",
+      "requires": "Joomla",
       "js": {
         "j2storeURL": ""
       },
@@ -10022,8 +10246,9 @@
         "JTLSHOP": ""
       },
       "html": "(?:<input[^>]+name=\"JTLSHOP|<a href=\"jtl\\.php)",
-      "icon": "JTL Shop.png",
-      "website": "http://www.jtl-software.de/produkte/jtl-shop3"
+      "description": "JTL Shop is an ecommerce product created by JTL Software company.",
+      "icon": "JTL Shop.svg",
+      "website": "https://www.jtl-software.de/online-shopsystem"
     },
     "JW Player": {
       "cats": [
@@ -10711,9 +10936,21 @@
       ],
       "description": "Klarna Checkout is a complete payment solution where Klarna handles a store's entire checkout.",
       "icon": "Klarna.svg",
-      "js": {
-        "_klarnaCheckout": ""
+      "cookies": {
+        "ku1-sid": "",
+        "ku1-vid": ""
       },
+      "js": {
+        "_klarnaCheckout": "",
+        "KlarnaOnsiteService": ""
+      },
+      "scripts": "\\.klarnaservices\\.com/lib\\.js",
+      "saas": true,
+      "pricing": [
+        "payg",
+        "low",
+        "recurring"
+      ],
       "website": "https://www.klarna.com/international/"
     },
     "Klaviyo": {
@@ -10731,8 +10968,7 @@
     },
     "Klevu": {
       "cats": [
-        29,
-        6
+        29
       ],
       "description": "Klevu is a highly advanced AI-Powered search solution for ecommerce platforms.",
       "icon": "Klevu.png",
@@ -10957,7 +11193,7 @@
     },
     "Kount": {
       "cats": [
-        6,
+        10,
         16
       ],
       "description": "Kount is a suite of fraud detection and prevention solutions for ecommerce businesses.",
@@ -11155,6 +11391,23 @@
       },
       "saas": true,
       "website": "https://joinlede.com/"
+    },
+    "Legal Monster": {
+      "cats": [
+        67
+      ],
+      "description": "Legal Monster is a consent and privacy management solution, which helps businesses maintain compliance with ePrivacy, marketing requirements and General Data Protection Regulation (GDPR).",
+      "icon": "Legal Monster.svg",
+      "js": {
+        "legal.__VERSION__": "([\\d.]+)\\;version:\\1"
+      },
+      "scripts": "\\.legalmonster\\.com/",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.legalmonster.com"
     },
     "Less": {
       "cats": [
@@ -11566,7 +11819,7 @@
       ],
       "description": "Localised is local-first ecommerce platform.",
       "dom": {
-        "img[src='.localised.com'": {
+        "img[src='.localised.com']": {
           "attributes": {
             "src": ""
           }
@@ -11728,10 +11981,29 @@
       "scripts": "loja2\\.com\\.br",
       "website": "https://www.loja2.com.br"
     },
+    "Lootly": {
+      "cats": [
+        84,
+        32
+      ],
+      "description": "Lootly is a loyalty and referral marketing automation software suite for ecommerce businesses.",
+      "icon": "Lootly.png",
+      "dom": "iframe[src*='lootly.io/']",
+      "js": {
+        "lootlyWidgetInit": "",
+        "Lootly.config": ""
+      },
+      "scripts": "lootly\\.io/",
+      "saas": true,
+      "pricing": [
+        "mid",
+        "recurring"
+      ],
+      "website": "https://lootly.io"
+    },
     "Loox": {
       "cats": [
-        5,
-        6
+        5
       ],
       "description": "Loox is a reviews app for Shopify that helps you gather reviews and user-generated photos from your customers.",
       "icon": "Loox.svg",
@@ -12301,6 +12573,21 @@
       },
       "website": "http://www.mediaelementjs.com"
     },
+    "Mediavine": {
+      "cats": [
+        36
+      ],
+      "description": "Mediavine is a full service ad management platform.",
+      "icon": "Mediavine.svg",
+      "js": {
+        "$mediavine.web": ""
+      },
+      "cookies": {
+        "mediavine_session": ""
+      },
+      "scripts": "\\.mediavine\\.com/",
+      "website": "https://www.mediavine.com"
+    },
     "MediaWiki": {
       "cats": [
         8
@@ -12386,8 +12673,7 @@
     },
     "MemberStack": {
       "cats": [
-        6,
-        47
+        1
       ],
       "cookies": {
         "memberstack": ""
@@ -12399,6 +12685,12 @@
       },
       "scripts": "memberstack\\.js",
       "url": "^https?//.+\\.memberstack\\.io",
+      "saas": true,
+      "pricing": [
+        "payg",
+        "low",
+        "recurring"
+      ],
       "website": "https://www.memberstack.io"
     },
     "Mercado Shops": {
@@ -12718,6 +13010,7 @@
       "headers": {
         "content-disposition": "filename=(?:mvga\\.js|MivaEvents\\.js)"
       },
+      "description": "Miva is a privately owned ecommerce shopping cart software and hosting company with headquarters in San Diego.",
       "icon": "miva.png",
       "js": {
         "MivaVM_API": "",
@@ -13035,6 +13328,23 @@
       "scripts": "mootools.*\\.js",
       "website": "https://mootools.net"
     },
+    "Moove GDPR Consent": {
+      "cats": [
+        67
+      ],
+      "description": "Moove GDPR Consent is a GDPR Cookie Compliance plugin for Wordpress.",
+      "icon": "Moove.svg",
+      "js": {
+        "moove_frontend_gdpr_scripts": ""
+      },
+      "requires": "WordPress",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.mooveagency.com/wordpress/gdpr-cookie-compliance-plugin"
+    },
     "Moodle": {
       "cats": [
         21
@@ -13233,7 +13543,7 @@
       "icon": "Ionos-by-1and1-logo.svg",
       "js": {
         "SystemID": "^.*1AND1.*$",
-        "version": "^(.*)$\\;version:\\1\\;confidence:0"
+        "d_version": "^(.*)$\\;version:\\1\\;confidence:0"
       },
       "meta": {
         "generator": "^.*MyWebsite.*$\\;version:8"
@@ -13304,6 +13614,22 @@
       },
       "scripts": "nv\\.d3(?:\\.min)?\\.js",
       "website": "http://nvd3.org"
+    },
+    "Nagich": {
+      "cats": [
+        68
+      ],
+      "description": "Nagich is a website accessibility software provider from Israel.",
+      "icon": "Nagich.svg",
+      "js": {
+        "interdeal.version": "([\\d.]+)\\;version:\\1"
+      },
+      "scripts": "\\.nagich\\.co(?:m|\\.il)\/core\/([\\d.]+)\/accessibility\\.js\\;version:\\1",
+      "saas": true,
+      "pricing": [
+        "poa"
+      ],
+      "website": "https://www.nagich.co.il"
     },
     "Najva": {
       "cats": [
@@ -13394,6 +13720,7 @@
       "cats": [
         6
       ],
+      "description": "Neto is the only Australian B2B and multi-channel ecommerce platform that provides an all-in-one solution for ecommerce, POS, inventory management, order management, and shipping labelling.",
       "icon": "Neto.svg",
       "js": {
         "NETO": ""
@@ -13607,10 +13934,18 @@
       "cats": [
         6
       ],
-      "html": "<a target=\"_blank\" title=\"Nuvemshop\"",
-      "icon": "nuvem.png",
-      "scripts": "Nuvem",
-      "website": "https://www.nuvemshop.com.br/"
+      "description": "Nuvemshop is a website builder with customizable layouts, product, shipping and payment management, marketing tools and a mobile app.",
+      "icon": "Nuvemshop.svg",
+      "dom": "a[href*='www.nuvemshop.com.br'][target='_blank']",
+      "js": {
+        "LS.store.url": "^.+nuvem.com.br$"
+      },
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.nuvemshop.com.br"
     },
     "Nuxt.js": {
       "cats": [
@@ -13804,7 +14139,6 @@
       },
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -13900,7 +14234,7 @@
     "Omnisend": {
       "cats": [
         32,
-        6
+        75
       ],
       "cookies": {
         "omnisendSessionID": ""
@@ -14407,6 +14741,25 @@
         "generator": "Orchard"
       },
       "website": "http://orchardproject.net"
+    },
+    "Orckestra": {
+      "cats": [
+        6
+      ],
+      "description": "Orckestra is a provider of cloud-based digital unified and omnichannel commerce solutions for retail and manufacturing industries.",
+      "icon": "Orckestra.svg",
+      "implies": "Microsoft ASP.NET",
+      "meta": {
+        "generator": "^C1 CMS Foundation - Free Open Source from Orckestra and https://github.com/Orckestra/C1-CMS-Foundation$"
+      },
+      "oss": true,
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "mid",
+        "recurring"
+      ],
+      "website": "https://www.orckestra.com"
     },
     "Oribi": {
       "cats": [
@@ -15173,8 +15526,13 @@
       "headers": {
         "X-Powered-By": "^pimcore$"
       },
+      "description": "Pimcore is an open-source digital platform that aggregates, enriches, and manages enterprise data and provides up-to-date, consistent, and personalised experiences to customers.",
       "icon": "pimcore.svg",
       "implies": "PHP",
+      "oss": true,
+      "pricing": [
+        "poa"
+      ],
       "website": "http://pimcore.org"
     },
     "Pin Payments": {
@@ -16020,6 +16378,23 @@
       "scripts": "\\.quadpay\\.com/quadpay-widget-([\\d.]+)\\.js\\;version:\\1",
       "website": "https://www.quadpay.com"
     },
+    "Qualtrics": {
+      "cats": [
+        73
+      ],
+      "description": "Qualtrics is an cloud-based platform for creating and distributing web-based surveys.",
+      "icon": "Qualtrics.svg",
+      "js": {
+        "QSI.ClientSideTargeting": ""
+      },
+      "pricing": [
+        "mid",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "\\.qualtrics\\.com/",
+      "website": "https://www.qualtrics.com"
+    },
     "Quantcast Choice": {
       "cats": [
         67
@@ -16027,21 +16402,32 @@
       "description": "Quantcast Choice is a free consent management platform to meet key privacy requirements stemming from ePrivacy Directive, GDPR, and CCPA.",
       "icon": "Quantcast.png",
       "js": {
-        "quantserve": ""
+        "__tcfapi": ""
       },
       "scripts": "quantcast\\.mgr\\.consensu\\.org",
-      "website": "https://www.quantcast.com/gdpr/consent-management-solution/"
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "poa"
+      ],
+      "website": "https://www.quantcast.com/products/choice-consent-management-platform"
     },
     "Quantcast Measure": {
       "cats": [
         10
       ],
+      "description": "Quantcast Measure is an audience insights and analytics tool.",
       "icon": "Quantcast.png",
       "js": {
         "quantserve": ""
       },
       "scripts": "\\.quantserve\\.com/quant\\.js",
-      "website": "https://www.quantcast.com/products/measure-audience-insights/"
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "poa"
+      ],
+      "website": "https://www.quantcast.com/products/measure-audience-insights"
     },
     "Qubit": {
       "cats": [
@@ -16266,10 +16652,13 @@
     "RapidSpike": {
       "cats": [
         13,
-        16
+        78
       ],
       "description": "RapidSpike is an uptime and performance monitoring service for web sites and applications.",
       "icon": "RapidSpike.svg",
+      "js": {
+        "rspike_timing": ""
+      },
       "pricing": [
         "poa",
         "recurring"
@@ -16937,7 +17326,8 @@
     },
     "Riskified": {
       "cats": [
-        6
+        10,
+        16
       ],
       "headers": {
         "server": "Riskified Server"
@@ -16946,7 +17336,8 @@
         "<[^>]*beacon\\.riskified\\.com",
         "<[^>]*c\\.riskified\\.com"
       ],
-      "icon": "riskified.png",
+      "description": "Riskified is a privately held company that provides SaaS fraud and chargeback prevention technology.",
+      "icon": "Riskified.svg",
       "js": {
         "RISKX": "",
         "riskifiedBeaconLoad": ""
@@ -17216,6 +17607,24 @@
       },
       "website": "http://www.simplemachines.org"
     },
+    "Smile": {
+      "cats": [
+        84
+      ],
+      "description": "Smile is a provider of ecommerce loyalty programs.",
+      "icon": "Smile.svg",
+      "js": {
+        "Smile.channel_key": ""
+      },
+      "scripts": "js\\.smile\\.io/v([\\d.]+)/\\;version:\\1",
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "mid",
+        "recurring"
+      ],
+      "website": "https://smile.io"
+    },
     "SOBI 2": {
       "cats": [
         19
@@ -17394,7 +17803,6 @@
     },
     "SaleCycle": {
       "cats": [
-        6,
         76
       ],
       "description": "SaleCycle is a UK based global behavioral marketing firm.",
@@ -17408,13 +17816,22 @@
     },
     "Salesfloor": {
       "cats": [
+        5,
         6
       ],
+      "description": "Salesfloor is a mobile clienteling and virtual selling platform designed for store associates to connect with customers-beyond the store and a mpos platform for frictionless in-store experiences.",
       "icon": "salesfloor.png",
-      "scripts": [
-        "salesFloor\\.js"
+      "dom": "iframe[src*='.salesfloor.net'], div[data-siterefer='salesfloor']",
+      "js": {
+        "salesFloorHost": "",
+        "NMConfig.SALESFLOOR_ENV": ""
+      },
+      "scripts": "\\.salesfloor\\.net/",
+      "saas": true,
+      "pricing": [
+        "recurring"
       ],
-      "website": "https://salesfloor.net/"
+      "website": "https://salesfloor.net"
     },
     "Salesforce": {
       "cats": [
@@ -17638,21 +18055,21 @@
     },
     "Searchspring": {
       "cats": [
-        6,
         29
       ],
-      "description": "Searchspring is a highly advanced search solution for ecommerce platforms.",
+      "description": "Searchspring is a site search and merchandising platform designed to help ecommerce.",
       "icon": "Searchspring.svg",
       "js": {
         "SearchSpring": "",
         "SearchSpringConf": "",
         "SearchSpringInit": ""
       },
-      "pricing": [
-        "poa"
-      ],
-      "saas": true,
       "scripts": "cdn\\.searchspring\\.net",
+      "saas": true,
+      "pricing": [
+        "mid",
+        "recurring"
+      ],
       "website": "https://searchspring.com"
     },
     "Sectigo": {
@@ -17731,6 +18148,19 @@
       ],
       "website": "https://segment.com"
     },
+    "Segment Consent Manager ": {
+      "cats": [
+        67
+      ],
+      "description": " Segment Consent Manager is a tool that automates the process of requesting consent for data usage, stores data on user privacy preferences, and updates these preferences when users request changes.",
+      "icon": "Segment.svg",
+      "js": {
+        "consentManager.version": "([\\d.]+)\\;version:\\1"
+      },
+      "scripts": "@segment/consent-manager@([\\d.]+)\\;version:\\1",
+      "saas": true,
+      "website": "https://segment.com/blog/how-to-build-consent-management-into-your-site-in-less-than-a-week"
+    },
     "SegmentStream": {
       "cats": [
         10
@@ -17742,7 +18172,6 @@
       },
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -18324,6 +18753,7 @@
         6
       ],
       "html": "<link [^>]*href=\"https?://cdn\\.myshoptet\\.com/",
+      "description": "Shoptet is an ecommerce solutions from store builder, inventory management of online payments.",
       "icon": "Shoptet.svg",
       "implies": "PHP",
       "js": {
@@ -18407,7 +18837,6 @@
       },
       "pricing": [
         "mid",
-        "high",
         "recurring"
       ],
       "saas": true,
@@ -18575,7 +19004,6 @@
       "icon": "SiteMinder.svg",
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -18633,8 +19061,7 @@
     "Siteglide": {
       "cats": [
         1,
-        53,
-        6
+        53
       ],
       "description": "SiteGlide is a Digital Experience Platform (DEP) for ecommerce stores, membership sites and customer portals.",
       "icon": "Siteglide.svg",
@@ -18987,6 +19414,8 @@
       "cats": [
         6
       ],
+      "description": "Snipcart is a shopping cart platform that can be integrated into any website with simple HTML and JavaScript.",
+      "icon": "Snipcart.svg",
       "cookies": {
         "snipcart-cart": ""
       },
@@ -19000,8 +19429,11 @@
           }
         }
       },
-      "icon": "Snipcart.png",
       "scripts": "https://cdn\\.snipcart\\.com/themes/v([\\w.]+)/default/snipcart\\.js\\;version:\\1",
+      "saas": true,
+      "pricing": [
+        "payg"
+      ],
       "website": "https://snipcart.com"
     },
     "Snoobi": {
@@ -19284,7 +19716,6 @@
       },
       "pricing": [
         "mid",
-        "high",
         "recurring"
       ],
       "saas": true,
@@ -19328,6 +19759,22 @@
       },
       "scripts": "^https://cdn\\.splitbee\\.io/sb\\.js",
       "website": "https://splitbee.io"
+    },
+    "SplitIt": {
+      "cats": [
+        41
+      ],
+      "description": "SplitIt is a payment solution that divides a purchase into smaller monthly installments.",
+      "icon": "SplitIt.svg",
+      "js": {
+        "Splitit": ""
+      },
+      "scripts": "\\.production\\.splitit\\.com/",
+      "saas": true,
+      "pricing": [
+        "payg"
+      ],
+      "website": "https://www.splitit.com"
     },
     "Splunk": {
       "cats": [
@@ -19393,6 +19840,7 @@
     },
     "Sqreen": {
       "cats": [
+        16,
         19
       ],
       "headers": {
@@ -19409,8 +19857,10 @@
       "icon": "Square.svg",
       "js": {
         "SqPaymentForm": "",
-        "Square.Analytics": ""
+        "Square.Analytics": "",
+        "__BOOTSTRAP_STATE__.storeInfo.square_application_id": ""
       },
+      "xhr": "\\.squareup\\.com",
       "scripts": "js\\.squareup\\.com",
       "website": "https://squareup.com/"
     },
@@ -19732,6 +20182,26 @@
       ],
       "website": "https://stylitics.com"
     },
+    "Subbly": {
+      "cats": [
+        6
+      ],
+      "description": "Subbly is a web-based subscription ecommerce platform designed to help businesses build websites, enhance marketing automation, create coupon and discount codes and manage customers.",
+      "icon": "Subbly.svg",
+      "meta": {
+        "generator": "^Subbly$"
+      },
+      "js": {
+        "subblyProductUrlBase": ""
+      },
+      "scripts": "static\\.subbly\\.me/assets/",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.subbly.co"
+    },
     "SublimeVideo": {
       "cats": [
         14
@@ -19919,6 +20389,7 @@
       "cats": [
         6
       ],
+      "description": "Swell is a headless ecommerce platform for modern brands, startups, and agencies.",
       "cookies": {
         "swell-session": ""
       },
@@ -20304,7 +20775,6 @@
       },
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -20631,7 +21101,6 @@
       "cats": [
         10
       ],
-      "description": "",
       "dom": {
         "script[data-hid='tiktok']": {
           "attributes": {
@@ -20824,8 +21293,14 @@
       "cats": [
         6
       ],
+      "description": "Tray is an all-in-one ecommerce platform from Brazil.",
       "icon": "tray.png",
       "scripts": "tcdn\\.com\\.br",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
       "website": "https://www.tray.com.br"
     },
     "Trbo": {
@@ -20875,7 +21350,6 @@
       "icon": "TripleLift.png",
       "pricing": [
         "low",
-        "mid",
         "recurring"
       ],
       "saas": true,
@@ -21226,6 +21700,22 @@
       "icon": "Ubuntu.png",
       "website": "http://www.ubuntu.com/server"
     },
+    "Ueeshop": {
+      "cats": [
+        6
+      ],
+      "description": "Ueeshop is a ecommerce platform from China.",
+      "icon": "Ueeshop.png",
+      "js": {
+        "ueeshop_config": ""
+      },
+      "saas": true,
+      "pricing": [
+        "mid",
+        "recurring"
+      ],
+      "website": "https://www.ueeshop.com"
+    },
     "UltraCart": {
       "cats": [
         6
@@ -21309,7 +21799,8 @@
     },
     "UpSellit": {
       "cats": [
-        76
+        76,
+        6
       ],
       "description": "UpSellit is a performance based lead and cart abandonment recovery solutions.",
       "icon": "UpSellit.png",
@@ -21319,12 +21810,12 @@
         "usi_commons": "\\;confidence:25",
         "usi_cookies": "\\;confidence:25"
       },
+      "scripts": "www\\.upsellit\\.com/",
       "pricing": [
         "poa",
         "mid"
       ],
       "saas": true,
-      "scripts": "www\\.upsellit\\.com/active",
       "website": "https://us.upsellit.com"
     },
     "Upvoty": {
@@ -21389,6 +21880,24 @@
       ],
       "saas": true,
       "website": "https://uscreen.tv/"
+    },
+    "Usercentrics": {
+      "cats": [
+        67
+      ],
+      "description": "Usercentrics is a SaaS enterprise solution for Consent Management (CMP) that helps enterprise customers to obtain, manage and document the user consent.",
+      "icon": "Usercentrics.svg",
+      "js": {
+        "usercentrics.appVersion": "([\\d.]+)\\;version:\\1"
+      },
+      "scripts": "\\.usercentrics\\.eu/.+\\.js",
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "low",
+        "recurring"
+      ],
+      "website": "https://usercentrics.com"
     },
     "UserLike": {
       "cats": [
@@ -21599,10 +22108,12 @@
       "cpe": "cpe:/a:vardot:varbase",
       "icon": "varbase.png",
       "implies": "Drupal",
-      "meta": {
-        "generator": "Varbase"
+      "dom": "meta[content='Varbase'],div[class*='varbase_'],div[class*='_varbase'],div[class*='varbase-'],div[class*='block-varbase'],div[class*='blockvarbase']",
+      "js": {
+        "drupalSettings.ajaxPageState.libraries": ".+varbase_.+"
       },
-      "website": "https://drupal.org/project/varbase"
+      "oss": true,
+      "website": "https://www.vardot.com/solutions/varbase"
     },
     "Varnish": {
       "cats": [
@@ -21883,6 +22394,7 @@
         "<link [^>]*href=\"[^\"]*/vspfiles/\\;version:1",
         "<body [^>]*data-vn-page-name\\;version:2"
       ],
+      "description": "Volusion is a cloud-based, hosted ecommerce solution.",
       "icon": "Volusion.svg",
       "js": {
         "volusion": ""
@@ -22011,7 +22523,7 @@
     },
     "WHMCS": {
       "cats": [
-        6
+        1
       ],
       "description": "WHMCS is an automation platform that simplifies and automates all aspects of operating an online web hosting and domain registrar business.",
       "icon": "WHMCS.png",
@@ -22458,11 +22970,9 @@
         "<link[^>]+?href=\"[^\"]+usces_default(?:\\.min)?\\.css",
         "<!-- Welcart version : v([\\d.]+)\\;version:\\1"
       ],
-      "icon": "welcart.png",
-      "implies": [
-        "PHP",
-        "WordPress"
-      ],
+      "description": "Welcart is a free ecommerce plugin for WordPress with top market share in Japan.",
+      "icon": "Welcart.svg",
+      "requires": "WordPress",
       "scripts": "uscesL10n",
       "website": "https://www.welcart.com"
     },
@@ -22572,6 +23082,25 @@
         "X-Powered-By": "Winstone(?:\\/([\\d.]+))?\\;version:\\1"
       },
       "website": "http://winstone.sourceforge.net"
+    },
+    "Wisepops": {
+      "cats": [
+        5,
+        32
+      ],
+      "description": "Wisepops is an intelligent popup and marketing automation system that offers marketers a single platform from which to create and manage website popups.",
+      "icon": "Wisepops.svg",
+      "js": {
+        "wisepops._api": "",
+        "WisePopsObject": ""
+      },
+      "scripts": "loader\\.wisepops\\.com/get-loader\\.js",
+      "saas": true,
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "website": "https://wisepops.com"
     },
     "Wistia": {
       "cats": [
@@ -23656,6 +24185,24 @@
       },
       "website": "http://git.zx2c4.com/cgit"
     },
+    "Complianz": {
+      "cats": [
+        74,
+        67
+      ],
+      "description": "Complianz is a GDPR/CCPA Cookie Consent plugin that supports GDPR, DSGVO, CCPA and PIPEDA with a conditional Cookie Notice and customized Cookie Policy based on the results of the built-in Cookie Scan.",
+      "icon": "Complianz.png",
+      "requires": "WordPress",
+      "js": {
+        "complianz.version": "([\\d.]+)\\;version:\\1"
+      },
+      "scripts": "wp-content/plugins/complianz-gdpr-premium",
+      "saas": true,
+      "pricing": [
+        "onetime"
+      ],
+      "website": "https://complianz.io"
+    },
     "comScore": {
       "cats": [
         10
@@ -23841,6 +24388,26 @@
       "scripts": "/ef(?:-core)?(?:\\.min|\\.dev)?\\.js",
       "website": "http://ef.js.org"
     },
+    "e-goi": {
+      "cats": [
+        32,
+        75
+      ],
+      "description": "e-goi is a multichannel marketing automation software for ecommerce.",
+      "icon": "e-goi.svg",
+      "js": {
+        "Egoimmerce": "",
+        "_egoiaq": ""
+      },
+      "scripts": "\\.e-goi\\.com/egoimmerce\\.js",
+      "saas": true,
+      "pricing": [
+        "freemium",
+        "low",
+        "recurring"
+      ],
+      "website": "https://www.e-goi.com"
+    },
     "emBlue": {
       "cats": [
         32,
@@ -24025,6 +24592,24 @@
       ],
       "icon": "ikiwiki.png",
       "website": "http://ikiwiki.info"
+    },
+    "Iluria": {
+      "cats": [
+        6,
+        63
+      ],
+      "description": "Iluria is a hosted ecommerce platform from Brazil.",
+      "icon": "Iluria.png",
+      "js": {
+        "Iluria": "",
+        "iluriaShowPagination": ""
+      },
+      "scripts": "template-assets\\.iluria\\.com/commons/",
+      "saas": true,
+      "pricing": [
+        "payg"
+      ],
+      "website": "https://www.iluria.com.br"
     },
     "imperia CMS": {
       "cats": [
@@ -24520,6 +25105,7 @@
         "Nop.customer": ""
       },
       "html": "(?:<!--Powered by nopCommerce|Powered by: <a[^>]+nopcommerce)",
+      "description": "nopCommerce is an open-source ecommerce solution based on Microsoft's ASP​.NET Core framework and MS SQL Server 2012 (or higher) backend database.",
       "icon": "nopCommerce.png",
       "implies": "Microsoft ASP.NET",
       "meta": {
@@ -24540,11 +25126,13 @@
         "<(?:input|a)[^>]+name=\"osCsid\"",
         "<(?:tr|td|table)class=\"[^\"]*infoBoxHeading"
       ],
+      "description": "OsCommerce is an open-source ecommerce and online store-management software program​.",
       "icon": "osCommerce.png",
       "implies": [
         "PHP",
         "MySQL"
       ],
+      "oss": true,
       "website": "https://www.oscommerce.com"
     },
     "osTicket": {
@@ -24755,13 +25343,14 @@
       "implies": "Java",
       "website": "https://www.pirobase-imperia.com/de/produkte/produktuebersicht/pirobase-cms"
     },
-    "plentymarkets": {
+    "Plentymarkets": {
       "cats": [
         6
       ],
       "headers": {
         "X-Plenty-Shop": ""
       },
+      "description": "Plentymarkets is a cloud-based all-in-one ecommerce ERP solution.",
       "icon": "plentymarkets.svg",
       "meta": {
         "generator": "plentymarkets"
