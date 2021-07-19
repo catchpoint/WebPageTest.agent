@@ -1498,37 +1498,37 @@ def check_config():
     ok = True
 
     if get_decimate_filter() is not None:
-        print('ffmpeg:  OK')
+        logging.critical('ffmpeg:  OK')
     else:
-        print('ffmpeg:  FAIL')
+        logging.critical('ffmpeg:  FAIL')
         ok = False
 
     if check_process('{0} -version'.format(image_magick['convert']), 'ImageMagick'):
-        print('convert: OK')
+        logging.critical('convert: OK')
     else:
-        print('convert: FAIL')
+        logging.critical('convert: FAIL')
         ok = False
 
     if check_process('{0} -version'.format(image_magick['compare']), 'ImageMagick'):
-        print('compare: OK')
+        logging.critical('compare: OK')
     else:
-        print('compare: FAIL')
+        logging.critical('compare: FAIL')
         ok = False
 
     try:
         from PIL import Image, ImageDraw
 
-        print('Pillow:  OK')
+        logging.critical('Pillow:  OK')
     except BaseException:
-        print('Pillow:  FAIL')
+        logging.critical('Pillow:  FAIL')
         ok = False
 
     try:
         from ssim import compute_ssim # pylint: disable=import-error
 
-        print('SSIM:    OK')
+        logging.critical('SSIM:    OK')
     except BaseException:
-        print('SSIM:    FAIL')
+        logging.critical('SSIM:    FAIL')
         ok = False
 
     return ok

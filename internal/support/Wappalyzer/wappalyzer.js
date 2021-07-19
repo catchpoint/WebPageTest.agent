@@ -1,31 +1,39 @@
 'use strict'
 
+function next() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [value]
+}
+
 const Wappalyzer = {
   technologies: [],
   categories: [],
+  requires: [],
 
-  slugify(string) {
-    return string
+  slugify: (string) =>
+    string
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '-')
       .replace(/--+/g, '-')
-      .replace(/(?:^-|-$)/g, '')
-  },
+      .replace(/(?:^-|-$)/g, ''),
 
-  getTechnology(name) {
-    return Wappalyzer.technologies.find(({ name: _name }) => name === _name)
-  },
+  getTechnology: (name) =>
+    [
+      ...Wappalyzer.technologies,
+      ...Wappalyzer.requires.map(({ technologies }) => technologies).flat(),
+    ].find(({ name: _name }) => name === _name),
 
-  getCategory(id) {
-    return Wappalyzer.categories.find(({ id: _id }) => id === _id)
-  },
+  getCategory: (id) => Wappalyzer.categories.find(({ id: _id }) => id === _id),
 
   /**
    * Resolve promises for implied technology.
    * @param {Array} detections
    */
   resolve(detections = []) {
-    const resolved = detections.reduce((resolved, { technology }) => {
+    const resolved = detections.reduce((resolved, { technology, lastUrl }) => {
       if (
         resolved.findIndex(
           ({ technology: { name } }) => name === technology.name
@@ -41,14 +49,16 @@ const Wappalyzer = {
               if (name === technology.name) {
                 confidence = Math.min(100, confidence + pattern.confidence)
                 version =
-                  _version.length > version.length && _version.length <= 10
+                  _version.length > version.length &&
+                  _version.length <= 15 &&
+                  (parseInt(_version, 10) || 0) < 10000 // Ignore long numeric strings like timestamps
                     ? _version
                     : version
               }
             }
           )
 
-        resolved.push({ technology, confidence, version })
+        resolved.push({ technology, confidence, version, lastUrl })
       }
 
       return resolved
@@ -70,6 +80,7 @@ const Wappalyzer = {
           technology: { name, slug, categories, icon, website, cpe },
           confidence,
           version,
+          lastUrl,
         }) => ({
           name,
           slug,
@@ -79,6 +90,7 @@ const Wappalyzer = {
           icon,
           website,
           cpe,
+          lastUrl,
         })
       )
   },
@@ -154,10 +166,10 @@ const Wappalyzer = {
   resolveImplies(resolved) {
     let done = false
 
-    while (resolved.length && !done) {
-      resolved.forEach(({ technology, confidence }) => {
-        done = true
+    do {
+      done = true
 
+      resolved.forEach(({ technology, confidence, lastUrl }) => {
         technology.implies.forEach(({ name, confidence: _confidence }) => {
           const implied = Wappalyzer.getTechnology(name)
 
@@ -174,31 +186,37 @@ const Wappalyzer = {
               technology: implied,
               confidence: Math.min(confidence, _confidence),
               version: '',
+              lastUrl,
             })
 
             done = false
           }
         })
       })
-    }
+    } while (resolved.length && !done)
   },
 
   /**
    * Initialize analyzation.
    * @param {*} param0
    */
-  analyze({
-    url,
-    html,
-    css,
-    robots,
-    meta,
-    headers,
-    dns,
-    certIssuer,
-    cookies,
-    scripts,
-  }) {
+  async analyze(
+    {
+      url,
+      xhr,
+      html,
+      css,
+      robots,
+      magento,
+      meta,
+      headers,
+      dns,
+      certIssuer,
+      cookies,
+      scripts,
+    },
+    technologies = Wappalyzer.technologies
+  ) {
     const oo = Wappalyzer.analyzeOneToOne
     const om = Wappalyzer.analyzeOneToMany
     const mm = Wappalyzer.analyzeManyToMany
@@ -207,19 +225,25 @@ const Wappalyzer = {
 
     try {
       const detections = flatten(
-        Wappalyzer.technologies.map((technology) =>
-          flatten([
-            oo(technology, 'url', url),
-            oo(technology, 'html', html),
-            oo(technology, 'css', css),
-            oo(technology, 'robots', robots),
-            oo(technology, 'certIssuer', certIssuer),
-            om(technology, 'scripts', scripts),
-            mm(technology, 'cookies', cookies),
-            mm(technology, 'meta', meta),
-            mm(technology, 'headers', headers),
-            mm(technology, 'dns', dns),
-          ])
+        await Promise.all(
+          technologies.map(async (technology) => {
+            await next()
+
+            return flatten([
+              oo(technology, 'url', url),
+              oo(technology, 'xhr', xhr),
+              oo(technology, 'html', html),
+              oo(technology, 'css', css),
+              oo(technology, 'robots', robots),
+              oo(technology, 'magento', magento),
+              oo(technology, 'certIssuer', certIssuer),
+              om(technology, 'scripts', scripts),
+              mm(technology, 'cookies', cookies),
+              mm(technology, 'meta', meta),
+              mm(technology, 'headers', headers),
+              mm(technology, 'dns', dns),
+            ])
+          })
         )
       ).filter((technology) => technology)
 
@@ -240,10 +264,12 @@ const Wappalyzer = {
       const {
         cats,
         url,
+        xhr,
         dom,
         html,
         css,
         robots,
+        magento,
         meta,
         headers,
         dns,
@@ -253,6 +279,7 @@ const Wappalyzer = {
         js,
         implies,
         excludes,
+        requires,
         icon,
         website,
         cpe,
@@ -263,14 +290,28 @@ const Wappalyzer = {
         categories: cats || [],
         slug: Wappalyzer.slugify(name),
         url: transform(url),
+        xhr: transform(xhr),
         headers: transform(headers),
         dns: transform(dns),
         cookies: transform(cookies),
-        dom: transform(dom, true),
+        dom: transform(
+          typeof dom === 'string' || Array.isArray(dom)
+            ? toArray(dom).reduce(
+                (dom, selector) => ({
+                  ...dom,
+                  [selector]: { exists: '' },
+                }),
+                {}
+              )
+            : dom,
+          false,
+          false
+        ),
         html: transform(html),
         css: transform(css),
         certIssuer: transform(certIssuer),
         robots: transform(robots),
+        magento: transform(magento),
         meta: transform(meta),
         scripts: transform(scripts),
         js: transform(js, true),
@@ -281,6 +322,9 @@ const Wappalyzer = {
         excludes: transform(excludes).map(({ value }) => ({
           name: value,
         })),
+        requires: transform(requires).map(({ value }) => ({
+          name: value,
+        })),
         icon: icon || 'default.svg',
         website: website || null,
         cpe: cpe || null,
@@ -288,6 +332,29 @@ const Wappalyzer = {
 
       return technologies
     }, [])
+
+    Wappalyzer.technologies
+      .filter(({ requires }) => requires.length)
+      .forEach((technology) =>
+        technology.requires.forEach(({ name }) => {
+          if (!Wappalyzer.getTechnology(name)) {
+            throw new Error(`Required technology does not exist: ${name}`)
+          }
+
+          Wappalyzer.requires[name] = Wappalyzer.requires[name] || []
+
+          Wappalyzer.requires[name].push(technology)
+        })
+      )
+
+    Wappalyzer.requires = Object.keys(Wappalyzer.requires).map((name) => ({
+      name,
+      technologies: Wappalyzer.requires[name],
+    }))
+
+    Wappalyzer.technologies = Wappalyzer.technologies.filter(
+      ({ requires }) => !requires.length
+    )
   },
 
   /**
@@ -315,12 +382,10 @@ const Wappalyzer = {
    * @param {string|array} patterns
    * @param {boolean} caseSensitive
    */
-  transformPatterns(patterns, caseSensitive = false) {
+  transformPatterns(patterns, caseSensitive = false, isRegex = true) {
     if (!patterns) {
       return []
     }
-
-    const toArray = (value) => (Array.isArray(value) ? value : [value])
 
     if (typeof patterns === 'string' || Array.isArray(patterns)) {
       patterns = { main: patterns }
@@ -329,7 +394,7 @@ const Wappalyzer = {
     const parsed = Object.keys(patterns).reduce((parsed, key) => {
       parsed[caseSensitive ? key : key.toLowerCase()] = toArray(
         patterns[key]
-      ).map((pattern) => Wappalyzer.parsePattern(pattern))
+      ).map((pattern) => Wappalyzer.parsePattern(pattern, isRegex))
 
       return parsed
     }, {})
@@ -341,7 +406,7 @@ const Wappalyzer = {
    * Extract information from regex pattern.
    * @param {string|object} pattern
    */
-  parsePattern(pattern) {
+  parsePattern(pattern, isRegex = true) {
     if (typeof pattern === 'object') {
       return Object.keys(pattern).reduce(
         (parsed, key) => ({
@@ -365,7 +430,10 @@ const Wappalyzer = {
             attrs.value = attr
 
             // Escape slashes in regular expression
-            attrs.regex = new RegExp(attr.replace(/\//g, '\\/'), 'i')
+            attrs.regex = new RegExp(
+              isRegex ? attr.replace(/\//g, '\\/') : '',
+              'i'
+            )
           }
 
           return attrs

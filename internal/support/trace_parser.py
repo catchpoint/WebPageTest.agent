@@ -43,6 +43,7 @@ class Trace():
         self.event_name_lookup = {}
         self.scripts = None
         self.timeline_events = []
+        self.timeline_requests = {}
         self.trace_events = []
         self.interactive = None
         self.long_tasks = None
@@ -124,6 +125,10 @@ class Trace():
         out = self.post_process_netlog_events()
         if out is not None:
             self.write_json(out_file, out)
+    
+    def WriteTimelineRequests(self, out_file):
+        if self.timeline_requests:
+            self.write_json(out_file, self.timeline_requests)
 
     def WriteV8Stats(self, out_file):
         if self.v8stats is not None:
@@ -357,12 +362,19 @@ class Trace():
                             event['args']['data']['node'] = node_info
             if performance_timing:
                 for event in out:
-                    if 'args' in event and 'data' in event['args'] and 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
-                        for perf_entry in performance_timing:
-                            if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
-                                perf_entry['consumed'] = True
-                                if 'element' in perf_entry:
-                                    event['args']['data']['element'] = perf_entry['element']
+                    if 'args' in event and 'data' in event['args']:
+                        if 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'element' in perf_entry:
+                                        event['args']['data']['element'] = perf_entry['element']
+                        elif 'score' in event['args']['data'] and event['name'].startswith('LayoutShift'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'layout-shift' and 'value' in perf_entry and perf_entry['value'] == event['args']['data']['score'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'sources' in perf_entry:
+                                        event['args']['data']['sources'] = perf_entry['sources']
             out.append({'startTime': self.start_time})
         return out
 
@@ -489,6 +501,20 @@ class Trace():
                 thread not in self.ignore_threads and \
                 trace_event['name'] != 'Program':
             self.threads[thread] = {}
+        
+        # Keep track of request events reported by the timeline
+        if 'args' in trace_event and 'data' in trace_event['args'] and 'requestId' in trace_event['args']['data']:
+            request_id = trace_event['args']['data']['requestId']
+            if request_id not in self.timeline_requests:
+                self.timeline_requests[request_id] = {}
+            request = self.timeline_requests[request_id]
+            if trace_event['name'] == 'ResourceSendRequest':
+                if 'priority' in trace_event['args']['data']:
+                    request['priority'] = trace_event['args']['data']['priority']
+                if 'frame' in trace_event['args']['data']:
+                    request['frame'] = trace_event['args']['data']['frame']
+                if 'renderBlocking' in trace_event['args']['data']:
+                    request['renderBlocking'] = trace_event['args']['data']['renderBlocking']
 
         # Build timeline events on a stack. 'B' begins an event, 'E' ends an
         # event
@@ -1559,6 +1585,8 @@ class Trace():
         name = trace_event['name']
         if 'priority' in params:
             entry['priority'] = params['priority']
+            if 'initial_priority' not in entry:
+                entry['initial_priority'] = params['priority']
         if 'method' in params:
             entry['method'] = params['method']
         if 'url' in params:
@@ -1696,6 +1724,7 @@ def main():
                         help="Output list of interactive times.")
     parser.add_argument('-x', '--longtasks', help="Output list of long main thread task times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
+    parser.add_argument('-r', '--requests', help="Output timeline requests file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
     options, _ = parser.parse_known_args()
 
@@ -1742,6 +1771,9 @@ def main():
 
     if options.netlog:
         trace.WriteNetlog(options.netlog)
+    
+    if options.requests:
+        trace.WriteTimelineRequests(options.requests)
 
     if options.stats:
         trace.WriteV8Stats(options.stats)
@@ -5176,11 +5208,178 @@ BLINK_FEATURES = {
     "3791": "XRWebGLDepthInformationTextureAttribute",
     "3792": "XRWebGLBindingGetDepthInformation",
     "3793": "SessionStorageFirstUsedBeforeFcp",
-    "3794": "SessionStorageFirstUsedAfterFcp"
+    "3794": "SessionStorageFirstUsedAfterFcp",
+    "3795": "GravitySensorConstructor",
+    "3796": "ElementInternalsStates",
+    "3797": "WebPImage",
+    "3798": "AVIFImage",
+    "3799": "SVGTextEdited",
+    "3800": "V8WasmExceptionHandling",
+    "3801": "WasmModuleSharing",
+    "3802": "CrossOriginWasmModuleSharing",
+    "3803": "OverflowClipAlongEitherAxis",
+    "3804": "CreateJSONModuleScript",
+    "3805": "CreateCSSModuleScript",
+    "3806": "InsertHTMLCommandOnInput",
+    "3807": "InsertHTMLCommandOnTextarea",
+    "3808": "InsertHTMLCommandOnReadWritePlainText",
+    "3809": "CSSAtRuleCounterStyle",
+    "3810": "CanvasUseColorSpace",
+    "3811": "SelectMenuElement",
+    "3812": "RTCPeerConnectionSdpSemanticsPlanBWithReverseOriginTrial",
+    "3813": "WebAppManifestCaptureLinks",
+    "3814": "SanitizerAPICreated",
+    "3815": "SanitizerAPIDefaultConfiguration",
+    "3816": "SanitizerAPIToString",
+    "3817": "SanitizerAPIToFragment",
+    "3818": "SanitizerAPIActionTaken",
+    "3819": "SanitizerAPIFromString",
+    "3820": "SanitizerAPIFromDocument",
+    "3821": "SanitizerAPIFromFragment",
+    "3822": "StorageFoundationOpen",
+    "3823": "StorageFoundationRead",
+    "3824": "StorageFoundationReadSync",
+    "3825": "StorageFoundationWrite",
+    "3826": "StorageFoundationWriteSync",
+    "3827": "StorageFoundationFlush",
+    "3828": "StorageFoundationFlushSync",
+    "3829": "UnrestrictedSharedArrayBuffer",
+    "3830": "FeaturePolicyJSAPIAllowsFeatureIFrame",
+    "3831": "FeaturePolicyJSAPIAllowsFeatureDocument",
+    "3832": "FeaturePolicyJSAPIAllowsFeatureOriginIFrame",
+    "3833": "FeaturePolicyJSAPIAllowsFeatureOriginDocument",
+    "3834": "FeaturePolicyJSAPIAllowedFeaturesIFrame",
+    "3835": "FeaturePolicyJSAPIAllowedFeaturesDocument",
+    "3836": "FeaturePolicyJSAPIFeaturesIFrame",
+    "3837": "FeaturePolicyJSAPIFeaturesDocument",
+    "3838": "FeaturePolicyJSAPIGetAllowlistIFrame",
+    "3839": "FeaturePolicyJSAPIGetAllowlistDocument",
+    "3840": "V8Screens_Onchange_AttributeGetter",
+    "3841": "V8Screens_Onchange_AttributeSetter",
+    "3842": "V8ScreenAdvanced_Left_AttributeGetter",
+    "3843": "V8ScreenAdvanced_Top_AttributeGetter",
+    "3844": "V8ScreenAdvanced_IsPrimary_AttributeGetter",
+    "3845": "V8ScreenAdvanced_IsInternal_AttributeGetter",
+    "3846": "V8ScreenAdvanced_DevicePixelRatio_AttributeGetter",
+    "3847": "V8ScreenAdvanced_Id_AttributeGetter",
+    "3848": "V8ScreenAdvanced_PointerTypes_AttributeGetter",
+    "3849": "V8ScreenAdvanced_Label_AttributeGetter",
+    "3850": "PermissionsPolicyHeader",
+    "3851": "WebAppManifestUrlHandlers",
+    "3852": "LaxAllowingUnsafeCookies",
+    "3853": "V8MediaSession_SetMicrophoneActive_Method",
+    "3854": "V8MediaSession_SetCameraActive_Method",
+    "3855": "V8Navigator_JoinAdInterestGroup_Method",
+    "3856": "V8Navigator_LeaveAdInterestGroup_Method",
+    "3857": "V8Navigator_RunAdAuction_Method",
+    "3858": "XHRJSONEncodingDetection",
+    "3859": "WorkerControlledByServiceWorkerOutOfScope",
+    "3860": "XRPlaneDetection",
+    "3861": "XRFrameDetectedPlanes",
+    "3862": "XRImageTracking",
+    "3863": "XRSessionGetTrackedImageScores",
+    "3864": "XRFrameGetImageTrackingResults",
+    "3865": "OpenWebDatabaseThirdPartyContext",
+    "3866": "PointerId",
+    "3867": "Transform3dScene",
+    "3868": "PrefersColorSchemeMediaFeature",
+    "3869": "PrefersContrastMediaFeature",
+    "3870": "ForcedColorsMediaFeature",
+    "3871": "PaymentRequestCSPViolation",
+    "3872": "WorkerControlledByServiceWorkerWithFetchEventHandlerOutOfScope",
+    "3873": "AuthorizationCoveredByWildcard",
+    "3874": "ElementGetInnerHTML",
+    "3875": "FileHandlingLaunch",
+    "3876": "SameOriginDocumentsWithDifferentCOOPStatus",
+    "3877": "HTMLMediaElementSetSinkId",
+    "3878": "PrefixedStorageQuotaThirdPartyContext",
+    "3879": "RequestedFileSystemPersistentThirdPartyContext",
+    "3880": "PrefixedStorageInfoThirdPartyContext",
+    "3881": "CrossOriginEmbedderPolicyCredentialless",
+    "3882": "PostMessageFromSecureToSecure",
+    "3883": "PostMessageFromInsecureToInsecure",
+    "3884": "WebAppManifestProtocolHandlers",
+    "3885": "RTCPeerConnectionOfferAllowExtmapMixedFalse",
+    "3886": "NewCanvas2DAPI",
+    "3887": "ServiceWorkerSubresourceFilter",
+    "3888": "WebGPU",
+    "3889": "CSSFilterColorMatrix",
+    "3890": "HTMLFencedFrameElement",
+    "3891": "CSSFilterLuminanceToAlpha",
+    "3892": "HandwritingRecognitionCreateRecognizer",
+    "3893": "HandwritingRecognitionQuerySupport",
+    "3894": "HandwritingRecognitionStartDrawing",
+    "3895": "HandwritingRecognitionGetPrediction",
+    "3896": "WebBluetoothManufacturerDataFilter",
+    "3897": "SanitizerAPIGetConfig",
+    "3898": "SanitizerAPIGetDefaultConfig",
+    "3899": "ComputePressureObserver_Constructor",
+    "3900": "ComputePressureObserver_Observe",
+    "3901": "ComputePressureObserver_Stop",
+    "3902": "WebAppWindowControlsOverlay",
+    "3903": "PaymentRequestShowWithoutGestureOrToken",
+    "3904": "V8Navigator_UpdateAdInterestGroups_Method",
+    "3905": "V8Screens_Onscreenschange_AttributeGetter",
+    "3906": "V8Screens_Onscreenschange_AttributeSetter",
+    "3907": "V8Screens_Oncurrentscreenchange_AttributeGetter",
+    "3908": "V8Screens_Oncurrentscreenchange_AttributeSetter",
+    "3909": "RTCOfferAnswerOptionsVoiceActivityDetection",
+    "3910": "MultiColAndListItem",
+    "3911": "CaptureHandle",
+    "3912": "SVGText",
+    "3913": "GetBBoxForText",
+    "3914": "SVGTextHangingFromPath",
+    "3915": "ClientHintsPrefersColorScheme",
+    "3916": "OverscrollBehaviorWillBeFixed",
+    "3917": "ControlledWorkerWillBeUncontrolled",
+    "3918": "ARIATouchpassthroughAttribute",
+    "3919": "ARIAVirtualcontentAttribute",
+    "3920": "AccessibilityTouchPassthroughSet",
+    "3921": "TextFragmentBlockedByForceLoadAtTop",
+    "3922": "UrnDocumentAccessedCookies",
+    "3923": "FontFaceAscentOverride",
+    "3924": "FontFaceDescentOverride",
+    "3925": "FontFaceLineGapOverride",
+    "3926": "FontFaceSizeAdjust",
+    "3927": "HiddenBackfaceWith3D",
+    "3928": "MainFrameNonSecurePrivateAddressSpace",
+    "3929": "CSSSelectorPseudoHas",
+    "3930": "HTMLMediaElementControlsListNoPlaybackRate",
+    "3931": "DocumentTransition",
+    "3932": "SpeculationRules",
+    "3933": "V8AbortSignal_Abort_Method",
+    "3934": "SelectionBackgroundColorInversion",
+    "3935": "RTCPeerConnectionPlanBThrewAnException",
+    "3936": "HTMLRootContained",
+    "3937": "HTMLBodyContained",
+    "3938": "XRFrameGetJointPose",
+    "3939": "XRFrameFillJointRadii",
+    "3940": "XRFrameFillPoses",
+    "3941": "WindowOpenNewPopupBehaviorMismatch",
+    "3942": "ExplicitPointerCaptureClickTargetDiff",
+    "3943": "ControlledNonBlobURLWorkerWillBeUncontrolled",
+    "3944": "MediaMetaThemeColor",
+    "3945": "ClientHintsUABitness",
+    "3946": "DifferentPerspectiveCBOrParent",
+    "3947": "WebkitImageSet",
+    "3948": "RTCPeerConnectionWithBlockingCsp",
+    "3949": "SanitizerAPISanitizeFor",
+    "3950": "SanitizerAPIElementSetSanitized",
+    "3951": "TextShadowInHighlightPseudo",
+    "3952": "TextShadowNotNoneInHighlightPseudo",
+    "3953": "SameSiteNoneRequired",
+    "3954": "SameSiteNoneIncludedBySamePartyTopResource",
+    "3955": "SameSiteNoneIncludedBySamePartyAncestors",
+    "3956": "SameSiteNoneIncludedBySameSiteLax",
+    "3957": "SameSiteNoneIncludedBySameSiteStrict",
+    "3958": "PrivateNetworkAccessNonSecureContextsAllowedDeprecationTrial",
+    "3959": "V8URLPattern_Constructor",
+    "3960": "V8URLPattern_Test_Method",
+    "3961": "V8URLPattern_Exec_Method"
 }
 
 ##########################################################################
-#   CSS feature names from https://cs.chromium.org/chromium/src/third_party/blink/renderer/core/frame/use_counter_helper.cc
+#   CSS feature names from https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/public/mojom/use_counter/css_property_id.mojom
 ##########################################################################
 CSS_FEATURES = {
     "2": "CSSPropertyColor",
@@ -5781,7 +5980,58 @@ CSS_FEATURES = {
     "640": "CSSPropertyForcedColorAdjust",
     "641": "CSSPropertyInherits",
     "642": "CSSPropertyInitialValue",
-    "643": "CSSPropertykSyntax"
+    "643": "CSSPropertySyntax",
+    "644": "CSSPropertyOverscrollBehaviorInline",
+    "645": "CSSPropertyOverscrollBehaviorBlock",
+    "647": "CSSPropertyFontOpticalSizing",
+    "648": "CSSPropertyContainIntrinsicBlockSize",
+    "649": "CSSPropertyContainIntrinsicHeight",
+    "650": "CSSPropertyContainIntrinsicInlineSize",
+    "651": "CSSPropertyContainIntrinsicSize",
+    "652": "CSSPropertyContainIntrinsicWidth",
+    "654": "CSSPropertyOriginTrialTestProperty",
+    "656": "CSSPropertyMathStyle",
+    "657": "CSSPropertyAspectRatio",
+    "658": "CSSPropertyAppearance",
+    "660": "CSSPropertyRubyPosition",
+    "661": "CSSPropertyTextUnderlineOffset",
+    "662": "CSSPropertyContentVisibility",
+    "663": "CSSPropertyTextDecorationThickness",
+    "664": "CSSPropertyPageOrientation",
+    "665": "CSSPropertyAnimationTimeline",
+    "666": "CSSPropertyCounterSet",
+    "667": "CSSPropertySource",
+    "668": "CSSPropertyStart",
+    "669": "CSSPropertyEnd",
+    "670": "CSSPropertyTimeRange",
+    "671": "CSSPropertyScrollbarGutter",
+    "672": "CSSPropertyAscentOverride",
+    "673": "CSSPropertyDescentOverride",
+    "674": "CSSPropertyAdvanceOverride",
+    "675": "CSSPropertyLineGapOverride",
+    "676": "CSSPropertyMathShift",
+    "677": "CSSPropertyMathDepth",
+    "679": "CSSPropertyOverflowClipMargin",
+    "680": "CSSPropertyScrollbarWidth",
+    "681": "CSSPropertySystem",
+    "682": "CSSPropertyNegative",
+    "683": "CSSPropertyPrefix",
+    "684": "CSSPropertySuffix",
+    "685": "CSSPropertyRange",
+    "686": "CSSPropertyPad",
+    "687": "CSSPropertyFallback",
+    "688": "CSSPropertySymbols",
+    "689": "CSSPropertyAdditiveSymbols",
+    "690": "CSSPropertySpeakAs",
+    "691": "CSSPropertyBorderStartStartRadius",
+    "692": "CSSPropertyBorderStartEndRadius",
+    "693": "CSSPropertyBorderEndStartRadius",
+    "694": "CSSPropertyBorderEndEndRadius",
+    "695": "CSSPropertyAccentColor",
+    "696": "CSSPropertySizeAdjust",
+    "697": "CSSPropertyContainerName",
+    "698": "CSSPropertyContainerType",
+    "699": "CSSPropertyContainer"
 }
 
 if '__main__' == __name__:

@@ -61,6 +61,8 @@ class DesktopBrowser(BaseBrowser):
         self.tcpdump_enabled = bool('tcpdump' in job and job['tcpdump'])
         self.tcpdump = None
         self.ffmpeg = None
+        self.stop_ffmpeg = False
+        self.ffmpeg_output_thread = None
         self.video_capture_running = False
         self.video_processing = None
         self.pcap_file = None
@@ -125,8 +127,7 @@ class DesktopBrowser(BaseBrowser):
             logging.exception("Exception preparing Browser: %s", err.__str__())
         # Modify the hosts file for non-Chrome browsers
         self.restore_hosts()
-        if not self.is_chrome and 'dns_override' in task:
-            self.modify_hosts(task, task['dns_override'])
+        self.modify_hosts(task, task['dns_override'])
         self.profile_end('desktop.prepare')
 
     def modify_hosts(self, task, hosts):
@@ -138,15 +139,17 @@ class DesktopBrowser(BaseBrowser):
             logging.debug('Modifying hosts file:')
             try:
                 hosts_text = None
-                with open(hosts_file, 'r') as f_in:
-                    hosts_text = f_in.read()
+                with open(hosts_file, 'rt') as f_in:
+                    hosts_text = ''
+                    for line in f_in:
+                        if not line.startswith('0.0.0.0'):
+                            hosts_text += line.strip() + '\n'
                 if hosts_text is not None:
-                    hosts_text += "\n"
                     for pair in hosts:
                         hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
                     for domain in self.block_domains:
-                        hosts_text += "127.0.0.1    {0}\n".format(domain)
-                    with open(hosts_tmp, 'w') as f_out:
+                        hosts_text += "0.0.0.0    {0}\n".format(domain)
+                    with open(hosts_tmp, 'wt') as f_out:
                         f_out.write(hosts_text)
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])
                     subprocess.call(['sudo', 'cp', hosts_tmp, hosts_file])
@@ -409,14 +412,26 @@ class DesktopBrowser(BaseBrowser):
                "});" \
                "})();"
 
+    def pump_ffmpeg_output(self):
+        """Pump the ffmpeg output messages so the buffers don't fill"""
+        try:
+            while self.ffmpeg is not None and not self.stop_ffmpeg:
+                output = self.ffmpeg.stderr.readline().strip()
+                if output and not output.startswith('['):
+                    logging.debug("ffmpeg: %s", output)
+        except Exception:
+            pass
+        logging.debug('Done pumping ffmpeg messages')
+
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         if self.must_exit:
             return
         import psutil
         if task['log_data']:
-            if not self.job['shaper'].configure(self.job, task):
-                self.task['error'] = "Error configuring traffic-shaping"
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    self.task['error'] = "Error configuring traffic-shaping"
             self.cpu_start = psutil.cpu_times()
             self.recording = True
             ver = platform.uname()
@@ -564,6 +579,11 @@ class DesktopBrowser(BaseBrowser):
                         except Exception:
                             logging.exception("Error waiting for video capture to start")
                     self.video_capture_running = True
+                    # Start a background thread to pump the ffmpeg output
+                    if platform.system() != 'Windows':
+                        self.stop_ffmpeg = False
+                        self.ffmpeg_output_thread = threading.Thread(target=self.pump_ffmpeg_output)
+                        self.ffmpeg_output_thread.start()
                 except Exception:
                     logging.exception('Error starting video capture')
                 self.profile_end('desktop.start_video')
@@ -591,6 +611,7 @@ class DesktopBrowser(BaseBrowser):
             self.profile_start('desktop.stop_video')
             logging.debug('Stopping video capture')
             self.video_capture_running = False
+            self.stop_ffmpeg = True
             if platform.system() == 'Windows':
                 logging.debug('Attempting graceful ffmpeg shutdown\n')
                 if platform.system() == 'Windows':
@@ -647,17 +668,27 @@ class DesktopBrowser(BaseBrowser):
                 wait_for_all('tcpdump')
             self.tcpdump = None
         if self.ffmpeg is not None:
-            logging.debug('Waiting for video capture to finish')
-            if platform.system() == 'Windows':
-                self.ffmpeg.communicate(input='q'.encode('utf-8'))
-            else:
-                self.ffmpeg.communicate(input='q')
+            self.stop_ffmpeg = True
+            try:
+                logging.debug('Waiting for video capture to finish')
+                if platform.system() == 'Windows':
+                    self.ffmpeg.communicate(input='q'.encode('utf-8'))
+                else:
+                    self.ffmpeg.communicate(input='q')
+            except Exception:
+                logging.exception('Error terminating ffmpeg')
             self.ffmpeg = None
         if platform.system() == 'Windows':
             from .os_util import kill_all
             kill_all('ffmpeg.exe', True)
         else:
             subprocess.call(['killall', '-9', 'ffmpeg'])
+        if self.ffmpeg_output_thread is not None:
+            try:
+                self.ffmpeg_output_thread.join(10)
+            except Exception:
+                logging.exception('Error waiting for ffmpeg output')
+            self.ffmpeg_output_thread = None
         self.job['shaper'].reset()
 
     def on_start_processing(self, task):

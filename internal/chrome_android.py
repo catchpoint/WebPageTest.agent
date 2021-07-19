@@ -34,6 +34,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
     '--net-log-capture-mode=IncludeSensitive',
+    '--load-media-router-component-extension=0',
     '--mute-audio',
     '--disable-hang-monitor',
     '--password-store=basic',
@@ -188,6 +189,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, START_PAGE)
                         time.sleep(0.5)
+                        self.wait_for_network_idle(120, 4000)
 
     def setup_prefs(self):
         """Install our base set of preferences"""

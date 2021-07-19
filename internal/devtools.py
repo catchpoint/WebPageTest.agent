@@ -92,6 +92,13 @@ class DevTools(object):
         self.request_sequence = 0
         self.default_target = None
         self.dom_tree = None
+        self.key_definitions = {}
+        keyfile = os.path.join(os.path.dirname(__file__), 'support', 'keys.json')
+        try:
+            with open(keyfile, 'rt') as f_in:
+                self.key_definitions = json.load(f_in)
+        except Exception:
+            logging.exception('Error loading keyboard definitions')
 
     def shutdown(self):
         """The agent is dying NOW"""
@@ -213,6 +220,7 @@ class DevTools(object):
                                 try:
                                     self.websocket = DevToolsClient(websocket_url)
                                     self.websocket.connect()
+                                    self.job['shaper'].set_devtools(self)
                                     ret = True
                                 except Exception as err:
                                     logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
@@ -239,11 +247,35 @@ class DevTools(object):
         self.profile_end('connect')
         return ret
 
+    def _to_int(self, s):
+        return int(re.search(r'\d+', str(s)).group())
+
+    def enable_shaper(self, target_id=None):
+        """Enable the Chromium dev tools traffic shaping"""
+        if self.job['dtShaper']:
+            in_Bps = -1
+            if 'bwIn' in self.job:
+                in_Bps = (self._to_int(self.job['bwIn']) * 1000) / 8
+            out_Bps = -1
+            if 'bwOut' in self.job:
+                out_Bps = (self._to_int(self.job['bwOut']) * 1000) / 8
+            rtt = 0
+            if 'latency' in self.job:
+                rtt = self._to_int(self.job['latency'])
+            self.send_command('Network.emulateNetworkConditions', {
+                'offline': False,
+                'latency': rtt,
+                'downloadThroughput': in_Bps,
+                'uploadThroughput': out_Bps
+                }, wait=True, target_id=target_id)
+
     def enable_webkit_events(self):
         if self.is_webkit:
             self.send_command('Inspector.enable', {})
             self.send_command('Network.enable', {})
             self.send_command('Runtime.enable', {})
+            self.job['shaper'].apply()
+            self.enable_shaper()
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
             if len(self.workers):
@@ -274,6 +306,7 @@ class DevTools(object):
 
     def close(self, close_tab=True):
         """Close the dev tools connection"""
+        self.job['shaper'].set_devtools(None)
         if self.websocket:
             try:
                 self.websocket.close()
@@ -493,6 +526,8 @@ class DevTools(object):
         if self.task['log_data']:
             self.send_command('Security.disable', {})
             self.send_command('Audits.disable', {})
+            self.send_command('Log.disable', {})
+            self.send_command('Log.stopViolationsReport', {})
             self.send_command('Console.disable', {})
             self.send_command('Timeline.stop', {})
             self.get_response_bodies()
@@ -571,6 +606,8 @@ class DevTools(object):
 
     def snapshot_dom(self):
         """Grab a snapshot of the DOM to use for processing element locations"""
+        if self.dom_tree is not None:
+            return self.dom_tree
         if self.must_exit:
             return
         try:
@@ -583,6 +620,7 @@ class DevTools(object):
             self.profile_end('snapshot_dom')
         except Exception:
             logging.exception("Error capturing DOM snapshot")
+        return self.dom_tree
 
     def collect_trace(self):
         """Stop tracing and collect the results"""
@@ -597,18 +635,13 @@ class DevTools(object):
                 # we get a gap of 30 seconds between messages
                 if self.websocket:
                     logging.info('Collecting trace events')
-                    done = False
                     no_message_count = 0
-                    elapsed = monotonic() - start
-                    while not done and no_message_count < 30 and elapsed < 600:
+                    while not self.websocket.trace_done and no_message_count < 30 and monotonic() - start < 600:
                         try:
                             raw = self.websocket.get_message(1)
                             try:
                                 if raw is not None and len(raw):
                                     no_message_count = 0
-                                    msg = json.loads(raw)
-                                    if 'method' in msg and msg['method'] == 'Tracing.tracingComplete':
-                                        done = True
                                 else:
                                     no_message_count += 1
                             except Exception:
@@ -617,8 +650,6 @@ class DevTools(object):
                         except Exception:
                             no_message_count += 1
                             time.sleep(1)
-                            pass
-                        elapsed = monotonic() - start
                 self.websocket.stop_processing_trace(self.job)
             except Exception:
                 logging.exception('Error processing trace events')
@@ -626,7 +657,6 @@ class DevTools(object):
             self.profile_end('collect_trace')
             logging.debug("Time to collect trace: %0.3f sec", elapsed)
             self.recording_video = False
-        self.dom_tree = None
 
     def get_response_body(self, request_id, wait):
         """Retrieve and store the given response body (if necessary)"""
@@ -1090,13 +1120,92 @@ class DevTools(object):
         else:
             self.send_command('Network.setCacheDisabled', {'cacheDisabled': disable}, wait=True)
 
+    def send_character(self, char):
+        """Send a non-keyboard character directly to the page"""
+        self.send_command('Input.insertText', {'text': char}, wait=True)
+
+    def key_info(self, key):
+        """Build the details needed for the keypress commands for the given key"""
+        info = {
+            'key': '',
+            'keyCode': 0,
+            'code': '',
+            'location': 0
+        }
+        if key in self.key_definitions:
+            definition = self.key_definitions[key]
+            if 'key' in definition:
+                info['key'] = definition['key']
+                if len(definition['key']) == 1:
+                    info['text'] = definition['key']
+            if 'keyCode' in definition:
+                info['keyCode'] = definition['keyCode']
+            if 'code' in definition:
+                info['code'] = definition['code']
+            if 'location' in definition:
+                info['location'] = definition['location']
+            if 'text' in definition:
+                info['text'] = definition['text']
+        return info
+
+    def key_down(self, key):
+        """Press down a key"""
+        info = self.key_info(key)
+        params = {
+            'type': 'rawKeyDown',
+            'key': info['key'],
+            'windowsVirtualKeyCode': info['keyCode'],
+            'code': info['code'],
+            'location': info['location']
+        }
+        if 'text' in info:
+            params['type'] = 'keyDown'
+            params['text'] = info['text']
+            params['unmodifiedText'] = info['text']
+        if info['location'] == 3:
+            params['isKeypad'] = True
+        self.send_command('Input.dispatchKeyEvent', params)
+
+    def key_up(self, key):
+        """Let up a key"""
+        info = self.key_info(key)
+        self.send_command('Input.dispatchKeyEvent', {
+            'type': 'keyUp',
+            'key': info['key'],
+            'windowsVirtualKeyCode': info['keyCode'],
+            'code': info['code'],
+            'location': info['location']
+        })
+
+    def keypress(self, key):
+        """Simulate pressing a keyboard key"""
+        try:
+            self.key_down(key)
+            self.key_up(key)
+        except Exception:
+            logging.exception('Error running keypress command')
+
+    def type_text(self, string):
+        """Simulate typing text input"""
+        try:
+            for char in string:
+                if char in self.key_definitions:
+                    self.keypress(char)
+                else:
+                    self.send_character(char)
+        except Exception:
+            logging.exception('Error running type command')
+
     def enable_target(self, target_id=None):
         """Hook up the necessary network (or other) events for the given target"""
         try:
             self.send_command('Network.enable', {}, target_id=target_id)
             self.send_command('Console.enable', {}, target_id=target_id)
             self.send_command('Log.enable', {}, target_id=target_id)
+            self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
+            self.job['shaper'].apply(target_id=target_id)
+            self.enable_shaper(target_id=target_id)
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
@@ -1403,8 +1512,8 @@ class DevTools(object):
                 target = msg['params']['targetInfo']
                 if 'type' in target and target['type'] == 'service_worker':
                     self.workers.append(target)
-                    if self.recording:
-                        self.enable_target(target['targetId'])
+                if self.recording:
+                    self.enable_target(target['targetId'])
                 self.send_command('Runtime.runIfWaitingForDebugger', {},
                                   target_id=target['targetId'])
         if event == 'receivedMessageFromTarget' or event == 'dispatchMessageFromTarget':
@@ -1536,6 +1645,7 @@ class DevToolsClient(WebSocketClient):
         self.processed_event_count = 0
         self.last_data = None
         self.keep_timeline = True
+        self.trace_done = True
 
     def opened(self):
         """WebSocket interface - connection opened"""
@@ -1570,6 +1680,7 @@ class DevToolsClient(WebSocketClient):
                     self.trace_file.write("\n]}")
                     self.trace_file.close()
                     self.trace_file = None
+                    self.trace_done = True
                 if message is not None:
                     self.messages.put(message)
         except Exception:
@@ -1603,6 +1714,7 @@ class DevToolsClient(WebSocketClient):
         self.keep_timeline = keep_timeline
         self.dom_tree = dom_tree
         self.performance_timing = performance_timing
+        self.trace_done = False
 
     def stop_processing_trace(self, job):
         """All done"""
@@ -1633,6 +1745,7 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
                 self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
+                self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
             self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')

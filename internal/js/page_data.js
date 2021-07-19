@@ -39,7 +39,7 @@ pageData["firstPaint"] = 0;
 // Try the standardized paint timing api
 try {
   var entries = performance.getEntriesByType('paint');
-  var navStart = performance.getEntriesByType("navigation")[0].startTime;
+  var navStart = performance.getEntriesByType("navigation").length > 0 ?  performance.getEntriesByType("navigation")[0].startTime : 0;
   for (var i = 0; i < entries.length; i++) {
     var entryTime = entries[i].startTime - navStart;
     pageData["PerformancePaintTiming." + entries[i]['name']] = entryTime;

@@ -78,6 +78,7 @@ run the agent in a docker container.
     * none - Disable traffic-shaping (i.e. when root is not available).
     * netem,\<interface\> - Use NetEm for bridging rndis traffic (specify outbound interface).  i.e. --shaper netem,eth0
     * remote,\<server\>,\<down pipe\>,\<up pipe\> - Connect to the remote server over ssh and use pre-configured dummynet pipes (ssh keys for root user should be pre-authorized).
+    * chrome - Use Chrome's dev tools traffic-shaping. Only supports Chromium browsers and should be used as a last resort.
 
 ### Android testing options
 * **--android** : Run tests on an attached android device.
@@ -99,6 +100,22 @@ run the agent in a docker container.
 * **--password** : Password if using HTTP Basic auth with WebPageTest server.
 * **--cert** : Client certificate if using certificates to authenticate the WebPageTest server connection.
 * **--certkey** : Client-side private key (if not embedded in the cert).
+
+### Options for running tests locally on the command-line:
+The result of the test will be output to stdout as JSON. If a server, location and key are provided then the test will be uploaded to the given WebPageTest server and the test ID will be returned in the output JSON.
+* **--testurl** : Run a one-off test of the given URL using the command-line (required unless a testspec is provided)
+    * <url> : URL to test
+* **--testspec** : Provide a full [JSON file](docs/test_options.md) with test parameters
+    * <path> : Path to the JSON test options
+* **--testout** : Output format fot the test result. Valid options are:
+    * id : Test ID (if tests are uploaded to a server/location)
+    * url : URL to test result (if tests are uploaded to a server/location)
+    * json : JSON-formatted raw test result
+* **--testoutdir** : Output directory for the raw test results (optional)
+    * <path> : Path to the output directory
+* **--testruns** : Number of runs to test
+    * <runs> : Defaults to 1
+* **--testrv** : Include repeat view (defaults to only testing first view)
 
 ## Currently supported features
 * Feature complete except as noted below (for Windows, Linux, Mac and Android devices)

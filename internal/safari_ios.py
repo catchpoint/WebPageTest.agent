@@ -81,6 +81,7 @@ class iWptBrowser(BaseBrowser):
         self.ios_version = None
         self.workers = []
         self.default_target = None
+        self.total_sleep = 0
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
@@ -842,8 +843,9 @@ class iWptBrowser(BaseBrowser):
         self.flush_messages()
         self.enable_safari_events()
         if self.task['log_data']:
-            if not self.job['shaper'].configure(self.job, task):
-                self.task['error'] = "Error configuring traffic-shaping"
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
                 self.bodies_zip_file.close()
                 self.bodies_zip_file = None
@@ -1143,8 +1145,10 @@ class iWptBrowser(BaseBrowser):
                 self.is_navigating = True
             self.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = \
@@ -1413,9 +1417,7 @@ class iWptBrowser(BaseBrowser):
                 'result': 0,
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
-                'optimization_checked': 0,
-                'start_epoch': int((self.task['start_time'] - \
-                                    datetime.utcfromtimestamp(0)).total_seconds())
+                'optimization_checked': 0
                }
         if 'loadEventStart' in self.task['page_data']:
             page['loadTime'] = self.task['page_data']['loadEventStart']

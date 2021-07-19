@@ -62,6 +62,7 @@ class Firefox(DesktopBrowser):
         self.page = {}
         self.requests = {}
         self.request_count = 0
+        self.total_sleep = 0
         self.long_tasks = []
         self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
@@ -71,7 +72,8 @@ class Firefox(DesktopBrowser):
             "shavar.services.mozilla.com",
             "firefox.settings.services.mozilla.com",
             "snippets.cdn.mozilla.net",
-            "content-signature-2.cdn.mozilla.net"]
+            "content-signature-2.cdn.mozilla.net",
+            "aus5.mozilla.org"]
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -846,8 +848,10 @@ class Firefox(DesktopBrowser):
                 script = self.prepare_script_for_record(script)
             self.execute_js(script)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = \
@@ -1182,9 +1186,7 @@ class Firefox(DesktopBrowser):
                 'result': 0,
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
-                'optimization_checked': 0,
-                'start_epoch': int((self.task['start_time'] -
-                                    datetime.utcfromtimestamp(0)).total_seconds())
+                'optimization_checked': 0
                 }
         if 'loaded' in self.page:
             page['loadTime'] = int(round(self.page['loaded'] * 1000.0))
