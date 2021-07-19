@@ -726,7 +726,7 @@ class DesktopBrowser(BaseBrowser):
         """Wait for any background processing threads to finish"""
         if self.video_processing is not None:
             logging.debug('Waiting for video processing to finish')
-            self.video_processing.communicate()
+            self.video_processing.communicate(timeout=30)
             self.video_processing = None
             logging.debug('Video processing complete')
             if not self.job['keepvideo']:
