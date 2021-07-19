@@ -5340,7 +5340,42 @@ BLINK_FEATURES = {
     "3923": "FontFaceAscentOverride",
     "3924": "FontFaceDescentOverride",
     "3925": "FontFaceLineGapOverride",
-    "3926": "FontFaceSizeAdjust"
+    "3926": "FontFaceSizeAdjust",
+    "3927": "HiddenBackfaceWith3D",
+    "3928": "MainFrameNonSecurePrivateAddressSpace",
+    "3929": "CSSSelectorPseudoHas",
+    "3930": "HTMLMediaElementControlsListNoPlaybackRate",
+    "3931": "DocumentTransition",
+    "3932": "SpeculationRules",
+    "3933": "V8AbortSignal_Abort_Method",
+    "3934": "SelectionBackgroundColorInversion",
+    "3935": "RTCPeerConnectionPlanBThrewAnException",
+    "3936": "HTMLRootContained",
+    "3937": "HTMLBodyContained",
+    "3938": "XRFrameGetJointPose",
+    "3939": "XRFrameFillJointRadii",
+    "3940": "XRFrameFillPoses",
+    "3941": "WindowOpenNewPopupBehaviorMismatch",
+    "3942": "ExplicitPointerCaptureClickTargetDiff",
+    "3943": "ControlledNonBlobURLWorkerWillBeUncontrolled",
+    "3944": "MediaMetaThemeColor",
+    "3945": "ClientHintsUABitness",
+    "3946": "DifferentPerspectiveCBOrParent",
+    "3947": "WebkitImageSet",
+    "3948": "RTCPeerConnectionWithBlockingCsp",
+    "3949": "SanitizerAPISanitizeFor",
+    "3950": "SanitizerAPIElementSetSanitized",
+    "3951": "TextShadowInHighlightPseudo",
+    "3952": "TextShadowNotNoneInHighlightPseudo",
+    "3953": "SameSiteNoneRequired",
+    "3954": "SameSiteNoneIncludedBySamePartyTopResource",
+    "3955": "SameSiteNoneIncludedBySamePartyAncestors",
+    "3956": "SameSiteNoneIncludedBySameSiteLax",
+    "3957": "SameSiteNoneIncludedBySameSiteStrict",
+    "3958": "PrivateNetworkAccessNonSecureContextsAllowedDeprecationTrial",
+    "3959": "V8URLPattern_Constructor",
+    "3960": "V8URLPattern_Test_Method",
+    "3961": "V8URLPattern_Exec_Method"
 }
 
 ##########################################################################
@@ -5993,7 +6028,10 @@ CSS_FEATURES = {
     "693": "CSSPropertyBorderEndStartRadius",
     "694": "CSSPropertyBorderEndEndRadius",
     "695": "CSSPropertyAccentColor",
-    "696": "CSSPropertySizeAdjust"
+    "696": "CSSPropertySizeAdjust",
+    "697": "CSSPropertyContainerName",
+    "698": "CSSPropertyContainerType",
+    "699": "CSSPropertyContainer"
 }
 
 if '__main__' == __name__:
