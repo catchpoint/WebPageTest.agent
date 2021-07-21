@@ -565,6 +565,8 @@ class WebPageTest(object):
                     job['timeline'] = 1
                 if self.options.location is not None:
                     job['location'] = self.options.location
+                if self.scheduler_node is not None and 'saas_test_id' in job:
+                    job['saas_node_id'] = self.scheduler_node
                 # For CLI tests, write out the raw job file
                 if self.options.testurl or self.options.testspec:
                     if not os.path.isdir(self.workdir):
@@ -914,6 +916,15 @@ class WebPageTest(object):
                 # Keep the full resolution video frames if the browser window is smaller than 600px
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
+                # Pass-through the SaaS fields
+                if 'saas_test_id' in job:
+                    task['page_data']['saas_test_id'] = job['saas_test_id']
+                    if 'saas_node_id' in job:
+                        task['page_data']['saas_node_id'] = job['saas_node_id']
+                    if 'saas_device_type_id' in job:
+                        task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
+                    else:
+                        task['page_data']['saas_device_type_id'] = 0
                 self.test_run_count += 1
         if task is None and self.job is not None:
             self.upload_test_result()
