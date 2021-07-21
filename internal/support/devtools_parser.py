@@ -1100,8 +1100,8 @@ class DevToolsParser(object):
             f_in.close()
             requests = self.result['requests']
             for request in requests:
-                if 'request_id' in request and request['request_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['request_id']]:
-                    request['renderBlocking'] = timeline_requests[request['request_id']]['renderBlocking']
+                if 'raw_id' in request and request['raw_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['raw_id']]:
+                    request['renderBlocking'] = timeline_requests[request['raw_id']]['renderBlocking']
 
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
