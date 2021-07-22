@@ -108,6 +108,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--no-sandbox')
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
+            args.append('--disable-dev-shm-usage')
         args.append('--enable-features=' + ','.join(features))
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
 
