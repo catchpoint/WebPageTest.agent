@@ -579,7 +579,7 @@ class NetEm(object):
         if self.interface:
             subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
                              'ingress'])
-            if self.in_interface.startswith('ifb'):
+            if self.in_interface is not None and self.in_interface.startswith('ifb'):
                 subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
         return True
 
