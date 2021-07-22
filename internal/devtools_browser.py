@@ -757,7 +757,7 @@ class DevtoolsBrowser(object):
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
-            time_limit = min(int(task['time_limit']), 80)
+            time_limit = max(int(task['time_limit']), 240)
             # see what version of lighthouse we are running
             lighthouse_version = 1
             try:
@@ -788,11 +788,12 @@ class DevtoolsBrowser(object):
                     logging.exception('Error adding custom config for lighthouse test')
             else:
                 if not self.options.android and 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
+                    throttle_amount = min(4.0, self.job['throttle_cpu'])
                     command.extend(['--throttling-method', 'devtools',
                                     '--throttling.requestLatencyMs', '0',
                                     '--throttling.downloadThroughputKbps', '0',
                                     '--throttling.uploadThroughputKbps', '0',
-                                    '--throttling.cpuSlowdownMultiplier', '{:.3f}'.format(self.job['throttle_cpu'])])
+                                    '--throttling.cpuSlowdownMultiplier', '{:.3f}'.format(throttle_amount)])
                 else:
                     command.extend(['--throttling-method', 'provided'])
             if self.job['keep_lighthouse_trace']:
