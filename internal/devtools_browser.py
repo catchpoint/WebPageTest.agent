@@ -757,7 +757,7 @@ class DevtoolsBrowser(object):
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
-            time_limit = max(int(task['time_limit']), 240)
+            time_limit = min(int(task['time_limit']), 80)
             # see what version of lighthouse we are running
             lighthouse_version = 1
             try:
