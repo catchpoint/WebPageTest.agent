@@ -740,6 +740,11 @@ class DevTools(object):
                     else:
                         body = response['result']['body'].encode('utf-8')
                         is_text = True
+                    # Explicitly skip some file extensions
+                    binary_extensions = ['.png', '.jpg', '.avif', '.jxl', '.webp', '.mp4', '.ttf', '.woff', '.woff2']
+                    for extension in binary_extensions:
+                        if request['url'].endswith(extension):
+                            is_text = False
                     # Add text bodies to the zip archive
                     store_body = self.all_bodies
                     if self.html_body and request_id == self.main_request:
