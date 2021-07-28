@@ -159,9 +159,8 @@ class DevtoolsBrowser(object):
                                            wait=True)
 
             # DevTools-based CPU throttling for desktop and emulated mobile tests
-            # This throttling should only be applied for lighthouse test runs where
-            # a custom config path is not specified
-            if not self.options.android and not self.is_webkit and 'throttle_cpu' in self.job:
+            # Lighthouse will provide the throttling directly
+            if not self.options.android and not self.is_webkit and not task['running_lighthouse'] and 'throttle_cpu' in self.job:
                 logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
                 if self.job['throttle_cpu'] > 1:
                     self.devtools.send_command("Emulation.setCPUThrottlingRate",
@@ -786,7 +785,11 @@ class DevtoolsBrowser(object):
                 except Exception:
                     logging.exception('Error adding custom config for lighthouse test')
             else:
-                command.extend(['--throttling-method', 'provided'])
+                if self.job['throttle_cpu'] > 1:
+                    cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu'])
+                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '10000', '--throttling.uploadThroughputKbps', '10000', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
+                else:
+                    command.extend(['--throttling-method', 'provided'])
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
