@@ -748,8 +748,8 @@ class DevtoolsBrowser(object):
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
         if 'url' in self.job and self.job['url'] is not None and not self.is_webkit:
-            if not self.job['lighthouse_config'] and not self.job['dtShaper']:
-                self.job['shaper'].configure(self.job, task)
+            #if not self.job['lighthouse_config'] and not self.job['dtShaper']:
+            #    self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
@@ -784,12 +784,9 @@ class DevtoolsBrowser(object):
                     command.extend(['--config-path', lighthouse_config_file])
                 except Exception:
                     logging.exception('Error adding custom config for lighthouse test')
-            else:
-                if self.job['throttle_cpu'] > 1:
-                    cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu'])
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
-                else:
-                    command.extend(['--throttling-method', 'provided'])
+            elif self.job['throttle_cpu'] > 1:
+                cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu'])
+                command.extend(['--throttling-method', 'simulate', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
             if 'debug' in self.job and self.job['debug']:
                 command.extend(['--verbose'])
             if self.job['keep_lighthouse_trace']:
