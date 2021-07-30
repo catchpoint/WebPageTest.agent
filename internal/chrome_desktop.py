@@ -111,6 +111,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--disable-dev-shm-usage')
         args.append('--enable-features=' + ','.join(features))
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        if task['running_lighthouse']:
+            args.append('--headless')
 
         # Disable site isolation if emulating mobile. It is disabled on
         # actual mobile Chrome (and breaks Chrome's CPU throttling)
