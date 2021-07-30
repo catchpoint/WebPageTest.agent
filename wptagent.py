@@ -164,6 +164,7 @@ class WPTAgent(object):
                                 self.task['running_lighthouse'] = False
                                 if self.job['type'] != 'lighthouse':
                                     self.run_single_test()
+                                    self.wpt.get_bodies(self.task)
                                 if self.task['run'] == 1 and not self.task['cached'] and \
                                         self.job['warmup'] <= 0 and \
                                         self.task['error'] is None and \
