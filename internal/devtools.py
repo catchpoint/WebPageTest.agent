@@ -731,19 +731,12 @@ class DevTools(object):
                     if 'base64Encoded' in response['result'] and \
                             response['result']['base64Encoded']:
                         body = base64.b64decode(response['result']['body'])
-                        # Run a sanity check to make sure it isn't binary
-                        if self.bodies_zip_file is not None and is_text:
-                            try:
-                                json.loads('"' + body.replace('"', '\\"') + '"')
-                            except Exception:
-                                is_text = False
+                        is_text = False
                     else:
                         body = response['result']['body'].encode('utf-8')
                         is_text = True
-                    # Explicitly skip some file extensions
-                    binary_extensions = ['.png', '.jpg', '.avif', '.jxl', '.webp', '.mp4', '.ttf', '.woff', '.woff2']
-                    for extension in binary_extensions:
-                        if request['url'].endswith(extension):
+                    if 'request_headers' in request and 'Sec-Fetch-Dest' in request['request_headers']:
+                        if request['request_headers']['Sec-Fetch-Dest'] in ['audio', 'audioworklet', 'font', 'image', 'object', 'track', 'video']:
                             is_text = False
                     # Add text bodies to the zip archive
                     store_body = self.all_bodies
