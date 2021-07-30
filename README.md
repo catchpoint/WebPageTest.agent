@@ -107,6 +107,8 @@ The result of the test will be output to stdout as JSON. If a server, location a
     * <url> : URL to test
 * **--testspec** : Provide a full [JSON file](docs/test_options.md) with test parameters
     * <path> : Path to the JSON test options
+* **--browser** : Specify the browser to test in (can also be specified in the JSON file)
+    * <url> : Browser to test in
 * **--testout** : Output format fot the test result. Valid options are:
     * id : Test ID (if tests are uploaded to a server/location)
     * url : URL to test result (if tests are uploaded to a server/location)

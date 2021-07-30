@@ -143,6 +143,8 @@ class WPTAgent(object):
                                     test_json = json.load(f_in)
                             if self.options.testurl:
                                 test_json['url'] = self.options.testurl
+                            if self.options.browser:
+                                test_json['browser'] = self.options.browser
                             if 'runs' not in test_json:
                                 test_json['runs'] = self.options.testruns
                             if 'fvonly' not in test_json:
@@ -1095,6 +1097,7 @@ def main():
 
     # CLI test options
     parser.add_argument('--testurl', help="URL to test (CLI).")
+    parser.add_argument('--browser', help="Browser to test in (CLI).")
     parser.add_argument('--testspec', help="JSON test definition file (CLI).")
     parser.add_argument('--testoutdir', help="Output directory for test artifacts (CLI).")
     parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
