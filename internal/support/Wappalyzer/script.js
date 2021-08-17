@@ -1,7 +1,8 @@
 (async function() {
   %WAPPALYZER%;
   const json = %JSON%;
-  var responseHeaders = %RESPONSE_HEADERS%;
+  const cookies = %COOKIES%;
+  const responseHeaders = %RESPONSE_HEADERS%;
   Wappalyzer.setTechnologies(json.technologies);
   Wappalyzer.setCategories(json.categories);
 
@@ -35,6 +36,7 @@
       },
       {}
     )
+
     // Run the analysis        
     const detections = await Wappalyzer.analyze({
       url: window.top.location.href,
@@ -42,6 +44,7 @@
       css: css,
       headers: responseHeaders,
       meta: meta,
+      cookies: cookies,
       scripts: scripts
     });
     const dom_detections = await analyzeDom(Wappalyzer.technologies);
