@@ -946,7 +946,15 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             try:
                 logging.debug('wappalyzer_detect')
-                detect_script = self.wappalyzer_script(request_headers)
+                cookies = {}
+                response = self.devtools.send_command("Storage.getCookies", {}, wait=True, timeout=30)
+                if response is not None and 'result' in response and 'cookies' in response['result']:
+                    for cookie in response['result']['cookies']:
+                        name = cookie['name'].lower()
+                        if name not in cookies:
+                            cookies[name] = []
+                        cookies[name].append(cookie['value'])
+                detect_script = self.wappalyzer_script(request_headers, cookies)
                 response = self.devtools.send_command("Runtime.evaluate",
                                                       {'expression': detect_script,
                                                        'awaitPromise': True,
@@ -971,7 +979,7 @@ class DevtoolsBrowser(object):
             task['page_data']['wappalyzer_failed'] = 1
         self.profile_end('dtbrowser.wappalyzer_detect')
 
-    def wappalyzer_script(self, response_headers):
+    def wappalyzer_script(self, response_headers, cookies):
         """Build the wappalyzer script to run in-browser"""
         script = None
         try:
@@ -1012,6 +1020,7 @@ class DevtoolsBrowser(object):
                                         headers[key].append(value)
                         script = script.replace('%WAPPALYZER%', wappalyzer)
                         script = script.replace('%JSON%', json_data)
+                        script = script.replace('%COOKIES%', json.dumps(cookies))
                         script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
         except Exception:
             logging.exception('Error building wappalyzer script')
