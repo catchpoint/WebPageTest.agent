@@ -381,6 +381,19 @@
       "scripts": "bitrix(?:\\.info/|/js/main/core)",
       "website": "http://www.1c-bitrix.ru"
     },
+    "2B Advice": {
+      "cats": [
+        67
+      ],
+      "description": "2B Advice provides a plug-in to manage GDPR cookie consent.",
+      "icon": "2badvice.png",
+      "js": {
+        "BBCookieControler": ""
+      },
+      "saas": true,
+      "scripts": "2badvice-cdn\\.azureedge\\.net",
+      "website": "https://www.2b-advice.com/en/data-privacy-software/cookie-consent-plugin/"
+    },
     "33Across": {
       "cats": [
         36
@@ -667,7 +680,7 @@
       "cats": [
         68
       ],
-      "description": "AccessiBe is an automated web accessibility solution for ADA and WCAG compliance. The system scans and analyzes a website using AI technology, and applies all the required adjustments to become ADA and WCAG 2.1 compliant.",
+      "description": "AccessiBe is an accessibility overlay which claims to provide ADA and WCAG compliance. The system scans and analyzes a website, and applies adjustments which they claim make your website ADA and WCAG 2.1 compliant.",
       "icon": "AccessiBe.svg",
       "js": {
         "acsb": "\\;confidence:50",
@@ -680,6 +693,20 @@
       "saas": true,
       "scripts": "acsbapp?\\.com/.*/acsb\\.js",
       "website": "https://accessibe.com"
+    },
+    "Accessibly": {
+      "cats": [
+        76
+      ],
+      "description": "Accessily is an app which is designed to assist with meeting certain requirements of WCAG 2.1 using an overlay solution.",
+      "icon": "Accessibly.svg",
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "accessibly\\.onthemapmarketing\\.com",
+      "website": "https://www.onthemapmarketing.com/accessibly/"
     },
     "Accesso": {
       "cats": [
@@ -950,6 +977,18 @@
       "icon": "Adally.png",
       "scripts": "cloudfront\\.net/.*/adally\\.js",
       "website": "https://adally.com/"
+    },
+    "Adalyser": {
+      "cats": [
+        36
+      ],
+      "description": "Adalyser is an online platform offering the tools needed to get up and running with TV advertising.",
+      "icon": "Adalyser.svg",
+      "js": {
+        "adalyserModules": ""
+      },
+      "scripts": "c5\\.adalyser\\.com",
+      "website": "https://adalyser.com/"
     },
     "Adcash": {
       "cats": [
@@ -1669,6 +1708,18 @@
       "saas": true,
       "website": "http://www.algolia.com"
     },
+    "Ali Reviews": {
+      "cats": [
+        90
+      ],
+      "description": "Ali reviews is a shopify app to collect reviews from customers.",
+      "icon": "Alireviews.svg",
+      "js": {
+        "alireviews_tags": ""
+      },
+      "saas": true,
+      "website": "https://apps.shopify.com/ali-reviews"
+    },
     "All in One SEO Pack": {
       "cats": [
         54,
@@ -2263,6 +2314,19 @@
       "implies": "Node.js",
       "website": "http://apostrophecms.org"
     },
+    "Appcues": {
+      "cats": [
+        58
+      ],
+      "description": "Appcues is a solution for measuring and improving product adoption.",
+      "icon": "Appcues.png",
+      "js": {
+        "Appcues": ""
+      },
+      "saas": true,
+      "scripts": "fast\\.appcues\\.com",
+      "website": "https://www.appcues.com/"
+    },
     "AppDynamics": {
       "cats": [
         10,
@@ -2358,6 +2422,18 @@
       ],
       "saas": true,
       "website": "https://www.appointy.com/"
+    },
+    "Appsflyer": {
+      "cats": [
+        10
+      ],
+      "description": "AppsFlyer is a SaaS mobile marketing analytics and attribution platform.",
+      "icon": "Appsflyer.svg",
+      "js": {
+        "AppsFlyerSdkObject": ""
+      },
+      "scripts": "websdk\\.appsflyer\\.com",
+      "website": "https://www.appsflyer.com/"
     },
     "Apptus": {
       "cats": [
@@ -2700,7 +2776,7 @@
       "cats": [
         68
       ],
-      "description": "AudioEye is a software solution delivering immediate ADA and WCAG accessibility compliance at scale.",
+      "description": "AudioEye is an accessibility overlay which claims to provide ADA and WCAG accessibility compliance.",
       "dom": "iframe[scr*='.audioeye.com/']",
       "icon": "AudioEye.svg",
       "js": {
@@ -3058,6 +3134,40 @@
         "WWW-Authenticate": "^Basic"
       },
       "website": "https://tools.ietf.org/html/rfc7617"
+    },
+    "Bazaarvoice": {
+      "cats": [
+        90
+      ],
+      "description": "Bazaarvoice is a provide of UGC solutions like ratings and reviews and Q&A.",
+      "icon": "Bazaarvoice.png",
+      "js": {
+        "BV.api": ""
+      },
+      "pricing": [
+        "high",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "apps\\.bazaarvoice\\.com",
+      "website": "https://www.bazaarvoice.com/"
+    },
+    "Beans": {
+      "cats": [
+        84
+      ],
+      "description": "Beans is a provider of ecommerce loyalty programs.",
+      "icon": "Beans.svg",
+      "js": {
+        "Beans3": ""
+      },
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "cdn\\.trybeans\\.com",
+      "website": "https://www.trybeans.com/"
     },
     "Bentobox": {
       "cats": [
@@ -4499,6 +4609,20 @@
       "scripts": "\\.chaport\\.com",
       "website": "https://www.chaport.com"
     },
+    "ChargeAfter": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "ChargeAfter is a platform that connects retailers and lenders to offer consumers personalized Point of Sale Financing options at checkout from multiple lenders. ",
+      "icon": "ChargeAfter.svg",
+      "js": {
+        "ChargeAfter": ""
+      },
+      "saas": true,
+      "scripts": "cdn\\.chargeafter\\.com",
+      "website": "https://chargeafter.com/"
+    },
     "Chargebee": {
       "cats": [
         41
@@ -4904,6 +5028,15 @@
       ],
       "website": "http://clientjs.org"
     },
+    "Clinch": {
+      "cats": [
+        76
+      ],
+      "description": "Clinch delivers hyper-personalized creative experiences and consumer intelligence across all channels.",
+      "icon": "Clinch.png",
+      "scripts": "cdn\\.clinch\\.co",
+      "website": "https://clinch.co/"
+    },
     "Clipboard.js": {
       "cats": [
         19
@@ -4985,6 +5118,15 @@
       ],
       "icon": "Cloudinary.svg",
       "website": "https://cloudinary.com"
+    },
+    "Cluep": {
+      "cats": [
+        36
+      ],
+      "description": "Cluep's artificially intelligent mobile ad platform targets people based on what they are sharing, how they are feeling and where they go in the physical world.",
+      "icon": "Cluep.png",
+      "scripts": "cas\\.cluep\\.com",
+      "website": "https://cluep.com/"
     },
     "ClustrMaps Widget": {
       "cats": [
@@ -5468,6 +5610,16 @@
       "scripts": "\\.convertexperiments\\.com/js",
       "website": "https://www.convert.com"
     },
+    "Convertcart": {
+      "cats": [
+        32
+      ],
+      "description": "SConvertCart helps online businesses deliver outstanding experiences to customers throughout their journey.",
+      "icon": "Convertcart.svg",
+      "saas": true,
+      "scripts": "cdn\\.convertcart\\.com",
+      "website": "https://www.convertcart.com/"
+    },
     "ConvertFlow": {
       "cats": [
         10,
@@ -5503,6 +5655,20 @@
       "saas": true,
       "scripts": "\\.convertkit\\.com",
       "website": "https://convertkit.com"
+    },
+    "ConveyThis": {
+      "cats": [
+        89
+      ],
+      "description": "ConveyThis is a website translation service.",
+      "icon": "ConveyThis.png",
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "cdn\\.conveythis\\.com",
+      "website": "https://www.conveythis.com/"
     },
     "Cookie Script": {
       "cats": [
@@ -5774,6 +5940,17 @@
         "//static\\.criteo\\.net/js/ld/ld\\.js"
       ],
       "website": "http://criteo.com"
+    },
+    "Crobox": {
+      "cats": [
+        5
+      ],
+      "icon": "Crobox.svg",
+      "js": {
+        "crobox": ""
+      },
+      "scripts": "cdn\\.crobox\\.com",
+      "website": "https://crobox.com/"
     },
     "Cross Pixel": {
       "cats": [
@@ -6365,6 +6542,17 @@
       "scripts": "Divi/js/custom\\.(?:min|unified)\\.js\\?ver=([\\d.]+)\\;version:\\1",
       "website": "https://www.elegantthemes.com/gallery/divi"
     },
+    "Divido": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Divio is a Buy now pay later solution. Divido provided whitelabel platform connects lenders, retailers and channel partners at the point of sale",
+      "icon": "Divido.png",
+      "saas": true,
+      "scripts": "cdn\\.divido\\.com",
+      "website": "https://www.divido.com/"
+    },
     "Django": {
       "cats": [
         18
@@ -6454,6 +6642,18 @@
       },
       "scripts": "([\\d.]+)/dojo/dojo(?:\\.xd)?\\.js\\;version:\\1",
       "website": "https://dojotoolkit.org"
+    },
+    "Dokan": {
+      "cats": [
+        6
+      ],
+      "description": "Dokan offers a multi-vendor marketplace solution built on top of wordpress and woocommerce.",
+      "icon": "Dokan.svg",
+      "js": {
+        "dokan": ""
+      },
+      "saas": true,
+      "website": "https://wedevs.com/dokan"
     },
     "Dokeos": {
       "cats": [
@@ -7184,7 +7384,7 @@
       "cats": [
         68
       ],
-      "description": "EqualWeb provides web accessibility, digital accessibility solutions and helps people with disabilities access digital information.",
+      "description": "EqualWeb provides a web accessibility overlay, and helps some people with disabilities access digital information.",
       "icon": "EqualWeb.png",
       "scripts": "cdn\\.equalweb\\.com.*\\.js",
       "website": "https://www.equalweb.com/"
@@ -7511,7 +7711,7 @@
       "cats": [
         68
       ],
-      "description": "Facil-iti is solution for website owners, providing accessibility to disability users and seniors.",
+      "description": "Facil-iti is a web accessibility overlay which provides support for some people with disabilities and seniors.",
       "icon": "Facil-iti.svg",
       "scripts": "ws\\.facil-iti\\.com/tag/faciliti-tag\\.min\\.js",
       "website": "https://www.facil-iti.com/"
@@ -8115,6 +8315,33 @@
       "scripts": "cartjs\\.php\\?(?:.*&)?s=[^&]*myfortune3cart\\.com",
       "website": "http://fortune3.com"
     },
+    "Four": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Pay with four is a Buy now pay later solution.",
+      "icon": "Four.svg",
+      "js": {
+        "Four": ""
+      },
+      "saas": true,
+      "scripts": "scripts\\.paywithfour\\.com",
+      "website": "https://paywithfour.com/"
+    },
+    "Foursixty": {
+      "cats": [
+        5
+      ],
+      "description": "Foursixty is a widget which turns Instagram content and UGC into shoppable galleries.",
+      "icon": "Foursixty.png",
+      "js": {
+        "FoursixtyEmbed": ""
+      },
+      "saas": true,
+      "scripts": "foursixty\\.com",
+      "website": "https://foursixty.com/"
+    },
     "Foswiki": {
       "cats": [
         8
@@ -8261,6 +8488,18 @@
         "Font Awesome"
       ],
       "website": "http://froala.com/wysiwyg-editor"
+    },
+    "Frontastic": {
+      "cats": [
+        51
+      ],
+      "description": "Frontastic is a Commerce Frontend Platform that unites business and development teams to build commerce sites on headless.",
+      "headers": {
+        "frontastic-request-id": ""
+      },
+      "icon": "Frontastic.png",
+      "saas": true,
+      "website": "https://www.frontastic.cloud/"
     },
     "FrontPage": {
       "cats": [
@@ -9323,6 +9562,17 @@
       "icon": "Google Workspace.svg",
       "website": "https://workspace.google.com/"
     },
+    "Grab Pay Later": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Grab Pay Later is a Buy now pay later solution offered by Grab.",
+      "icon": "Grab.svg",
+      "saas": true,
+      "scripts": "grab-paylater\\.js",
+      "website": "https://www.grab.com/sg/finance/pay-later/"
+    },
     "Graffiti CMS": {
       "cats": [
         1
@@ -9491,6 +9741,16 @@
         "generator": "^Gridsome v([\\d.]+)$\\;version:\\1"
       },
       "website": "https://gridsome.org"
+    },
+    "GroupBy": {
+      "cats": [
+        29
+      ],
+      "description": "GroupBy is a search enging for eCommerce sites.",
+      "icon": "Groupby.svg",
+      "saas": true,
+      "scripts": "cdn\\.groupbycloud\\.com",
+      "website": "https://groupbyinc.com/"
     },
     "GrowingIO": {
       "cats": [
@@ -9930,7 +10190,7 @@
       "cats": [
         68
       ],
-      "description": "HikeOrders web accessibility automated plugin.",
+      "description": "HikeOrders is a web accessibility overlay that claims to make your site disability friendly.",
       "icon": "HikeOrders.png",
       "scripts": "hikeorders\\.com/main/assets/js/hko-accessibility\\.min\\.js",
       "website": "https://hikeorders.com/"
@@ -14272,11 +14532,22 @@
       "scripts": "nv\\.d3(?:\\.min)?\\.js",
       "website": "http://nvd3.org"
     },
+    "Nacelle": {
+      "cats": [
+        6
+      ],
+      "description": "Nacelle is a headless commerce platform",
+      "icon": "Nacelle.svg",
+      "js": {
+        "nacelleEventData": ""
+      },
+      "website": "https://nacelle.com/"
+    },
     "Nagich": {
       "cats": [
         68
       ],
-      "description": "Nagich is a website accessibility software provider from Israel.",
+      "description": "Nagich is a website accessibility overlay provider from Israel.",
       "icon": "Nagich.svg",
       "js": {
         "interdeal.version": "([\\d.]+)\\;version:\\1"
@@ -14448,6 +14719,16 @@
       ],
       "saas": true,
       "website": "https://newrelic.com"
+    },
+    "Newspack": {
+      "cats": [
+        87
+      ],
+      "description": "Newspack is an open-source publishing platform built on WordPress for small to medium sized news organizations. It is an “opinionated” platform that stakes out clear, best-practice positions on technology, design, and business practice for news publishers.",
+      "dom": "a.imprint[href*='newspack.pub']",
+      "icon": "NewspackLogo.png",
+      "oss": true,
+      "website": "https://github.com/Automattic/newspack-plugin"
     },
     "Next.js": {
       "cats": [
@@ -15629,6 +15910,16 @@
       "saas": true,
       "website": "https://www.oxatis.com/"
     },
+    "Oxi Social Login": {
+      "cats": [
+        69
+      ],
+      "description": "Oxi Social Login provides one click login with services like Facebook, Google and many more.",
+      "icon": "OxiSocialLogin.png",
+      "saas": true,
+      "scripts": "social-login\\.oxiapps\\.com",
+      "website": "https://www.oxiapps.com/"
+    },
     "Oxygen": {
       "cats": [
         51,
@@ -15759,6 +16050,20 @@
       "saas": true,
       "scripts": "www\\.powr\\.io/powr\\.js",
       "website": "https://www.powr.io"
+    },
+    "Pace": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "PacePay offers a BNPL (Buy now pay later) solution for merchants.",
+      "icon": "Pace.svg",
+      "js": {
+        "pacePay": ""
+      },
+      "saas": true,
+      "scripts": "pay\\.pacenow\\.co",
+      "website": "https://pacenow.co/"
     },
     "Paddle": {
       "cats": [
@@ -15898,6 +16203,20 @@
       },
       "website": "https://www.parse.ly"
     },
+    "Partial.ly": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Partial.ly payment plan software lets businesses offer customizable payment plans to their customers.",
+      "icon": "Partially.png",
+      "js": {
+        "PartiallyButton": ""
+      },
+      "saas": true,
+      "scripts": "partial\\.ly",
+      "website": "https://partial.ly/"
+    },
     "Paths.js": {
       "cats": [
         25
@@ -15926,9 +16245,26 @@
       "scripts": "patreon-connect/assets/.+ver=([\\d.]+)\\;version:\\1",
       "website": "https://www.patreon.com"
     },
+    "Pattern by Etsy": {
+      "cats": [
+        6
+      ],
+      "description": "Pattern is an offering by Etsy to set up a website for Etsy sellers, in addition to Etsy shop.",
+      "icon": "Etsy.svg",
+      "js": {
+        "Etsy": ""
+      },
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "website": "https://www.etsy.com/pattern"
+    },
     "PayBright": {
       "cats": [
-        41
+        41,
+        91
       ],
       "description": "PayBright is a Canadian fintech company that offers short-term interest-free installment loans for online shopping to consumers at checkout.",
       "dom": "link[href*='app.paybright.com']",
@@ -16158,6 +16494,16 @@
       "saas": true,
       "scripts": "cdn\\.personaclick\\.com/v([\\d.]+)\\.js\\;version:\\1",
       "website": "https://www.personaclick.com"
+    },
+    "Perzonalization": {
+      "cats": [
+        76
+      ],
+      "description": "Perzonalization is a AI powered personalization engine for eCommerce",
+      "icon": "Perzonalization.png",
+      "saas": true,
+      "scripts": "cdn\\.perzonalization\\.com",
+      "website": "https://www.perzonalization.com/"
     },
     "Phabricator": {
       "cats": [
@@ -16644,6 +16990,15 @@
       "saas": true,
       "scripts": "\\.podium\\.com/",
       "website": "https://www.podium.com"
+    },
+    "Podsights": {
+      "cats": [
+        36
+      ],
+      "description": "Podsights is attribution technology platform that brands and agencies use to measure and scale their podcast advertising",
+      "icon": "Podsights.png",
+      "scripts": "cdn\\.pdst\\.fm",
+      "website": "https://podsights.com/"
     },
     "Polyfill": {
       "cats": [
@@ -17203,25 +17558,6 @@
       "icon": "Python.png",
       "website": "http://python.org"
     },
-    "Quadpay": {
-      "cats": [
-        41,
-        91
-      ],
-      "description": "Quadpay is a payment platform.",
-      "dom": "link[href*='widgets.quadpay.com/'], div[data-quadpay-src*='.quadpay.com/']",
-      "icon": "Quadpay.svg",
-      "js": {
-        "QuadPayShopify": "",
-        "quadpayID": ""
-      },
-      "pricing": [
-        "payg"
-      ],
-      "saas": true,
-      "scripts": "\\.quadpay\\.com/quadpay-widget-([\\d.]+)\\.js\\;version:\\1",
-      "website": "https://www.quadpay.com"
-    },
     "Qualtrics": {
       "cats": [
         73
@@ -17269,6 +17605,16 @@
       "saas": true,
       "scripts": "\\.quantserve\\.com/quant\\.js",
       "website": "https://www.quantcast.com/products/measure-audience-insights"
+    },
+    "Quantum Metric": {
+      "cats": [
+        10
+      ],
+      "description": "Quantum Metric is a continuous product design platform that helps organizations build better products faster.",
+      "icon": "Quantummetric.png",
+      "saas": true,
+      "scripts": "cdn\\.quantummetric\\.com",
+      "website": "https://www.quantummetric.com/"
     },
     "Qubit": {
       "cats": [
@@ -17321,6 +17667,19 @@
         "generator": "Quick\\.Cart(?: v([\\d.]+))?\\;version:\\1"
       },
       "website": "http://opensolution.org"
+    },
+    "Quicklink": {
+      "cats": [
+        59
+      ],
+      "description": "Quicklink is a JS library which aims to be a drop-in solution for sites to prefetch links based on what is in the user's viewport",
+      "icon": "Quicklink.svg",
+      "js": {
+        "quicklink": "",
+        "drupalSettings.quicklink": ""
+      },
+      "scripts": "quicklink@([\\d.]+)/dist/quicklink.*\\.js\\;version:\\1",
+      "website": "https://getquick.link/"
     },
     "Quill": {
       "cats": [
@@ -17459,6 +17818,14 @@
       },
       "scripts": "tag\\.rmp\\.rakuten\\.com",
       "website": "https://www.rakuten.com/"
+    },
+    "Rakuten Advertising": {
+      "cats": [
+        36
+      ],
+      "icon": "Rakuten Advertising.svg",
+      "scripts": "tag\\.rmp\\.rakuten\\.com",
+      "website": "https://rakutenadvertising.com/"
     },
     "Rakuten Digital Commerce": {
       "cats": [
@@ -17686,10 +18053,25 @@
       "cats": [
         68
       ],
-      "description": "Recite Me is a cloud-based web accessibility assistive toolbar that allows website visitors to customize a site in a way that works for them.",
+      "description": "Recite Me is a web accessibility overlay that claims to allow website visitors to customize a site in a way that works for them.",
       "icon": "Recite Me.png",
       "scripts": "api\\.reciteme\\.com/asset/js",
       "website": "https://reciteme.com/"
+    },
+    "RecoverMyCart": {
+      "cats": [
+        76
+      ],
+      "description": "RecoverMyCart is a shopify app for abandoned basket recovery.",
+      "icon": "RecoverMyCart.png",
+      "pricing": [
+        "low",
+        "freemium",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "cdn\\.recovermycart\\.com",
+      "website": "https://app.recovermycart.com/"
     },
     "Recurly": {
       "cats": [
@@ -17797,6 +18179,19 @@
         "/redux(@|/)([\\d.]+)(?:/[a-z]+)?/redux(?:.min)?\\.js\\;version:\\2"
       ],
       "website": "https://redux.js.org/"
+    },
+    "Reevoo": {
+      "cats": [
+        90
+      ],
+      "description": "Reevoo is a provider of UGC solutions like reviews.",
+      "icon": "Reevoo.svg",
+      "js": {
+        "ReevooApi": ""
+      },
+      "saas": true,
+      "scripts": "mark\\.reevoo\\.com",
+      "website": "https://www.reevoo.com/"
     },
     "Refersion": {
       "cats": [
@@ -18421,6 +18816,22 @@
       "scripts": "\\.gigya\\.com/JS/gigya\\.js",
       "website": "https://www.sap.com/uk/acquired-brands/what-is-gigya.html"
     },
+    "SAP Upscale Commerce": {
+      "cats": [
+        6
+      ],
+      "description": "SAP Upscale Commerce is a SaaS solution for small-to-medium organizations selling directly to consumers.",
+      "dom": {
+        "[upscale-version]": {
+          "attributes": {
+            "upscale-version": "^([\\d.]+)\\;version:\\1"
+          }
+        }
+      },
+      "icon": "SAP.svg",
+      "saas": true,
+      "website": "https://www.sapstore.com/solutions/47000/SAP-Upscale-Commerce"
+    },
     "SDL Tridion": {
       "cats": [
         1
@@ -18874,6 +19285,17 @@
       "description": "Scala is a general-purpose programming language providing support for both object-oriented programming and functional programming.",
       "icon": "Scala.png",
       "website": "http://www.scala-lang.org"
+    },
+    "Scalapay": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Scalapay is a payment method for e-commerce merchants in Europe that allows customers to buy now and pay later (BNPL).",
+      "icon": "Scalapay.svg",
+      "saas": true,
+      "scripts": "cdn\\.scalapay\\.com",
+      "website": "https://www.scalapay.com/"
     },
     "Schedule Engine": {
       "cats": [
@@ -19453,6 +19875,18 @@
       "scripts": "^https?://codice(?:business|ssl|pro|isp)?\\.shinystat\\.com/cgi-bin/getcod\\.cgi",
       "website": "http://shinystat.com"
     },
+    "Shogun": {
+      "cats": [
+        51
+      ],
+      "description": "Shogun is a page builder commonly used with headless implementations.",
+      "icon": "Shogun.svg",
+      "js": {
+        "shogunAnalytics": ""
+      },
+      "saas": true,
+      "website": "https://getshogun.com/"
+    },
     "Shop Pay": {
       "cats": [
         41
@@ -19873,6 +20307,15 @@
       },
       "website": "http://example.com"
     },
+    "Simpli.fi": {
+      "cats": [
+        36
+      ],
+      "description": "Simpli.fi is a programmatic advertising and agency management software.",
+      "icon": "Simplifi.png",
+      "scripts": "i\\.simpli\\.fi",
+      "website": "https://simpli.fi/"
+    },
     "Simplo7": {
       "cats": [
         6
@@ -19995,7 +20438,8 @@
         1
       ],
       "cookies": {
-        "SC_ANALYTICS_GLOBAL_COOKIE": ""
+        "SC_ANALYTICS_GLOBAL_COOKIE": "",
+        "sc_expview": ""
       },
       "description": "Sitecore provides web content management, and multichannel marketing automation software.",
       "html": "<img[^>]+src=\"[^>]*/~/media/[^>]+\\.ashx",
@@ -20036,6 +20480,16 @@
       "saas": true,
       "scripts": "siteglide\\.js",
       "website": "https://www.siteglide.com"
+    },
+    "SiteJabber": {
+      "cats": [
+        90
+      ],
+      "description": "Sitejabber is the leading destination for customer ratings and reviews of businesses. Consumers find ratings and read reviews to ensure they buy from the best companies.",
+      "icon": "SiteJabber.svg",
+      "saas": true,
+      "scripts": "biz\\.sitejabber\\.com",
+      "website": "https://www.sitejabber.com/"
     },
     "Sitevision CMS": {
       "cats": [
@@ -20312,6 +20766,17 @@
       "saas": true,
       "scripts": "js\\.smile\\.io/v([\\d.]+)/\\;version:\\1",
       "website": "https://smile.io"
+    },
+    "SMSBump": {
+      "cats": [
+        32
+      ],
+      "description": "SMS Bump is a SMS marketing and automations app.",
+      "icon": "Smsbump.png",
+      "js": {
+        "SMSBumpForm": ""
+      },
+      "website": "https://smsbump.com/"
     },
     "SmugMug": {
       "cats": [
@@ -20818,6 +21283,20 @@
       },
       "icon": "Splunk.png",
       "website": "http://splunk.com"
+    },
+    "Spotii": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Spotii is a tech-enabled payments platform where anyone can Shop Now and Pay Later with absolutely zero interest or cost.",
+      "icon": "Spotii.svg",
+      "js": {
+        "spotiiConfig": ""
+      },
+      "saas": true,
+      "scripts": "widget\\.spotii\\.me",
+      "website": "https://www.spotii.com/"
     },
     "SpotX": {
       "cats": [
@@ -21844,6 +22323,31 @@
       "icon": "Tamago.png",
       "website": "http://tamago.temonalab.com"
     },
+    "Tamara": {
+      "cats": [
+        41,
+        91
+      ],
+      "description": "Tamara ia a BNPL (Buy now pay later) provider in Saudi Arabia.",
+      "icon": "Tamara.svg",
+      "js": {
+        "TamaraProductWidget": ""
+      },
+      "saas": true,
+      "scripts": "cdn\\.tamara\\.co",
+      "website": "https://tamara.co/"
+    },
+    "Tatari": {
+      "cats": [
+        36
+      ],
+      "description": "Tatari is a data and analytics company focused on buying and measuring ads across TV and streaming platforms",
+      "icon": "Tatari.png",
+      "js": {
+        "tatari": ""
+      },
+      "website": "https://www.tatari.tv/"
+    },
     "Tawk.to": {
       "cats": [
         52
@@ -22434,6 +22938,7 @@
         }
       },
       "icon": "Tradedoubler.svg",
+      "scripts": "swrap\\.tradedoubler\\.com",
       "website": "https://www.tradedoubler.com/"
     },
     "Transifex": {
@@ -22668,6 +23173,24 @@
       "saas": true,
       "scripts": ".+\\.twic\\.pics",
       "website": "https://www.twicpics.com"
+    },
+    "Twik": {
+      "cats": [
+        76
+      ],
+      "description": "Twik provides a automated, no-configuration business intelligence & personalization automation engine.",
+      "icon": "Twik.svg",
+      "js": {
+        "TWIK_ID": ""
+      },
+      "pricing": [
+        "low",
+        "freemium",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "cdn\\.twik\\.io",
+      "website": "https://www.twik.io/"
     },
     "Twilight CMS": {
       "cats": [
@@ -23108,7 +23631,7 @@
       "cats": [
         68
       ],
-      "description": "UserWay is a web accessibility widget add-on for websites to help improve their compliance with accessibility standards.",
+      "description": "UserWay is a web accessibility overlay for websites that claims to improve compliance with accessibility standards.",
       "icon": "UserWay.png",
       "scripts": "cdn\\.userway\\.org/widget.*\\.js",
       "website": "https://userway.org/"
@@ -23198,7 +23721,8 @@
       "cookies": {
         "VtexFingerPrint": "",
         "VtexWorkspace": "",
-        "vtex_session": ""
+        "vtex_session": "",
+        "VtexStoreVersion": ""
       },
       "description": "VTEX is an ecommerce software that manages multiple online stores.",
       "headers": {
@@ -23206,10 +23730,14 @@
         "powered": "vtex"
       },
       "icon": "VTEX.svg",
+      "js": {
+        "vtex": ""
+      },
       "pricing": [
         "payg"
       ],
       "saas": true,
+      "scripts": "io\\.vtex\\.com\\.br",
       "website": "https://vtex.com/"
     },
     "VWO": {
@@ -23398,6 +23926,18 @@
       "icon": "Verizon Media.svg",
       "scripts": "\\.advertising\\.com",
       "website": "https://www.verizonmedia.com"
+    },
+    "Verloop": {
+      "cats": [
+        52
+      ],
+      "description": "Verloop is provider of conversational AI platform for customer support automation.",
+      "icon": "Verloop.png",
+      "js": {
+        "Verloop": ""
+      },
+      "saas": true,
+      "website": "https://verloop.io/"
     },
     "Vidazoo": {
       "cats": [
@@ -24218,6 +24758,23 @@
       "scripts": "whatfix\\.com",
       "website": "https://whatfix.com"
     },
+    "Wheelio": {
+      "cats": [
+        5
+      ],
+      "description": "Wheelio is gamified pop-up/widget for ecommerce sites.",
+      "icon": "Wheelio.png",
+      "js": {
+        "WheelEvent": ""
+      },
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "wheelio\\.azureedge\\.net",
+      "website": "https://wheelio-app.com/"
+    },
     "Whooshkaa": {
       "cats": [
         5
@@ -24225,6 +24782,19 @@
       "html": "<iframe src=\"[^>]+whooshkaa\\.com",
       "icon": "Whooshkaa.svg",
       "website": "https://www.whooshkaa.com"
+    },
+    "Wigzo": {
+      "cats": [
+        32
+      ],
+      "description": "Wigzo is e-commerce marketing automation platform that helps businesses of every size dig deeper into data to find opportunities to increase their sales and revenue.",
+      "icon": "Wigzo.png",
+      "js": {
+        "wigzo": ""
+      },
+      "saas": true,
+      "scripts": "app\\.wigzo\\.com",
+      "website": "https://www.wigzo.com/"
     },
     "Wiki.js": {
       "cats": [
@@ -24991,6 +25561,24 @@
       "requires": "WordPress",
       "website": "https://yoast.com"
     },
+    "Yotpo": {
+      "cats": [
+        84,
+        90
+      ],
+      "description": "Yotpo is a provider of Loyalty & Referrals, SMS Marketing, Reviews, and Visual UGC solutions.",
+      "icon": "Yotpo.png",
+      "js": {
+        "yotpo": ""
+      },
+      "pricing": [
+        "low",
+        "recurring"
+      ],
+      "saas": true,
+      "scripts": "staticw2\\.yotpo\\.com",
+      "website": "https://www.yotpo.com/"
+    },
     "Yottaa": {
       "cats": [
         42,
@@ -25199,11 +25787,21 @@
         91
       ],
       "description": "Zip is a payment service that lets you receive your purchase now and spread the total cost over a interest-free payment schedule.",
+      "dom": "link[href*='widgets.quadpay.com/'], div[data-quadpay-src*='.quadpay.com/']",
       "icon": "zip_pay.svg",
       "scripts": [
+        "quadpay\\.com",
         "static\\.zipmoney\\.com\\.au",
         "zip\\.co"
       ],
+      "js": {
+        "QuadPayShopify": "",
+        "quadpayID": ""
+      },
+      "pricing": [
+        "payg"
+      ],
+      "saas": true,
       "website": "https://www.zip.co/"
     },
     "Zipkin": {
@@ -25630,7 +26228,7 @@
       "cats": [
         68
       ],
-      "description": "eSSENTIAL Accessibility is a digital accessibility-as-a-service platform.",
+      "description": "eSSENTIAL Accessibility provides an accessibility overlay for websites.",
       "dom": " a[href*='.essentialaccessibility.com'] > img",
       "icon": "eSSENTIAL Accessibility.png",
       "pricing": [
@@ -26908,7 +27506,7 @@
       "cats": [
         68
       ],
-      "description": "uRemediate provides web accessibility testing tools.",
+      "description": "uRemediate provides web accessibility testing tools and accessibility overlays.",
       "icon": "User1st.png",
       "scripts": "fecdn\\.user1st\\.info/Loader/head",
       "website": "https://www.user1st.com/uremediate/"
