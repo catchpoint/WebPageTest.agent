@@ -250,6 +250,7 @@ class OptimizationChecks(object):
                        {'x-akamai-request-id': ''}],
             'Amazon CloudFront': [{'Via': 'CloudFront'}],
             'Aryaka': [{'X-Ar-Debug': ''}],
+            'Azion' : [{'Server' : 'Azion Technologies'}],
             'Baleen': [{'bln-version': ''}],
             'BelugaCDN': [{'Server': 'Beluga'},
                           {'X-Beluga-Cache-Status': ''}],
