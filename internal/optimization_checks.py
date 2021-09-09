@@ -79,7 +79,7 @@ class OptimizationChecks(object):
             'Akamai China CDN': ['.tl88.net'],
             'Alibaba':['a.lahuashanbx.com',
                        'cdn.gl102.com',
-                       'danuoyi.alicdn.com',
+                       '.alicdn.com',
                        'danuoyi.tbcache.com',
                        'gl102.com',
                        'kunlundns.com',
