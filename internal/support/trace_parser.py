@@ -61,11 +61,13 @@ class Trace():
         self.v8stats = None
         self.v8stack = {}
         self.PRIORITY_MAP = {
+            "VeryHigh": "Highest",
             "HIGHEST": "Highest",
             "MEDIUM": "High",
             "LOW": "Medium",
             "LOWEST": "Low",
-            "IDLE": "Lowest"
+            "IDLE": "Lowest",
+            "VeryLow": "Lowest"
         }
         return
 
