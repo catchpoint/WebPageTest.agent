@@ -52,11 +52,13 @@ class DevToolsParser(object):
         self.request_ids = {}
         self.script_ids = {}
         self.PRIORITY_MAP = {
+            "VeryHigh": "Highest",
             "HIGHEST": "Highest",
             "MEDIUM": "High",
             "LOW": "Medium",
             "LOWEST": "Low",
-            "IDLE": "Lowest"
+            "IDLE": "Lowest",
+            "VeryLow": "Lowest"
         }
 
     def process(self):
