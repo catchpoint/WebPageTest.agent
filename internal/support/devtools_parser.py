@@ -51,6 +51,13 @@ class DevToolsParser(object):
         self.result = {'pageData': {}, 'requests': []}
         self.request_ids = {}
         self.script_ids = {}
+        self.PRIORITY_MAP = {
+            "HIGHEST": "Highest",
+            "MEDIUM": "High",
+            "LOW": "Medium",
+            "LOWEST": "Low",
+            "IDLE": "Lowest"
+        }
 
     def process(self):
         """Main entry point for processing"""
@@ -647,9 +654,13 @@ class DevToolsParser(object):
                                 request['initiator'] = self.script_ids[frame['scriptId']]
                                 break
                 if 'initialPriority' in raw_request:
+                    if raw_request['initialPriority'] in self.PRIORITY_MAP:
+                        raw_request['initialPriority'] = self.PRIORITY_MAP[raw_request['initialPriority']]
                     request['priority'] = raw_request['initialPriority']
                     request['initial_priority'] = raw_request['initialPriority']
                 elif 'metrics' in raw_request and 'priority' in raw_request['metrics']:
+                    if raw_request['metrics']['priority'] in self.PRIORITY_MAP:
+                        raw_request['metrics']['priority'] = self.PRIORITY_MAP[raw_request['metrics']['priority']]
                     request['priority'] = raw_request['metrics']['priority']
                 request['server_rtt'] = None
                 request['headers'] = {'request': [], 'response': []}
@@ -890,6 +901,8 @@ class DevToolsParser(object):
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
                                     logging.exception('Error copying request key %s', key)
+                            if 'priority' in request and request['priority'] in self.PRIORITY_MAP:
+                                request['priority'] = self.PRIORITY_MAP[request['priority']]
                             if protocol is not None:
                                 request['protocol'] = protocol
                             if 'start' in entry:
