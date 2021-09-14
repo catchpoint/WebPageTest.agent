@@ -60,6 +60,13 @@ class Trace():
         self.netlog_event_types = {}
         self.v8stats = None
         self.v8stack = {}
+        self.PRIORITY_MAP = {
+            "HIGHEST": "Highest",
+            "MEDIUM": "High",
+            "LOW": "Medium",
+            "LOWEST": "Low",
+            "IDLE": "Lowest"
+        }
         return
 
     ##########################################################################
@@ -511,6 +518,8 @@ class Trace():
             if trace_event['name'] == 'ResourceSendRequest':
                 if 'priority' in trace_event['args']['data']:
                     request['priority'] = trace_event['args']['data']['priority']
+                    if request['priority'] in self.PRIORITY_MAP:
+                        request['priority'] = self.PRIORITY_MAP[request['priority']]
                 if 'frame' in trace_event['args']['data']:
                     request['frame'] = trace_event['args']['data']['frame']
                 if 'renderBlocking' in trace_event['args']['data']:
@@ -1052,6 +1061,8 @@ class Trace():
                                         request['priority'] = 'LOWEST'
                                     else:
                                         request['priority'] = 'IDLE'
+                                    if request['priority'] in self.PRIORITY_MAP:
+                                        request['priority'] = self.PRIORITY_MAP[request['priority']]
                             if 'first_byte' not in request and 'first_byte' in stream:
                                 request['first_byte'] = stream['first_byte']
                             if 'end' not in request and 'end' in stream:
@@ -1584,6 +1595,8 @@ class Trace():
         entry = self.netlog['url_request'][request_id]
         name = trace_event['name']
         if 'priority' in params:
+            if params['priority'] in self.PRIORITY_MAP:
+                params['priority'] = self.PRIORITY_MAP[params['priority']]
             entry['priority'] = params['priority']
             if 'initial_priority' not in entry:
                 entry['initial_priority'] = params['priority']
