@@ -798,15 +798,13 @@ class DevtoolsBrowser(object):
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
                 command.extend(['--skip-audits', 'screenshot-thumbnails,final-screenshot'])
-            form_factor_command = '--form-factor' if lighthouse_version >= 7 else '--emulated-form-factor'
+            form_factor_command = '--form-factor'
             if self.options.android:
                 command.extend([form_factor_command, 'mobile'])
-                if lighthouse_version >= 7:
-                    command.extend(['--screenEmulation.disabled'])
+                command.extend(['--screenEmulation.disabled'])
             elif 'mobile' not in self.job or not self.job['mobile']:
                 command.extend([form_factor_command, 'desktop'])
-                if lighthouse_version >= 7:
-                    command.extend(['--screenEmulation.disabled'])
+                command.extend(['--screenEmulation.disabled'])
             if 'user_agent_string' in self.job:
                 sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
                 command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
