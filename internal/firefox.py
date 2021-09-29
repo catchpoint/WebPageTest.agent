@@ -1081,6 +1081,7 @@ class Firefox(DesktopBrowser):
                             and 'start' in req and request['full_url'] == req['url']:
                         req['claimed'] = True
                         self.populate_request(request, req)
+                        break
                 except Exception:
                     logging.exception('Error populating request')
         # Add any events from the logs that weren't reported by the extension
