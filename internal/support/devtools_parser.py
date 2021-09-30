@@ -1132,6 +1132,9 @@ class DevToolsParser(object):
         page_data['responses_200'] = 0
         page_data['responses_404'] = 0
         page_data['responses_other'] = 0
+        page_data['renderBlockingCSS'] = 0
+        page_data['renderBlockingJS'] = 0
+
         page_data['fullyLoaded'] = page_data['docTime'] if 'docTime' in page_data else 0
         for request in requests:
             try:
@@ -1154,6 +1157,11 @@ class DevToolsParser(object):
                     page_data['bytesIn'] += request['bytesIn']
                 page_data['requests'] += 1
                 page_data['requestsFull'] += 1
+                if 'renderBlocking' in request and request['renderBlocking'] == 'blocking':
+                    if request['request_type'] == 'Script':
+                        page_data['renderBlockingJS'] += 1
+                    if request['request_type'] == 'Stylesheet':
+                        page_data['renderBlockingCSS'] += 1
                 if request['load_start'] < page_data['docTime']:
                     if 'bytesOut' in request:
                         page_data['bytesOutDoc'] += request['bytesOut']
