@@ -5,8 +5,10 @@ RUN apt-get update && \
   apt-get install -y \
     wget \
     curl \
+    git \
     python \
     python-pip \
+    python-ujson \
     xvfb \
     imagemagick \
     python-dev \
@@ -25,15 +27,12 @@ RUN apt-get update && \
     iproute2 \
     software-properties-common && \
 # Node setup
-  curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - && \
-  wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-  wget -qO- https://deb.opera.com/archive.key | apt-key add - && \
+  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && \
+  wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | apt-key add - && \
+  wget -qO- https://www.webpagetest.org/keys/opera/archive.key | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
 # Set repos
   add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free' && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free' && \
-  add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free' && \
 # Install browsers
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -yq \
@@ -42,9 +41,7 @@ RUN apt-get update && \
   google-chrome-unstable \
   firefox \
   firefox-trunk \
-  opera-stable \
-  opera-beta \
-  opera-developer \
+  firefox-geckodriver \
   nodejs && \
 # Get fonts
   echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
@@ -61,13 +58,13 @@ RUN apt-get update && \
     pillow \
     psutil \
     requests \
-    ujson \
     tornado \
     wsaccel \
     xvfbwrapper \
-    brotli \
-    fonttools \
-    marionette_driver
+    'fonttools>=3.44.0,<4.0.0' \
+    marionette_driver \
+    selenium \
+    future
 
 COPY wptagent.py /wptagent/wptagent.py
 COPY internal /wptagent/internal

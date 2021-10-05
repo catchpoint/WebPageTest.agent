@@ -1,17 +1,29 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Base class support for browsers that speak the dev tools protocol"""
 import glob
 import gzip
+import io
 import logging
 import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -23,25 +35,35 @@ class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 120
 
-    def __init__(self, options, job, use_devtools_video=True):
+    def __init__(self, options, job, use_devtools_video=True, is_webkit=False, is_ios=False):
         self.options = options
         self.job = job
+        self.is_webkit = is_webkit
+        self.is_ios = is_ios
         self.devtools = None
         self.task = None
         self.event_name = None
         self.browser_version = None
-        self.device_pixel_ratio = None
         self.use_devtools_video = use_devtools_video
         self.lighthouse_command = None
         self.devtools_screenshot = True
+        self.must_exit_now = False
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support')
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+        self.webkit_context = None
+        self.total_sleep = 0
+
+    def shutdown(self):
+        """Agent is dying NOW"""
+        self.must_exit_now = True
+        if self.devtools is not None:
+            self.devtools.shutdown()
 
     def connect(self, task):
         """Connect to the dev tools interface"""
         ret = False
         from internal.devtools import DevTools
-        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video)
+        self.devtools = DevTools(self.options, self.job, task, self.use_devtools_video, self.is_webkit, self.is_ios)
         if task['running_lighthouse']:
             ret = self.devtools.wait_for_available(self.CONNECT_TIME_LIMIT)
         else:
@@ -61,35 +83,55 @@ class DevtoolsBrowser(object):
             # remembered across sessions
             if self.task is not None and self.task['error'] is None:
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
+            if self.webkit_context is not None:
+                self.devtools.send_command('Automation.closeBrowsingContext', {'handle': self.webkit_context}, wait=True)
             self.devtools.close()
             self.devtools = None
 
     def prepare_browser(self, task):
         """Prepare the running browser (mobile emulation, UA string, etc"""
-        if self.devtools is not None:
+        if self.devtools is not None and not self.must_exit_now:
+            # Move the WebKit window
+            if self.is_webkit and not self.is_ios:
+                result = self.devtools.send_command('Automation.getBrowsingContexts', {}, wait=True)
+                if result and 'result' in result and 'contexts' in result['result']:
+                    for context in result['result']['contexts']:
+                        if 'handle' in context:
+                            self.webkit_context = context['handle']
+                            break
+                if self.webkit_context is None:
+                    result = self.devtools.send_command('Automation.createBrowsingContext', {}, wait=True)
+                    if result is not None and 'result' in result and 'handle' in result['result']:
+                        self.webkit_context = result['result']['handle']
+                if self.webkit_context is not None:
+                    self.devtools.send_command('Automation.switchToBrowsingContext', {'browsingContextHandle': self.webkit_context}, wait=True)
+                    self.devtools.send_command('Automation.setWindowFrameOfBrowsingContext', {'handle': self.webkit_context, 'origin': {'x': 0, 'y': 0}, 'size': {'width': task['width'], 'height': task['height']}}, wait=True)
             # Figure out the native viewport size
             if not self.options.android:
                 size = self.devtools.execute_js("[window.innerWidth, window.innerHeight]")
                 if size is not None and len(size) == 2:
                     task['actual_viewport'] = {"width": size[0], "height": size[1]}
-            # Get the native device pixel ratio
-            if self.device_pixel_ratio is None:
-                self.device_pixel_ratio = 1.0
-                try:
-                    ratio = self.devtools.execute_js('window.devicePixelRatio')
-                    if ratio is not None:
-                        self.device_pixel_ratio = max(1.0, float(ratio))
-                except Exception:
-                    pass
-            # Clear the caches
-            if not task['cached']:
-                self.devtools.send_command("Network.clearBrowserCache", {},
-                                           wait=True)
-                self.devtools.send_command("Network.clearBrowserCookies", {},
-                                           wait=True)
+            # Clear the caches. Only needed on Android since we start with a completely clear profile for desktop
+            if self.options.android:
+                self.profile_start('dtbrowser.clear_cache')
+                if not task['cached']:
+                    self.devtools.send_command("Network.clearBrowserCache", {}, wait=True)
+                    self.devtools.send_command("Network.clearBrowserCookies", {}, wait=True)
+                self.profile_end('dtbrowser.clear_cache')
+            
+            # Disable image types
+            disable_images = []
+            if 'disableAVIF' in self.job and self.job['disableAVIF']:
+                disable_images.append('avif')
+            if 'disableWEBP' in self.job and self.job['disableWEBP']:
+                disable_images.append('webp')
+            if 'disableJXL' in self.job and self.job['disableJXL']:
+                disable_images.append('jxl')
+            if len(disable_images):
+                self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
 
             # Mobile Emulation
-            if not self.options.android and \
+            if not self.options.android and not self.is_webkit and \
                     'mobile' in self.job and self.job['mobile'] and \
                     'width' in self.job and 'height' in self.job and \
                     'dpr' in self.job:
@@ -115,15 +157,18 @@ class DevtoolsBrowser(object):
                 self.devtools.send_command("Emulation.setScrollbarsHidden",
                                            {"hidden": True},
                                            wait=True)
-                if (task['running_lighthouse'] or not self.options.throttle) and 'throttle_cpu' in self.job:
-                    logging.debug('CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
-                    if self.job['throttle_cpu'] > 1:
-                        self.devtools.send_command("Emulation.setCPUThrottlingRate",
-                                                   {"rate": self.job['throttle_cpu']},
-                                                   wait=True)
+
+            # DevTools-based CPU throttling for desktop and emulated mobile tests
+            # Lighthouse will provide the throttling directly
+            if not self.options.android and not self.is_webkit and not task['running_lighthouse'] and 'throttle_cpu' in self.job:
+                logging.debug('DevTools CPU Throttle target: %0.3fx', self.job['throttle_cpu'])
+                if self.job['throttle_cpu'] > 1:
+                    self.devtools.send_command("Emulation.setCPUThrottlingRate",
+                                                {"rate": self.job['throttle_cpu']},
+                                                wait=True)
 
             # Location
-            if 'lat' in self.job and 'lng' in self.job:
+            if not self.is_webkit and 'lat' in self.job and 'lng' in self.job:
                 try:
                     lat = float(str(self.job['lat']))
                     lng = float(str(self.job['lng']))
@@ -132,35 +177,57 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': 0})
                 except Exception:
-                    pass
+                    logging.exception('Error overriding location')
 
             # UA String
             ua_string = self.devtools.execute_js("navigator.userAgent")
             if ua_string is not None:
-                match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
+                if self.is_ios:
+                    match = re.search(r'Version\/(\d+\.\d+\.\d+)', ua_string)
+                elif self.is_webkit:
+                    match = re.search(r'WebKit\/(\d+\.\d+\.\d+)', ua_string)
+                else:
+                    match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua_string)
                 if match:
                     self.browser_version = match.group(1)
             if 'uastring' in self.job:
-                ua_string = self.job['uastring']
+                if 'mobile' in self.job and self.job['mobile']:
+                    # Replace the requested Chrome version with the actual Chrome version so Mobile emulation is always up to date
+                    original_version = None
+                    if ua_string is not None:
+                        match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                        if match:
+                            original_version = match.group(1)
+                    ua_string = self.job['uastring']
+                    if original_version is not None:
+                        match = re.search(r'(Chrome\/\d+\.\d+\.\d+\.\d+)', ua_string)
+                        if match:
+                            ua_string = ua_string.replace(match.group(1), original_version)
+                else:
+                    ua_string = self.job['uastring']
             if ua_string is not None and 'AppendUA' in task:
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
             # Disable js
-            if self.job['noscript']:
+            if self.job['noscript'] and not self.is_webkit:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
                                            {"value": True}, wait=True)
             self.devtools.prepare_browser()
 
     def on_start_recording(self, task):
         """Start recording"""
-        task['page_data'] = {'date': time.time()}
+        if self.must_exit_now:
+            return
+        if 'page_data' not in task:
+            task['page_data'] = {}
+        task['page_data']['date'] = time.time()
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         if self.browser_version is not None and 'browserVersion' not in task['page_data']:
             task['page_data']['browserVersion'] = self.browser_version
             task['page_data']['browser_version'] = self.browser_version
-        if not self.options.throttle and 'throttle_cpu' in self.job:
+        if 'throttle_cpu' in self.job and not self.is_webkit:
             task['page_data']['throttle_cpu_requested'] = self.job['throttle_cpu_requested']
             if self.job['throttle_cpu'] > 1:
                 task['page_data']['throttle_cpu'] = self.job['throttle_cpu']
@@ -174,32 +241,29 @@ class DevtoolsBrowser(object):
 
     def on_stop_recording(self, task):
         """Stop recording"""
-        if self.devtools is not None:
+        if self.devtools is not None and not self.must_exit_now:
             self.devtools.collect_trace()
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.png')
+                    screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.png')
                     self.devtools.grab_screenshot(screen_shot, png=True)
                 else:
-                    screen_shot = os.path.join(task['dir'],
-                                               task['prefix'] + '_screen.jpg')
+                    screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                     self.devtools.grab_screenshot(screen_shot, png=False, resize=600)
+            # Stop recording dev tools
+            self.devtools.stop_recording()
             # Collect end of test data from the browser
             self.collect_browser_metrics(task)
-            # Stop recording dev tools (which also collects the trace)
-            self.devtools.stop_recording()
 
     def run_task(self, task):
         """Run an individual test"""
         if self.devtools is not None:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while len(task['script']) and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+            while len(task['script']) and task['error'] is None and monotonic() < end_time and not self.must_exit_now:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -215,7 +279,7 @@ class DevtoolsBrowser(object):
                         self.on_start_processing(task)
                         self.wait_for_processing(task)
                         self.process_devtools_requests(task)
-                        self.step_complete(task)
+                        self.step_complete(task) #pylint: disable=no-member
                         if task['log_data']:
                             # Move on to the next step
                             task['current_step'] += 1
@@ -225,9 +289,11 @@ class DevtoolsBrowser(object):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        if self.must_exit_now:
+            return
         if task['log_data']:
             # Start the processing that can run in a background thread
-            optimization = OptimizationChecks(self.job, task, self.get_requests())
+            optimization = OptimizationChecks(self.job, task, self.get_requests(True))
             optimization.start()
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
@@ -265,12 +331,19 @@ class DevtoolsBrowser(object):
 
     def process_video(self):
         """Post process the video"""
+        if self.must_exit_now:
+            return
         from internal.video_processing import VideoProcessing
+        self.profile_start('dtbrowser.process_video')
         video = VideoProcessing(self.options, self.job, self.task)
         video.process()
+        self.profile_end('dtbrowser.process_video')
 
     def process_devtools_requests(self, task):
         """Process the devtools log and pull out the requests information"""
+        if self.must_exit_now:
+            return
+        self.profile_start('dtbrowser.process_devtools_requests')
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
         if os.path.isfile(devtools_file):
@@ -279,6 +352,8 @@ class DevtoolsBrowser(object):
             options = {'devtools': devtools_file, 'cached': task['cached'], 'out': out_file}
             netlog = path_base + '_netlog_requests.json.gz'
             options['netlog'] = netlog if os.path.isfile(netlog) else None
+            timeline_requests = path_base + '_timeline_requests.json.gz'
+            options['requests'] = timeline_requests if os.path.isfile(timeline_requests) else None
             optimization = path_base + '_optimization.json.gz'
             options['optimization'] = optimization if os.path.isfile(optimization) else None
             user_timing = path_base + '_user_timing.json.gz'
@@ -289,68 +364,238 @@ class DevtoolsBrowser(object):
             options['cpu'] = cpu if os.path.isfile(cpu) else None
             v8stats = path_base + '_v8stats.json.gz'
             options['v8stats'] = v8stats if os.path.isfile(v8stats) else None
+            options['noheaders'] = False
+            if 'noheaders' in self.job and self.job['noheaders']:
+                options['noheaders'] = True
             parser = DevToolsParser(options)
             parser.process()
             # Cleanup intermediate files that are not needed
             if 'debug' not in self.job or not self.job['debug']:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
+                if os.path.isfile(timeline_requests):
+                    os.remove(timeline_requests)
                 if os.path.isfile(optimization):
                     os.remove(optimization)
                 if os.path.isfile(coverage):
                     os.remove(coverage)
                 if os.path.isfile(devtools_file):
                     os.remove(devtools_file)
+            # remove files that might contain sensitive data
+            if options['noheaders']:
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
+                trace_file = path_base + '_trace.json.gz'
+                if os.path.isfile(trace_file):
+                    os.remove(trace_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
+        self.profile_end('dtbrowser.process_devtools_requests')
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
+        if self.must_exit_now:
+            return
         ret = None
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'rb') as script_file:
+            with io.open(script_file_path, 'r', encoding='utf-8') as script_file:
                 script = script_file.read()
         if script is not None:
             ret = self.devtools.execute_js(script)
         return ret
 
+    def strip_non_text(self, data):
+        """Strip any non-text fields"""
+        if isinstance(data, dict):
+            for key in data:
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.strip_non_text(entry)
+                elif isinstance(entry, str) or isinstance(entry, unicode):
+                    try:
+                        if (sys.version_info >= (3, 0)):
+                            entry.encode('utf-8').decode('utf-8')
+                        else:
+                            entry.decode('utf-8')
+                    except Exception:
+                        data[key] = None
+                elif isinstance(entry, bytes):
+                    try:
+                        data[key] = str(entry.decode('utf-8'))
+                    except Exception:
+                        data[key] = None
+        elif isinstance(data, list):
+            for key in range(len(data)):
+                entry = data[key]
+                if isinstance(entry, dict) or isinstance(entry, list):
+                    self.strip_non_text(entry)
+                elif isinstance(entry, str) or isinstance(entry, unicode):
+                    try:
+                        if (sys.version_info >= (3, 0)):
+                            entry.encode('utf-8').decode('utf-8')
+                        else:
+                            entry.decode('utf-8')
+                    except Exception:
+                        data[key] = None
+                elif isinstance(entry, bytes):
+                    try:
+                        data[key] = str(entry.decode('utf-8'))
+                    except Exception:
+                        data[key] = None
+
+    def get_sorted_requests_json(self, include_bodies):
+        requests_json = None
+        try:
+            requests = []
+            raw_requests = self.get_requests(include_bodies)
+            for request_id in raw_requests:
+                self.strip_non_text(raw_requests[request_id])
+                requests.append(raw_requests[request_id])
+            requests = sorted(requests, key=lambda request: request['sequence'])
+            requests_json = json.dumps(requests)
+        except Exception:
+            logging.exception('Error getting json request data')
+        if requests_json is None:
+            requests_json = 'null'
+        return requests_json
+
+    def find_dom_node_info(self, dom_tree, node_id):
+        """Get the information for the given DOM node"""
+        info = None
+        try:
+            if dom_tree is not None:
+                if 'documents' in dom_tree:
+                    node_index = None
+                    for document in dom_tree['documents']:
+                        if 'nodes' in document and node_index is None:
+                            if 'backendNodeId' in document['nodes']:
+                                for index in range(len(document['nodes']['backendNodeId'])):
+                                    if document['nodes']['backendNodeId'][index] == node_id:
+                                        node_index = index
+                                        break
+                            if node_index is not None:
+                                info = {}
+                                if 'strings' in dom_tree:
+                                    if 'nodeName' in document['nodes'] and node_index < len(document['nodes']['nodeName']):
+                                        string_index = document['nodes']['nodeName'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeType'] = dom_tree['strings'][string_index]
+                                    if 'nodeValue' in document['nodes'] and node_index < len(document['nodes']['nodeValue']):
+                                        string_index = document['nodes']['nodeValue'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeValue'] = dom_tree['strings'][string_index]
+                                    if 'attributes' in document['nodes'] and node_index < len(document['nodes']['attributes']):
+                                        attribute = None
+                                        for string_index in document['nodes']['attributes'][node_index]:
+                                            string_value = ''
+                                            if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                string_value = dom_tree['strings'][string_index]
+                                            if attribute is None:
+                                                attribute = string_value
+                                            else:
+                                                if attribute:
+                                                    if 'attributes' not in info:
+                                                        info['attributes'] = {}
+                                                    if attribute in info['attributes']:
+                                                        info['attributes'][attribute] += ' ' + string_value
+                                                    else:
+                                                        info['attributes'][attribute] = string_value
+                                                attribute = None
+                                    if 'currentSourceURL' in document['nodes']:
+                                        if 'index' in document['nodes']['currentSourceURL'] and 'value' in document['nodes']['currentSourceURL']:
+                                            for index in range(len(document['nodes']['currentSourceURL']['index'])):
+                                                if document['nodes']['currentSourceURL']['index'][index] == node_index:
+                                                    if index < len(document['nodes']['currentSourceURL']['value']):
+                                                        string_index = document['nodes']['currentSourceURL']['value'][index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['sourceURL'] = dom_tree['strings'][string_index]
+                                                    break
+                                if 'layout' in document:
+                                    if 'nodeIndex' in document['layout']:
+                                        for index in range(len(document['layout']['nodeIndex'])):
+                                            if document['layout']['nodeIndex'][index] == node_index:
+                                                if 'bounds' in document['layout'] and index < len(document['layout']['bounds']):
+                                                    info['bounds'] = document['layout']['bounds'][index]
+                                                if 'text' in document['layout'] and index < len(document['layout']['text']):
+                                                    string_index = document['layout']['text'][index]
+                                                    if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                        info['layoutText'] = dom_tree['strings'][string_index]
+                                                if 'style_names' in dom_tree and 'styles' in document['layout'] and index < len(document['layout']['styles']) and len(document['layout']['styles'][index]) == len(dom_tree['style_names']):
+                                                    if 'styles' not in info:
+                                                        info['styles'] = {}
+                                                    for style_index in range(len(document['layout']['styles'][index])):
+                                                        string_index = document['layout']['styles'][index][style_index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
+                                return info
+                                            
+        except Exception:
+            logging.exception("Error looking up DOM Node")
+        return info
+
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit_now:
+            return
         user_timing = self.run_js_file('user_timing.js')
         if user_timing is not None:
             path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         page_data = self.run_js_file('page_data.js')
         if page_data is not None:
             task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
+            requests = None
+            bodies = None
+            accessibility_tree = None
             for name in self.job['customMetrics']:
-                script = 'var wptCustomMetric = function() {' +\
-                         self.job['customMetrics'][name] +\
-                         '};try{wptCustomMetric();}catch(e){};'
+                custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_REQUESTS') >= 0:
+                    if requests is None:
+                        requests = self.get_sorted_requests_json(False)
+                    try:
+                        custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                    except Exception:
+                        logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_BODIES') >= 0:
+                    if bodies is None:
+                        bodies = self.get_sorted_requests_json(True)
+                    try:
+                        custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
+                if custom_script.find('$WPT_ACCESSIBILITY_TREE') >= 0:
+                    if accessibility_tree is None:
+                        try:
+                            self.devtools.send_command('Accessibility.enable', {}, wait=True, timeout=30)
+                            result = self.devtools.send_command('Accessibility.getFullAXTree', {}, wait=True, timeout=30)
+                            if result is not None and 'result' in result and 'nodes' in result['result']:
+                                tree = result['result']['nodes']
+                                dom_tree = self.devtools.snapshot_dom()
+                                # Populate the node details
+                                if dom_tree is not None:
+                                    for node in tree:
+                                        if 'backendDOMNodeId' in node:
+                                            node['node_info'] = self.find_dom_node_info(dom_tree, node['backendDOMNodeId'])
+                                accessibility_tree = json.dumps(tree)
+                            self.devtools.send_command('Accessibility.disable', {}, wait=True, timeout=30)
+                        except Exception:
+                            logging.exception('Error processing accessibility tree')
+                    try:
+                        custom_script = custom_script.replace('$WPT_ACCESSIBILITY_TREE', accessibility_tree)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
+                script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.devtools.execute_js(script)
-            if hero_elements is not None:
-                logging.debug('Hero Elements: %s', json.dumps(hero_elements))
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
-
 
     def process_command(self, command):
         """Process an individual script command"""
@@ -360,7 +605,23 @@ class DevtoolsBrowser(object):
             self.task['page_data']['URL'] = command['target']
             url = str(command['target']).replace('"', '\"')
             script = 'window.location="{0}";'.format(url)
-            script = self.prepare_script_for_record(script)
+            script = self.prepare_script_for_record(script) #pylint: disable=no-member
+            # Set up permissions for the origin
+            if not self.is_webkit:
+                try:
+                    parts = urlsplit(url)
+                    origin = parts.scheme + '://' + parts.netloc
+                    self.devtools.send_command('Browser.grantPermissions',
+                                            {'origin': origin,
+                                            'permissions': ['geolocation',
+                                                            'videoCapture',
+                                                            'audioCapture',
+                                                            'sensors',
+                                                            'idleDetection',
+                                                            'wakeLockScreen']},
+                                            wait=True)
+                except Exception:
+                    logging.exception('Error setting permissions for origin')
             self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'logdata':
@@ -379,12 +640,17 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'exec':
             script = command['target']
             if command['record']:
-                script = self.prepare_script_for_record(script)
+                needs_mark = True
+                if self.task['combine_steps']:
+                    needs_mark = False
+                script = self.prepare_script_for_record(script, needs_mark) #pylint: disable=no-member
                 self.devtools.start_navigating()
             self.devtools.execute_js(script)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = bool('target' in command and
@@ -394,23 +660,28 @@ class DevtoolsBrowser(object):
             if 'target' in command:
                 milliseconds = int(re.search(r'\d+', str(command['target'])).group())
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
+        elif command['command'] == 'setminimumstepseconds':
+            self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
-            self.task['user_agent_string'] = command['target']
-        elif command['command'] == 'setcookie':
+            self.job['user_agent_string'] = command['target']
+        elif command['command'] == 'setcookie' and not self.is_webkit:
             if 'target' in command and 'value' in command:
-                url = command['target'].strip()
-                cookie = command['value']
-                pos = cookie.find(';')
-                if pos > 0:
-                    cookie = cookie[:pos]
-                pos = cookie.find('=')
-                if pos > 0:
-                    name = cookie[:pos].strip()
-                    value = cookie[pos + 1:].strip()
-                    if len(name) and len(value) and len(url):
-                        self.devtools.send_command('Network.setCookie',
-                                                   {'url': url, 'name': name, 'value': value})
-        elif command['command'] == 'setlocation':
+                try:
+                    url = command['target'].strip()
+                    cookie = command['value']
+                    pos = cookie.find(';')
+                    if pos > 0:
+                        cookie = cookie[:pos]
+                    pos = cookie.find('=')
+                    if pos > 0:
+                        name = cookie[:pos].strip()
+                        value = cookie[pos + 1:].strip()
+                        if len(name) and len(value) and len(url):
+                            self.devtools.send_command('Network.setCookie',
+                                                    {'url': url, 'name': name, 'value': value})
+                except Exception:
+                    logging.exception('Error setting cookie')
+        elif command['command'] == 'setlocation' and not self.is_webkit:
             try:
                 if 'target' in command and command['target'].find(',') > 0:
                     accuracy = 0
@@ -424,7 +695,7 @@ class DevtoolsBrowser(object):
                         {'latitude': lat, 'longitude': lng,
                          'accuracy': accuracy})
             except Exception:
-                pass
+                logging.exception('Error setting location')
         elif command['command'] == 'addheader':
             self.devtools.set_header(command['target'])
         elif command['command'] == 'setheader':
@@ -438,17 +709,21 @@ class DevtoolsBrowser(object):
                                  int(re.search(r'\d+',
                                                str(command['target'])).group()) == 1)
             self.devtools.disable_cache(disable_cache)
+        elif command['command'] == 'type':
+            self.devtools.type_text(command['target'])
+        elif command['command'] == 'keypress':
+            self.devtools.keypress(command['target'])
 
     def navigate(self, url):
         """Navigate to the given URL"""
         if self.devtools is not None:
             self.devtools.send_command('Page.navigate', {'url': url}, wait=True)
 
-    def get_requests(self):
+    def get_requests(self, include_bodies):
         """Get the request details for running an optimization check"""
         requests = None
         if self.devtools is not None:
-            requests = self.devtools.get_requests()
+            requests = self.devtools.get_requests(include_bodies)
         return requests
 
     def lighthouse_thread(self):
@@ -459,29 +734,42 @@ class DevtoolsBrowser(object):
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
         for line in iter(proc.stderr.readline, b''):
             try:
+                line = unicode(line,errors='ignore')
                 logging.debug(line.rstrip())
                 self.task['lighthouse_log'] += line
             except Exception:
-                pass
+                logging.exception('Error recording lighthouse log line %s', line.rstrip())
         proc.communicate()
 
     def run_lighthouse_test(self, task):
+        if self.must_exit_now:
+            return
+        self.profile_start('dtbrowser.run_lighthouse_test')
         """Run a lighthouse test against the current browser session"""
         task['lighthouse_log'] = ''
-        if 'url' in self.job and self.job['url'] is not None:
-            self.job['shaper'].configure(self.job, task)
+        if 'url' in self.job and self.job['url'] is not None and not self.is_webkit:
+            if not self.job['lighthouse_config'] and not self.job['dtShaper']:
+                self.job['shaper'].configure(self.job, task)
             output_path = os.path.join(task['dir'], 'lighthouse.json')
             json_file = os.path.join(task['dir'], 'lighthouse.report.json')
             json_gzip = os.path.join(task['dir'], 'lighthouse.json.gz')
             html_file = os.path.join(task['dir'], 'lighthouse.report.html')
             html_gzip = os.path.join(task['dir'], 'lighthouse.html.gz')
             time_limit = min(int(task['time_limit']), 80)
+            # see what version of lighthouse we are running
+            lighthouse_version = 1
+            try:
+                out = subprocess.check_output('lighthouse --version', shell=True, universal_newlines=True)
+                if out is not None and len(out):
+                    match = re.search(r'^\d+', out)
+                    if match:
+                        lighthouse_version = int(match.group())
+                logging.debug("Lighthouse version %d", lighthouse_version)
+            except Exception:
+                logging.exception('Error getting lighthouse version')
             command = ['lighthouse',
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
-                       '--disable-network-throttling',
-                       '--disable-cpu-throttling',
-                       '--throttling-method', 'provided',
                        '--enable-error-reporting',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--port', str(task['port']),
@@ -489,24 +777,50 @@ class DevtoolsBrowser(object):
                        '--output', 'html',
                        '--output', 'json',
                        '--output-path', '"{0}"'.format(output_path)]
+            if self.job['lighthouse_config']:
+                try:
+                    lighthouse_config_file = os.path.join(task['dir'], 'lighthouse-config.json')
+                    with open(lighthouse_config_file, 'wt') as f_out:
+                        json.dump(json.loads(self.job['lighthouse_config']), f_out)
+                    command.extend(['--config-path', lighthouse_config_file])
+                except Exception:
+                    logging.exception('Error adding custom config for lighthouse test')
+            else:
+                cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu']) if 'throttle_cpu' in self.job else '1'
+                if self.job['dtShaper']:
+                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
+                elif 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
+                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
+                else:
+                    command.extend(['--throttling-method', 'provided'])
+            if 'debug' in self.job and self.job['debug']:
+                command.extend(['--verbose'])
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
-                command.extend(['--skip-audits', 'screenshot-thumbnails'])
-            if self.options.android or 'mobile' not in self.job or not self.job['mobile']:
-                command.extend(['--emulated-form-factor', 'none'])
-                if 'user_agent_string' in self.job:
-                    sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
-                    command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
+                command.extend(['--skip-audits', 'screenshot-thumbnails,final-screenshot'])
+            form_factor_command = '--form-factor'
+            if self.options.android:
+                command.extend([form_factor_command, 'mobile'])
+                command.extend(['--screenEmulation.disabled'])
+            elif 'mobile' not in self.job or not self.job['mobile']:
+                command.extend([form_factor_command, 'desktop'])
+                command.extend(['--screenEmulation.disabled'])
+            if 'user_agent_string' in self.job:
+                sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
+                command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
                     command.extend(['--blocked-url-patterns', pattern])
             if 'headers' in task:
-                headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
-                with open(headers_file, 'wb') as f_out:
-                    json.dump(task['headers'], f_out)
-                command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
+                try:
+                    headers_file = os.path.join(task['dir'], 'lighthouse-headers.json')
+                    with open(headers_file, 'wt') as f_out:
+                        json.dump(task['headers'], f_out)
+                    command.extend(['--extra-headers', '"{0}"'.format(headers_file)])
+                except Exception:
+                    logging.exception('Error adding custom headers for lighthouse test')
             cmd = ' '.join(command)
             self.lighthouse_command = cmd
             # Give lighthouse up to 10 minutes to run all of the audits
@@ -515,7 +829,7 @@ class DevtoolsBrowser(object):
                 lh_thread.start()
                 lh_thread.join(600)
             except Exception:
-                pass
+                logging.exception('Error running lighthouse audits')
             from .os_util import kill_all
             kill_all('node', True)
             self.job['shaper'].reset()
@@ -525,19 +839,19 @@ class DevtoolsBrowser(object):
                     lh_trace_src = os.path.join(task['dir'], 'lighthouse-0.trace.json')
                     if os.path.isfile(lh_trace_src):
                         # read the JSON in and re-write it line by line to match the other traces
-                        with open(lh_trace_src, 'rb') as f_in:
+                        with io.open(lh_trace_src, 'r', encoding='utf-8') as f_in:
                             trace = json.load(f_in)
                             if trace is not None and 'traceEvents' in trace:
                                 lighthouse_trace = os.path.join(task['dir'],
                                                                 'lighthouse_trace.json.gz')
-                            with gzip.open(lighthouse_trace, 'wb', 7) as f_out:
+                            with gzip.open(lighthouse_trace, GZIP_TEXT, 7) as f_out:
                                 f_out.write('{"traceEvents":[{}')
                                 for trace_event in trace['traceEvents']:
                                     f_out.write(",\n")
                                     f_out.write(json.dumps(trace_event))
                                 f_out.write("\n]}")
                 except Exception:
-                    pass
+                    logging.exception('Error processing lighthouse trace')
             # Delete all the left-over lighthouse assets
             files = glob.glob(os.path.join(task['dir'], 'lighthouse-*'))
             for file_path in files:
@@ -547,7 +861,7 @@ class DevtoolsBrowser(object):
                     pass
             if os.path.isfile(json_file):
                 lh_report = None
-                with open(json_file, 'rb') as f_in:
+                with io.open(json_file, 'r', encoding='utf-8') as f_in:
                     lh_report = json.load(f_in)
 
                 with open(json_file, 'rb') as f_in:
@@ -608,7 +922,7 @@ class DevtoolsBrowser(object):
                                 elif 'numericValue' in audit:
                                     audits[name] = audit['numericValue']
                     audits_gzip = os.path.join(task['dir'], 'lighthouse_audits.json.gz')
-                    with gzip.open(audits_gzip, 'wb', 7) as f_out:
+                    with gzip.open(audits_gzip, GZIP_TEXT, 7) as f_out:
                         json.dump(audits, f_out)
             # Compress the HTML lighthouse report
             if os.path.isfile(html_file):
@@ -618,16 +932,28 @@ class DevtoolsBrowser(object):
                             shutil.copyfileobj(f_in, f_out)
                     os.remove(html_file)
                 except Exception:
-                    pass
+                    logging.exception('Error compressing lighthouse report')
+        self.profile_end('dtbrowser.run_lighthouse_test')
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
+        if self.must_exit_now:
+            return
+        self.profile_start('dtbrowser.wappalyzer_detect')
         # Run the Wappalyzer detection (give it 30 seconds at most)
         completed = False
         if self.devtools is not None:
             try:
                 logging.debug('wappalyzer_detect')
-                detect_script = self.wappalyzer_script(request_headers)
+                cookies = {}
+                response = self.devtools.send_command("Storage.getCookies", {}, wait=True, timeout=30)
+                if response is not None and 'result' in response and 'cookies' in response['result']:
+                    for cookie in response['result']['cookies']:
+                        name = cookie['name'].lower()
+                        if name not in cookies:
+                            cookies[name] = []
+                        cookies[name].append(cookie['value'])
+                detect_script = self.wappalyzer_script(request_headers, cookies)
                 response = self.devtools.send_command("Runtime.evaluate",
                                                       {'expression': detect_script,
                                                        'awaitPromise': True,
@@ -650,8 +976,9 @@ class DevtoolsBrowser(object):
                 logging.exception("Exception running Wappalyzer: %s", err.__str__())
         if not completed:
             task['page_data']['wappalyzer_failed'] = 1
+        self.profile_end('dtbrowser.wappalyzer_detect')
 
-    def wappalyzer_script(self, response_headers):
+    def wappalyzer_script(self, response_headers, cookies):
         """Build the wappalyzer script to run in-browser"""
         script = None
         try:
@@ -663,7 +990,7 @@ class DevtoolsBrowser(object):
                     wappalyzer = f_in.read()
                 if wappalyzer is not None:
                     json_data = None
-                    with open(os.path.join(self.support_path, 'Wappalyzer', 'apps.json')) as f_in:
+                    with open(os.path.join(self.support_path, 'Wappalyzer', 'technologies.json')) as f_in:
                         json_data = f_in.read()
                     if json is not None:
                         # Format the headers as a dictionary of lists
@@ -692,7 +1019,20 @@ class DevtoolsBrowser(object):
                                         headers[key].append(value)
                         script = script.replace('%WAPPALYZER%', wappalyzer)
                         script = script.replace('%JSON%', json_data)
+                        script = script.replace('%COOKIES%', json.dumps(cookies))
                         script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
         except Exception:
-            pass
+            logging.exception('Error building wappalyzer script')
         return script
+
+    def profile_start(self, event_name):
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                self.task['profile_data'][event_name] = {'s': round(monotonic() - self.task['profile_data']['start'], 3)}
+
+    def profile_end(self, event_name):
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                if event_name in self.task['profile_data']:
+                    self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
+                    self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)

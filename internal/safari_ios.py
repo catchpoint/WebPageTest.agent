@@ -1,20 +1,31 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Support for Safari on iOS using iWptBrowser"""
 import base64
 from datetime import datetime
 import gzip
+import io
 import logging
 import multiprocessing
 import os
 import platform
 import re
 import subprocess
+import sys
 import time
-import urlparse
 import zipfile
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -46,6 +57,7 @@ class iWptBrowser(BaseBrowser):
         self.main_request = None
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.connections = {}
         self.last_connection_id = 0
         self.console_log = []
@@ -57,7 +69,7 @@ class iWptBrowser(BaseBrowser):
         self.bodies_zip_file = None
         self.body_fail_count = 0
         self.body_index = 0
-        self.last_activity = monotonic.monotonic()
+        self.last_activity = monotonic()
         self.script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
         self.path_base = None
         self.websocket = None
@@ -66,28 +78,17 @@ class iWptBrowser(BaseBrowser):
         self.pending_commands = []
         self.headers = {}
         self.webinspector_proxy = None
-        self.ios_utils_path = None
         self.ios_version = None
-        self.target_sessions = {}
         self.workers = []
         self.default_target = None
-        plat = platform.system()
-        if plat == "Darwin":
-            self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                               'support', 'ios', 'Darwin')
-        elif plat == "Linux":
-            if os.uname()[4].startswith('arm'):
-                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'support', 'ios', 'arm')
-            else:
-                self.ios_utils_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                   'support', 'ios', 'Linux64')
+        self.total_sleep = 0
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
         self.task = task
         self.page = {}
         self.requests = {}
+        self.request_count = 0
         self.console_log = []
         if self.timeline is not None:
             self.timeline.close()
@@ -119,42 +120,34 @@ class iWptBrowser(BaseBrowser):
 
     def launch(self, _job, task):
         """Launch the browser"""
+        if self.must_exit:
+            return
         self.connected = False
         self.flush_messages()
         self.ios_version = self.ios.get_os_version()
-        if self.ios_utils_path and self.ios.start_browser():
+        if self.ios.start_browser():
             # Start the webinspector proxy
-            exe = os.path.join(self.ios_utils_path, 'ios_webkit_debug_proxy')
-            args = [exe, '-F', '-u', self.ios.serial]
+            args = ['ios_webkit_debug_proxy', '-F', '-u', self.ios.serial]
             logging.debug(' '.join(args))
-            self.webinspector_proxy = subprocess.Popen(args)
-            if self.webinspector_proxy:
-                # Connect to the dev tools interface
-                self.connected = self.connect()
+            try:
+                self.webinspector_proxy = subprocess.Popen(args)
 
-            if self.connected:
-                self.send_command('Target.setAutoAttach',
-                                {'autoAttach': True, 'waitForDebuggerOnStart': True})
-                response = self.send_command('Target.getTargets', {}, wait=True)
-                if response is not None and 'result' in response and 'targetInfos' in response['result']:
-                    for target in response['result']['targetInfos']:
-                        logging.debug(target)
-                        if 'type' in target and 'targetId' in target:
-                            if target['type'] == 'service_worker':
-                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                  wait=True)
-                            if self.default_target is None and target['type'] == 'page':
-                                self.send_command('Target.attachToTarget', {'targetId': target['targetId']},
-                                                  wait=True)
-                                self.default_target = target['targetId']
-                # Override the UA String if necessary
-                ua_string = self.execute_js('navigator.userAgent;')
-                if 'uastring' in self.job:
-                    ua_string = self.job['uastring']
-                if ua_string is not None and 'AppendUA' in task:
-                    ua_string += ' ' + task['AppendUA']
-                if ua_string is not None:
-                    self.job['user_agent_string'] = ua_string
+                if self.webinspector_proxy:
+                    # Connect to the dev tools interface
+                    self.connected = self.connect()
+
+                if self.connected:
+                    self.send_command('Target.setPauseOnStart', {'pauseOnStart': True}, wait=True)
+                    # Override the UA String if necessary
+                    ua_string = self.execute_js('navigator.userAgent;')
+                    if 'uastring' in self.job:
+                        ua_string = self.job['uastring']
+                    if ua_string is not None and 'AppendUA' in task:
+                        ua_string += ' ' + task['AppendUA']
+                    if ua_string is not None:
+                        self.job['user_agent_string'] = ua_string
+            except Exception:
+                logging.exception("Error starting webkit proxy")
 
         self.flush_messages()
 
@@ -164,8 +157,8 @@ class iWptBrowser(BaseBrowser):
         proxies = {"http": None, "https": None}
         ret = False
         self.default_target = None
-        end_time = monotonic.monotonic() + timeout
-        while not ret and monotonic.monotonic() < end_time:
+        end_time = monotonic() + timeout
+        while not ret and monotonic() < end_time and not self.must_exit:
             try:
                 response = requests.get("http://localhost:9222/json", timeout=timeout, proxies=proxies)
                 if response.text:
@@ -173,7 +166,7 @@ class iWptBrowser(BaseBrowser):
                     logging.debug("Dev Tools tabs: %s", json.dumps(tabs))
                     if tabs:
                         websocket_url = None
-                        for index in xrange(len(tabs)):
+                        for index in range(len(tabs)):
                             if 'webSocketDebuggerUrl' in tabs[index]:
                                 websocket_url = tabs[index]['webSocketDebuggerUrl']
                                 break
@@ -184,8 +177,7 @@ class iWptBrowser(BaseBrowser):
                                 self.websocket.connect()
                                 ret = True
                             except Exception as err:
-                                logging.debug("Connect to dev tools websocket Error: %s",
-                                              err.__str__())
+                                logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                             if not ret:
                                 # try connecting to 127.0.0.1 instead of localhost
                                 try:
@@ -195,14 +187,13 @@ class iWptBrowser(BaseBrowser):
                                     self.websocket.connect()
                                     ret = True
                                 except Exception as err:
-                                    logging.debug("Connect to dev tools websocket Error: %s",
-                                                  err.__str__())
+                                    logging.exception("Connect to dev tools websocket Error: %s", err.__str__())
                         else:
                             time.sleep(0.5)
                     else:
                         time.sleep(0.5)
             except Exception as err:
-                logging.debug("Connect to dev tools Error: %s", err.__str__())
+                logging.exception("Connect to dev tools Error: %s", err.__str__())
                 time.sleep(0.5)
         return ret
 
@@ -212,7 +203,7 @@ class iWptBrowser(BaseBrowser):
             try:
                 self.websocket.close()
             except Exception:
-                pass
+                logging.exception('Error closing websocket')
             self.websocket = None
         if self.webinspector_proxy:
             self.webinspector_proxy.terminate()
@@ -229,11 +220,10 @@ class iWptBrowser(BaseBrowser):
         if self.connected:
             self.task = task
             logging.debug("Running test")
-            end_time = monotonic.monotonic() + task['test_time_limit']
+            end_time = monotonic() + task['test_time_limit']
             task['current_step'] = 1
             recording = False
-            while task['script'] and task['error'] is None and \
-                    monotonic.monotonic() < end_time:
+            while task['script'] and task['error'] is None and monotonic() < end_time and not self.must_exit:
                 self.prepare_task(task)
                 command = task['script'].pop(0)
                 if not recording and command['record']:
@@ -262,22 +252,31 @@ class iWptBrowser(BaseBrowser):
     def wait_for_page_load(self):
         """Wait for the onload event from the extension"""
         if self.connected:
-            start_time = monotonic.monotonic()
+            start_time = monotonic()
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
-            while not done:
+            max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
+            while not done and not self.must_exit:
                 if self.page_loaded is not None:
                     interval = 0.1
                 try:
-                    self.process_message(self.messages.get(timeout=interval))
+                    message = self.messages.get(timeout=interval)
+                    try:
+                        self.process_message(message)
+                    except Exception:
+                        logging.exception('Error processing message')
                 except Exception:
                     pass
-                now = monotonic.monotonic()
+                now = monotonic()
                 elapsed_test = now - start_time
+                if 'minimumTestSeconds' in self.task and \
+                        elapsed_test < self.task['minimumTestSeconds'] and \
+                        now < end_time:
+                    continue
                 if self.nav_error is not None:
                     done = True
-                    if self.page_loaded is None:
+                    if self.page_loaded is None or 'minimumTestSeconds' in self.task:
                         self.task['error'] = self.nav_error
                         if self.nav_error_code is not None:
                             self.task['page_data']['result'] = self.nav_error_code
@@ -288,7 +287,13 @@ class iWptBrowser(BaseBrowser):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
-                elif 'time' not in self.job or elapsed_test > self.job['time']:
+                elif max_requests > 0 and self.request_count > max_requests:
+                    done = True
+                    # only consider it an error if we didn't get a page load event
+                    if self.page_loaded is None:
+                        self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['page_data']['result'] = 99997
+                else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
@@ -298,22 +303,28 @@ class iWptBrowser(BaseBrowser):
 
     def execute_js(self, script):
         """Run javascipt (stub for overriding"""
+        if self.must_exit:
+            return
         ret = None
         if self.connected:
-            ret = self.ios.execute_js(script)
+            result = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
+            if result is not None and 'result' in result and 'result' in result['result'] and 'value' in result['result']['result']:
+                ret = result['result']['result']['value']
         return ret
 
     def run_js_file(self, file_name):
         """Execute one of our js scripts"""
+        if self.must_exit:
+            return
         ret = None
         if self.connected:
             script = None
             script_file_path = os.path.join(self.script_dir, file_name)
             if os.path.isfile(script_file_path):
-                with open(script_file_path, 'rb') as script_file:
+                with open(script_file_path, 'r') as script_file:
                     script = script_file.read()
             if script is not None:
-                ret = self.ios.execute_js(script)
+                ret = self.execute_js(script)
         return ret
 
     def set_header(self, header):
@@ -329,8 +340,7 @@ class iWptBrowser(BaseBrowser):
                 if len(self.workers):
                     for target in self.workers:
                         self.send_command('Network.setExtraHTTPHeaders',
-                                          {'headers': self.headers}, target_id=target['targetId'],
-                                          wait=True)
+                                          {'headers': self.headers}, target_id=target['targetId'])
 
     def reset_headers(self):
         """Add/modify a header on the outbound requests"""
@@ -340,17 +350,21 @@ class iWptBrowser(BaseBrowser):
         if len(self.workers):
             for target in self.workers:
                 self.send_command('Network.setExtraHTTPHeaders',
-                                  {'headers': self.headers}, target_id=target['targetId'],
-                                  wait=True)
+                                  {'headers': self.headers}, target_id=target['targetId'])
+
+    def get_sorted_requests_json(self, include_bodies):
+        return 'null'
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
+        if self.must_exit:
+            return
         logging.debug("Collecting user timing metrics")
         user_timing = self.run_js_file('user_timing.js')
         logging.debug(user_timing)
         if user_timing is not None and self.path_base is not None:
             path = self.path_base + '_timed_events.json.gz'
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(user_timing))
         logging.debug("Collecting page-level metrics")
         page_data = self.run_js_file('page_data.js')
@@ -359,37 +373,40 @@ class iWptBrowser(BaseBrowser):
             task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
+            requests = None
+            bodies = None
             for name in self.job['customMetrics']:
+                if name == 'jsLibsVulns':
+                    continue
                 logging.debug("Collecting custom metric %s", name)
-                script = '(function() {' +\
-                         self.job['customMetrics'][name] +\
-                         '})()'
+                custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_REQUESTS') >= 0:
+                    if requests is None:
+                        requests = self.get_sorted_requests_json(False)
+                    try:
+                        custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                    except Exception:
+                        logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_BODIES') >= 0:
+                    if bodies is None:
+                        bodies = self.get_sorted_requests_json(True)
+                    try:
+                        custom_script = custom_script.replace('$WPT_BODIES', bodies)
+                    except Exception:
+                        logging.exception('Error substituting request data with bodies into custom script')
+                script = '(function() {' + custom_script + '})()'
                 try:
-                    custom_metrics[name] = self.ios.execute_js(script)
+                    custom_metrics[name] = self.execute_js(script)
                     if custom_metrics[name] is not None:
                         logging.debug(custom_metrics[name])
                 except Exception:
-                    pass
+                    logging.exception('Error collecting custom metric')
             if  self.path_base is not None:
                 path = self.path_base + '_metrics.json.gz'
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
-        if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-            hero_elements = None
-            custom_hero_selectors = {}
-            if 'heroElements' in self.job:
-                custom_hero_selectors = self.job['heroElements']
-            logging.debug('Collecting hero element positions')
-            with open(os.path.join(self.script_dir, 'hero_elements.js'), 'rb') as script_file:
-                hero_elements_script = script_file.read()
-            script = hero_elements_script + '(' + json.dumps(custom_hero_selectors) + ')'
-            hero_elements = self.ios.execute_js(script)
-            if hero_elements is not None:
-                path = os.path.join(task['dir'], task['prefix'] + '_hero_elements.json.gz')
-                with gzip.open(path, 'wb', 7) as outfile:
-                    outfile.write(json.dumps(hero_elements))
 
-    def process_message(self, msg, target_id=None):
+    def process_message(self, msg):
         """Process a message from the browser
         https://trac.webkit.org/browser/webkit/trunk/Source/JavaScriptCore/inspector/protocol"""
         try:
@@ -411,7 +428,7 @@ class iWptBrowser(BaseBrowser):
                     elif category == 'Target':
                         self.process_target_event(event, msg)
         except Exception:
-            pass
+            logging.exception('Error processing browser message')
         if self.timeline and 'method' in msg and not msg['method'].startswith('Target.') and self.recording:
             json.dump(msg, self.timeline)
             self.timeline.write(",\n")
@@ -426,7 +443,7 @@ class iWptBrowser(BaseBrowser):
         if 'start' not in self.page and 'params' in msg and 'timestamp' in msg['params']:
             self.page['start'] = msg['params']['timestamp']
         if event == 'loadEventFired':
-            self.page_loaded = monotonic.monotonic()
+            self.page_loaded = monotonic()
             self.page['loaded'] = msg['params']['timestamp']
         elif event == 'domContentEventFired':
             self.page['DOMContentLoaded'] = msg['params']['timestamp']
@@ -436,7 +453,7 @@ class iWptBrowser(BaseBrowser):
                 self.main_frame = msg['params']['frameId']
             if self.main_frame == msg['params']['frameId']:
                 logging.debug("Navigating main frame")
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
                 self.page_loaded = None
         elif event == 'frameStoppedLoading':
             if self.main_frame is not None and \
@@ -447,7 +464,7 @@ class iWptBrowser(BaseBrowser):
                     logging.debug("Page load failed: %s", self.nav_error)
                     if self.nav_error_code is not None:
                         self.task['page_data']['result'] = self.nav_error_code
-                self.page_loaded = monotonic.monotonic()
+                self.page_loaded = monotonic()
 
     def process_network_event(self, event, msg):
         """Process Network.* dev tools events"""
@@ -615,6 +632,7 @@ class iWptBrowser(BaseBrowser):
                             request['objectSizeUncompressed'] = \
                                     metrics['responseBodyDecodedSize']
                 if request['fromNet']:
+                    self.request_count += 1
                     self.get_response_body(request_id, original_request_id)
             elif event == 'loadingFailed':
                 if timestamp and 'start' in request and timestamp > request['start']:
@@ -634,7 +652,7 @@ class iWptBrowser(BaseBrowser):
             else:
                 ignore_activity = True
             if not self.task['stop_at_onload'] and not ignore_activity:
-                self.last_activity = monotonic.monotonic()
+                self.last_activity = monotonic()
 
     def process_inspector_event(self, event):
         """Process Inspector.* dev tools events"""
@@ -667,31 +685,29 @@ class iWptBrowser(BaseBrowser):
     def process_target_event(self, event, msg):
         """Process Target.* dev tools events"""
         if event == 'dispatchMessageFromTarget':
-            target_id = None
-            if 'targetId' in msg['params']:
-                target_id = msg['params']['targetId']
-            elif 'sessionId' in msg['params']:
-                session_id = msg['params']['sessionId']
-                if session_id in self.target_sessions:
-                    target_id = self.target_sessions[session_id]
-            if 'message' in msg['params'] and target_id is not None:
+            if 'message' in msg['params']:
                 logging.debug(msg['params']['message'][:200])
                 target_message = json.loads(msg['params']['message'])
-                self.process_message(target_message, target_id=target_id)
+                self.process_message(target_message)
         if event == 'targetCreated':
-            if 'targetInfo' in msg['params'] and \
-                    'type' in msg['params']['targetInfo'] and \
-                    msg['params']['targetInfo']['type'] == 'page' and \
-                    'targetId' in msg['params']['targetInfo']:
-                self.default_target = msg['params']['targetInfo']['targetId']
-                if self.recording:
-                    self.enable_safari_events()
+            if 'targetInfo' in msg['params'] and 'targetId' in msg['params']['targetInfo']:
+                target = msg['params']['targetInfo']
+                target_id = target['targetId']
+                if 'type' in target and target['type'] == 'page':
+                    self.default_target = target_id
+                    if self.recording:
+                        self.enable_safari_events()
+                else:
+                    self.workers.append(target)
+                    if self.recording:
+                        self.enable_target(target_id)
+                self.send_command('Target.resume', {'targetId': target_id})
 
     def get_response_body(self, request_id, original_id):
         """Retrieve and store the given response body (if necessary)"""
-        if original_id not in self.response_bodies and self.body_fail_count < 3:
+        if original_id not in self.response_bodies and self.body_fail_count < 3 and not self.must_exit:
             request = self.requests[request_id]
-            if 'status' in request and request['status'] == 200 and 'response_headers' in request:
+            if 'status' in request and request['status'] == 200 and 'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 logging.debug('Getting body for %s (%d) - %s', request_id,
                               request['bytesIn'], request['url'])
                 path = os.path.join(self.task['dir'], 'bodies')
@@ -769,7 +785,7 @@ class iWptBrowser(BaseBrowser):
                             value = headers[header_name]
                             break
         except Exception:
-            pass
+            logging.exception('Error getting header value for %s', name)
         return value
 
     def prepare_task(self, task):
@@ -788,27 +804,28 @@ class iWptBrowser(BaseBrowser):
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+    
+    def enable_target(self, target_id):
+        """Enable all of the targe-specific events"""
+        self.send_command('Network.enable', {}, target_id=target_id)
+        if self.headers:
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id)
 
     def enable_safari_events(self):
-        self.send_command('Page.enable', {})
         self.send_command('Inspector.enable', {})
         self.send_command('Network.enable', {})
-        self.send_command('Inspector.enable', {})
+        self.send_command('Runtime.enable', {})
         if self.headers:
-            self.send_command('Network.setExtraHTTPHeaders',
-                              {'headers': self.headers}, wait=True)
+            self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers})
         if len(self.workers):
             for target in self.workers:
-                self.send_command('Network.enable', {}, target_id=target['targetId'])
-                if self.headers:
-                    self.send_command('Network.setExtraHTTPHeaders',
-                                      {'headers': self.headers}, target_id=target['targetId'],
-                                      wait=True)
+                self.enable_target(target['targetId'])
         if 'user_agent_string' in self.job:
             self.ios.set_user_agent(self.job['user_agent_string'])
         if self.task['log_data']:
             self.send_command('Console.enable', {})
-            self.send_command('Timeline.start', {})
+            self.send_command('Timeline.start', {}, wait=True)
+        self.send_command('Page.enable', {}, wait=True)
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
@@ -822,12 +839,13 @@ class iWptBrowser(BaseBrowser):
         self.wpt_result = None
         task['page_data'] = {'date': time.time()}
         task['page_result'] = None
-        task['run_start_time'] = monotonic.monotonic()
+        task['run_start_time'] = monotonic()
         self.flush_messages()
         self.enable_safari_events()
         if self.task['log_data']:
-            if not self.job['shaper'].configure(self.job, task):
-                self.task['error'] = "Error configuring traffic-shaping"
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    self.task['error'] = "Error configuring traffic-shaping"
             if self.bodies_zip_file is not None:
                 self.bodies_zip_file.close()
                 self.bodies_zip_file = None
@@ -837,7 +855,7 @@ class iWptBrowser(BaseBrowser):
             if 'timeline' in self.job and self.job['timeline']:
                 if self.path_base is not None:
                     timeline_path = self.path_base + '_devtools.json.gz'
-                    self.timeline = gzip.open(timeline_path, 'wb', 7)
+                    self.timeline = gzip.open(timeline_path, GZIP_TEXT, 7)
                     if self.timeline:
                         self.timeline.write('[\n')
                 from internal.support.trace_parser import Trace
@@ -854,7 +872,7 @@ class iWptBrowser(BaseBrowser):
                 task['page_data']['browserVersion'] = self.ios_version
                 task['page_data']['browser_version'] = self.ios_version
         self.recording = True
-        now = monotonic.monotonic()
+        now = monotonic()
         if not self.task['stop_at_onload']:
             self.last_activity = now
         if self.page_loaded is not None:
@@ -872,6 +890,7 @@ class iWptBrowser(BaseBrowser):
         self.send_command('Page.disable', {})
         self.send_command('Inspector.disable', {})
         self.send_command('Network.disable', {})
+        self.send_command('Runtime.disable', {})
         if len(self.workers):
             for target in self.workers:
                 self.send_command('Network.disable', {}, target_id=target['targetId'])
@@ -930,16 +949,13 @@ class iWptBrowser(BaseBrowser):
                 progress_file = os.path.join(task['dir'], task['prefix']) + \
                                 '_visual_progress.json.gz'
                 visualmetrics = os.path.join(support_path, "visualmetrics.py")
-                args = ['python', visualmetrics, '-i', task['video_file'],
+                args = [sys.executable, visualmetrics, '-i', task['video_file'],
                         '-d', video_path, '--force', '--quality',
                         '{0:d}'.format(self.job['imageQuality']),
                         '--viewport', '--orange', '--maxframes', '50', '--histogram', histograms,
                         '--progress', progress_file]
                 if 'debug' in self.job and self.job['debug']:
                     args.append('-vvvv')
-                if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-                    hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
-                    args.extend(['--herodata', hero_elements_file])
                 if 'renderVideo' in self.job and self.job['renderVideo']:
                     video_out = self.path_base + '_rendered_video.mp4'
                     args.extend(['--render', video_out])
@@ -952,22 +968,27 @@ class iWptBrowser(BaseBrowser):
                             args.extend(['--thumbsize', str(thumbsize)])
                     except Exception:
                         pass
+                try:
+                    logging.debug('Video file size: %d', os.path.getsize(video_path))
+                except Exception:
+                    pass
                 logging.debug(' '.join(args))
                 self.video_processing = subprocess.Popen(args, close_fds=True)
             # Save the console logs
             if self.console_log and self.path_base is not None:
                 log_file = self.path_base + '_console_log.json.gz'
-                with gzip.open(log_file, 'wb', 7) as f_out:
+                with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
                     json.dump(self.console_log, f_out)
             # Process the timeline data
             if self.trace_parser is not None and self.path_base is not None:
-                start = monotonic.monotonic()
+                start = monotonic()
                 logging.debug("Processing the trace timeline events")
                 self.trace_parser.ProcessTimelineEvents()
                 self.trace_parser.WriteCPUSlices(self.path_base + '_timeline_cpu.json.gz')
                 self.trace_parser.WriteScriptTimings(self.path_base + '_script_timing.json.gz')
                 self.trace_parser.WriteInteractive(self.path_base + '_interactive.json.gz')
-                elapsed = monotonic.monotonic() - start
+                self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
+                elapsed = monotonic() - start
                 logging.debug("Done processing the trace events: %0.3fs", elapsed)
             self.trace_parser = None
             # Calculate the request and page stats
@@ -994,7 +1015,7 @@ class iWptBrowser(BaseBrowser):
                                               self.wpt_result['requests'], opt)
             if self.path_base is not None:
                 devtools_file = self.path_base + '_devtools_requests.json.gz'
-                with gzip.open(devtools_file, 'wb', 7) as f_out:
+                with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:
                     json.dump(self.wpt_result, f_out)
 
     def step_complete(self, task):
@@ -1008,12 +1029,12 @@ class iWptBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                        int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                        int(round((monotonic() - task['run_start_time']) * 1000.0))
             if self.path_base is not None:
                 path = self.path_base + '_page_data.json.gz'
                 json_page_data = json.dumps(task['page_data'])
                 logging.debug('Page Data: %s', json_page_data)
-                with gzip.open(path, 'wb', 7) as outfile:
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json_page_data)
 
     def send_command(self, method, params, wait=False, timeout=10, target_id=None):
@@ -1029,7 +1050,7 @@ class iWptBrowser(BaseBrowser):
             msg = {'id': command_id, 'method': method, 'params': params}
             if wait:
                 self.pending_commands.append(command_id)
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
             self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
                               wait=True, timeout=timeout)
@@ -1038,18 +1059,19 @@ class iWptBrowser(BaseBrowser):
                     ret = self.command_responses[command_id]
                     del self.command_responses[command_id]
                 else:
-                    while ret is None and monotonic.monotonic() < end_time:
+                    while ret is None and monotonic() < end_time:
                         try:
-                            raw = self.websocket.get_message(1)
-                            if raw is not None and len(raw):
-                                logging.debug(raw[:200])
-                                msg = json.loads(raw)
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            msg = self.messages.get(timeout=1)
+                            try:
+                                if msg:
+                                    self.process_message(msg)
+                            except Exception:
+                                logging.exception('Error processing command response')
                         except Exception:
                             pass
+                        if command_id in self.command_responses:
+                            ret = self.command_responses[command_id]
+                            del self.command_responses[command_id]
         elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
@@ -1061,29 +1083,35 @@ class iWptBrowser(BaseBrowser):
                 logging.debug("Sending: %s", out)
                 self.websocket.send(out)
                 if wait:
-                    end_time = monotonic.monotonic() + timeout
-                    while ret is None and monotonic.monotonic() < end_time:
+                    end_time = monotonic() + timeout
+                    while ret is None and monotonic() < end_time:
                         try:
                             msg = self.messages.get(timeout=1)
-                            if msg:
-                                self.process_message(msg)
-                                if command_id in self.command_responses:
-                                    ret = self.command_responses[command_id]
-                                    del self.command_responses[command_id]
+                            try:
+                                if msg:
+                                    self.process_message(msg)
+                            except Exception:
+                                logging.exception('Error processing response to command')
                         except Exception:
                             pass
+                        if command_id in self.command_responses:
+                            ret = self.command_responses[command_id]
+                            del self.command_responses[command_id]
             except Exception as err:
-                logging.debug("Websocket send error: %s", err.__str__())
+                logging.exception("Websocket send error: %s", err.__str__())
         return ret
 
     def flush_pending_messages(self):
         """Clear out any pending websocket messages"""
         if self.websocket:
             try:
-                while True:
+                while True and not self.must_exit:
                     msg = self.messages.get(timeout=0)
-                    if msg:
-                        self.process_message(msg)
+                    try:
+                        if msg:
+                            self.process_message(msg)
+                    except Exception:
+                        logging.exception('Error processing message')
             except Exception:
                 pass
 
@@ -1115,10 +1143,12 @@ class iWptBrowser(BaseBrowser):
                 self.main_frame = None
                 self.main_request = None
                 self.is_navigating = True
-            self.ios.execute_js(command['target'], remove_orange=self.recording)
+            self.execute_js(command['target'], remove_orange=self.recording)
         elif command['command'] == 'sleep':
-            delay = min(60, max(0, int(re.search(r'\d+', str(command['target'])).group())))
+            available_sleep = 60 - self.total_sleep
+            delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))
             if delay > 0:
+                self.total_sleep += delay
                 time.sleep(delay)
         elif command['command'] == 'setabm':
             self.task['stop_at_onload'] = \
@@ -1128,21 +1158,26 @@ class iWptBrowser(BaseBrowser):
             if 'target' in command:
                 milliseconds = int(re.search(r'\d+', str(command['target'])).group())
                 self.task['activity_time'] = max(0, min(30, float(milliseconds) / 1000.0))
+        elif command['command'] == 'setminimumstepseconds':
+            self.task['minimumTestSeconds'] = int(re.search(r'\d+', str(command['target'])).group())
         elif command['command'] == 'setuseragent':
-            self.task['user_agent_string'] = command['target']
+            self.job['user_agent_string'] = command['target']
         elif command['command'] == 'setcookie':
             if 'target' in command and 'value' in command:
-                url = command['target'].strip()
-                cookie = command['value']
-                pos = cookie.find(';')
-                if pos > 0:
-                    cookie = cookie[:pos]
-                pos = cookie.find('=')
-                if pos > 0:
-                    name = cookie[:pos].strip()
-                    value = cookie[pos + 1:].strip()
-                    if len(name) and len(value) and len(url):
-                        self.ios.set_cookie(url, name, value)
+                try:
+                    url = command['target'].strip()
+                    cookie = command['value']
+                    pos = cookie.find(';')
+                    if pos > 0:
+                        cookie = cookie[:pos]
+                    pos = cookie.find('=')
+                    if pos > 0:
+                        name = cookie[:pos].strip()
+                        value = cookie[pos + 1:].strip()
+                        if len(name) and len(value) and len(url):
+                            self.ios.set_cookie(url, name, value)
+                except Exception:
+                    logging.exception('Error setting cookie')
         elif command['command'] == 'clearcache':
             self.ios.clear_cache()
         elif command['command'] == 'addheader':
@@ -1159,7 +1194,7 @@ class iWptBrowser(BaseBrowser):
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
-        if self.connected:
+        if self.connected and not self.must_exit:
             data = self.ios.screenshot()
             if data:
                 resize_string = '' if not resize else '-resize {0:d}x{0:d} '.format(resize)
@@ -1189,7 +1224,7 @@ class iWptBrowser(BaseBrowser):
 
     def get_empty_request(self, request_id, url):
         """Return and empty, initialized request"""
-        parts = urlparse.urlsplit(url)
+        parts = urlsplit(url)
         request = {'type': 3,
                    'id': request_id,
                    'request_id': request_id,
@@ -1352,8 +1387,16 @@ class iWptBrowser(BaseBrowser):
                                 request['bytesIn'] = content_length + \
                                         sum(len(s) for s in request['headers']['response'])
                     except Exception:
-                        pass
+                        logging.exception('Error processing response length')
                 requests.append(request)
+        # Strip the headers if necessary
+        noheaders = False
+        if 'noheaders' in self.job and self.job['noheaders']:
+            noheaders = True
+        if noheaders:
+            for request in requests:
+                if 'headers' in request:
+                    del request['headers']
         requests.sort(key=lambda x: x['load_start'])
         return requests
 
@@ -1374,9 +1417,7 @@ class iWptBrowser(BaseBrowser):
                 'result': 0,
                 'testStartOffset': 0,
                 'cached': 1 if self.task['cached'] else 0,
-                'optimization_checked': 0,
-                'start_epoch': int((self.task['start_time'] - \
-                                    datetime.utcfromtimestamp(0)).total_seconds())
+                'optimization_checked': 0
                }
         if 'loadEventStart' in self.task['page_data']:
             page['loadTime'] = self.task['page_data']['loadEventStart']
@@ -1440,7 +1481,7 @@ class iWptBrowser(BaseBrowser):
 
     def process_optimization_results(self, page_data, requests, optimization_results):
         """Merge the data from the optimization checks file"""
-        if optimization_results:
+        if optimization_results and not self.must_exit:
             page_data['score_cache'] = -1
             page_data['score_cdn'] = -1
             page_data['score_gzip'] = -1
@@ -1565,4 +1606,4 @@ class DevToolsClient(WebSocketClient):
                     if message:
                         self.messages.put(message)
         except Exception:
-            pass
+            logging.exception('Error processing received message')

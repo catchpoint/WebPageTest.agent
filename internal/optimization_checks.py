@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Run the various optimization checks"""
 import binascii
 import gzip
@@ -11,9 +13,16 @@ import re
 import shutil
 import struct
 import subprocess
+import sys
 import threading
 import time
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    GZIP_TEXT = 'wt'
+    unicode = str
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
@@ -56,23 +65,104 @@ class OptimizationChecks(object):
             'afxcdn.net': ['.afxcdn.net'],
             'Akamai': ['.akamai.net',
                        '.akamaized.net',
+                       '.akamaized-staging.net',
                        '.akamaiedge.net',
+                       '.akamaiedge-staging.net',
                        '.akamaihd.net',
                        '.edgesuite.net',
+                       '.edgesuite-staging.net',
                        '.edgekey.net',
+                       '.edgekey-staging.net',
                        '.srip.net',
                        '.akamaitechnologies.com',
                        '.akamaitechnologies.fr'],
             'Akamai China CDN': ['.tl88.net'],
+            'Alibaba':['a.lahuashanbx.com',
+                       'cdn.gl102.com',
+                       '.alicdn.com',
+                       'danuoyi.tbcache.com',
+                       'gl102.com',
+                       'kunlundns.com',
+                       'm.alikunlun.com',
+                       'm.alikunlun.net',
+                       'm.cdngslb.com',
+                       'm.kunlunaq.com',
+                       'm.kunlunAr.com',
+                       'm.kunlunCa.com',
+                       'm.kunlunCan.com',
+                       'm.kunlunea.com',
+                       'm.kunlungem.com',
+                       'm.kunlungr.com',
+                       'm.kunlunhuf.com',
+                       'm.kunlunle.com',
+                       'm.kunlunLi.com',
+                       'm.kunlunno.com',
+                       'm.kunlunpi.com',
+                       'm.kunlunra.com',
+                       'm.kunlunSa.com',
+                       'm.kunlunSc.com',
+                       'm.kunlunsl.com',
+                       'm.kunlunso.com',
+                       'm.kunlunTa.com',
+                       'm.kunlunVi.com',
+                       'm.kunlunwe.com',
+                       'mobgslb.tbcache.com',
+                       'w.alikunlun.com',
+                       'w.alikunlun.net',
+                       'w.cdngslb.com',
+                       'w.kunlunaq.com',
+                       'w.kunlunAr.com',
+                       'w.kunlunCa.com',
+                       'w.kunlunCan.com',
+                       'w.kunlunea.com',
+                       'w.kunlungem.com',
+                       'w.kunlungr.com',
+                       'w.kunlunhuf.com',
+                       'w.kunlunle.com',
+                       'w.kunlunLi.com',
+                       'w.kunlunno.com',
+                       'w.kunlunpi.com',
+                       'w.kunlunra.com',
+                       'w.kunlunSa.com',
+                       'w.kunlunSc.com',
+                       'w.kunlunsl.com',
+                       'w.kunlunso.com',
+                       'w.kunlunTa.com',
+                       'w.kunlunVi.com',
+                       'w.kunlunwe.com',
+                       'w.queniucdn.com',
+                       'w.queniucg.com',
+                       'w.queniueh.com',
+                       'w.queniuei.com',
+                       'w.queniufz.com',
+                       'w.queniugslb.com',
+                       'w.queniuhx.com',
+                       'w.queniujd.com',
+                       'w.queniujg.com',
+                       'w.queniunh.com',
+                       'w.queniunz.com',
+                       'w.queniurv.com',
+                       'w.queniuso.com',
+                       'w.queniusp.com',
+                       'w.queniusy.com',
+                       'w.queniutt.com',
+                       'w.queniuuf.com',
+                       'w.queniuuq.com',
+                       'w.queniuyk.com'],
             'Alimama': ['.gslb.tbcache.com'],
             'Amazon CloudFront': ['.cloudfront.net'],
             'Aryaka': ['.aads1.net',
                        '.aads-cn.net',
                        '.aads-cng.net'],
             'AT&T': ['.att-dsa.net'],
+            'Automattic': ['.wp.com',
+                           '.wordpress.com',
+                           '.gravatar.com'],
             'Azion': ['.azioncdn.net',
                       '.azioncdn.com',
-                      '.azion.net'],
+                      '.azion.net',
+                      '.azionedge.net'],
+            'Baleen': ['.baleen.cshield.net'],
             'BelugaCDN': ['.belugacdn.com',
                           '.belugacdn.link'],
             'Bison Grid': ['.bisongrid.net'],
@@ -100,6 +190,7 @@ class OptimizationChecks(object):
                            '.cloudflare.net'],
             'Cotendo CDN': ['.cotcdn.net'],
             'cubeCDN': ['.cubecdn.net'],
+            'DigitalOcean Spaces CDN': ['.cdn.digitaloceanspaces.com'],
             'Edgecast': ['edgecastcdn.net',
                          '.systemcdn.net',
                          '.transactcdn.net',
@@ -108,6 +199,8 @@ class OptimizationChecks(object):
                          '.v3cdn.net',
                          '.v4cdn.net',
                          '.v5cdn.net'],
+            'Erstream': ['.ercdn.net',
+                         'ercdn.com'],
             'Facebook': ['.facebook.com',
                          '.facebook.net',
                          '.fbcdn.net',
@@ -116,12 +209,14 @@ class OptimizationChecks(object):
                        '.fastlylb.net',
                        '.nocookie.net'],
             'GoCache': ['.cdn.gocache.net'],
+            'G-Core CDN': ['.gcdn.co'],
             'Google': ['.google.',
                        'googlesyndication.',
                        'youtube.',
                        '.googleusercontent.com',
                        'googlehosted.com',
                        '.gstatic.com',
+                       '.googleapis.com',
                        '.doubleclick.net'],
             'HiberniaCDN': ['.hiberniacdn.com'],
             'Highwinds': ['hwcdn.net'],
@@ -132,6 +227,8 @@ class OptimizationChecks(object):
                               '.inscname.net'],
             'Internap': ['.internapcdn.net'],
             'jsDelivr': ['cdn.jsdelivr.net'],
+            'JuraganCDN': ['.b.juragancdn.com',
+                          'juragancdn.com'],
             'KeyCDN': ['.kxcdn.com'],
             'KINX CDN': ['.kinxcdn.com',
                          '.kinxcdn.net'],
@@ -147,6 +244,7 @@ class OptimizationChecks(object):
             'Medianova': ['.mncdn.com',
                           '.mncdn.net',
                           '.mncdn.org'],
+            'MerlinCDN': ['.merlincdn.net'],
             'Microsoft Azure': ['.vo.msecnd.net',
                                 '.azureedge.net',
                                 '.azurefd.net',
@@ -158,6 +256,8 @@ class OptimizationChecks(object):
                        '.netdna-ssl.com',
                        '.netdna.com'],
             'Netlify': ['.netlify.com'],
+            'Nexcess CDN': ['.nxedge.io',
+                        '.nexcesscdn.net'],
             'NGENIX': ['.ngenix.net'],
             'NYI FTW': ['.nyiftw.net',
                         '.nyiftw.com'],
@@ -166,6 +266,7 @@ class OptimizationChecks(object):
             'Optimal CDN': ['.optimalcdn.com'],
             'PageCDN': ['pagecdn.io'],
             'PageRain': ['.pagerain.net'],
+            'Parspack CDN': ['.parspack.net'],
             'Pressable CDN': ['.pressablecdn.com'],
             'PUSHR': ['.pushrcdn.com'],
             'Rackspace': ['.raxcdn.com'],
@@ -177,15 +278,16 @@ class OptimizationChecks(object):
                              '.revdn.net'],
             'Roast.io': ['.roast.io'],
             'Rocket CDN': ['.streamprovider.net'],
-            'section.io': ['.squixa.net'],
+            'section.io': ['.section.io'],
             'SFR': ['cdn.sfr.net'],
-            'SwiftyCDN': ['.swiftycdn.net'],
+            'Shift8 CDN': ['.shift8cdn.com'],
             'Simple CDN': ['.simplecdn.net'],
             'Singular CDN': ['.singularcdn.net.br'],
             'Sirv CDN': ['.sirv.com'],
             'StackPath': ['.stackpathdns.com'],
             'SwiftCDN': ['.swiftcdn1.com',
                          '.swiftserve.com'],
+            'SwiftyCDN': ['.swiftycdn.net'],
             'Taobao': ['.gslb.taobao.com',
                        'tbcdn.cn',
                        '.taobaocdn.com'],
@@ -198,39 +300,49 @@ class OptimizationChecks(object):
                               '.cdn15.com'],
             'VegaCDN': ['.vegacdn.vn',
                         '.vegacdn.com'],
+            'Vercel': ['.vercel.com',
+                       '.zeit.co'],
             'VoxCDN': ['.voxcdn.net'],
-            'WordPress': ['.wp.com',
-                          '.wordpress.com',
-                          '.gravatar.com'],
+            'WP Compress': ['.zapwp.com'],
             'XLabs Security': ['.xlabs.com.br',
                                '.armor.zone'],
             'Yahoo': ['.ay1.b.yahoo.com',
                       '.yimg.',
-                      '.yahooapis.com'],
+                      '.yahooapis.com',
+                      'cdn.vidible.tv',
+                      'cdn-ssl.vidible.tv'],
             'Yottaa': ['.yottaa.net'],
             'Zenedge': ['.zenedge.net']
         }
         self.cdn_headers = {
             'Airee': [{'Server': 'Airee'}],
+            'Akamai': [{'x-akamai-staging': 'ESSL'},
+                       {'x-akamai-request-id': ''}],
             'Amazon CloudFront': [{'Via': 'CloudFront'}],
             'Aryaka': [{'X-Ar-Debug': ''}],
+            'Azion' : [{'Server' : 'Azion Technologies'}],
+            'Baleen': [{'bln-version': ''}],
             'BelugaCDN': [{'Server': 'Beluga'},
                           {'X-Beluga-Cache-Status': ''}],
             'BunnyCDN': [{'Server': 'BunnyCDN'}],
             'Caspowa': [{'Server': 'Caspowa'}],
             'CDN': [{'X-Edge-IP': ''},
                     {'X-Edge-Location': ''}],
+            'CDN77': [{'Server': 'CDN77'}],
             'CDNetworks': [{'X-Px': ''}],
             'ChinaNetCenter': [{'X-Cache': 'cache.51cdn.com'}],
             'Cloudflare': [{'Server': 'cloudflare'}],
             'Edgecast': [{'Server': 'ECS'},
                          {'Server': 'ECAcc'},
                          {'Server': 'ECD'}],
-            'Fastly': [{'X-Served-By': 'cache-', 'X-Cache': ''}],
+            'Erstream': [{'Server': 'ersRV'}],
+            'Fastly': [{'X-Served-By': 'cache-', 'X-Cache': ''},
+                       {'Server-Timing': 'fastly'}],
             'Fly': [{'Server': 'Fly.io'}],
             'GoCache': [{'Server': 'gocache'}],
             'Google': [{'Server': 'sffe'},
                        {'Server': 'gws'},
+                       {'Server': 'ESF'},
                        {'Server': 'GSE'},
                        {'Server': 'Golfe2'},
                        {'Via': 'google'}],
@@ -243,11 +355,15 @@ class OptimizationChecks(object):
             'Instart Logic': [{'X-Instart-Request-ID': 'instart'}],
             'LeaseWeb CDN': [{'Server': 'leasewebcdn'}],
             'Medianova': [{'Server': 'MNCDN'}],
+            'MerlinCDN': [{'Server': 'MerlinCDN'}],
+            'Microsoft Azure': [{'x-azure-ref': ''},
+                                {'x-azure-ref-originshield': ''}],
             'Myra Security CDN': [{'Server': 'myracloud'}],
             'Naver': [{'Server': 'Testa/'}],
             'NetDNA': [{'Server': 'NetDNA'}],
             'Netlify': [{'Server': 'Netlify'}],
             'NGENIX': [{'x-ngenix-cache': ''}],
+            'NOC.org': [{'Server': 'noc.org/cdn'}],
             'NYI FTW': [{'X-Powered-By': 'NYI FTW'},
                         {'X-Delivered-By': 'NYI FTW'}],
             'Optimal CDN': [{'Server': 'Optimal CDN'}],
@@ -270,10 +386,13 @@ class OptimizationChecks(object):
             'Surge': [{'Server': 'SurgeCDN'}],
             'Twitter': [{'Server': 'tsa_b'}],
             'UnicornCDN': [{'Server': 'UnicornCDN'}],
+            'Vercel': [{'Server': 'Vercel'},
+                       {'Server': 'now'}],
+            'WP Compress': [{'Server': 'WPCompress'}],
             'XLabs Security': [{'x-cdn': 'XLabs Security'}],
             'Yunjiasu': [{'Server': 'yunjiasu'}],
             'Zenedge': [{'X-Cdn': 'Zenedge'}],
-            'Zycada Networks': [{'X-Zy-Server': ''}]
+            'Zycada Networks': [{'Zy-Server': ''}]
         }
         # spell-checker: enable
 
@@ -370,7 +489,7 @@ class OptimizationChecks(object):
             # Save the results
             if self.results:
                 path = os.path.join(self.task['dir'], self.task['prefix']) + '_optimization.json.gz'
-                gz_file = gzip.open(path, 'wb', 7)
+                gz_file = gzip.open(path, GZIP_TEXT, 7)
                 if gz_file:
                     gz_file.write(json.dumps(self.results))
                     gz_file.close()
@@ -379,7 +498,12 @@ class OptimizationChecks(object):
 
     def check_keep_alive(self):
         """Check for requests where the connection is force-closed"""
-        from urlparse import urlsplit
+        self.profile_start('keep_alive')
+        if (sys.version_info >= (3, 0)):
+            from urllib.parse import urlsplit # pylint: disable=import-error
+        else:
+            from urlparse import urlsplit # pylint: disable=import-error
+            
         # build a list of origins and how many requests were issued to each
         origins = {}
         for request_id in self.requests:
@@ -394,22 +518,22 @@ class OptimizationChecks(object):
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                if 'url' in request:
+                if 'url' in request and 'response_headers' in request:
                     check = {'score': 100}
                     url = request['full_url'] if 'full_url' in request else request['url']
                     parsed = urlsplit(url)
                     origin = parsed.scheme + '://' + parsed.netloc
                     if origins[origin] > 1:
                         check['score'] = 100
-                        keep_alive = self.get_header_value(request['response_headers'],
-                                                           'Connection')
+                        keep_alive = self.get_header_value(request['response_headers'], 'Connection')
                         if keep_alive is not None and keep_alive.lower().strip().find('close') > -1:
                             check['score'] = 0
                     if request_id not in self.results:
                         self.results[request_id] = {}
                     self.results[request_id]['keep_alive'] = check
             except Exception:
-                pass
+                logging.exception('Error checking keep-alive')
+        self.profile_end('keep_alive')
 
     def get_time_remaining(self, request):
         """See if a request is static and how long it can be cached for"""
@@ -435,7 +559,9 @@ class OptimizationChecks(object):
                         cache = self.get_header_value(request['response_headers'], 'Cache-Control')
                         pragma = self.get_header_value(request['response_headers'], 'Pragma')
                         expires = self.get_header_value(request['response_headers'], 'Expires')
+                        max_age_matches = None
                         if cache is not None:
+                            max_age_matches = re.search(re_max_age, cache)
                             cache = cache.lower()
                             if cache.find('no-store') > -1 or cache.find('no-cache') > -1:
                                 is_static = False
@@ -445,17 +571,15 @@ class OptimizationChecks(object):
                                 is_static = False
                         if is_static:
                             time_remaining = 0
-                            if cache is not None:
-                                matches = re.search(re_max_age, cache)
-                                if matches:
-                                    time_remaining = int(matches.groupdict().get('maxage'))
-                                    age = self.get_header_value(request['response_headers'], 'Age')
-                                    if time_remaining == 0:
-                                        is_static = False
-                                        time_remaining = -1
-                                    elif age is not None:
-                                        time_remaining -= int(re.search(r'\d+',
-                                                                        str(age).strip()).group())
+                            if max_age_matches is not None:
+                                time_remaining = int(max_age_matches.groupdict().get('maxage'))
+                                age = self.get_header_value(request['response_headers'], 'Age')
+                                if time_remaining == 0:
+                                    is_static = False
+                                    time_remaining = -1
+                                elif age is not None:
+                                    time_remaining -= int(re.search(r'\d+',
+                                                                    str(age).strip()).group())
                             elif expires is not None:
                                 date = self.get_header_value(request['response_headers'], 'Date')
                                 exp = time.mktime(parsedate(expires))
@@ -467,11 +591,12 @@ class OptimizationChecks(object):
                                 if time_remaining < 0:
                                     is_static = False
         except Exception:
-            pass
+            logging.exception('Error calculating time remaining')
         return is_static, time_remaining
 
     def check_cache_static(self):
         """Check static resources for how long they are cacheable for"""
+        self.profile_start('cache_static')
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -491,11 +616,13 @@ class OptimizationChecks(object):
                         self.results[request_id] = {}
                     self.results[request_id]['cache'] = check
             except Exception:
-                pass
+                logging.exception('Error checking cache static')
+        self.profile_end('cache_static')
 
     def check_hosting(self):
         """Pull the data needed to determine the hosting"""
-        start = monotonic.monotonic()
+        self.profile_start('hosting')
+        start = monotonic()
         self.hosting_results['base_page_ip_ptr'] = ''
         self.hosting_results['base_page_cname'] = ''
         self.hosting_results['base_page_dns_server'] = ''
@@ -507,8 +634,8 @@ class OptimizationChecks(object):
             try:
                 from dns import resolver, reversename
                 dns_resolver = resolver.Resolver()
-                dns_resolver.timeout = 5
-                dns_resolver.lifetime = 5
+                dns_resolver.timeout = 1
+                dns_resolver.lifetime = 1
                 # reverse-lookup the edge server
                 try:
                     addresses = dns_resolver.query(domain)
@@ -549,13 +676,18 @@ class OptimizationChecks(object):
                     else:
                         domain = None
             except Exception:
-                pass
-        self.hosting_time = monotonic.monotonic() - start
+                logging.exception('Error checking hosting')
+        self.hosting_time = monotonic() - start
+        self.profile_end('hosting')
 
     def check_cdn(self):
         """Check each request to see if it was served from a CDN"""
-        from urlparse import urlparse
-        start = monotonic.monotonic()
+        if (sys.version_info >= (3, 0)):
+            from urllib.parse import urlparse # pylint: disable=import-error
+        else:
+            from urlparse import urlparse # pylint: disable=import-error
+        self.profile_start('cdn')
+        start = monotonic()
         # First pass, build a list of domains and see if the headers or domain matches
         static_requests = {}
         domains = {}
@@ -583,7 +715,9 @@ class OptimizationChecks(object):
         if count:
             thread_count = min(10, count)
             threads = []
-            for _ in xrange(thread_count):
+            for _ in range(thread_count):
+                self.dns_lookup_queue.put(None)
+            for _ in range(thread_count):
                 thread = threading.Thread(target=self.dns_worker)
                 thread.start()
                 threads.append(thread)
@@ -591,10 +725,17 @@ class OptimizationChecks(object):
                 thread.join()
             try:
                 while True:
-                    dns_result = self.dns_result_queue.get_nowait()
-                    domains[dns_result['domain']] = dns_result['provider']
+                    dns_result = self.dns_result_queue.get(5)
+                    if dns_result is None:
+                        thread_count -= 1
+                        self.dns_result_queue.task_done()
+                        if thread_count == 0:
+                            break
+                    else:
+                        domains[dns_result['domain']] = dns_result['provider']
+                        self.dns_result_queue.task_done()
             except Exception:
-                pass
+                logging.exception("Error getting CDN DNS results")
         # Final pass, populate the CDN info for each request
         for request_id in self.requests:
             check = {'score': -1, 'provider': ''}
@@ -614,14 +755,15 @@ class OptimizationChecks(object):
                         check['score'] = 100
                         check['provider'] = provider
                 self.cdn_results[request_id] = check
-        self.cdn_time = monotonic.monotonic() - start
+        self.cdn_time = monotonic() - start
+        self.profile_end('cdn')
 
     def find_dns_cdn(self, domain, depth=0):
         """Recursively check a CNAME chain"""
         from dns import resolver, reversename
         dns_resolver = resolver.Resolver()
-        dns_resolver.timeout = 1
-        dns_resolver.lifetime = 1
+        dns_resolver.timeout = 5
+        dns_resolver.lifetime = 5
         provider = self.check_cdn_name(domain)
         # First do a CNAME check
         if provider is None:
@@ -630,11 +772,13 @@ class OptimizationChecks(object):
                 if answers and len(answers):
                     for rdata in answers:
                         name = '.'.join(rdata.target).strip(' .')
+                        logging.debug("CNAME %s => %s", domain, name)
                         if name != domain:
                             provider = self.check_cdn_name(name)
                             if provider is None and depth < 10:
                                 provider = self.find_dns_cdn(name, depth + 1)
                         if provider is not None:
+                            logging.debug("provider %s => %s", domain, provider)
                             break
             except Exception:
                 pass
@@ -644,9 +788,11 @@ class OptimizationChecks(object):
                 addresses = dns_resolver.query(domain)
                 if addresses:
                     addr = str(addresses[0])
+                    logging.debug("PTR %s => %s", domain, addr)
                     addr_name = reversename.from_address(addr)
                     if addr_name:
                         name = str(dns_resolver.query(addr_name, "PTR")[0])
+                        logging.debug("PTR %s => %s => %s", domain, addr, name)
                         if name:
                             provider = self.check_cdn_name(name)
             except Exception:
@@ -657,11 +803,19 @@ class OptimizationChecks(object):
         """Handle the DNS CNAME lookups and checking in multiple threads"""
         try:
             while True:
-                domain = self.dns_lookup_queue.get_nowait()
-                provider = self.find_dns_cdn(domain)
-                if provider is not None:
-                    self.dns_result_queue.put({'domain': domain, 'provider': provider})
-                self.dns_lookup_queue.task_done()
+                domain = self.dns_lookup_queue.get(5)
+                if domain is None:
+                    self.dns_lookup_queue.task_done()
+                    self.dns_result_queue.put(None)
+                    break
+                else:
+                    try:
+                        provider = self.find_dns_cdn(domain)
+                        if provider is not None:
+                            self.dns_result_queue.put({'domain': domain, 'provider': provider})
+                    except Exception:
+                        logging.debug('Error in dns worker')
+                    self.dns_lookup_queue.task_done()
         except Exception:
             pass
 
@@ -694,7 +848,7 @@ class OptimizationChecks(object):
                             break
                 if all_match:
                     matched_cdns.append(cdn)
-                    break;
+                    break
 
         if not len(matched_cdns):
             return None
@@ -703,12 +857,14 @@ class OptimizationChecks(object):
 
     def check_gzip(self):
         """Check each request to see if it can be compressed"""
-        start = monotonic.monotonic()
+        self.profile_start('gzip')
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if 'objectSize' in request:
                     content_length = request['objectSize']
                 elif content_length is not None:
@@ -731,8 +887,10 @@ class OptimizationChecks(object):
                 # Ignore small responses that will fit in a packet
                 if not check['score'] and content_length < 1400:
                     check['score'] = -1
-                # Try compressing it if it isn't an image
-                if not check['score'] and 'body' in request:
+                if 'body' not in request:
+                    check['score'] = -1
+                # Try compressing it if it isn't an image or known binary
+                if not check['score']:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type is not None:
                         check['score'] = -1
@@ -764,17 +922,20 @@ class OptimizationChecks(object):
                 if check['score'] >= 0:
                     self.gzip_results[request_id] = check
             except Exception:
-                pass
-        self.gzip_time = monotonic.monotonic() - start
+                logging.exception('Error checking gzip')
+        self.gzip_time = monotonic() - start
+        self.profile_end('gzip')
 
     def check_images(self):
         """Check each request to see if images can be compressed better"""
-        start = monotonic.monotonic()
+        self.profile_start('images')
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
-                content_length = self.get_header_value(request['response_headers'],
-                                                       'Content-Length')
+                content_length = None
+                if 'response_headers' in request:
+                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
@@ -815,9 +976,9 @@ class OptimizationChecks(object):
                             check['score'] = 100
                         else:
                             # spell-checker: disable
-                            image_chunks = ["iCCP", "tIME", "gAMA", "PLTE", "acTL", "IHDR", "cHRM",
-                                            "bKGD", "tRNS", "sBIT", "sRGB", "pHYs", "hIST", "vpAg",
-                                            "oFFs", "fcTL", "fdAT", "IDAT"]
+                            image_chunks = [b"iCCP", b"tIME", b"gAMA", b"PLTE", b"acTL", b"IHDR", b"cHRM",
+                                            b"bKGD", b"tRNS", b"sBIT", b"sRGB", b"pHYs", b"hIST", b"vpAg",
+                                            b"oFFs", b"fcTL", b"fdAT", b"IDAT"]
                             # spell-checker: enable
                             body = request['response_body']
                             image_size = len(body)
@@ -881,16 +1042,20 @@ class OptimizationChecks(object):
                                         check['score'] = 100
                     elif sniff_type == 'webp':
                         check['score'] = 100
+                    elif sniff_type == 'avif':
+                        check['score'] = 100
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
             except Exception:
-                pass
-        self.image_time = monotonic.monotonic() - start
+                logging.exception('Error checking images')
+        self.image_time = monotonic() - start
+        self.profile_end('images')
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
         from PIL import Image
-        start = monotonic.monotonic()
+        self.profile_start('progressive')
+        start = monotonic()
         for request_id in self.requests:
             try:
                 request = self.requests[request_id]
@@ -912,14 +1077,14 @@ class OptimizationChecks(object):
                             pos = 0
                             try:
                                 while pos < content_length:
-                                    block = struct.unpack('B', body[pos])[0]
+                                    block = struct.unpack('B', body[pos: pos + 1])[0]
                                     pos += 1
                                     if block != 0xff:
                                         break
-                                    block = struct.unpack('B', body[pos])[0]
+                                    block = struct.unpack('B', body[pos: pos + 1])[0]
                                     pos += 1
                                     while block == 0xff:
-                                        block = struct.unpack('B', body[pos])[0]
+                                        block = struct.unpack('B', body[pos: pos + 1])[0]
                                         pos += 1
                                     if block == 0x01 or (block >= 0xd0 and block <= 0xd9):
                                         continue
@@ -928,10 +1093,10 @@ class OptimizationChecks(object):
                                         # Seek to the next non-padded 0xff to find the next marker
                                         found = False
                                         while not found and pos < content_length:
-                                            value = struct.unpack('B', body[pos])[0]
+                                            value = struct.unpack('B', body[pos: pos + 1])[0]
                                             pos += 1
                                             if value == 0xff:
-                                                value = struct.unpack('B', body[pos])[0]
+                                                value = struct.unpack('B', body[pos: pos + 1])[0]
                                                 pos += 1
                                                 if value != 0x00:
                                                     found = True
@@ -943,40 +1108,34 @@ class OptimizationChecks(object):
                                         block_size = block_size[0] * 256 + block_size[1] - 2
                                         pos += block_size
                             except Exception:
-                                pass
+                                logging.exception('Error scanning JPEG')
                         self.progressive_results[request_id] = check
             except Exception:
-                pass
-        self.progressive_time = monotonic.monotonic() - start
+                logging.exception('Error checking progressive')
+        self.progressive_time = monotonic() - start
+        self.profile_end('progressive')
 
     def check_fonts(self):
         """Check each request to extract metadata about fonts"""
-        start = monotonic.monotonic()
+        self.profile_start('fonts')
+        start = monotonic()
         try:
-            from fontTools.ttLib import TTFont
+            from . import font_metadata
             for request_id in self.requests:
                 try:
                     request = self.requests[request_id]
                     if 'body' in request:
                         sniff_type = self.sniff_file_content(request['body'])
                         if sniff_type is not None and sniff_type in ['OTF', 'TTF', 'WOFF', 'WOFF2']:
-                            tables = None
-                            ttf = TTFont(request['body'], lazy=True)
-                            reader = ttf.reader
-                            tags = sorted(reader.keys())
-                            for tag in tags:
-                                entry = reader.tables[tag]
-                                if tables is None:
-                                    tables = {}
-                                tables[tag] = entry.length
-                            ttf.close()                            
-                            if tables is not None:
-                                self.font_results[request_id] = {'table_sizes': tables}
+                            font_info = font_metadata.read_metadata(request['body'])
+                            if font_info is not None:
+                                self.font_results[request_id] = font_info
                 except Exception:
                     pass
         except Exception:
-            pass
-        self.font_time = monotonic.monotonic() - start
+            logging.exception('Error checking fonts')
+        self.font_time = monotonic() - start
+        self.profile_end('fonts')
 
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
@@ -996,23 +1155,25 @@ class OptimizationChecks(object):
     def sniff_content(self, raw_bytes):
         """Check the beginning of the file to see if it is a known image type"""
         content_type = None
-        hex_bytes = binascii.hexlify(raw_bytes[:14]).lower()
+        hex_bytes = binascii.hexlify(raw_bytes[:14])
         # spell-checker: disable
-        if hex_bytes[0:6] == 'ffd8ff':
+        if hex_bytes[0:6] == b'ffd8ff':
             content_type = 'jpeg'
-        elif hex_bytes[0:16] == '89504e470d0a1a0a':
+        elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif raw_bytes[:6] == 'GIF87a' or raw_bytes[:6] == 'GIF89a':
+        elif hex_bytes[0:24] == b'000000206674797061766966':
+            content_type = 'avif'
+        elif raw_bytes[:6] == b'GIF87a' or raw_bytes[:6] == b'GIF89a':
             content_type = 'gif'
-        elif raw_bytes[:4] == 'RIFF' and raw_bytes[8:14] == 'WEBPVP':
+        elif raw_bytes[:4] == b'RIFF' and raw_bytes[8:14] == b'WEBPVP':
             content_type = 'webp'
-        elif raw_bytes[:4] == 'OTTO':
+        elif raw_bytes[:4] == b'OTTO':
             content_type = 'OTF'
-        elif raw_bytes[:4] == 'ttcf':
+        elif raw_bytes[:4] == b'ttcf':
             content_type = 'TTF'
-        elif raw_bytes[:4] == 'wOFF':
+        elif raw_bytes[:4] == b'wOFF':
             content_type = 'WOFF'
-        elif raw_bytes[:4] == 'wOF2':
+        elif raw_bytes[:4] == b'wOF2':
             content_type = 'WOFF2'
         # spell-checker: enable
         return content_type
@@ -1024,3 +1185,17 @@ class OptimizationChecks(object):
             raw = f_in.read(14)
             content_type = self.sniff_content(raw)
         return content_type
+
+    def profile_start(self, event_name):
+        event_name = 'opt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                self.task['profile_data'][event_name] = {'s': round(monotonic() - self.task['profile_data']['start'], 3)}
+
+    def profile_end(self, event_name):
+        event_name = 'opt.' + event_name
+        if self.task is not None and 'profile_data' in self.task:
+            with self.task['profile_data']['lock']:
+                if event_name in self.task['profile_data']:
+                    self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
+                    self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)

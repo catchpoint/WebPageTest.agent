@@ -23,7 +23,7 @@ do
 done
 sudo dbus-uuidgen --ensure
 sudo pip install --upgrade pip
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver
+until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver future
 do
     sleep 1
 done
@@ -39,7 +39,7 @@ echo "name=google-chrome" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
 echo "baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
 echo "enabled=1" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
 echo "gpgcheck=1" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
-echo "gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
+echo "gpgkey=https://www.webpagetest.org/keys/google/linux_signing_key.pub" | sudo tee -a /etc/yum.repos.d/google-chrome.repo
 until sudo yum -y install google-chrome-stable google-chrome-beta google-chrome-unstable firefox
 do
     sleep 1

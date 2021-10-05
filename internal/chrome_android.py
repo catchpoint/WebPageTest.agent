@@ -1,52 +1,63 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Chrome browser on Android"""
 import gzip
 import logging
 import os
 import re
 import shutil
+import sys
 import time
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-fre',
-    '--enable-benchmarking',
     '--metrics-recording-only',
-    '--disable-geolocation',
     '--disable-background-networking',
+    '--disable-component-update',
     '--no-default-browser-check',
     '--no-first-run',
-    '--disable-infobars',
-    '--disable-translate',
     '--allow-running-insecure-content',
-    '--disable-save-password-bubble',
-    '--disable-background-downloads',
-    '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
-    '--disable-datasaver-prompt',
     '--disable-device-discovery-notifications',
     '--disable-default-apps',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--safebrowsing-disable-auto-update',
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
-    '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeCookiesAndCredentials'
+    '--net-log-capture-mode=IncludeSensitive',
+    '--load-media-router-component-extension=0',
+    '--mute-audio',
+    '--disable-hang-monitor',
+    '--password-store=basic',
+    '--disable-breakpad',
+    '--dont-require-litepage-redirect-infobar',
+    '--override-https-image-compression-infobar',
+    '--disable-fetching-hints-at-navigation-start'
 ]
 
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
-    '"MAP clients1.google.com 127.0.0.1"'
+    '"MAP clients1.google.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
+    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP offlinepages-pa.googleapis.com 127.0.0.1"'
 ]
 
 DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
-    'CalculateNativeWinOcclusion'
+    'CalculateNativeWinOcclusion',
+    'TranslateUI',
+    'Translate',
+    'OfflinePagesPrefetching'
 ]
 
 ENABLE_CHROME_FEATURES = [
@@ -105,6 +116,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.devtools_screenshot = False
         self.connected = False
 
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        AndroidBrowser.shutdown(self)
+
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.task = task
@@ -147,10 +163,12 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
         root_command_line = '/data/local/' + self.config['command_line_file']
         logging.debug(command_line)
-        with open(local_command_line, 'wb') as f_out:
+        with open(local_command_line, 'w') as f_out:
             f_out.write(command_line)
         if self.adb.adb(['push', local_command_line, remote_command_line]):
             os.remove(local_command_line)
+            # Disable SELinux enforcement
+            self.adb.su('setenforce 0')
             # try copying it to /data/local for rooted devices that need it there
             if self.adb.su('cp {0} {1}'.format(remote_command_line, root_command_line)) is not None:
                 self.adb.su('chmod 666 {0}'.format(root_command_line))
@@ -171,11 +189,11 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
                         DevtoolsBrowser.prepare_browser(self, task)
                         DevtoolsBrowser.navigate(self, START_PAGE)
                         time.sleep(0.5)
+                        self.wait_for_network_idle(120, 4000)
 
     def setup_prefs(self):
         """Install our base set of preferences"""
         # Crashes chrome on the Moto G4's so disabled for now
-        return
         """
         src = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                            'support', 'chrome', 'prefs.json')
@@ -192,6 +210,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.adb.shell(['rm', remote_prefs])
         self.adb.su('chmod 777 {0}'.format(dest))
         """
+        return
 
     def configure_prefs(self):
         """Configure browser-specific shared_prefs"""
@@ -239,7 +258,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if modified:
             local = os.path.join(self.task['dir'], 'pref.xml')
             remote = '/data/local/tmp/pref.xml'
-            with open(local, 'wb') as f_out:
+            with open(local, 'w') as f_out:
                 f_out.write(out)
             if os.path.isfile(local):
                 self.adb.shell(['rm', remote])
@@ -252,9 +271,9 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
     def get_devtools_socket(self):
         """Get the socket name of the remote devtools socket. @..._devtools_remote"""
         socket_name = None
-        end_time = monotonic.monotonic() + 120
+        end_time = monotonic() + 120
         time.sleep(1)
-        while socket_name is None and monotonic.monotonic() < end_time:
+        while socket_name is None and monotonic() < end_time:
             out = self.adb.shell(['cat', '/proc/net/unix'])
             if out is not None:
                 for line in out.splitlines():
@@ -282,6 +301,7 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         self.adb.shell(['am', 'force-stop', self.config['package']])
         self.adb.shell(['rm', '/data/local/tmp/' + self.config['command_line_file']])
         self.adb.su('rm /data/local/' + self.config['command_line_file'])
+        AndroidBrowser.stop(self, job, task)
         # grab the netlog if there was one
         if 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """WebPageTest cross-platform agent"""
 import atexit
 import logging
@@ -15,7 +17,14 @@ import subprocess
 import sys
 import time
 import traceback
-
+if (sys.version_info >= (3, 0)):
+    GZIP_TEXT = 'wt'
+else:
+    GZIP_TEXT = 'w'
+try:
+    import ujson as json
+except BaseException:
+    import json
 
 class WPTAgent(object):
     """Main agent workflow"""
@@ -26,8 +35,10 @@ class WPTAgent(object):
         from internal.adb import Adb
         from internal.ios_device import iOSDevice
         self.must_exit = False
+        self.needs_shutdown = False
         self.options = options
         self.capture_display = None
+        self.health_check_server = None
         self.job = None
         self.task = None
         self.xvfb = None
@@ -37,10 +48,14 @@ class WPTAgent(object):
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
         self.ios = iOSDevice(self.options.device) if self.options.iOS else None
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
-        self.shaper = TrafficShaper(options)
-        atexit.register(self.cleanup)
+        self.browser = None
+        self.shaper = TrafficShaper(options, self.root_path)
+        # Install the signal handlers
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
+        if sys.platform != "win32":
+            signal.signal(signal.SIGHUP, self.signal_handler)
+        atexit.register(self.cleanup)
         self.image_magick = {'convert': 'convert', 'compare': 'compare', 'mogrify': 'mogrify'}
         if platform.system() == "Windows":
             paths = [os.getenv('ProgramFiles'), os.getenv('ProgramFiles(x86)')]
@@ -68,10 +83,15 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
-        import monotonic
-        start_time = monotonic.monotonic()
+        if (sys.version_info >= (3, 0)):
+            from time import monotonic
+        else:
+            from monotonic import monotonic
+        start_time = monotonic()
         browser = None
+        done = False
         exit_file = os.path.join(self.root_path, 'exit')
+        shutdown_file = os.path.join(self.root_path, 'shutdown')
         message_server = None
         if not self.options.android and not self.options.iOS:
             from internal.message_server import MessageServer
@@ -80,7 +100,16 @@ class WPTAgent(object):
             if not message_server.is_ok():
                 logging.error("Unable to start the local message server")
                 return
-        while not self.must_exit:
+        if self.options.healthcheckport:
+            from internal.health_check_server import HealthCheckServer
+            self.health_check_server = HealthCheckServer(self.options.healthcheckport)
+            self.health_check_server.start()
+            if not self.health_check_server.is_ok():
+                logging.error("Unable to start the health check server")
+                return
+            self.wpt.health_check_server = self.health_check_server
+
+        while not self.must_exit and not done:
             try:
                 self.alive()
                 if os.path.isfile(exit_file):
@@ -90,12 +119,41 @@ class WPTAgent(object):
                         pass
                     self.must_exit = True
                     break
-                if message_server is not None and self.options.exit > 0 and \
-                        not message_server.is_ok():
+                elif os.path.isfile(shutdown_file):
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
+                    self.must_exit = True
+                    self.needs_shutdown = True
+                    break
+                if message_server is not None and self.options.exit > 0 and not message_server.is_ok():
                     logging.error("Message server not responding, exiting")
                     break
+                if self.health_check_server is not None and self.options.exit > 0 and not self.health_check_server.is_ok():
+                    logging.error("Health check server not responding, exiting")
+                    break
                 if self.browsers.is_ready():
-                    self.job = self.wpt.get_test(self.browsers.browsers)
+                    if self.options.testurl or self.options.testspec:
+                        done = True
+                        try:
+                            test_json = {}
+                            if self.options.testspec:
+                                with open(self.options.testspec, 'rt') as f_in:
+                                    test_json = json.load(f_in)
+                            if self.options.testurl:
+                                test_json['url'] = self.options.testurl
+                            if self.options.browser:
+                                test_json['browser'] = self.options.browser
+                            if 'runs' not in test_json:
+                                test_json['runs'] = self.options.testruns
+                            if 'fvonly' not in test_json:
+                                test_json['fvonly'] = not self.options.testrv
+                            self.job = self.wpt.process_job_json(test_json)
+                        except Exception:
+                            logging.exception('Error processing test options')
+                    else:
+                        self.job = self.wpt.get_test(self.browsers.browsers)
                     if self.job is not None:
                         self.job['image_magick'] = self.image_magick
                         self.job['message_server'] = message_server
@@ -103,7 +161,7 @@ class WPTAgent(object):
                         self.job['shaper'] = self.shaper
                         self.task = self.wpt.get_task(self.job)
                         while self.task is not None:
-                            start = monotonic.monotonic()
+                            start = monotonic()
                             try:
                                 self.task['running_lighthouse'] = False
                                 if self.job['type'] != 'lighthouse':
@@ -120,7 +178,7 @@ class WPTAgent(object):
                                         self.task['running_lighthouse'] = True
                                         self.wpt.running_another_test(self.task)
                                         self.run_single_test()
-                                elapsed = monotonic.monotonic() - start
+                                elapsed = monotonic() - start
                                 logging.debug('Test run time: %0.3f sec', elapsed)
                             except Exception as err:
                                 msg = ''
@@ -133,9 +191,12 @@ class WPTAgent(object):
                             self.wpt.upload_task_result(self.task)
                             # Set up for the next run
                             self.task = self.wpt.get_task(self.job)
+                        self.output_test_result()
+                elif self.options.exit > 0 and self.browsers.should_exit():
+                    self.must_exit = True
                 if self.job is not None:
                     self.job = None
-                else:
+                elif not done and not self.must_exit:
                     self.sleep(self.options.polling)
             except Exception as err:
                 msg = ''
@@ -151,35 +212,51 @@ class WPTAgent(object):
                     browser.on_stop_recording(None)
                     browser = None
             if self.options.exit > 0:
-                run_time = (monotonic.monotonic() - start_time) / 60.0
+                run_time = (monotonic() - start_time) / 60.0
                 if run_time > self.options.exit:
-                    break
+                    done = True
             # Exit if adb is having issues (will cause a reboot after several tries)
             if self.adb is not None and self.adb.needs_exit:
-                break
+                done = True
         self.cleanup()
+        if self.needs_shutdown:
+            if platform.system() == "Linux":
+                subprocess.call(['sudo', 'poweroff'])
+
+    def output_test_result(self):
+        """Dump the result of a CLI test to stdout"""
+        if self.options.testout is not None:
+            test_id = self.wpt.last_test_id
+            if self.options.testout == 'id':
+                print("{}".format(test_id))
+            elif self.options.testout == 'url' and self.options.server is not None:
+                print("{0}result/{1}/".format(self.options.server[:-5], test_id))
 
     def run_single_test(self):
         """Run a single test run"""
+        if self.health_check_server is not None:
+            self.health_check_server.healthy()
         self.alive()
-        browser = self.browsers.get_browser(self.job['browser'], self.job)
-        if browser is not None:
-            browser.prepare(self.job, self.task)
-            browser.launch(self.job, self.task)
+        self.browser = self.browsers.get_browser(self.job['browser'], self.job)
+        if self.browser is not None:
+            self.browser.prepare(self.job, self.task)
+            self.browser.launch(self.job, self.task)
             try:
                 if self.task['running_lighthouse']:
-                    self.task['lighthouse_log'] = \
-                        'Lighthouse testing is not supported with this browser.'
+                    self.task['lighthouse_log'] = 'Lighthouse testing is not supported with this browser.'
                     try:
-                        browser.run_lighthouse_test(self.task)
+                        self.browser.run_lighthouse_test(self.task)
                     except Exception:
-                        pass
+                        logging.exception('Error running lighthouse test')
                     if self.task['lighthouse_log']:
-                        log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
-                        with gzip.open(log_file, 'wb', 7) as f_out:
-                            f_out.write(self.task['lighthouse_log'])
+                        try:
+                            log_file = os.path.join(self.task['dir'], 'lighthouse.log.gz')
+                            with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
+                                f_out.write(self.task['lighthouse_log'])
+                        except Exception:
+                            logging.exception('Error compressing lighthouse log')
                 else:
-                    browser.run_task(self.task)
+                    self.browser.run_task(self.task)
             except Exception as err:
                 msg = ''
                 if err is not None and err.__str__() is not None:
@@ -188,29 +265,38 @@ class WPTAgent(object):
                     '{0}'.format(msg)
                 logging.exception("Unhandled exception in test run: %s", msg)
                 traceback.print_exc(file=sys.stdout)
-            browser.stop(self.job, self.task)
+            self.browser.stop(self.job, self.task)
             # Delete the browser profile if needed
             if self.task['cached'] or self.job['fvonly']:
-                browser.clear_profile(self.task)
+                self.browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
             logging.critical(err)
             self.task['error'] = err
-        browser = None
+        self.browser = None
 
-    def signal_handler(self, *_):
+    def signal_handler(self, signum, frame):
         """Ctrl+C handler"""
-        if self.must_exit:
-            exit(1)
-        if self.job is None:
-            print "Exiting..."
-        else:
-            print "Will exit after test completes.  Hit Ctrl+C again to exit immediately"
-        self.must_exit = True
+        try:
+            if not self.must_exit:
+                logging.info("Exiting...")
+                self.must_exit = True
+                if self.wpt is not None:
+                    self.wpt.shutdown()
+                if self.browser is not None:
+                    self.browser.shutdown()
+            else:
+                logging.info("Waiting for graceful exit...")
+        except Exception as e:
+            logging.exception("Error in signal handler")
 
     def cleanup(self):
         """Do any cleanup that needs to be run regardless of how we exit"""
         logging.debug('Cleaning up')
+        if self.wpt:
+            self.wpt.shutdown()
+        if self.browser:
+            self.browser.shutdown()
         self.shaper.remove()
         if self.xvfb is not None:
             self.xvfb.stop()
@@ -228,26 +314,33 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
-        import monotonic
+        if (sys.version_info >= (3, 0)):
+            from time import monotonic
+        else:
+            from monotonic import monotonic
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
-            target_pct = 50. / float(cpu_count)
+            target_pct = max(50. / float(cpu_count), 10.)
             idle_start = None
-            end_time = monotonic.monotonic() + timeout
+            end_time = monotonic() + timeout
+            last_update = monotonic()
             idle = False
-            while not idle and monotonic.monotonic() < end_time:
+            while not idle and monotonic() < end_time:
                 self.alive()
-                check_start = monotonic.monotonic()
+                check_start = monotonic()
                 pct = psutil.cpu_percent(interval=0.5)
                 if pct <= target_pct:
                     if idle_start is None:
                         idle_start = check_start
-                    if monotonic.monotonic() - idle_start > 2:
+                    if monotonic() - idle_start > 2:
                         idle = True
                 else:
                     idle_start = None
+                if not idle and monotonic() - last_update > 1:
+                    last_update = monotonic()
+                    logging.debug("CPU Utilization: %0.1f%% (%d CPU's, %0.1f%% target)", pct, cpu_count, target_pct)
 
     def alive(self):
         """Touch a watchdog file indicating we are still alive"""
@@ -265,7 +358,7 @@ class WPTAgent(object):
             ret = True
         except ImportError:
             pass
-        if not ret:
+        if not ret and sys.version_info < (3, 0):
             from internal.os_util import run_elevated
             logging.debug('Trying to install %s...', module_name)
             subprocess.call([sys.executable, '-m', 'pip', 'uninstall', '-y', module_name])
@@ -278,10 +371,13 @@ class WPTAgent(object):
             except ImportError:
                 pass
         if not ret:
-            print "Missing {0} module. Please run 'pip install {1}'".format(module, module_name)
+            if (sys.version_info >= (3, 0)):
+                logging.error("Missing {0} module. Please run 'pip3 install {1}'".format(module, module_name))
+            else:
+                logging.error("Missing {0} module. Please run 'pip install {1}'".format(module, module_name))
         return ret
 
-    def startup(self):
+    def startup(self, detected_browsers):
         """Validate that all of the external dependencies are installed"""
         ret = True
 
@@ -297,14 +393,21 @@ class WPTAgent(object):
         ret = self.requires('PIL', 'pillow') and ret
         ret = self.requires('psutil') and ret
         ret = self.requires('requests') and ret
+        if platform.system() == 'Darwin':
+            ret = self.requires('AppKit', 'PyObjC') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
+            if self.options.webdriver and 'Firefox' in detected_browsers:
+                ret = self.requires('selenium')
         # Windows-specific imports
         if platform.system() == "Windows":
             ret = self.requires('win32api', 'pywin32') and ret
 
+        if detected_browsers is not None and 'Safari' in detected_browsers and not self.options.iOS:
+            # if running for safari
+            ret = self.requires('selenium')
+
         # Optional imports
-        self.requires('brotli')
         self.requires('fontTools', 'fonttools')
 
         # Try patching ws4py with a faster lib
@@ -313,26 +416,24 @@ class WPTAgent(object):
             import wsaccel
             wsaccel.patch_ws4py()
         except Exception:
-            pass
+            logging.debug('wsaccel not installed, Chrome debug interface will be slower than it could be')
 
         try:
-            subprocess.check_output(['python', '--version'])
+            subprocess.check_output([sys.executable, '--version'])
         except Exception:
-            print "Make sure python 2.7 is available in the path."
+            logging.critical("Unable to start python.")
             ret = False
 
         try:
             subprocess.check_output('{0} -version'.format(self.image_magick['convert']), shell=True)
         except Exception:
-            print "Missing convert utility. Please install ImageMagick " \
-                  "and make sure it is in the path."
+            logging.critical("Missing convert utility. Please install ImageMagick and make sure it is in the path.")
             ret = False
 
         try:
             subprocess.check_output('{0} -version'.format(self.image_magick['mogrify']), shell=True)
         except Exception:
-            print "Missing mogrify utility. Please install ImageMagick " \
-                  "and make sure it is in the path."
+            logging.critical("Missing mogrify utility. Please install ImageMagick and make sure it is in the path.")
             ret = False
 
         if platform.system() == "Linux":
@@ -340,7 +441,14 @@ class WPTAgent(object):
                 subprocess.check_output(['traceroute', '--version'])
             except Exception:
                 logging.debug("Traceroute is missing, installing...")
-                subprocess.call(['sudo', 'apt-get', '-yq', 'install', 'traceroute'])
+                subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
+
+        if not self.options.android and not self.options.iOS and self.options.webdriver and 'Firefox' in detected_browsers:
+            try:
+                subprocess.check_output(['geckodriver', '-V'])
+            except Exception:
+                logging.debug("geckodriver is missing, installing...")
+                subprocess.call(['sudo', 'apt', '-yq', 'install', 'firefox-geckodriver'])
 
         # If we are on Linux and there is no display, enable xvfb by default
         if platform.system() == "Linux" and not self.options.android and \
@@ -355,26 +463,23 @@ class WPTAgent(object):
                 self.xvfb.start()
 
         # Figure out which display to capture from
-        if platform.system() == "Linux" and 'DISPLAY' in os.environ:
-            logging.debug('Display: %s', os.environ['DISPLAY'])
-            self.capture_display = os.environ['DISPLAY']
-        elif platform.system() == "Darwin":
-            proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            _, err = proc.communicate()
-            for line in err.splitlines():
-                matches = re.search(r'\[(\d+)\] Capture screen', line)
-                if matches:
-                    self.capture_display = matches.group(1)
-                    break
-        elif platform.system() == "Windows":
-            self.capture_display = 'desktop'
-
-        if self.options.throttle:
-            try:
-                subprocess.check_output('sudo cgset -h', shell=True)
-            except Exception:
-                print "Missing cgroups, make sure cgroup-tools is installed."
+        if not self.options.android and not self.options.iOS:
+            if platform.system() == "Linux" and 'DISPLAY' in os.environ:
+                logging.debug('Display: %s', os.environ['DISPLAY'])
+                self.capture_display = os.environ['DISPLAY']
+            elif platform.system() == "Darwin":
+                proc = subprocess.Popen('ffmpeg -f avfoundation -list_devices true -i ""',
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                _, err = proc.communicate()
+                for line in err.splitlines():
+                    matches = re.search(r'\[(\d+)\] Capture screen', line.decode('utf-8'))
+                    if matches:
+                        self.capture_display = matches.group(1)
+                        break
+            elif platform.system() == "Windows":
+                self.capture_display = 'desktop'
+            if self.capture_display is None:
+                logging.critical('No capture display available')
                 ret = False
 
         # Fix Lighthouse install permissions
@@ -387,33 +492,34 @@ class WPTAgent(object):
             except Exception:
                 pass
 
-        # Check for Node 10+
-        if self.get_node_version() < 10.0:
+        # Check for Node 14+
+        if self.get_node_version() < 14.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
-                logging.debug('Updating Node.js to 10.x')
-                subprocess.call('curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -',
-                                shell=True)
+                logging.debug('Updating Node.js to 14.x')
+                subprocess.call('sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates', shell=True)
+                subprocess.call('curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -', shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
-            if self.get_node_version() < 10.0:
-                logging.warning("Node.js 10 or newer is required for Lighthouse testing")
+            if self.get_node_version() < 12.0:
+                logging.warning("Node.js 12 or newer is required for Lighthouse testing")
 
         # Check the iOS install
         if self.ios is not None:
-            ret = self.ios.check_install()
+            ret = self.requires('usbmuxwrapper') and ret
+            ret = self.ios.check_install() and ret
 
         if not self.options.android and not self.options.iOS and not self.options.noidle:
             self.wait_for_idle(300)
         if self.adb is not None:
             if not self.adb.start():
-                print "Error configuring adb. Make sure it is installed and in the path."
+                logging.critical("Error configuring adb. Make sure it is installed and in the path.")
                 ret = False
         self.shaper.remove()
         if not self.shaper.install():
             if platform.system() == "Windows":
-                print "Error configuring traffic shaping, make sure secure boot is disabled."
+                logging.critical("Error configuring traffic shaping, make sure secure boot is disabled.")
             else:
-                print "Error configuring traffic shaping, make sure it is installed."
+                logging.critical("Error configuring traffic shaping, make sure it is installed.")
             ret = False
 
         # Update the Windows root certs
@@ -426,7 +532,10 @@ class WPTAgent(object):
         """Get the installed version of Node.js"""
         version = 0
         try:
-            stdout = subprocess.check_output(['node', '--version'])
+            if (sys.version_info >= (3, 0)):
+                stdout = subprocess.check_output(['node', '--version'], encoding='UTF-8')
+            else:
+                stdout = subprocess.check_output(['node', '--version'])
             matches = re.match(r'^v(\d+\.\d+)', stdout)
             if matches:
                 version = float(matches.group(1))
@@ -459,10 +568,15 @@ class WPTAgent(object):
 
 def parse_ini(ini):
     """Parse an ini file and convert it to a dictionary"""
-    import ConfigParser
     ret = None
     if os.path.isfile(ini):
-        parser = ConfigParser.SafeConfigParser()
+        parser = None
+        try:
+            import ConfigParser
+            parser = ConfigParser.SafeConfigParser()
+        except BaseException:
+            import configparser
+            parser = configparser.ConfigParser()
         parser.read(ini)
         ret = {}
         for section in parser.sections():
@@ -482,7 +596,7 @@ def get_windows_build():
     return int(output.strip().split(' ')[-1])
 
 
-def find_browsers():
+def find_browsers(options):
     """Find the various known-browsers in case they are not explicitly configured"""
     browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
     if browsers is None:
@@ -563,36 +677,34 @@ def find_browsers():
                                                    'log_level': 5}
         # Microsoft Edge (Legacy)
         edge = None
-        build = get_windows_build()
-        if build >= 10240:
-            edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
-                                    'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
-            if not os.path.isfile(edge_exe):
-                if build > 17134:
-                    from internal.os_util import run_elevated
-                    logging.debug('Installing latest webdriver for Microsoft Edge...')
-                    run_elevated('DISM.exe', '/Online /Add-Capability '
-                                 '/CapabilityName:Microsoft.WebDriver~~~~0.0.1.0')
-                    edge_exe = os.path.join(os.environ['windir'], 'System32',
-                                            'MicrosoftWebDriver.exe')
-                else:
-                    if build >= 17000:
-                        edge_version = 17
-                    elif build >= 16000:
-                        edge_version = 16
-                    elif build >= 15000:
-                        edge_version = 15
-                    elif build >= 14000:
-                        edge_version = 14
-                    elif build >= 10586:
-                        edge_version = 13
+        try:
+            build = get_windows_build()
+            if build >= 10240:
+                edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                        'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
+                if not os.path.isfile(edge_exe):
+                    if build > 17134:
+                        edge_exe = os.path.join(os.environ['windir'], 'System32', 'MicrosoftWebDriver.exe')
                     else:
-                        edge_version = 12
-                    edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
-                                            'support', 'edge', str(edge_version),
-                                            'MicrosoftWebDriver.exe')
-            if os.path.isfile(edge_exe):
-                edge = {'exe': edge_exe}
+                        if build >= 17000:
+                            edge_version = 17
+                        elif build >= 16000:
+                            edge_version = 16
+                        elif build >= 15000:
+                            edge_version = 15
+                        elif build >= 14000:
+                            edge_version = 14
+                        elif build >= 10586:
+                            edge_version = 13
+                        else:
+                            edge_version = 12
+                        edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
+                                                'support', 'edge', str(edge_version),
+                                                'MicrosoftWebDriver.exe')
+                if os.path.isfile(edge_exe):
+                    edge = {'exe': edge_exe}
+        except Exception:
+            logging.exception('Error getting windows build, skipping check for legacy Edge')
         if edge is not None:
             edge['type'] = 'Edge'
             if 'Microsoft Edge (EdgeHTML)' not in browsers:
@@ -603,21 +715,25 @@ def find_browsers():
                 browsers['Edge'] = dict(edge)
         # Microsoft Edge (Chromium)
         paths = [program_files, program_files_x86, local_appdata]
-        channels = ['Edge Dev']
+        channels = ['Edge', 'Edge Dev']
         for channel in channels:
             for path in paths:
-                if path is not None and channel not in browsers:
-                    edge_path = os.path.join(path, 'Microsoft', channel,
-                                             'Application', 'msedge.exe')
-                    if os.path.isfile(edge_path):
-                        browser_name = 'Microsoft {0} (Chromium)'.format(channel)
-                        if browser_name not in browsers:
-                            browsers[browser_name] = {'exe': edge_path}
+                edge_path = os.path.join(path, 'Microsoft', channel, 'Application', 'msedge.exe')
+                if os.path.isfile(edge_path):
+                    browser_name = 'Microsoft {0} (Chromium)'.format(channel)
+                    if browser_name not in browsers:
+                        browsers[browser_name] = {'exe': edge_path}
+                        if channel == 'Edge' and 'Edgium' not in browsers:
+                            browsers['Edgium'] = {'exe': edge_path}
+                        elif channel == 'Edge Dev' and 'Edgium Dev' not in browsers:
+                            browsers['Edgium Dev'] = {'exe': edge_path}
         if local_appdata is not None and 'Microsoft Edge Canary (Chromium)' not in browsers:
             edge_path = os.path.join(local_appdata, 'Microsoft', 'Edge SxS',
                                      'Application', 'msedge.exe')
             if os.path.isfile(edge_path):
                 browsers['Microsoft Edge Canary (Chromium)'] = {'exe': edge_path}
+                if 'Edgium Canary' not in browsers:
+                    browsers['Edgium Canary'] = {'exe': edge_path}
         # Internet Explorer
         paths = [program_files, program_files_x86]
         for path in paths:
@@ -625,6 +741,25 @@ def find_browsers():
                 ie_path = os.path.join(path, 'Internet Explorer', 'iexplore.exe')
                 if os.path.isfile(ie_path):
                     browsers['ie'] = {'exe': ie_path, 'type': 'IE'}
+        # Brave
+        paths = [program_files, program_files_x86]
+        for path in paths:
+            if path is not None and 'Brave' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave'] = {'exe': brave_path}
+            if path is not None and 'Brave Beta' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Beta', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Beta'] = {'exe': brave_path}
+            if path is not None and 'Brave Dev' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Dev', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Dev'] = {'exe': brave_path}
+            if path is not None and 'Brave Nightly' not in browsers:
+                brave_path = os.path.join(path, 'BraveSoftware', 'Brave-Browser-Nightly', 'Application', 'brave.exe')
+                if os.path.isfile(brave_path):
+                    browsers['Brave Nightly'] = {'exe': brave_path}
     elif plat == "Linux":
         chrome_path = '/opt/google/chrome/chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
@@ -693,10 +828,66 @@ def find_browsers():
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
                                            'log_level': 5}
+        # Brave
+        brave_path = '/opt/brave.com/brave/brave-browser'
+        if 'Brave' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-beta/brave-browser-beta'
+        if 'Brave Beta' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Beta'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-dev/brave-browser-dev'
+        if 'Brave Dev' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Dev'] = {'exe': brave_path}
+        brave_path = '/opt/brave.com/brave-nightly/brave-browser-nightly'
+        if 'Brave Nightly' not in browsers and os.path.isfile(brave_path):
+            browsers['Brave Nightly'] = {'exe': brave_path}
+        # Vivaldi
+        vivaldi_path = '/usr/bin/vivaldi'
+        if 'Vivaldi' not in browsers and os.path.isfile(vivaldi_path):
+            browsers['Vivaldi'] = {'exe': vivaldi_path}
+        # Microsoft Edge
+        edge_path = '/usr/bin/microsoft-edge-beta'
+        if os.path.isfile(edge_path):
+            if 'Microsoft Edge Beta (Chromium)' not in browsers:
+                browsers['Microsoft Edge Beta (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge Beta' not in browsers:
+                browsers['Microsoft Edge Beta'] = {'exe': edge_path}
+            if 'Edge Beta' not in browsers:
+                browsers['Edge Beta'] = {'exe': edge_path}
+            if 'Microsoft Edge (Chromium)' not in browsers:
+                browsers['Microsoft Edge (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge' not in browsers:
+                browsers['Microsoft Edge'] = {'exe': edge_path}
+        edge_path = '/usr/bin/microsoft-edge-dev'
+        if os.path.isfile(edge_path):
+            if 'Microsoft Edge Dev (Chromium)' not in browsers:
+                browsers['Microsoft Edge Dev (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge Dev' not in browsers:
+                browsers['Microsoft Edge Dev'] = {'exe': edge_path}
+            if 'Edge Dev' not in browsers:
+                browsers['Edge Dev'] = {'exe': edge_path}
+            if 'Microsoft Edge (Chromium)' not in browsers:
+                browsers['Microsoft Edge (Chromium)'] = {'exe': edge_path}
+            if 'Microsoft Edge' not in browsers:
+                browsers['Microsoft Edge'] = {'exe': edge_path}
+        # Epiphany (WebKit)
+        epiphany_path = '/usr/bin/epiphany'
+        if os.path.isfile(epiphany_path):
+            if 'Epiphany' not in browsers:
+                browsers['Epiphany'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
+            if 'WebKit' not in browsers:
+                browsers['WebKit'] = {'exe': epiphany_path, 'type': 'WebKitGTK'}
+
     elif plat == "Darwin":
         chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         if 'Chrome' not in browsers and os.path.isfile(chrome_path):
             browsers['Chrome'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta'
+        if 'Chrome Beta' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Beta'] = {'exe': chrome_path}
+        chrome_path = '/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome Dev'
+        if 'Chrome Dev' not in browsers and os.path.isfile(chrome_path):
+            browsers['Chrome Dev'] = {'exe': chrome_path}
         canary_path = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
         if os.path.isfile(canary_path):
             if 'Chrome Dev' not in browsers:
@@ -713,10 +904,35 @@ def find_browsers():
             browsers['Firefox Nightly'] = {'exe': nightly_path,
                                            'type': 'Firefox',
                                            'log_level': 5}
+        safari_path = '/Applications/Safari.app/Contents/MacOS/Safari'
+        if 'Safari' not in browsers and os.path.isfile(safari_path):
+            browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
+        # Get a list of all of the iOS simulator devices available
+        try:
+            logging.debug('Scanning for iOS simulator devices...')
+            out = subprocess.check_output(['xcrun', 'simctl', 'list', '--json', 'devices', 'available'], universal_newlines=True)
+            if out:
+                devices = json.loads(out)
+                if 'devices' in devices:
+                    for runtime in devices['devices']:
+                        if runtime.find('.iOS-') >= 0:
+                            for device in devices['devices'][runtime]:
+                                if 'name' in device:
+                                    if device['name'] not in browsers:
+                                        browsers[device['name']] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+                                        browsers[device['name'] + ' (simulator)'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device}
+                                        browsers[device['name'] + ' - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
+                                        browsers[device['name'] + ' (simulator) - Landscape'] = {'type': 'iOS Simulator', 'runtime': runtime, 'device': device, 'rotate': True}
+        except Exception:
+            logging.exception('iOS Simulator devices unavailable')
+
     logging.debug('Detected Browsers:')
     for browser in browsers:
-        logging.debug('%s: %s', browser, browsers[browser]['exe'])
-    if 'Firefox' in browsers:
+        if 'exe' in browsers[browser]:
+            logging.debug('%s: %s', browser, browsers[browser]['exe'])
+        else:
+            logging.debug('%s', browser)
+    if not options.webdriver and 'Firefox' in browsers:
         try:
             # make sure marionette is up to date
             from internal.os_util import run_elevated
@@ -734,8 +950,10 @@ def upgrade_pip_modules():
         from internal.os_util import run_elevated
         subprocess.call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
         run_elevated(sys.executable, '-m pip install --upgrade pip')
-        out = subprocess.check_output([sys.executable, '-m', 'pip', 'list',
-                                       '--outdated', '--format', 'freeze'])
+        if (sys.version_info >= (3, 0)):
+            out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'], encoding='UTF-8')
+        else:
+            out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format', 'freeze'])
         for line in out.splitlines():
             separator = line.find('==')
             if separator > 0:
@@ -781,12 +999,13 @@ def main():
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at startup.")
     parser.add_argument('--collectversion', action='store_true', default=False,
-                        help="Collection browser versions and submit to controller.")                        
+                        help="Collection browser versions and submit to controller.")
+    parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
                         help="Use an xvfb virtual display (Linux only).")
-    parser.add_argument('--fps', type=int, choices=xrange(1, 61), default=10,
+    parser.add_argument('--fps', type=int, choices=range(1, 61), default=10,
                         help='Video capture frame rate (defaults to 10). '
                              'Valid range is 1-60 (Linux only).')
 
@@ -812,11 +1031,6 @@ def main():
                         'should be pre-authorized).')
     parser.add_argument('--tcpdump', help='Specify an interface to use for tcpdump.')
 
-    # CPU Throttling
-    parser.add_argument('--throttle', action='store_true', default=False,
-                        help='Enable cgroup-based CPU throttling for mobile emulation '
-                        '(Linux only).')
-
     # Android options
     parser.add_argument('--android', action='store_true', default=False,
                         help="Run tests on an attached android device.")
@@ -834,10 +1048,14 @@ def main():
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --gnirehtet eth0,8.8.8.8")
     parser.add_argument('--vpntether',
-                        help="Use vpn-reverse-tether for reverse-tethering. This is the "
-                        "recommended way to reverse-tether devices. You will need to manually "
+                        help="Use vpn-reverse-tether for reverse-tethering. You will need to manually "
                         "approve the vpn once per mobile device. Valid options are:\n"
                         "   <interface>,<dns>: i.e. --vpntether eth0,8.8.8.8")
+    parser.add_argument('--vpntether2',
+                        help="Use vpn-reverse-tether v2 for reverse-tethering. This is the "
+                        "recommended way to reverse-tether devices. You will need to manually "
+                        "approve the vpn once per mobile device. Valid options are:\n"
+                        "   <interface>,<dns>: i.e. --vpntether2 eth0,8.8.8.8")
     parser.add_argument('--rndis',
                         help="(deprecated) Enable reverse-tethering over rndis. "
                         "Valid options are:\n"
@@ -856,6 +1074,12 @@ def main():
                         "(specify serial number in --device).")
     parser.add_argument('--list', action='store_true', default=False,
                         help="List available iOS devices.")
+    parser.add_argument('--ioswebdriver', action='store_true', default=False,
+                        help="Use WebDriver for launching the iOS simulator.")
+
+    # Firefox
+    parser.add_argument('--webdriver', action='store_true', default=False,
+                        help="Use WebDriver instead of Marionette for Firefox (Defaults to False on Python 2, always True for Python 3).")
 
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
@@ -865,27 +1089,47 @@ def main():
     parser.add_argument('--cert', help="Client certificate if using certificates to "
                         "authenticate the WebPageTest server connection.")
     parser.add_argument('--certkey', help="Client-side private key (if not embedded in the cert).")
+
+    # Scheduler configs
+    parser.add_argument('--scheduler', help="Scheduler URL (including trailing slash i.e. http://scheduler.webpagetest.org/).")
+    parser.add_argument('--schedulersalt', help="Secret salt to use with the scheduler.")
+    parser.add_argument('--schedulernode', help="Scheduler node ID for the queue.")
+
+    # CLI test options
+    parser.add_argument('--testurl', help="URL to test (CLI).")
+    parser.add_argument('--browser', help="Browser to test in (CLI).")
+    parser.add_argument('--testspec', help="JSON test definition file (CLI).")
+    parser.add_argument('--testoutdir', help="Output directory for test artifacts (CLI).")
+    parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
+    parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
+    parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
+
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
-    if platform.system() == "Windows":
-        if sys.version_info[0] != 2 or \
-                sys.version_info[1] != 7 or \
-                sys.version_info[2] < 11:
-            print "Requires python 2.7.11 (or later)"
+    if sys.version_info[0] < 3:
+        if platform.system() == "Windows":
+            if sys.version_info[0] != 2 or \
+                    sys.version_info[1] != 7 or \
+                    sys.version_info[2] < 11:
+                logging.critical("Requires python 2.7.11 (or later)")
+                exit(1)
+        elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
+            logging.critical("Requires python 2.7")
             exit(1)
-    elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
-        print "Requires python 2.7"
-        exit(1)
 
     if options.list:
         from internal.ios_device import iOSDevice
         ios = iOSDevice()
         devices = ios.get_devices()
-        print "Available iOS devices:"
+        logging.critical("Available iOS devices:")
         for device in devices:
-            print device
+            logging.critical(device)
         exit(1)
+
+    # Force WebDriver for Python 3
+    if (sys.version_info >= (3, 0)):
+        options.webdriver = True
 
     # Set up logging
     log_level = logging.CRITICAL
@@ -919,20 +1163,22 @@ def main():
 
     browsers = None
     if not options.android and not options.iOS:
-        browsers = find_browsers()
+        browsers = find_browsers(options)
         if len(browsers) == 0:
-            print "No browsers configured. Check that browsers.ini is present and correct."
+            logging.critical("No browsers configured. Check that browsers.ini is present and correct.")
             exit(1)
 
     if options.collectversion and platform.system() == "Windows":
         get_browser_versions(browsers)
 
+
     agent = WPTAgent(options, browsers)
-    if agent.startup():
+    if agent.startup(browsers):
         # Create a work directory relative to where we are running
-        print "Running agent, hit Ctrl+C to exit"
+        logging.critical("Running agent, hit Ctrl+C to exit")
         agent.run_testing()
-        print "Done"
+        logging.critical("Done")
+    agent = None
 
 
 if __name__ == '__main__':

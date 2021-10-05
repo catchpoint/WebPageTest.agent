@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Cross-platform support for os-level things that differ on different platforms"""
 import logging
 import os
@@ -85,7 +87,7 @@ def run_elevated(command, args, wait=True):
             logging.debug('sudo ' + command + ' ' + args)
             ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
     except Exception:
-        pass
+        logging.exception('Error running elevated command: %s', command)
     return ret
 
 def wait_for_elevated_process(process_info):
@@ -124,5 +126,5 @@ def get_file_version(filename):
         ls = info['FileVersionLS']
         version = '{0}.{1}.{2}.{3}'.format(HIWORD(ms), LOWORD(ms), HIWORD(ls), LOWORD(ls))
     except:
-        pass
+        logging.exception('Error getting file version for %s', filename)
     return version

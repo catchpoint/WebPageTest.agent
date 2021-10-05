@@ -1,23 +1,31 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Cross-platform support for traffic-shaping"""
 import logging
 import os
 import platform
 import re
 import subprocess
+import sys
 import time
 
 class TrafficShaper(object):
     """Main traffic-shaper interface"""
-    def __init__(self, options):
+    def __init__(self, options, root_path):
         shaper_name = options.shaper
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.shaper = None
+        plat = platform.system()
+        if shaper_name is None and plat == "Linux":
+            shaper_name = 'netem'
         if shaper_name is not None:
             if shaper_name == 'none':
                 self.shaper = NoShaper()
+            elif shaper_name == 'chrome':
+                self.shaper = ChromeShaper()
             elif shaper_name[:5] == 'netem':
                 parts = shaper_name.split(',')
                 if_out = parts[1].strip() if len(parts) > 1 else None
@@ -26,7 +34,7 @@ class TrafficShaper(object):
                     if_in = 'usb0'
                 elif options.simplert:
                     if_in = 'tun0'
-                elif options.vpntether:
+                elif options.vpntether or options.vpntether2:
                     if_in = 'tun0'
                 self.shaper = NetEm(options=options, out_interface=if_out, in_interface=if_in)
             elif shaper_name[:6] == 'remote':
@@ -37,17 +45,14 @@ class TrafficShaper(object):
         elif options.rndis:
             self.shaper = NoShaper()
         else:
-            plat = platform.system()
             if plat == "Windows":
                 winver = float(".".join(platform.version().split('.')[:2]))
                 if winver >= 6.3:
                     self.shaper = WinShaper()
-                else:
-                    self.shaper = Dummynet()
             elif plat == "Linux":
                 self.shaper = NetEm(options=options)
             elif plat == "Darwin":
-                self.shaper = MacDummynet()
+                self.shaper = MacDummynet(root_path)
 
     def install(self):
         """Install and configure the traffic-shaper"""
@@ -71,21 +76,27 @@ class TrafficShaper(object):
             ret = self.shaper.reset()
         return ret
 
+    def _to_int(self, s):
+        return int(re.search(r'\d+', str(s)).group())
+
     def configure(self, job, task):
         """Enable traffic-shaping"""
         ret = False
         in_bps = 0
         if 'bwIn' in job:
-            in_bps = int(re.search(r'\d+', str(job['bwIn'])).group()) * 1000
+            in_bps = self._to_int(job['bwIn']) * 1000
         out_bps = 0
         if 'bwOut' in job:
-            out_bps = int(re.search(r'\d+', str(job['bwOut'])).group()) * 1000
+            out_bps = self._to_int(job['bwOut']) * 1000
         rtt = 0
         if 'latency' in job:
-            rtt = int(re.search(r'\d+', str(job['latency'])).group())
+            rtt = self._to_int(job['latency'])
         plr = .0
         if 'plr' in job:
             plr = float(job['plr'])
+        shaperLimit = 0
+        if 'shaperLimit' in job:
+            shaperLimit = self._to_int(job['shaperLimit'])
         if self.shaper is not None:
             # If a lighthouse test is running, force the Lighthouse 3G profile:
             # https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md
@@ -95,12 +106,27 @@ class TrafficShaper(object):
                 in_bps = 1600000
                 out_bps = 750000
                 plr = .0
-            logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr',
-                          in_bps, out_bps, rtt, plr)
-            ret = self.shaper.configure(in_bps, out_bps, rtt, plr)
+                shaperLimit = 0
+            logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr, %d tc-qdisc limit',
+                          in_bps, out_bps, rtt, plr, shaperLimit)
+            ret = self.shaper.configure(in_bps, out_bps, rtt, plr, shaperLimit)
             job['interface'] = self.shaper.interface
         return ret
 
+    def set_devtools(self, devtools):
+        """Configure the devtools interface for the shaper (Chrome-only)"""
+        try:
+            self.shaper.set_devtools(devtools)
+        except Exception:
+            logging.exception('Error setting shaper devtools interface')
+        return
+
+    def apply(self, target_id=None):
+        """Apply the traffic-shaping for Chrome"""
+        try:
+            self.shaper.apply(target_id)
+        except Exception:
+            logging.exception('Error applying traffic shaping')
 
 #
 # NoShaper
@@ -122,11 +148,69 @@ class NoShaper(object):
         """Disable traffic-shaping"""
         return True
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
         """Enable traffic-shaping"""
-        if in_bps > 0 or out_bps > 0 or rtt > 0 or plr > 0:
+        if in_bps > 0 or out_bps > 0 or rtt > 0 or plr > 0 or shaperLimit > 0:
             return False
         return True
+    
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return
+#
+# ChromeShaper
+#
+class ChromeShaper(object):
+    """Allow resets but fail any explicit shaping"""
+    def __init__(self):
+        self.interface = None
+        self.devtools = None
+        self.rtt = 0
+        self.in_Bps = -1
+        self.out_Bps = -1
+
+    def install(self):
+        """Install and configure the traffic-shaper"""
+        return True
+
+    def remove(self):
+        """Uninstall traffic-shaping"""
+        return True
+
+    def reset(self):
+        """Disable traffic-shaping"""
+        self.rtt = 0
+        self.in_Bps = -1
+        self.out_Bps = -1
+        self.apply()
+        return True
+
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
+        """Enable traffic-shaping"""
+        self.rtt = rtt
+        self.in_Bps = in_bps / 8
+        self.out_Bps = out_bps / 8
+        self.apply()
+        return True
+
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        self.devtools = devtools
+
+    def apply(self, target_id=None):
+        """Stub for applying Chrome traffic-shaping"""
+        if self.devtools is not None:
+            self.devtools.send_command('Network.emulateNetworkConditions', {
+                'offline': False,
+                'latency': self.rtt,
+                'downloadThroughput': self.in_Bps,
+                'uploadThroughput': self.out_Bps
+                }, wait=True, target_id=target_id)
+        return
 
 #
 # winshaper
@@ -157,15 +241,26 @@ class WinShaper(object):
         """Disable traffic-shaping"""
         return self.shaper(['reset'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
+        if shaperLimit > 0:
+            return False # not supported
+
         """Enable traffic-shaping"""
         return self.shaper(['set',
-                            'inbps={0:d}'.format(in_bps),
-                            'outbps={0:d}'.format(out_bps),
-                            'rtt={0:d}'.format(rtt),
-                            'plr={0:.2f}'.format(plr),
-                            'inbuff={0:d}'.format(self.in_buff),
-                            'outbuff={0:d}'.format(self.out_buff)])
+                            'inbps={0:d}'.format(int(in_bps)),
+                            'outbps={0:d}'.format(int(out_bps)),
+                            'rtt={0:d}'.format(int(rtt)),
+                            'plr={0:.2f}'.format(float(plr)),
+                            'inbuff={0:d}'.format(int(self.in_buff)),
+                            'outbuff={0:d}'.format(int(self.out_buff))])
+
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return
 
 #
 # Dummynet
@@ -174,7 +269,7 @@ class Dummynet(object):
     """Dummynet support (windows only currently)"""
     def __init__(self):
         self.interface = None
-        self.in_pipe = '1'
+        self.in_pipe = '1'	
         self.out_pipe = '2'
         self.exe = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                 "support", "dummynet")
@@ -220,8 +315,10 @@ class Dummynet(object):
                self.ipfw(['queue', self.out_pipe, 'config', 'pipe', self.out_pipe, 'queue', '100', \
                           'noerror', 'mask', 'dst-port', '0xffff'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
         """Enable traffic-shaping"""
+        if shaperLimit > 0:
+            return False # not supported
         # inbound connection
         in_kbps = int(in_bps / 1000)
         in_latency = rtt / 2
@@ -229,18 +326,18 @@ class Dummynet(object):
             in_latency += 1
         in_command = ['pipe', self.in_pipe, 'config']
         if in_kbps > 0:
-            in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(int(in_kbps))])
         if in_latency >= 0:
-            in_command.extend(['delay', '{0:d}ms'.format(in_latency)])
+            in_command.extend(['delay', '{0:d}ms'.format(int(in_latency))])
 
-        # outbound connection
+        # outbound connection	
         out_kbps = int(out_bps / 1000)
         out_latency = rtt / 2
         out_command = ['pipe', self.out_pipe, 'config']
         if out_kbps > 0:
-            out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(int(out_kbps))])
         if out_latency >= 0:
-            out_command.extend(['delay', '{0:d}ms'.format(out_latency)])
+            out_command.extend(['delay', '{0:d}ms'.format(int(out_latency))])
 
         # Packet loss get applied to the queues
         plr = plr / 100.0
@@ -248,8 +345,8 @@ class Dummynet(object):
         out_queue_command = ['queue', self.out_pipe, 'config', 'pipe', self.out_pipe,
                              'queue', '100']
         if plr > 0.0 and plr <= 1.0:
-            in_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
-            out_queue_command.extend(['plr', '{0:.4f}'.format(plr)])
+            in_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])	
+            out_queue_command.extend(['plr', '{0:.4f}'.format(float(plr))])
         in_queue_command.extend(['mask', 'dst-port', '0xffff'])
         out_queue_command.extend(['mask', 'dst-port', '0xffff'])
 
@@ -258,16 +355,30 @@ class Dummynet(object):
                self.ipfw(in_queue_command) and\
                self.ipfw(out_queue_command)
 
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return
+
 #
 # MacDummynet - Dummynet through pfctl
 #
 class MacDummynet(Dummynet):
     """Configure dummynet through pfctl and dnctl"""
-    def __init__(self):
+    def __init__(self, root_path):
         self.interface = None
         self.in_pipe = '1'
         self.out_pipe = '2'
         self.token = None
+        self.tmp_path = os.path.join(root_path, 'work', 'shaper')
+        try:
+            if not os.path.isdir(self.tmp_path):
+                os.makedirs(self.tmp_path)
+        except Exception:
+            pass
 
     def pfctl(self, args):
         """Run a single pfctl command"""
@@ -285,15 +396,29 @@ class MacDummynet(Dummynet):
 
     def install(self):
         """Set up the pipes"""
-        rules_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "support", "osx", "pfctl.rules")
+        # build a rules file that will only shape traffic on the default interface
+        interface = 'any'
+        out = subprocess.check_output(['route', '-n', 'get', 'default'], universal_newlines=True)
+        if out:
+            for line in out.splitlines(False):
+                match = re.search(r'interface:\s+([^\s]+)', line)
+                if match:
+                    interface = match.group(1)
+                    logging.debug('Default interface for traffic shaping: %s', interface)
+                    break
+
+        rules_file = os.path.join(self.tmp_path, 'pfctl.rules')
+        with open(rules_file, 'wt') as f_out:
+            f_out.write('pass quick on lo0 no state\n')
+            f_out.write('dummynet in on {} all pipe 1\n'.format(interface))
+            f_out.write('dummynet out on {} all pipe 2\n'.format(interface))
+
         return self.pfctl(['-E']) and\
                self.dnctl(['-q', 'flush']) and\
                self.dnctl(['-q', 'pipe', 'flush']) and\
                self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.pfctl(['-f', rules_file])
-               
 
     def remove(self):
         """clear the config"""
@@ -307,8 +432,10 @@ class MacDummynet(Dummynet):
         return self.dnctl(['pipe', self.in_pipe, 'config', 'delay', '0ms', 'noerror']) and\
                self.dnctl(['pipe', self.out_pipe, 'config', 'delay', '0ms', 'noerror'])
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
         """Enable traffic-shaping"""
+        if shaperLimit > 0:
+            return False # not supported
         # inbound connection
         in_kbps = int(in_bps / 1000)
         in_latency = rtt / 2
@@ -316,27 +443,35 @@ class MacDummynet(Dummynet):
             in_latency += 1
         in_command = ['pipe', self.in_pipe, 'config']
         if in_kbps > 0:
-            in_command.extend(['bw', '{0:d}Kbit/s'.format(in_kbps)])
+            in_command.extend(['bw', '{0:d}Kbit/s'.format(int(in_kbps))])
         if in_latency >= 0:
-            in_command.extend(['delay', '{0:d}ms'.format(in_latency)])
+            in_command.extend(['delay', '{0:d}ms'.format(int(in_latency))])
 
         # outbound connection
         out_kbps = int(out_bps / 1000)
         out_latency = rtt / 2
         out_command = ['pipe', self.out_pipe, 'config']
         if out_kbps > 0:
-            out_command.extend(['bw', '{0:d}Kbit/s'.format(out_kbps)])
+            out_command.extend(['bw', '{0:d}Kbit/s'.format(int(out_kbps))])
         if out_latency >= 0:
-            out_command.extend(['delay', '{0:d}ms'.format(out_latency)])
+            out_command.extend(['delay', '{0:d}ms'.format(int(out_latency))])
 
         # Packet loss get applied to the queues
         plr = plr / 100.0
         if plr > 0.0 and plr <= 1.0:
-            in_command.extend(['plr', '{0:.4f}'.format(plr)])
-            out_command.extend(['plr', '{0:.4f}'.format(plr)])
+            in_command.extend(['plr', '{0:.4f}'.format(float(plr))])
+            out_command.extend(['plr', '{0:.4f}'.format(float(plr))])
 
         return self.dnctl(in_command) and\
                self.dnctl(out_command)
+
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return
 
 #
 # RemoteDummynet - Remote PC running dummynet with pre-configured pipes
@@ -374,6 +509,14 @@ class RemoteDummynet(Dummynet):
         """Uninstall traffic-shaping"""
         return True
 
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return
+
 #
 # netem
 #
@@ -391,7 +534,10 @@ class NetEm(object):
         # Figure out the default interface
         try:
             if self.interface is None:
-                out = subprocess.check_output(['route'])
+                if (sys.version_info >= (3, 0)):
+                    out = subprocess.check_output(['route'], encoding='UTF-8')
+                else:
+                    out = subprocess.check_output(['route'])
                 routes = out.splitlines()
                 match = re.compile(r'^([^\s]+)\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+'\
                                 r'[^\s]+\s+[^\s]+\s+[^\s]+\s+([^\s]+)')
@@ -425,7 +571,7 @@ class NetEm(object):
             else:
                 logging.critical("Unable to identify default interface using 'route'")
         except Exception as err:
-            logging.debug("Error configuring netem: %s", err.__str__())
+            logging.exception("Error configuring netem: %s", err.__str__())
         return ret
 
     def remove(self):
@@ -433,7 +579,8 @@ class NetEm(object):
         if self.interface:
             subprocess.call(['sudo', 'tc', 'qdisc', 'del', 'dev', self.interface,
                              'ingress'])
-            subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
+            if self.in_interface is not None and self.in_interface.startswith('ifb'):
+                subprocess.call(['sudo', 'ip', 'link', 'set', 'dev', 'ifb0', 'down'])
         return True
 
     def reset(self):
@@ -446,27 +593,39 @@ class NetEm(object):
                                    'root']) == 0
         return ret
 
-    def configure(self, in_bps, out_bps, rtt, plr):
+    def configure(self, in_bps, out_bps, rtt, plr, shaperLimit):
         """Enable traffic-shaping"""
         ret = False
         if self.interface is not None and self.in_interface is not None:
             in_latency = rtt / 2
             if rtt % 2:
                 in_latency += 1
-            if self.configure_interface(self.in_interface, in_bps, in_latency, plr):
-                ret = self.configure_interface(self.interface, out_bps, rtt / 2, plr)
+            if self.configure_interface(self.in_interface, in_bps, in_latency, plr, shaperLimit):
+                ret = self.configure_interface(self.interface, out_bps, rtt / 2, plr, shaperLimit)
         return ret
 
-    def configure_interface(self, interface, bps, latency, plr):
-        """Configure traffic-shaping for a single interface"""
-        ret = False
+    def build_command_args(self, interface, bps, latency, plr, shaperLimit):
         args = ['sudo', 'tc', 'qdisc', 'add', 'dev', interface, 'root',
-                'netem', 'delay', '{0:d}ms'.format(latency)]
+                'netem', 'delay', '{0:d}ms'.format(int(latency))]
         if bps > 0:
             kbps = int(bps / 1000)
-            args.extend(['rate', '{0:d}kbit'.format(kbps)])
+            args.extend(['rate', '{0:d}kbit'.format(int(kbps))])
         if plr > 0:
-            args.extend(['loss', '{0:.2f}%'.format(plr)])
+            args.extend(['loss', '{0:.2f}%'.format(float(plr))])
+        if shaperLimit > 0:
+            args.extend(['limit', '{0:d}'.format(shaperLimit)])
+        return args
+
+    def configure_interface(self, interface, bps, latency, plr, shaperLimit):
+        """Configure traffic-shaping for a single interface"""
+        args = self.build_command_args(interface, bps, latency, plr, shaperLimit)
         logging.debug(' '.join(args))
-        ret = subprocess.call(args) == 0
-        return ret
+        return subprocess.call(args) == 0
+
+    def set_devtools(self, devtools):
+        """Stub for configuring the devtools interface"""
+        return
+
+    def apply(self, target_id):
+        """Stub for applying Chrome traffic-shaping"""
+        return

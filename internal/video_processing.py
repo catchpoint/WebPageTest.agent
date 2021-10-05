@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Video processing logic"""
 import glob
 import logging
@@ -8,6 +10,7 @@ import math
 import os
 import re
 import subprocess
+import sys
 
 VIDEO_SIZE = 400
 
@@ -61,7 +64,7 @@ class VideoProcessing(object):
             count = len(files)
             if count > 1:
                 baseline = files[0]
-                for index in xrange(1, count):
+                for index in range(1, count):
                     if self.frames_match(baseline, files[index], crop, 1, 0):
                         logging.debug('Removing similar frame %s', os.path.basename(files[index]))
                         try:
@@ -98,7 +101,7 @@ class VideoProcessing(object):
             progress_file = os.path.join(self.task['dir'], self.task['prefix']) + \
                 '_visual_progress.json.gz'
             visualmetrics = os.path.join(self.support_path, "visualmetrics.py")
-            args = ['python', visualmetrics, '-d', self.video_path,
+            args = [sys.executable, visualmetrics, '-d', self.video_path,
                     '--histogram', histograms, '--progress', progress_file]
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(self.task['dir'], self.task['prefix']) + \

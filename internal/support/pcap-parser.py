@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import gzip
 import json
@@ -20,7 +12,12 @@ import logging
 import math
 import os
 import struct
+import sys
 import time
+if (sys.version_info >= (3, 0)):
+    GZIP_TEXT = 'wt'
+else:
+    GZIP_TEXT = 'w'
 
 #Globals
 options = None
@@ -41,31 +38,31 @@ class Pcap():
 
 
   def SaveStats(self, out):
-    file_name, ext = os.path.splitext(out)
+    _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wb')
+      f = gzip.open(out, GZIP_TEXT)
     else:
-      f = open(out, 'wb')
+      f = open(out, 'w')
     try:
       result = {"bytes": self.bytes}
       json.dump(result, f)
       logging.info('Result stats written to {0}'.format(out))
     except:
-      logging.critical('Error writing result stats to {0}'.format(out))
+      logging.exception('Error writing result stats to {0}'.format(out))
     f.close()
 
 
   def SaveDetails(self, out):
-    file_name, ext = os.path.splitext(out)
+    _, ext = os.path.splitext(out)
     if ext.lower() == '.gz':
-      f = gzip.open(out, 'wb')
+      f = gzip.open(out, GZIP_TEXT)
     else:
-      f = open(out, 'wb')
+      f = open(out, 'w')
     try:
       json.dump(self.slices, f)
       logging.info('Result details written to {0}'.format(out))
     except:
-      logging.critical('Error writing result details to {0}'.format(out))
+      logging.exception('Error writing result details to {0}'.format(out))
     f.close()
 
 
@@ -74,9 +71,9 @@ class Pcap():
     if options.json:
       print(json.dumps(self.bytes, indent=2))
     else:
-      print "Bytes Out: {0:d}".format(self.bytes['out'])
-      print "Bytes In:  {0:d}".format(self.bytes['in'])
-      print "Duplicate Bytes In:  {0:d}".format(self.bytes['in_dup'])
+      print("Bytes Out: {0:d}".format(self.bytes['out']))
+      print("Bytes In:  {0:d}".format(self.bytes['in']))
+      print("Duplicate Bytes In:  {0:d}".format(self.bytes['in_dup']))
 
 
   def Process(self, pcap):
@@ -143,12 +140,12 @@ class Pcap():
             if len(packet_data) >= self.linklen:
               try:
                 self.ProcessPacket(packet_data, packet_info)
-              except Exception as e:
-                print(e)
+              except Exception:
+                logging.exception('Error processing packet')
       else:
         logging.critical("Invalid pcap file " + pcap)
     except:
-      logging.critical("Error processing pcap " + pcap)
+      logging.exception("Error processing pcap " + pcap)
 
     if f is not None:
       f.close()

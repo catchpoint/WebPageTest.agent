@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Logic for running a traceroute test"""
 import gzip
 import logging
@@ -8,8 +10,13 @@ import os
 import platform
 import re
 import subprocess
-import urlparse
-
+import sys
+if (sys.version_info >= (3, 0)):
+    from urllib.parse import urlparse # pylint: disable=import-error
+    GZIP_TEXT = 'wt'
+else:
+    from urlparse import urlparse # pylint: disable=import-error
+    GZIP_TEXT = 'w'
 
 class Traceroute(object):
     """Traceroute (desktop)"""
@@ -29,20 +36,20 @@ class Traceroute(object):
         """Run an individual test"""
         if 'url' in self.job:
             results = None
-            hostname = urlparse.urlparse(self.job['url']).hostname
+            hostname = urlparse(self.job['url']).hostname
             if platform.system() == 'Windows':
                 last_hop, results = self.windows_traceroute(hostname)
             else:
                 last_hop, results = self.unix_traceroute(hostname)
             if last_hop > 0 and results is not None and len(results):
                 out_file = os.path.join(task['dir'], task['prefix']) + '_traceroute.txt.gz'
-                with gzip.open(out_file, 'wb', 7) as f_out:
+                with gzip.open(out_file, GZIP_TEXT, 7) as f_out:
                     f_out.write('Hop,IP,ms,FQDN\n')
                     if 0 in results:
                         f_out.write('-1,{0},0,{1}\n'.format(results[0]['addr'], hostname))
                     else:
                         f_out.write('-1,,0,{0}\n'.format(hostname))
-                    for hop in xrange(1, last_hop + 1):
+                    for hop in range(1, last_hop + 1):
                         if hop in results:
                             entry = results[hop]
                             f_out.write('{0:d},{1},{2},{3}\n'.format(hop, entry['addr'],
@@ -57,7 +64,10 @@ class Traceroute(object):
         last_hop = 0
         command = ['tracert', '-h', '30', '-w', '500', hostname]
         logging.debug(' '.join(command))
-        out = subprocess.check_output(command)
+        if (sys.version_info >= (3, 0)):
+            out = subprocess.check_output(command, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command)
         lines = out.splitlines()
         dest = re.compile(r'^Tracing route to.*\[([\d\.]+)\]')
         timeout = re.compile(r'^\s*(\d+).*Request timed out')
@@ -114,7 +124,7 @@ class Traceroute(object):
                             if fields:
                                 ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
             except Exception:
-                pass
+                logging.exception('Error processing traceroute')
         return last_hop, ret
 
     def unix_traceroute(self, hostname):
@@ -125,7 +135,10 @@ class Traceroute(object):
         last_hop = 0
         command = ['traceroute', '-m', '30', '-w', '0.5', hostname]
         logging.debug(' '.join(command))
-        out = subprocess.check_output(command)
+        if (sys.version_info >= (3, 0)):
+            out = subprocess.check_output(command, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command)
         lines = out.splitlines()
         dest = re.compile(r'^traceroute to [^\(]+\(([\d\.]+)\)')
         timeout = re.compile(r'^\s*(\d+)\s+\*\s+\*\s+\*')
@@ -161,7 +174,7 @@ class Traceroute(object):
                         if fields:
                             ret[0] = {'ms': '', 'hostname': hostname, 'addr': fields.group(1)}
             except Exception:
-                pass
+                logging.exception('Error processing traceroute')
         return last_hop, ret
 
     def run_lighthouse_test(self, task):

@@ -1,25 +1,32 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import gzip
 import logging
 import os
 import re
+import sys
 import time
-import urlparse
+HAS_FUTURE = False
+try:
+    from builtins import str
+    HAS_FUTURE = True
+except BaseException:
+    pass
+if (sys.version_info >= (3, 0)):
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -32,16 +39,27 @@ class DevToolsParser(object):
     def __init__(self, options):
         self.devtools_file = options['devtools']
         self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
+        self.timeline_requests_file = options['requests'] if 'requests' in options else None
         self.optimization = options['optimization'] if 'optimization' in options else None
         self.user_timing_file = options['user'] if 'user' in options else None
         self.coverage = options['coverage'] if 'coverage' in options else None
         self.cpu_times = options['cpu'] if 'cpu' in options else None
         self.v8_stats = options['v8stats'] if 'v8stats' in options else None
         self.cached = options['cached'] if 'cached' in options else False
+        self.noheaders = options['noheaders'] if 'noheaders' in options else False
         self.out_file = options['out']
         self.result = {'pageData': {}, 'requests': []}
         self.request_ids = {}
         self.script_ids = {}
+        self.PRIORITY_MAP = {
+            "VeryHigh": "Highest",
+            "HIGHEST": "Highest",
+            "MEDIUM": "High",
+            "LOW": "Medium",
+            "LOWEST": "Low",
+            "IDLE": "Lowest",
+            "VeryLow": "Lowest"
+        }
 
     def process(self):
         """Main entry point for processing"""
@@ -52,6 +70,8 @@ class DevToolsParser(object):
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
             self.process_netlog_requests()
+            logging.debug("Adding timeline request data")
+            self.process_timeline_requests()
             logging.debug("Updating page-level stats from user timing")
             self.process_user_timing()
             logging.debug("Calculating page-level stats")
@@ -64,6 +84,12 @@ class DevToolsParser(object):
             self.process_cpu_times()
             logging.debug("Processing V8 stats")
             self.process_v8_stats()
+            if self.noheaders:
+                logging.debug('Stripping headers')
+                if 'requests' in self.result:
+                    for request in self.result['requests']:
+                        if 'headers' in request:
+                            del request['headers']
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
@@ -77,19 +103,25 @@ class DevToolsParser(object):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = unicode(entry)
+                        if HAS_FUTURE:
+                            data[key] = str(entry.encode('utf-8'), 'utf-8')
+                        else:
+                            data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
         elif isinstance(data, list):
-            for key in xrange(len(data)):
+            for key in range(len(data)):
                 entry = data[key]
                 if isinstance(entry, dict) or isinstance(entry, list):
                     self.make_utf8(entry)
                 elif isinstance(entry, str):
                     try:
-                        data[key] = unicode(entry)
+                        if HAS_FUTURE:
+                            data[key] = str(entry.encode('utf-8'), 'utf-8')
+                        else:
+                            data[key] = unicode(entry)
                     except Exception:
-                        pass
+                        logging.exception('Error making utf8')
 
     def write(self):
         """Write out the resulting json data"""
@@ -98,13 +130,13 @@ class DevToolsParser(object):
                 try:
                     _, ext = os.path.splitext(self.out_file)
                     if ext.lower() == '.gz':
-                        with gzip.open(self.out_file, 'wb') as f_out:
+                        with gzip.open(self.out_file, GZIP_TEXT) as f_out:
                             json.dump(self.result, f_out)
                     else:
                         with open(self.out_file, 'w') as f_out:
                             json.dump(self.result, f_out)
                 except Exception:
-                    logging.critical("Error writing to " + self.out_file)
+                    logging.exception("Error writing to " + self.out_file)
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
@@ -113,19 +145,15 @@ class DevToolsParser(object):
         page_data = {'endTime': 0}
         _, ext = os.path.splitext(self.devtools_file)
         if ext.lower() == '.gz':
-            f_in = gzip.open(self.devtools_file, 'rb')
+            f_in = gzip.open(self.devtools_file, GZIP_READ_TEXT)
         else:
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
-        # sort all of the events by timestamp
-        if len(raw_events):
-            raw_events.sort(key=lambda x: x['params']['timestamp'] if \
-                ('params' in x and 'timestamp' in x['params']) else 9999999)
         f_in.close()
         if raw_events is not None and len(raw_events):
-            end_timestamp = None
             first_timestamp = None
             raw_requests = {}
+            extra_headers = {}
             id_map = {}
             for raw_event in raw_events:
                 if 'method' in raw_event and 'params' in raw_event:
@@ -165,7 +193,7 @@ class DevToolsParser(object):
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
-                            method == 'Network.requestWillBeSent':
+                            method.startswith('Network.requestWillBeSent'):
                         first_timestamp = params['timestamp']
                     if first_timestamp is not None and 'timestamp' in params:
                         if params['timestamp'] >= first_timestamp:
@@ -177,6 +205,20 @@ class DevToolsParser(object):
                             ('onload' not in page_data or
                              params['timestamp'] > page_data['onload']):
                         page_data['onload'] = params['timestamp']
+                    # events without a need for timestamps
+                    if request_id is not None and method.find('ExtraInfo') > 0:
+                        if request_id not in extra_headers:
+                            extra_headers[request_id] = {}
+                        headers_entry = extra_headers[request_id]
+                        if method == "Network.requestWillBeSentExtraInfo":
+                            if 'headers' in params:
+                                headers_entry['request'] = params['headers']
+                        if method == 'Network.responseReceivedExtraInfo':
+                            if 'headers' in params:
+                                headers_entry['response'] = params['headers']
+                            if 'headersText' in params:
+                                headers_entry['responseText'] = params['headersText']
+                    # Events with timestamps
                     if 'timestamp' in params and request_id is not None:
                         timestamp = params['timestamp']
                         if method == 'Network.requestWillBeSent' and 'request' in params and \
@@ -191,6 +233,8 @@ class DevToolsParser(object):
                                 request['frame_id'] = page_data['main_frame']
                             if 'initiator' in params:
                                 request['initiator'] = params['initiator']
+                            if 'documentURL' in params:
+                                request['documentURL'] = params['documentURL']
                             # Redirects re-use the same ID so we need to fake a new request
                             if request_id in raw_requests:
                                 if 'redirectResponse' in params:
@@ -231,19 +275,20 @@ class DevToolsParser(object):
                                     request['bytesInData'] += params['dataLength']
                                 if 'bytesInEncoded' not in request:
                                     request['bytesInEncoded'] = 0
-                                if 'encodedDataLength' in params and params['encodedDataLength']:
+                                if 'encodedDataLength' in params and params['encodedDataLength'] > 0:
                                     if 'bytesFinished' not in request:
                                         request['bytesInEncoded'] += params['encodedDataLength']
                                         if 'chunks' not in request:
                                             request['chunks'] = []
                                         request['chunks'].append({'ts': timestamp, 'bytes': params['encodedDataLength']})
-                                elif 'dataLength' in params and params['dataLength']:
+                                elif 'dataLength' in params and params['dataLength'] > 0:
                                     if 'chunks' not in request:
                                         request['chunks'] = []
                                     request['chunks'].append({'ts': timestamp, 'bytes': params['dataLength']})
                             if method == 'Network.responseReceived' and 'response' in params:
-                                if not has_request_headers and \
-                                        'requestHeaders' in params['response']:
+                                if 'type' in params:
+                                    request['request_type'] = params['type']
+                                if not has_request_headers and 'requestHeaders' in params['response']:
                                     has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
@@ -258,6 +303,8 @@ class DevToolsParser(object):
                                         not params['response']['fromDiskCache'] and \
                                         'headers' in request and len(request['headers']):
                                     request['fromNet'] = True
+                                if 'source' in params['response'] and params['response']['source'] in ['network', 'unknown']:
+                                    request['fromNet'] = True
                                 # Chrome reports some phantom duplicate requests
                                 '''
                                 if has_request_headers and \
@@ -270,6 +317,13 @@ class DevToolsParser(object):
                                 '''
                                 request['response'] = params['response']
                             if method == 'Network.loadingFinished':
+                                if 'metrics' in params:
+                                    request['metrics'] = params['metrics']
+                                    if 'requestHeaders' in params['metrics']:
+                                        if 'response' not in request:
+                                            request['response'] = {}
+                                        request['response']['requestHeaders'] = params['metrics']['requestHeaders']
+                                        has_request_headers = True
                                 if 'firstByteTime' not in request:
                                     request['firstByteTime'] = timestamp
                                 if 'encodedDataLength' in params:
@@ -301,6 +355,20 @@ class DevToolsParser(object):
                             'domContentLoadedEventStart' not in page_data:
                         page_data['domContentLoadedEventStart'] = params['timestamp']
                         page_data['domContentLoadedEventEnd'] = params['timestamp']
+            # add the extra headers to the events
+            for request_id in extra_headers:
+                if request_id in raw_requests:
+                    request = raw_requests[request_id]
+                    if 'request' in extra_headers[request_id]:
+                        if 'headers' not in request:
+                            request['headers'] = {}
+                        request['headers'] = dict(self.merge_devtools_headers(request['headers'], extra_headers[request_id]['request']))
+                    if 'response' in extra_headers[request_id] and 'response' in request:
+                        if 'headers' not in request['response']:
+                            request['response']['headers'] = {}
+                        request['response']['headers'] = dict(self.merge_devtools_headers(request['response']['headers'], extra_headers[request_id]['response']))
+                    if 'responseText' in extra_headers[request_id] and 'response' in request and 'headersText' not in request['response']:
+                        request['response']['headersText'] = extra_headers[request_id]['responseText']
             # go through and error-out any requests that started but never got
             # a response or error
             for request_id in raw_requests:
@@ -362,7 +430,6 @@ class DevToolsParser(object):
         page_data['testStartOffset'] = 0
         page_data['cached'] = 1 if self.cached else 0
         page_data['optimization_checked'] = 0
-        page_data['start_epoch'] = raw_page_data['startTime']
         if 'main_frame' in raw_page_data:
             page_data['main_frame'] = raw_page_data['main_frame']
         if 'onload' in raw_page_data:
@@ -395,7 +462,7 @@ class DevToolsParser(object):
         for raw_request in raw_requests:
             if 'url' in raw_request:
                 url = raw_request['url'].split('#', 1)[0]
-                parts = urlparse.urlsplit(url)
+                parts = urlsplit(url)
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
                 request['full_url'] = url
@@ -409,9 +476,13 @@ class DevToolsParser(object):
                     request['frame_id'] = raw_request['frame_id']
                 if len(parts.query):
                     request['url'] += '?' + parts.query
+                if 'documentURL' in raw_request:
+                    request['documentURL'] = raw_request['documentURL']
                 request['responseCode'] = -1
                 if 'response' in raw_request and 'status' in raw_request['response']:
                     request['responseCode'] = raw_request['response']['status']
+                if 'request_type' in raw_request:
+                    request['request_type'] = raw_request['request_type']
                 request['load_ms'] = -1
                 start_time = raw_request['startTime'] - raw_page_data['startTime']
                 if 'response' in raw_request and 'timing' in raw_request['response'] and \
@@ -476,12 +547,20 @@ class DevToolsParser(object):
                 request['socket'] = -1
                 if 'response' in raw_request and 'connectionId' in raw_request['response']:
                     request['socket'] = raw_request['response']['connectionId']
+                elif 'metrics' in raw_request and 'connectionIdentifier' in raw_request['metrics']:
+                    request['socket'] = raw_request['metrics']['connectionIdentifier']
                 if 'response' in raw_request and 'remoteIPAddress' in raw_request['response']:
                     request['ip_addr'] = raw_request['response']['remoteIPAddress']
+                elif 'metrics' in raw_request and 'remoteAddress' in raw_request['metrics']:
+                    parts = raw_request['metrics']['remoteAddress'].rsplit(':', 1)
+                    request['ip_addr'] = parts[0]
+                    request['port'] = parts[1]
                 if 'response' in raw_request and 'protocol' in raw_request['response']:
                     request['protocol'] = raw_request['response']['protocol']
-                    if request['protocol'] == 'h2':
-                        request['protocol'] = 'HTTP/2'
+                elif 'metrics' in raw_request and 'protocol' in raw_request['metrics']:
+                    request['protocol'] = raw_request['metrics']['protocol']
+                if 'protocol' in request and request['protocol'] == 'h2':
+                    request['protocol'] = 'HTTP/2'
                 request['dns_start'] = -1
                 request['dns_end'] = -1
                 request['connect_start'] = -1
@@ -492,14 +571,13 @@ class DevToolsParser(object):
                     timing = raw_request['response']['timing']
                     if 'sendStart' in timing and 'receiveHeadersEnd' in timing and \
                             timing['receiveHeadersEnd'] >= timing['sendStart']:
-                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] -
-                                                       timing['sendStart']))
+                        request['ttfb_ms'] = int(round(timing['receiveHeadersEnd'] - timing['sendStart']))
                         if request['load_ms'] >= 0:
                             request['load_ms'] = max(request['ttfb_ms'], request['load_ms'])
                     # Add the socket timing (always assigned to the first request on a connection)
-                    if request['socket'] != -1 and request['socket'] not in connections:
+                    if request['socket'] != -1 and request['socket'] not in connections and 'domainLookupStart' not in timing:
                         connections[request['socket']] = timing
-                        if 'dnsStart' in timing and 'dnsStart' >= 0:
+                        if 'dnsStart' in timing and timing['dnsStart'] >= 0:
                             dns_key = request['host']
                             if dns_key not in dns_times:
                                 dns_times[dns_key] = True
@@ -525,6 +603,31 @@ class DevToolsParser(object):
                             if 'securityDetails' in raw_request['response']:
                                 request['securityDetails'] = \
                                     raw_request['response']['securityDetails']
+                    # Handle webkit timing data which may only be accurate for connection timings
+                    if "domainLookupStart" in timing or "secureConnectionStart" in timing:
+                        if 'domainLookupStart' in timing and timing['domainLookupStart'] >= 0:
+                            dns_key = request['host']
+                            if dns_key not in dns_times:
+                                dns_times[dns_key] = True
+                                request['dns_start'] = int(round(timing['domainLookupStart'] - raw_page_data['startTime']))
+                                if 'domainLookupEnd' in timing and timing['domainLookupEnd'] >= 0:
+                                    request['dns_end'] = int(round(timing['domainLookupEnd'] - raw_page_data['startTime']))
+                        if 'connectStart' in timing and timing['connectStart'] >= 0:
+                            request['connect_start'] = int(round(timing['connectStart'] - raw_page_data['startTime']))
+                            if 'connectEnd' in timing and timing['connectEnd'] >= 0:
+                                old_load_start = request['load_start_float']
+                                request['load_start_float'] = timing['connectEnd'] - raw_page_data['startTime']
+                                if request['load_start_float'] > old_load_start:
+                                    connection_time = int(round(request['load_start_float'] - old_load_start))
+                                    if 'load_ms' in request and request['load_ms'] > connection_time:
+                                        request['load_ms'] -= int(round(connection_time))
+                                request['load_start'] = int(round(request['load_start_float']))
+                                request['connect_end'] = request['load_start']
+                        if 'secureConnectionStart' in timing and timing['secureConnectionStart'] >= 0:
+                            request['ssl_start'] = int(round(timing['secureConnectionStart'] - raw_page_data['startTime']))
+                            if request['connect_end'] > request['ssl_start']:
+                                request['ssl_end'] = request['connect_end']
+                                request['connect_end'] = request['ssl_start']
                 request['initiator'] = ''
                 request['initiator_line'] = ''
                 request['initiator_column'] = ''
@@ -553,48 +656,78 @@ class DevToolsParser(object):
                                 request['initiator'] = self.script_ids[frame['scriptId']]
                                 break
                 if 'initialPriority' in raw_request:
+                    if raw_request['initialPriority'] in self.PRIORITY_MAP:
+                        raw_request['initialPriority'] = self.PRIORITY_MAP[raw_request['initialPriority']]
                     request['priority'] = raw_request['initialPriority']
                     request['initial_priority'] = raw_request['initialPriority']
+                elif 'metrics' in raw_request and 'priority' in raw_request['metrics']:
+                    if raw_request['metrics']['priority'] in self.PRIORITY_MAP:
+                        raw_request['metrics']['priority'] = self.PRIORITY_MAP[raw_request['metrics']['priority']]
+                    request['priority'] = raw_request['metrics']['priority']
                 request['server_rtt'] = None
                 request['headers'] = {'request': [], 'response': []}
                 if 'response' in raw_request and 'requestHeadersText' in raw_request['response']:
                     for line in raw_request['response']['requestHeadersText'].splitlines():
-                        line = line.encode('utf-8').strip()
+                        if HAS_FUTURE:
+                            line = str(line.encode('utf-8'), 'utf-8').strip()
+                        else:
+                            line = unicode(line.encode('utf-8')).strip()
                         if len(line):
                             request['headers']['request'].append(line)
                 elif 'response' in raw_request and 'requestHeaders' in raw_request['response']:
                     for key in raw_request['response']['requestHeaders']:
                         for value in raw_request['response']['requestHeaders'][key].splitlines():
                             try:
-                                request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                if HAS_FUTURE:
+                                    request['headers']['request'].append(\
+                                        u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                           str(value.encode('utf-8'), 'utf-8').strip()))
+                                else:
+                                    request['headers']['request'].append(\
+                                        u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                           unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing response headers')
                 elif 'headers' in raw_request:
                     for key in raw_request['headers']:
                         for value in raw_request['headers'][key].splitlines():
                             try:
-                                request['headers']['request'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                if HAS_FUTURE:
+                                    request['headers']['request'].append(\
+                                        u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                           str(value.encode('utf-8'), 'utf-8').strip()))
+                                else:
+                                    request['headers']['request'].append(\
+                                        u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                           unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
+                                logging.exception('Error processing request headers')
                 if 'response' in raw_request and 'headersText' in raw_request['response']:
                     for line in raw_request['response']['headersText'].splitlines():
-                        line = line.encode('utf-8').strip()
-                        if len(line):
-                            request['headers']['response'].append(line)
+                        try:
+                            if HAS_FUTURE:
+                                line = str(line.encode('utf-8'), 'utf-8').strip()
+                            else:
+                                line = unicode(line.encode('utf-8')).strip()
+                            if len(line):
+                                request['headers']['response'].append(line)
+                        except Exception:
+                            logging.exception('Error processing request headers')
                 elif 'response' in raw_request and 'headers' in raw_request['response']:
                     for key in raw_request['response']['headers']:
                         for value in raw_request['response']['headers'][key].splitlines():
                             try:
-                                request['headers']['response'].append(\
-                                    u'{0}: {1}'.format(key.encode('utf-8'),
-                                                       value.encode('utf-8').strip()))
+                                if HAS_FUTURE:
+                                    request['headers']['response'].append(\
+                                        u'{0}: {1}'.format(str(key.encode('utf-8'), 'utf-8'),
+                                                           str(value.encode('utf-8'), 'utf-8').strip()))
+                                else:
+                                    request['headers']['response'].append(\
+                                        u'{0}: {1}'.format(unicode(key.encode('utf-8')),
+                                                           unicode(value.encode('utf-8')).strip()))
                             except Exception:
-                                pass
-                request['bytesOut'] = len("\r\n".join(request['headers']['request']))
+                                logging.exception('Error processing response headers')
+                request['bytesOut'] = len("\r\n".join(str(request['headers']['request'])))
                 request['score_cache'] = -1
                 request['score_cdn'] = -1
                 request['score_gzip'] = -1
@@ -616,17 +749,40 @@ class DevToolsParser(object):
                 request['cache_time'] = None
                 request['cdn_provider'] = None
                 request['server_count'] = None
+                # Get the webkit sizes from the metrics data
+                if 'metrics' in raw_request:
+                    bytes_out = 0
+                    if 'requestHeaderBytesSent' in raw_request['metrics']:
+                        bytes_out += int(raw_request['metrics']['requestHeaderBytesSent'])
+                    if 'requestBodyBytesSent' in raw_request['metrics']:
+                        bytes_out += int(raw_request['metrics']['requestBodyBytesSent'])
+                    if bytes_out > 0:
+                        request['bytesOut'] = bytes_out
+                    bytes_in = 0
+                    if 'responseHeaderBytesReceived' in raw_request['metrics']:
+                        bytes_in += int(raw_request['metrics']['responseHeaderBytesReceived'])
+                    if 'responseBodyBytesReceived' in raw_request['metrics']:
+                        bytes_in += int(raw_request['metrics']['responseBodyBytesReceived'])
+                        request['objectSize'] = int(raw_request['metrics']['responseBodyBytesReceived'])
+                        request['objectSizeUncompressed'] = int(raw_request['metrics']['responseBodyBytesReceived'])
+                    if bytes_in > 0:
+                        request['bytesIn'] = bytes_in
+                    if 'responseBodyDecodedSize' in raw_request['metrics']:
+                        request['objectSizeUncompressed'] = int(raw_request['metrics']['responseBodyDecodedSize'])
+                    if 'securityConnection' in raw_request['metrics']:
+                        if 'protocol' in raw_request['metrics']['securityConnection']:
+                            request['tls_version'] = raw_request['metrics']['securityConnection']['protocol']
+                        if 'cipher' in raw_request['metrics']['securityConnection']:
+                            request['tls_cipher_suite'] = raw_request['metrics']['securityConnection']['cipher']
                 if 'URL' not in page_data and len(request['full_url']):
                     page_data['URL'] = request['full_url']
                 if 'startTime' in raw_request:
-                    start_offset = int(round(raw_request['startTime'] - \
-                                             raw_page_data['startTime']))
+                    start_offset = int(round(raw_request['startTime'] - raw_page_data['startTime']))
                     if 'fullyLoaded' not in page_data or \
                             start_offset > page_data['fullyLoaded']:
                         page_data['fullyLoaded'] = start_offset
                 if 'endTime' in raw_request:
-                    end_offset = int(round(raw_request['endTime'] - \
-                                           raw_page_data['startTime']))
+                    end_offset = int(round(raw_request['endTime'] - raw_page_data['startTime']))
                     if 'fullyLoaded' not in page_data or \
                             end_offset > page_data['fullyLoaded']:
                         page_data['fullyLoaded'] = end_offset
@@ -649,6 +805,19 @@ class DevToolsParser(object):
                         value = headers[key]
                         break
         return value
+
+    def merge_devtools_headers(self, initial, extra):
+        """Merge the headers from the initial devtools request and the extra info (preferring values in the extra info events)"""
+        headers = dict(extra)
+        for key in initial:
+            dupe = False
+            for extra_key in headers:
+                if key.lower().strip(" :") == extra_key.lower().strip(" :"):
+                    dupe = True
+                    break
+            if not dupe:
+                headers[key] = str(initial[key])
+        return headers
 
     def mergeHeaders(self, dest, headers):
         """Merge the headers list into the dest array of existing headers"""
@@ -694,11 +863,12 @@ class DevToolsParser(object):
                    'tls_version': 'tls_version',
                    'tls_resumed': 'tls_resumed',
                    'tls_next_proto': 'tls_next_proto',
-                   'tls_cipher_suite': 'tls_cipher_suite'}
+                   'tls_cipher_suite': 'tls_cipher_suite',
+                   'uncompressed_bytes_in': 'objectSizeUncompressed'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.netlog_requests_file, 'rb')
+                f_in = gzip.open(self.netlog_requests_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
@@ -708,10 +878,14 @@ class DevToolsParser(object):
                 if 'request_id' not in request and 'id' in request:
                     request['request_id'] = request['id']
                 if 'full_url' in request:
-                    matched = False
                     for entry in netlog:
-                        if 'url' in entry and 'start' in entry and 'claimed' not in entry and \
-                                entry['url'] == request['full_url']:
+                        url_matches = False
+                        if 'url' in entry and entry['url'] == request['full_url']:
+                            url_matches = True
+                        method_matches = False
+                        if 'method' not in entry or 'method' not in request or entry['method'] == request['method']:
+                            method_matches = True
+                        if url_matches and method_matches and 'start' in entry and 'claimed' not in entry:
                             entry['claimed'] = True
                             # Keep the protocol from devtools if we have it because it is more accurate
                             protocol = request['protocol'] if 'protocol' in request else None
@@ -728,7 +902,9 @@ class DevToolsParser(object):
                                         else:
                                             request[mapping[key]] = str(entry[key])
                                 except Exception:
-                                    pass
+                                    logging.exception('Error copying request key %s', key)
+                            if 'priority' in request and request['priority'] in self.PRIORITY_MAP:
+                                request['priority'] = self.PRIORITY_MAP[request['priority']]
                             if protocol is not None:
                                 request['protocol'] = protocol
                             if 'start' in entry:
@@ -794,7 +970,7 @@ class DevToolsParser(object):
                 if 'claimed' not in entry and 'url' in entry and 'start' in entry:
                     index += 1
                     request = {'type': 3, 'full_url': entry['url']}
-                    parts = urlparse.urlsplit(entry['url'])
+                    parts = urlsplit(entry['url'])
                     request['id'] = '99999.99999.{0:d}'.format(index)
                     request['is_secure'] = 1 if parts.scheme == 'https' else 0
                     request['host'] = parts.netloc
@@ -847,7 +1023,7 @@ class DevToolsParser(object):
                                 else:
                                     request[mapping[key]] = str(entry[key])
                         except Exception:
-                            pass
+                            logging.exception('Error processing request key %s', key)
                     if 'first_byte' in entry:
                         request['ttfb_ms'] = int(round(entry['first_byte'] -
                                                        entry['start']))
@@ -859,6 +1035,8 @@ class DevToolsParser(object):
                     if 'start' in entry:
                         request['load_start_float'] = float(str(entry['start']).strip())
                     request['headers'] = {'request': [], 'response': []}
+                    if 'status' in entry:
+                        request['responseCode'] = entry['status']
                     if 'request_headers' in entry:
                         request['headers']['request'] = list(entry['request_headers'])
                     if 'response_headers' in entry:
@@ -913,6 +1091,7 @@ class DevToolsParser(object):
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
                     if 'contentType' not in request or \
                             (request['contentType'].find('ocsp-response') < 0 and \
+                             request['contentType'].find('pkix-crl') < 0 and \
                              request['contentType'].find('ca-cert') < 0):
                         main_request = request
                         request['final_base_page'] = True
@@ -923,6 +1102,21 @@ class DevToolsParser(object):
                         page_data['URL'] = request['full_url']
                         break
                 index += 1
+
+    def process_timeline_requests(self):
+        """Process the timeline request data for render-blocking indicators"""
+        if self.timeline_requests_file is not None and os.path.isfile(self.timeline_requests_file):
+            _, ext = os.path.splitext(self.timeline_requests_file)
+            if ext.lower() == '.gz':
+                f_in = gzip.open(self.timeline_requests_file, GZIP_READ_TEXT)
+            else:
+                f_in = open(self.timeline_requests_file, 'r')
+            timeline_requests = json.load(f_in)
+            f_in.close()
+            requests = self.result['requests']
+            for request in requests:
+                if 'raw_id' in request and request['raw_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['raw_id']]:
+                    request['renderBlocking'] = timeline_requests[request['raw_id']]['renderBlocking']
 
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
@@ -938,44 +1132,57 @@ class DevToolsParser(object):
         page_data['responses_200'] = 0
         page_data['responses_404'] = 0
         page_data['responses_other'] = 0
+        page_data['renderBlockingCSS'] = 0
+        page_data['renderBlockingJS'] = 0
+
         page_data['fullyLoaded'] = page_data['docTime'] if 'docTime' in page_data else 0
         for request in requests:
-            if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
-                    request['ttfb_ms'] >= 0 and 'responseCode' in request and \
-                    (request['responseCode'] == 200 or request['responseCode'] == 304):
-                if 'contentType' not in request or \
-                        (request['contentType'].find('ocsp-response') < 0 and \
-                            request['contentType'].find('ca-cert') < 0):
-                    page_data['TTFB'] = int(round(request['load_start'] + request['ttfb_ms']))
-                    if request['ssl_end'] >= request['ssl_start'] and \
-                            request['ssl_start'] >= 0:
-                        page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
-                                                                 request['ssl_start']))
-            if 'bytesOut' in request:
-                page_data['bytesOut'] += request['bytesOut']
-            if 'bytesIn' in request:
-                page_data['bytesIn'] += request['bytesIn']
-            page_data['requests'] += 1
-            page_data['requestsFull'] += 1
-            if request['load_start'] < page_data['docTime']:
+            try:
+                request['load_start'] = int(request['load_start'])
+                if 'TTFB' not in page_data and 'load_start' in request and 'ttfb_ms' in request and \
+                        request['ttfb_ms'] >= 0 and 'responseCode' in request and \
+                        (request['responseCode'] == 200 or request['responseCode'] == 304):
+                    if 'contentType' not in request or \
+                            (request['contentType'].find('ocsp-response') < 0 and \
+                                request['contentType'].find('pkix-crl') < 0 and \
+                                request['contentType'].find('ca-cert') < 0):
+                        page_data['TTFB'] = int(round(float(request['load_start']) + float(request['ttfb_ms'])))
+                        if request['ssl_end'] >= request['ssl_start'] and \
+                                request['ssl_start'] >= 0:
+                            page_data['basePageSSLTime'] = int(round(request['ssl_end'] - \
+                                                                    request['ssl_start']))
                 if 'bytesOut' in request:
-                    page_data['bytesOutDoc'] += request['bytesOut']
+                    page_data['bytesOut'] += request['bytesOut']
                 if 'bytesIn' in request:
-                    page_data['bytesInDoc'] += request['bytesIn']
-                page_data['requestsDoc'] += 1
-            if 'responseCode' in request and request['responseCode'] == 200:
-                page_data['responses_200'] += 1
-            elif 'responseCode' in request and request['responseCode'] == 404:
-                page_data['responses_404'] += 1
-                page_data['result'] = 99999
-            else:
-                page_data['responses_other'] += 1
-            if 'load_start' in request:
-                end_time = request['load_start']
-                if 'load_ms' in request:
-                    end_time += request['load_ms']
-                if end_time > page_data['fullyLoaded']:
-                    page_data['fullyLoaded'] = end_time
+                    page_data['bytesIn'] += request['bytesIn']
+                page_data['requests'] += 1
+                page_data['requestsFull'] += 1
+                if 'renderBlocking' in request and request['renderBlocking'] == 'blocking':
+                    if request['request_type'] == 'Script':
+                        page_data['renderBlockingJS'] += 1
+                    if request['request_type'] == 'Stylesheet':
+                        page_data['renderBlockingCSS'] += 1
+                if request['load_start'] < page_data['docTime']:
+                    if 'bytesOut' in request:
+                        page_data['bytesOutDoc'] += request['bytesOut']
+                    if 'bytesIn' in request:
+                        page_data['bytesInDoc'] += request['bytesIn']
+                    page_data['requestsDoc'] += 1
+                if 'responseCode' in request and request['responseCode'] == 200:
+                    page_data['responses_200'] += 1
+                elif 'responseCode' in request and request['responseCode'] == 404:
+                    page_data['responses_404'] += 1
+                    page_data['result'] = 99999
+                else:
+                    page_data['responses_other'] += 1
+                if 'load_start' in request:
+                    end_time = request['load_start']
+                    if 'load_ms' in request:
+                        end_time += request['load_ms']
+                    if end_time > page_data['fullyLoaded']:
+                        page_data['fullyLoaded'] = end_time
+            except Exception:
+                logging.exception('Error processing request for page data')
         if page_data['responses_200'] == 0:
             if len(requests) > 0 and 'responseCode' in requests[0] and \
                     requests[0]['responseCode'] >= 400:
@@ -991,7 +1198,7 @@ class DevToolsParser(object):
         if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
             _, ext = os.path.splitext(self.user_timing_file)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.user_timing_file, 'rb')
+                f_in = gzip.open(self.user_timing_file, GZIP_READ_TEXT)
             else:
                 f_in = open(self.user_timing_file, 'r')
             user_timing_events = json.load(f_in)
@@ -1029,7 +1236,9 @@ class DevToolsParser(object):
                                     event['args']['data']['is_main_frame']:
                                 main_frames.append(event['args']['frame'])
                             elif 'isLoadingMainFrame' in event['args']['data'] and \
-                                    event['args']['data']['isLoadingMainFrame']:
+                                    event['args']['data']['isLoadingMainFrame'] and \
+                                    'documentLoaderURL' in event['args']['data'] and \
+                                    event['args']['data']['documentLoaderURL']:
                                 main_frames.append(event['args']['frame'])
                     if event['args']['frame'] in main_frames:
                         if navigation_start is None:
@@ -1051,7 +1260,7 @@ class DevToolsParser(object):
         if self.optimization is not None and os.path.isfile(self.optimization):
             _, ext = os.path.splitext(self.optimization)
             if ext.lower() == '.gz':
-                f_in = gzip.open(self.optimization, 'rb')
+                f_in = gzip.open(self.optimization, GZIP_READ_TEXT)
             else:
                 f_in = open(self.optimization, 'r')
             optimization_results = json.load(f_in)
@@ -1163,7 +1372,7 @@ class DevToolsParser(object):
             if self.coverage is not None and os.path.isfile(self.coverage):
                 _, ext = os.path.splitext(self.coverage)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.coverage, 'rb')
+                    f_in = gzip.open(self.coverage, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.coverage, 'r')
                 coverage = json.load(f_in)
@@ -1199,7 +1408,7 @@ class DevToolsParser(object):
                                         / page_coverage[total]) / 100.0
                         page_data['code_coverage'] = dict(page_coverage)
         except Exception:
-            pass
+            logging.exception('Error processing code coverage')
 
     def process_cpu_times(self):
         """Calculate the main thread CPU times from the time slices file"""
@@ -1212,7 +1421,7 @@ class DevToolsParser(object):
             if end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times):
                 _, ext = os.path.splitext(self.cpu_times)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.cpu_times, 'rb')
+                    f_in = gzip.open(self.cpu_times, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.cpu_times, 'r')
                 cpu = json.load(f_in)
@@ -1230,7 +1439,7 @@ class DevToolsParser(object):
                         page_data['cpuTimesDoc'][name] = 0
                         slices = all_slices[name]
                         last_slice = min(int(math.ceil((end * 1000) / usecs)), len(slices))
-                        for index in xrange(last_slice):
+                        for index in range(last_slice):
                             slice_time = float(slices[index]) / 1000.0
                             page_data['cpuTimes'][name] += slice_time
                             busy += slice_time
@@ -1249,16 +1458,16 @@ class DevToolsParser(object):
                         page_data[entry] = page_data['cpuTimes'][name]
                     pass
         except Exception:
-            pass
+            logging.exception('Error processing CPU times')
 
     def process_v8_stats(self):
         """Add the v8 stats to the page data"""
         try:
             page_data = self.result['pageData']
-            if os.path.isfile(self.v8_stats):
+            if self.v8_stats is not None and os.path.isfile(self.v8_stats):
                 _, ext = os.path.splitext(self.v8_stats)
                 if ext.lower() == '.gz':
-                    f_in = gzip.open(self.v8_stats, 'rb')
+                    f_in = gzip.open(self.v8_stats, GZIP_READ_TEXT)
                 else:
                     f_in = open(self.v8_stats, 'r')
                 stats = json.load(f_in)
@@ -1283,8 +1492,7 @@ class DevToolsParser(object):
                                 if remainder > 0.0:
                                     page_data['v8Stats'][group]['{0}unaccounted'.format(prefix)] = remainder
         except Exception:
-            pass
-        pass
+            logging.exception('Error processing V8 stats')
 
 def main():
     """Main entry point"""
@@ -1296,13 +1504,14 @@ def main():
                              ". -vvvv for full debug output.")
     parser.add_argument('-d', '--devtools', help="Input devtools file.")
     parser.add_argument('-n', '--netlog', help="Input netlog requests file (optional).")
+    parser.add_argument('-r', '--requests', help="Input timeline requests file (optional).")
     parser.add_argument('-p', '--optimization', help="Input optimization results file (optional).")
     parser.add_argument('-u', '--user', help="Input user timing file (optional).")
     parser.add_argument('--coverage', help="Input code coverage file (optional).")
     parser.add_argument('--cpu', help="Input cpu time slices file (optional).")
     parser.add_argument('--v8stats', help="Input v8 stats file (optional).")
-    parser.add_argument('-c', '--cached', action='store_true', default=False,
-                        help="Test was of a cached page.")
+    parser.add_argument('-c', '--cached', action='store_true', default=False, help="Test was of a cached page.")
+    parser.add_argument('--noheaders', action='store_true', default=False, help="Strip headers from the request data.")
     parser.add_argument('-o', '--out', help="Output requests json file.")
     options, _ = parser.parse_known_args()
 
@@ -1325,13 +1534,15 @@ def main():
     start = time.time()
     opt = {'devtools': options.devtools,
            'netlog': options.netlog,
+           'requests': options.requests,
            'optimization': options.optimization,
            'user': options.user,
            'coverage': options.coverage,
            'cpu': options.cpu,
            'v8stats': options.v8stats,
            'cached': options.cached,
-           'out': options.out}
+           'out': options.out,
+           'noheaders': options.noheaders}
     devtools = DevToolsParser(opt)
     devtools.process()
     end = time.time()

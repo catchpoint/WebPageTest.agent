@@ -1,26 +1,27 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import glob
 import gzip
 import logging
 import os
 import re
-import urlparse
-import monotonic
+import sys
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    from monotonic import monotonic
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 try:
     import ujson as json
 except BaseException:
@@ -33,7 +34,7 @@ class FirefoxLogParser(object):
         self.start_day = None
         self.unique_id = 0
         self.int_map = {}
-        for val in xrange(0, 100):
+        for val in range(0, 100):
             self.int_map['{0:02d}'.format(val)] = float(val)
         self.dns = {}
         self.http = {'channels': {}, 'requests': {}, 'connections': {}, 'sockets': {}, 'streams': {}}
@@ -59,7 +60,7 @@ class FirefoxLogParser(object):
             try:
                 self.process_log_file(path)
             except Exception:
-                pass
+                logging.exception('Error processing log file')
         return self.finish_processing()
 
     def finish_processing(self):
@@ -90,7 +91,7 @@ class FirefoxLogParser(object):
         for domain in self.dns:
             if 'claimed' not in self.dns[domain]:
                 for request in requests:
-                    host = urlparse.urlsplit(request['url']).hostname
+                    host = urlsplit(request['url']).hostname
                     if host == domain:
                         self.dns[domain]['claimed'] = True
                         if 'start' in self.dns[domain]:
@@ -118,11 +119,11 @@ class FirefoxLogParser(object):
     def process_log_file(self, path):
         """Process a single log file"""
         logging.debug("Processing %s", path)
-        start = monotonic.monotonic()
+        start = monotonic()
         _, ext = os.path.splitext(path)
         line_count = 0
         if ext.lower() == '.gz':
-            f_in = gzip.open(path, 'rb')
+            f_in = gzip.open(path, GZIP_READ_TEXT)
         else:
             f_in = open(path, 'r')
         for line in f_in:
@@ -130,7 +131,7 @@ class FirefoxLogParser(object):
             line = line.rstrip("\r\n")
             self.process_log_line(line)
         f_in.close()
-        elapsed = monotonic.monotonic() - start
+        elapsed = monotonic() - start
         logging.debug("%0.3f s to process %s (%d lines)", elapsed, path, line_count)
 
     def process_log_line(self, line):
@@ -156,25 +157,28 @@ class FirefoxLogParser(object):
                 if msg['timestamp'] >= 0:
                     offset = line.find(']: ', 32)
                     if offset >= 0:
-                        thread = line[34:offset]
-                        separator = thread.find(':')
-                        if separator >= 0:
-                            thread = thread[separator + 1:].strip()
-                        msg['thread'] = thread
-                        msg['level'] = line[offset + 3:offset + 4]
-                        msg_start = line.find(' ', offset + 5)
-                        if msg_start >= 0:
-                            msg['category'] = line[offset + 5:msg_start]
-                            msg['message'] = line[msg_start + 1:]
-                            if msg['category'] == 'nsHttp':
-                                if msg['thread'] == 'Main Thread':
-                                    self.main_thread_http_entry(msg)
-                                elif msg['thread'] == 'Socket Thread':
-                                    self.socket_thread_http_entry(msg)
-                            elif msg['category'] == 'nsSocketTransport':
-                                self.socket_transport_entry(msg)
-                            elif msg['category'] == 'nsHostResolver':
-                                self.dns_entry(msg)
+                        try:
+                            thread = line[34:offset]
+                            separator = thread.find(':')
+                            if separator >= 0:
+                                thread = thread[separator + 1:].strip()
+                            msg['thread'] = thread
+                            msg['level'] = line[offset + 3:offset + 4]
+                            msg_start = line.find(' ', offset + 5)
+                            if msg_start >= 0:
+                                msg['category'] = line[offset + 5:msg_start]
+                                msg['message'] = line[msg_start + 1:]
+                                if msg['category'] == 'nsHttp':
+                                    if msg['thread'] == 'Main Thread':
+                                        self.main_thread_http_entry(msg)
+                                    elif msg['thread'] == 'Socket Thread':
+                                        self.socket_thread_http_entry(msg)
+                                elif msg['category'] == 'nsSocketTransport':
+                                    self.socket_transport_entry(msg)
+                                elif msg['category'] == 'nsHostResolver':
+                                    self.dns_entry(msg)
+                        except Exception:
+                            logging.exception('Error processing log line')
             except Exception:
                 pass
 
@@ -195,6 +199,11 @@ class FirefoxLogParser(object):
             if match:
                 self.http['channels'][self.http['current_channel']] = \
                         match.groupdict().get('url')
+        # V/nsHttp Creating nsHttpTransaction @0x7f88bb130400
+        elif msg['message'].startswith('Creating nsHttpTransaction '):
+            match = re.search(r'^Creating nsHttpTransaction @(?P<id>[\w\d]+)', msg['message'])
+            if match:
+                self.http['creating_trans_id'] = match.groupdict().get('id')
         # D/nsHttp nsHttpChannel c30d000 created nsHttpTransaction c138c00
         elif msg['message'].startswith('nsHttpChannel') and \
                 msg['message'].find(' created nsHttpTransaction ') > -1:
@@ -205,7 +214,11 @@ class FirefoxLogParser(object):
                 if channel in self.http['channels']:
                     url = self.http['channels'][channel]
                     del self.http['channels'][channel]
-                    trans_id = match.groupdict().get('id')
+                    if 'creating_trans_id' in self.http:
+                        trans_id = self.http['creating_trans_id']
+                        del self.http['creating_trans_id']
+                    else:
+                        trans_id = match.groupdict().get('id')
                     # If there is already an existing transaction with the same ID,
                     # move it to a unique ID.
                     if trans_id in self.http['requests']:

@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Logic for controlling a desktop Chrome browser"""
 import gzip
 import logging
@@ -17,30 +19,31 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-default-browser-check',
     '--no-first-run',
     '--new-window',
-    '--disable-infobars',
-    '--disable-translate',
-    '--disable-notifications',
-    '--disable-desktop-notifications',
-    '--disable-save-password-bubble',
     '--allow-running-insecure-content',
-    '--disable-component-update',
-    '--disable-background-downloads',
-    '--disable-add-to-shelf',
     '--disable-client-side-phishing-detection',
-    '--disable-datasaver-prompt',
+    '--disable-component-update',
     '--disable-default-apps',
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
-    '--safebrowsing-disable-auto-update',
     '--disable-background-timer-throttling',
-    '--disable-browser-side-navigation',
-    '--net-log-capture-mode=IncludeCookiesAndCredentials',
-    '--load-media-router-component-extension=0'
+    '--net-log-capture-mode=IncludeSensitive',
+    '--load-media-router-component-extension=0',
+    '--mute-audio',
+    '--disable-hang-monitor',
+    '--password-store=basic',
+    '--disable-breakpad',
+    '--dont-require-litepage-redirect-infobar',
+    '--override-https-image-compression-infobar',
+    '--disable-fetching-hints-at-navigation-start'
 ]
 
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
-    '"MAP clients1.google.com 127.0.0.1"'
+    '"MAP clients1.google.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
+    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP laptop-updates.brave.com 127.0.0.1"',
+    '"MAP offlinepages-pa.googleapis.com 127.0.0.1"'
 ]
 
 ENABLE_CHROME_FEATURES = [
@@ -51,7 +54,11 @@ ENABLE_CHROME_FEATURES = [
 
 DISABLE_CHROME_FEATURES = [
     'InterestFeedContentSuggestions',
-    'CalculateNativeWinOcclusion'
+    'CalculateNativeWinOcclusion',
+    'TranslateUI',
+    'Translate',
+    'OfflinePagesPrefetching',
+    'HeavyAdPrivacyMitigations'
 ]
 
 ENABLE_BLINK_FEATURES = [
@@ -68,6 +75,11 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
         self.is_chrome = True
+
+    def shutdown(self):
+        """Shutdown the agent cleanly but mid-test"""
+        DevtoolsBrowser.shutdown(self)
+        DesktopBrowser.shutdown(self)
 
     def launch(self, job, task):
         """Launch the browser"""
@@ -96,14 +108,19 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             args.append('--no-sandbox')
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
+            args.append('--disable-dev-shm-usage')
         args.append('--enable-features=' + ','.join(features))
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        if task['running_lighthouse']:
+            args.append('--headless')
 
         # Disable site isolation if emulating mobile. It is disabled on
-        # actual mobile Chrome (and breaks CPU throttling on Windows)
+        # actual mobile Chrome (and breaks Chrome's CPU throttling)
         if 'mobile' in job and job['mobile']:
-            disable_features.extend(['NetworkService',
-                                     'IsolateOrigins',
+            disable_features.extend(['IsolateOrigins',
+                                     'site-per-process'])
+        elif 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
+            disable_features.extend(['IsolateOrigins',
                                      'site-per-process'])
         args.append('--disable-features=' + ','.join(disable_features))
 
@@ -143,9 +160,21 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 time.sleep(10)
         if connected:
             self.connected = True
-            DevtoolsBrowser.prepare_browser(self, task)
-            DevtoolsBrowser.navigate(self, self.start_page)
+            self.profile_start('chrome.post_launch')
+            self.profile_start('chrome.idle1')
             DesktopBrowser.wait_for_idle(self)
+            self.profile_end('chrome.idle1')
+            self.profile_start('chrome.prepare_browser')
+            DevtoolsBrowser.prepare_browser(self, task)
+            self.profile_end('chrome.prepare_browser')
+            self.profile_start('chrome.start_page')
+            DevtoolsBrowser.navigate(self, self.start_page)
+            self.profile_end('chrome.start_page')
+            # When throttling the CPU, Chrome sits in a busy loop so ony apply a short idle wait
+            self.profile_start('chrome.idle2')
+            DesktopBrowser.wait_for_idle(self, 2)
+            self.profile_end('chrome.idle2')
+            self.profile_end('chrome.post_launch')
 
     def run_task(self, task):
         """Run an individual test"""

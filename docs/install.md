@@ -2,7 +2,7 @@
 wptagent currently supports Windows, Linux and OSX for desktop browsers as well as Android and iOS for mobile devices (mobile testing requires a host computer connected to drive the testing).  If local traffic-shaping is enabled the agent will need to be able to elevate to admin/root. It is recommended that the agent itself not run as admin/root but that it can elevate without prompting which means disabling UAC on windows or adding the user account to the sudoers file on Linux and OSX (NOPASSWD in visudo).
 
 ## Software Requirements
-* Python 2.7 available on the path (python2.7 and  python-pip packages on Ubuntu/Debian) with the following modules installed (all available through pip):
+* Python 3.x available on the path with the following modules installed (all available through pip):
     * dnspython
     * monotonic
     * pillow
@@ -12,21 +12,19 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
     * requests
     * ujson
     * tornado
-    * xvfbwrapper (Linux only)
+    * wsaccel
+    * fonttools
+    * future
     * bind9utils (Linux only, for rndc)
-    * marionette_driver (Firefox)
-    * selenium (Windows only)
+    * selenium
+    * usbmuxwrapper
 * Imagemagick installed and available in the path
     * The legacy tools (convert, compare, etc) need to be installed which may be optional on Windows
 * ffmpeg installed and available in the path
-* Xvfb (Linux only)
-* cgroup-tools (Linux only if mobile CPU emulation is desired)
 * traceroute (Mac and Linux)
-* Debian:
-    * ```sudo apt-get install -y python2.7 python-pip imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute && sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver```
 * Chrome Browser
     * Linux stable, beta and unstable channels on Ubuntu/Debian:
-        * ```wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -```
+        * ```wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | sudo apt-key add -```
         * ```sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'```
         * ```sudo apt-get update```
         * ```sudo apt-get install -y google-chrome-stable google-chrome-beta google-chrome-unstable```
@@ -39,7 +37,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
         * ```sudo dbus-uuidgen --ensure```
 * Opera Browser
     * Linux stable, beta and developer builds on Ubuntu/Debian:
-        * ```wget -qO- https://deb.opera.com/archive.key | sudo apt-key add -```
+        * ```wget -qO- https://www.webpagetest.org/keys/opera/archive.key | sudo apt-key add -```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-stable/ stable non-free'```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-beta/ stable non-free'```
         * ```sudo add-apt-repository -y 'deb https://deb.opera.com/opera-developer/ stable non-free'```
@@ -49,7 +47,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 ## For lighthouse testing
 * NodeJS
     * Ubuntu/Debian:
-        * ```curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -```
+        * ```curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -```
         * ```sudo apt-get install -y nodejs```
 * The lighthouse npm module
     * ```sudo npm install -g lighthouse```
@@ -123,6 +121,31 @@ python.exe C:\Users\WebPageTest\wptagent\wptagent.py -vvvv --server "http://www.
 )
 shutdown /r /f
 ```
+
+### OS X (Mac)
+* Xcode should be installed as well as [Network Link Conditioner (additional download)](https://swiftmania.io/network-link-conditioner/#simulator). Launch XCode and accept the license.
+* The user accounts needs to be able to run sudo commands without prompting for password:
+```bash
+echo "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/wptagent"
+```
+* The library dependencies should be installed through homebrew ([using a rosetta 2 terminal](https://stackoverflow.com/questions/64882584/how-to-run-the-homebrew-installer-under-rosetta-2-on-m1-macbook) if running on ARM):
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install libvpx ffmpeg imagemagick geckodriver ios-webkit-debug-proxy node git
+```
+* Python3 and pip3 should have been installed as part of the homebrew install. The Python 3 libraries should be installed through pip3:
+```bash
+pip3 install PyObjC ujson dnspython monotonic pillow psutil requests tornado wsaccel fonttools selenium future usbmuxwrapper
+```
+* Install lighthouse through npm
+```bash
+npm -g install lighthouse
+```
+* Manually install the browsers you want to use for testing. Chrome release channels can all be installed side-by-side. Firefox can only have one channel installed.
+* Some permissions need to be manually configured to give the agent the ability to record the screen and manipulate the simulator (System Preferences -> Security & Privacy):
+  * "Screen Recording" - Add the terminal app that is used to run the agent (i.e. iTerm or Terminal)
+  * "Accessibility" - Add both scripts in <wptagent>/internal/support/osx
+* The iOS simulator devices are automatically detected at startup and the browser names will be listed as part of the agent startup
 
 ### Raspberry Pi
 The Raspberry Pi largely follows the Linux installation notes but there are a few additional config items that can be useful:

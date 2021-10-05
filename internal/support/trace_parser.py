@@ -1,26 +1,27 @@
 #!/usr/bin/env python
 """
-Copyright 2016 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2019 WebPageTest LLC.
+Copyright 2016 Google Inc.
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
 """
 import gzip
 import logging
 import math
 import os
 import re
+import sys
 import time
-import urlparse
+if (sys.version_info >= (3, 0)):
+    from urllib.parse import urlparse # pylint: disable=import-error
+    unicode = str
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    from urlparse import urlparse # pylint: disable=import-error
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # try a fast json parser if it is installed
 try:
@@ -42,19 +43,32 @@ class Trace():
         self.event_name_lookup = {}
         self.scripts = None
         self.timeline_events = []
+        self.timeline_requests = {}
         self.trace_events = []
-        self.interactive = []
+        self.interactive = None
+        self.long_tasks = None
         self.interactive_start = 0
         self.interactive_end = None
         self.start_time = None
+        self.marked_start_time = None
         self.end_time = None
-        self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': []}
+        self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': [], 'valid': False}
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
         self.netlog_requests = None
+        self.netlog_event_types = {}
         self.v8stats = None
         self.v8stack = {}
+        self.PRIORITY_MAP = {
+            "VeryHigh": "Highest",
+            "HIGHEST": "Highest",
+            "MEDIUM": "High",
+            "LOW": "Medium",
+            "LOWEST": "Low",
+            "IDLE": "Lowest",
+            "VeryLow": "Lowest"
+        }
         return
 
     ##########################################################################
@@ -65,22 +79,23 @@ class Trace():
         try:
             _, ext = os.path.splitext(out_file)
             if ext.lower() == '.gz':
-                with gzip.open(out_file, 'wb') as f:
+                with gzip.open(out_file, GZIP_TEXT) as f:
                     json.dump(json_data, f)
             else:
                 with open(out_file, 'w') as f:
                     json.dump(json_data, f)
         except BaseException:
-            logging.critical("Error writing to " + out_file)
+            logging.exception("Error writing to " + out_file)
 
-    def WriteUserTiming(self, out_file):
-        out = self.post_process_netlog_events()
-        out = self.post_process_user_timing()
+    def WriteUserTiming(self, out_file, dom_tree=None, performance_timing=None):
+        self.post_process_netlog_events()
+        out = self.post_process_user_timing(dom_tree, performance_timing)
         if out is not None:
             self.write_json(out_file, out)
 
     def WriteCPUSlices(self, out_file):
-        self.write_json(out_file, self.cpu)
+        if self.cpu['valid']:
+            self.write_json(out_file, self.cpu)
 
     def WriteScriptTimings(self, out_file):
         if self.scripts is not None:
@@ -93,12 +108,36 @@ class Trace():
             self.write_json(out_file, out)
 
     def WriteInteractive(self, out_file):
-        self.write_json(out_file, self.interactive)
+        # Generate the interactive periods from the long-task data
+        if self.end_time and self.start_time and self.long_tasks is not None:
+            interactive = []
+            end_time = int(math.ceil(float(self.end_time - self.start_time) / 1000.0))
+            if not self.long_tasks:
+                interactive.append([0, end_time])
+            else:
+                last_end = 0
+                for task in self.long_tasks:
+                    elapsed = task[0] - last_end
+                    if elapsed > 0:
+                        interactive.append([last_end, task[0]])
+                    last_end = task[1]
+                elapsed = end_time - last_end
+                if elapsed > 0:
+                    interactive.append([last_end, end_time])
+            self.write_json(out_file, interactive)
+    
+    def WriteLongTasks(self, out_file):
+        if self.long_tasks is not None:
+            self.write_json(out_file, self.long_tasks)
 
     def WriteNetlog(self, out_file):
         out = self.post_process_netlog_events()
         if out is not None:
             self.write_json(out_file, out)
+    
+    def WriteTimelineRequests(self, out_file):
+        if self.timeline_requests:
+            self.write_json(out_file, self.timeline_requests)
 
     def WriteV8Stats(self, out_file):
         if self.v8stats is not None:
@@ -117,7 +156,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(trace)
             if ext.lower() == '.gz':
-                f = gzip.open(trace, 'rb')
+                f = gzip.open(trace, GZIP_READ_TEXT)
             else:
                 f = open(trace, 'r')
             for line in f:
@@ -130,9 +169,9 @@ class Trace():
                         line_mode = True
                         self.FilterTraceEvent(trace_event)
                 except BaseException:
-                    pass
+                    logging.exception('Error processing trace line')
         except BaseException:
-            logging.critical("Error processing trace " + trace)
+            logging.exception("Error processing trace " + trace)
         if f is not None:
             f.close()
         self.ProcessTraceEvents()
@@ -146,7 +185,7 @@ class Trace():
         try:
             _, ext = os.path.splitext(timeline)
             if ext.lower() == '.gz':
-                f = gzip.open(timeline, 'rb')
+                f = gzip.open(timeline, GZIP_READ_TEXT)
             else:
                 f = open(timeline, 'r')
             events = json.load(f)
@@ -173,7 +212,7 @@ class Trace():
                                     self.timeline_events.append(e)
                 self.ProcessTimelineEvents()
         except BaseException:
-            logging.critical("Error processing timeline " + timeline)
+            logging.exception("Error processing timeline " + timeline)
         if f is not None:
             f.close()
 
@@ -213,6 +252,8 @@ class Trace():
 
     def ProcessTraceEvent(self, trace_event):
         cat = trace_event['cat']
+        if 'ts' in trace_event:
+            trace_event['ts'] = int(trace_event['ts'])
         if cat.find('blink.user_timing') >= 0 or cat.find('rail') >= 0 or \
                 cat.find('loading') >= 0 or cat.find('navigation') >= 0:
             keep = False
@@ -228,7 +269,9 @@ class Trace():
                 keep = True
             if keep:
                 self.user_timing.append(trace_event)
-            if 'name' in trace_event and trace_event['name'].find('navigationStart') >= 0:
+            if self.marked_start_time is None and \
+                    'name' in trace_event and \
+                    trace_event['name'].find('navigationStart') >= 0:
                 if self.start_time is None or trace_event['ts'] < self.start_time:
                     self.start_time = trace_event['ts']
             if self.cpu['main_thread'] is None and 'name' in trace_event and \
@@ -267,7 +310,7 @@ class Trace():
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
-    def post_process_user_timing(self):
+    def post_process_user_timing(self, dom_tree, performance_timing):
         out = None
         if self.user_timing is not None:
             self.user_timing.sort(key=lambda trace_event: trace_event['ts'])
@@ -278,6 +321,7 @@ class Trace():
                 try:
                     consumed = False
                     if event['cat'].find('loading') >= 0 and 'name' in event:
+                        event['name'] = event['name'].replace('GlobalFirstContentfulPaint', 'FirstContentfulPaint')
                         if event['name'].startswith('NavStartToLargestContentfulPaint'):
                             consumed = True
                             if event['name'].find('Invalidate') >= 0:
@@ -289,21 +333,133 @@ class Trace():
                             (name, trigger) = event['name'].split('::', 1)
                             name = name[:1].upper() + name[1:]
                             event['name'] = name
+                            key = name
+                            try:
+                                if 'args' in event:
+                                    if 'frame' in event['args']:
+                                        key += ':' + event['args']['frame']
+                                    if 'data' in event['args'] and 'candidateIndex' in event['args']['data']:
+                                        if isinstance(event['args']['data']['candidateIndex'], int):
+                                            key += '.{0:d}'.format(event['args']['data']['candidateIndex'])
+                                        elif isinstance(event['args']['data']['candidateIndex'], str):
+                                            key += '.' + event['args']['data']['candidateIndex']
+                            except Exception:
+                                logging.exception('Error processing user timing event key')
                             if trigger == 'Candidate':
-                                candidates[name] = dict(event)
-                            elif trigger == 'Invalidate' and name in candidates:
-                                del candidates[name]
+                                candidates[key] = dict(event)
+                            elif trigger == 'Invalidate' and key in candidates:
+                                del candidates[key]
                     if not consumed:
                         out.append(event)
                 except Exception:
-                    pass
-            if lcp_event is not None and 'LargestContentfulPaint' not in candidates:
+                    logging.exception('Error processing user timing event')
+            has_lcp = False
+            for name in candidates:
+                if name.startswith('LargestContentfulPaint'):
+                    has_lcp = True
+                    break
+            if lcp_event is not None and not has_lcp:
                 lcp_event['name'] = 'LargestContentfulPaint'
                 out.append(lcp_event)
             for name in candidates:
                 out.append(candidates[name])
+            if dom_tree is not None:
+                for event in out:
+                    if 'args' in event and 'data' in event['args'] and 'DOMNodeId' in event['args']['data']:
+                        node_info = self.FindDomNodeInfo(dom_tree, event['args']['data']['DOMNodeId'])
+                        if node_info is not None:
+                            event['args']['data']['node'] = node_info
+            if performance_timing:
+                for event in out:
+                    if 'args' in event and 'data' in event['args']:
+                        if 'size' in event['args']['data'] and event['name'].startswith('LargestContentfulPaint'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'element' in perf_entry:
+                                        event['args']['data']['element'] = perf_entry['element']
+                        elif 'score' in event['args']['data'] and event['name'].startswith('LayoutShift'):
+                            for perf_entry in performance_timing:
+                                if 'entryType' in perf_entry and perf_entry['entryType'] == 'layout-shift' and 'value' in perf_entry and perf_entry['value'] == event['args']['data']['score'] and 'consumed' not in perf_entry:
+                                    perf_entry['consumed'] = True
+                                    if 'sources' in perf_entry:
+                                        event['args']['data']['sources'] = perf_entry['sources']
             out.append({'startTime': self.start_time})
         return out
+
+    def FindDomNodeInfo(self, dom_tree, node_id):
+        """Get the information for the given DOM node"""
+        info = None
+        try:
+            if dom_tree is not None:
+                if 'documents' in dom_tree:
+                    node_index = None
+                    for document in dom_tree['documents']:
+                        if 'nodes' in document and node_index is None:
+                            if 'backendNodeId' in document['nodes']:
+                                for index in range(len(document['nodes']['backendNodeId'])):
+                                    if document['nodes']['backendNodeId'][index] == node_id:
+                                        node_index = index
+                                        break
+                            if node_index is not None:
+                                info = {}
+                                if 'strings' in dom_tree:
+                                    if 'nodeName' in document['nodes'] and node_index < len(document['nodes']['nodeName']):
+                                        string_index = document['nodes']['nodeName'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeType'] = dom_tree['strings'][string_index]
+                                    if 'nodeValue' in document['nodes'] and node_index < len(document['nodes']['nodeValue']):
+                                        string_index = document['nodes']['nodeValue'][node_index]
+                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                            info['nodeValue'] = dom_tree['strings'][string_index]
+                                    if 'attributes' in document['nodes'] and node_index < len(document['nodes']['attributes']):
+                                        attribute = None
+                                        for string_index in document['nodes']['attributes'][node_index]:
+                                            string_value = ''
+                                            if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                string_value = dom_tree['strings'][string_index]
+                                            if attribute is None:
+                                                attribute = string_value
+                                            else:
+                                                if attribute:
+                                                    if 'attributes' not in info:
+                                                        info['attributes'] = {}
+                                                    if attribute in info['attributes']:
+                                                        info['attributes'][attribute] += ' ' + string_value
+                                                    else:
+                                                        info['attributes'][attribute] = string_value
+                                                attribute = None
+                                    if 'currentSourceURL' in document['nodes']:
+                                        if 'index' in document['nodes']['currentSourceURL'] and 'value' in document['nodes']['currentSourceURL']:
+                                            for index in range(len(document['nodes']['currentSourceURL']['index'])):
+                                                if document['nodes']['currentSourceURL']['index'][index] == node_index:
+                                                    if index < len(document['nodes']['currentSourceURL']['value']):
+                                                        string_index = document['nodes']['currentSourceURL']['value'][index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['sourceURL'] = dom_tree['strings'][string_index]
+                                                    break
+                                if 'layout' in document:
+                                    if 'nodeIndex' in document['layout']:
+                                        for index in range(len(document['layout']['nodeIndex'])):
+                                            if document['layout']['nodeIndex'][index] == node_index:
+                                                if 'bounds' in document['layout'] and index < len(document['layout']['bounds']):
+                                                    info['bounds'] = document['layout']['bounds'][index]
+                                                if 'text' in document['layout'] and index < len(document['layout']['text']):
+                                                    string_index = document['layout']['text'][index]
+                                                    if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                        info['layoutText'] = dom_tree['strings'][string_index]
+                                                if 'style_names' in dom_tree and 'styles' in document['layout'] and index < len(document['layout']['styles']) and len(document['layout']['styles'][index]) == len(dom_tree['style_names']):
+                                                    if 'styles' not in info:
+                                                        info['styles'] = {}
+                                                    for style_index in range(len(document['layout']['styles'][index])):
+                                                        string_index = document['layout']['styles'][index][style_index]
+                                                        if string_index >= 0 and string_index < len(dom_tree['strings']):
+                                                            info['styles'][dom_tree['style_names'][style_index]] = dom_tree['strings'][string_index]
+                                return info
+                                            
+        except Exception:
+            logging.exception("Error looking up DOM Node")
+        return info
 
     ##########################################################################
     #   Timeline
@@ -316,6 +472,15 @@ class Trace():
                 trace_event['args']['name'] == 'CrRendererMain' and \
                 thread not in self.cpu['main_threads']:
             self.cpu['main_threads'].append(thread)
+        
+        # Watch for the marker indicating the start time
+        if trace_event['name'] == 'ResourceSendRequest' and \
+                'args' in trace_event and \
+                'data' in trace_event['args'] and \
+                'url' in trace_event['args']['data'] and \
+                trace_event['args']['data']['url'] == 'http://127.0.0.1:8888/wpt-start-recording':
+            self.marked_start_time = trace_event['ts']
+            self.start_time = trace_event['ts']
 
         # Keep track of the main thread
         if 'args' in trace_event and 'data' in trace_event['args'] and \
@@ -330,8 +495,9 @@ class Trace():
                     'url' in trace_event['args']['data']):
                     if thread not in self.threads:
                         self.threads[thread] = {}
-                    if self.start_time is None or trace_event['ts'] < self.start_time:
-                        self.start_time = trace_event['ts']
+                    if self.marked_start_time is None:
+                        if self.start_time is None or trace_event['ts'] < self.start_time:
+                            self.start_time = trace_event['ts']
                     self.cpu['main_thread'] = thread
                     if thread not in self.cpu['main_threads']:
                         self.cpu['main_threads'].append(thread)
@@ -344,6 +510,22 @@ class Trace():
                 thread not in self.ignore_threads and \
                 trace_event['name'] != 'Program':
             self.threads[thread] = {}
+        
+        # Keep track of request events reported by the timeline
+        if 'args' in trace_event and 'data' in trace_event['args'] and 'requestId' in trace_event['args']['data']:
+            request_id = trace_event['args']['data']['requestId']
+            if request_id not in self.timeline_requests:
+                self.timeline_requests[request_id] = {}
+            request = self.timeline_requests[request_id]
+            if trace_event['name'] == 'ResourceSendRequest':
+                if 'priority' in trace_event['args']['data']:
+                    request['priority'] = trace_event['args']['data']['priority']
+                    if request['priority'] in self.PRIORITY_MAP:
+                        request['priority'] = self.PRIORITY_MAP[request['priority']]
+                if 'frame' in trace_event['args']['data']:
+                    request['frame'] = trace_event['args']['data']['frame']
+                if 'renderBlocking' in trace_event['args']['data']:
+                    request['renderBlocking'] = trace_event['args']['data']['renderBlocking']
 
         # Build timeline events on a stack. 'B' begins an event, 'E' ends an
         # event
@@ -395,7 +577,7 @@ class Trace():
                 else:
                     self.timeline_events.append(e)
 
-    def ProcessOldTimelineEvent(self, event, type):
+    def ProcessOldTimelineEvent(self, event, type, depth=0):
         e = None
         thread = '0'
         if 'type' in event:
@@ -415,6 +597,30 @@ class Trace():
                 start = event['callInfo']['startTime'] * 1000000.0
                 end = event['callInfo']['endTime'] * 1000000.0
         if start is not None and end is not None and end >= start and type is not None:
+            # Keep track of the long tasks
+            if self.long_tasks is None:
+                self.long_tasks = []
+            elapsed = end - start
+            if depth == 0 and elapsed > 50000:
+                # make sure this isn't contained within an existing event
+                ms_start = int(math.floor(start / 1000.0))
+                ms_end = int(math.ceil(end / 1000.0))
+                if not self.long_tasks:
+                    # Empty list of long tasks
+                    self.long_tasks.append([ms_start, ms_end])
+                else:
+                    last_start = self.long_tasks[-1][0]
+                    last_end = self.long_tasks[-1][1]
+                    if ms_start >= last_end:
+                        # This task is entirely after the last long task we know about
+                        self.long_tasks.append([ms_start, ms_end])
+                    elif ms_end > last_end:
+                        # task extends beyond the previous end of the long tasks but overlaps
+                        del self.long_tasks[-1]
+                        if ms_start >= last_start:
+                            self.long_tasks.append([last_start, ms_end])
+                        else:
+                            self.long_tasks.append([ms_start, ms_end])
             if end > self.end_time:
                 self.end_time = end
             e = {'t': thread,
@@ -436,7 +642,7 @@ class Trace():
             # Process profile child events
             if 'data' in event and 'profile' in event['data'] and 'rootNodes' in event['data']['profile']:
                 for child in event['data']['profile']['rootNodes']:
-                    c = self.ProcessOldTimelineEvent(child, type)
+                    c = self.ProcessOldTimelineEvent(child, type, depth + 1)
                     if c is not None:
                         if 'c' not in e:
                             e['c'] = []
@@ -444,7 +650,7 @@ class Trace():
             # recursively process any child events
             if 'children' in event:
                 for child in event['children']:
-                    c = self.ProcessOldTimelineEvent(child, type)
+                    c = self.ProcessOldTimelineEvent(child, type, depth + 1)
                     if c is not None:
                         if 'c' not in e:
                             e['c'] = []
@@ -455,6 +661,8 @@ class Trace():
         if len(self.timeline_events) and self.end_time > self.start_time:
             # Figure out how big each slice should be in usecs. Size it to a
             # power of 10 where we have at least 2000 slices
+            if self.interactive is None:
+                self.interactive = []
             exp = 0
             last_exp = 0
             slice_count = self.end_time - self.start_time
@@ -511,13 +719,16 @@ class Trace():
                             main_thread = thread
                             main_thread_cpu = thread_cpu
                 except Exception:
-                    pass
+                    logging.exception('Error processing thread')
             if main_thread is not None:
                 self.cpu['main_thread'] = main_thread
 
     def ProcessTimelineEvent(self, timeline_event, parent, stack=None):
         start = timeline_event['s'] - self.start_time
         end = timeline_event['e'] - self.start_time
+        if self.long_tasks is None:
+            self.long_tasks = []
+        self.cpu['valid'] = True
         if stack is None:
             stack = {}
         if end > start:
@@ -537,6 +748,28 @@ class Trace():
                     self.interactive_end = None
                 else:
                     self.interactive_end = end
+            
+            # Keep track of the long-duration top-level tasks
+            if parent is None and elapsed > 50000 and thread in self.cpu['main_threads']:
+                # make sure this isn't contained within an existing event
+                ms_start = int(math.floor(start / 1000.0))
+                ms_end = int(math.ceil(end / 1000.0))
+                if not self.long_tasks:
+                    # Empty list of long tasks
+                    self.long_tasks.append([ms_start, ms_end])
+                else:
+                    last_start = self.long_tasks[-1][0]
+                    last_end = self.long_tasks[-1][1]
+                    if ms_start >= last_end:
+                        # This task is entirely after the last long task we know about
+                        self.long_tasks.append([ms_start, ms_end])
+                    elif ms_end > last_end:
+                        # task extends beyond the previous end of the long tasks but overlaps
+                        del self.long_tasks[-1]
+                        if ms_start >= last_start:
+                            self.long_tasks.append([last_start, ms_end])
+                        else:
+                            self.long_tasks.append([ms_start, ms_end])
 
             if 'js' in timeline_event:
                 script = timeline_event['js']
@@ -573,7 +806,7 @@ class Trace():
             slice_usecs = self.cpu['slice_usecs']
             first_slice = int(float(start) / float(slice_usecs))
             last_slice = int(float(end) / float(slice_usecs))
-            for slice_number in xrange(first_slice, last_slice + 1):
+            for slice_number in range(first_slice, last_slice + 1):
                 slice_start = slice_number * slice_usecs
                 slice_end = slice_start + slice_usecs
                 used_start = max(slice_start, start)
@@ -618,7 +851,7 @@ class Trace():
                     self.cpu['slices'][thread]['total'][slice_number] = min(
                         1.0, max(0.0, 1.0 - available))
         except BaseException:
-            pass
+            logging.exception('Error adjusting timeline slice')
 
     ##########################################################################
     #   Blink Features
@@ -638,25 +871,25 @@ class Trace():
                     name = BLINK_FEATURES[id]
                 else:
                     name = 'Feature_{0}'.format(id)
-                if name not in self.feature_usage['Features']:
-                    self.feature_usage['Features'][name] = []
-                self.feature_usage['Features'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['Features']:
+                    self.feature_usage['Features'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['Features'][id]['firstUsed'].append(trace_event['ts'])
             elif trace_event['name'] == 'CSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
-                if name not in self.feature_usage['CSSFeatures']:
-                    self.feature_usage['CSSFeatures'][name] = []
-                self.feature_usage['CSSFeatures'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['CSSFeatures']:
+                    self.feature_usage['CSSFeatures'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['CSSFeatures'][id]['firstUsed'].append(trace_event['ts'])
             elif trace_event['name'] == 'AnimatedCSSFirstUsed':
                 if id in CSS_FEATURES:
                     name = CSS_FEATURES[id]
                 else:
                     name = 'CSSFeature_{0}'.format(id)
-                if name not in self.feature_usage['AnimatedCSSFeatures']:
-                    self.feature_usage['AnimatedCSSFeatures'][name] = []
-                self.feature_usage['AnimatedCSSFeatures'][name].append(trace_event['ts'])
+                if id not in self.feature_usage['AnimatedCSSFeatures']:
+                    self.feature_usage['AnimatedCSSFeatures'][id] = {'name': name, 'firstUsed': []}
+                self.feature_usage['AnimatedCSSFeatures'][id]['firstUsed'].append(trace_event['ts'])
     
     def post_process_feature_usage(self):
         out = None
@@ -664,63 +897,116 @@ class Trace():
             out = {}
             for category in self.feature_usage:
                 out[category] = {}
-                for name in self.feature_usage[category]:
+                for id in self.feature_usage[category]:
                     feature_time = None
-                    for ts in self.feature_usage[category][name]:
+                    for ts in self.feature_usage[category][id]['firstUsed']:
                         timestamp = float('{0:0.3f}'.format((ts - self.start_time) / 1000.0))
                         if timestamp > 0:
                             if feature_time is None or timestamp < feature_time:
                                 feature_time = timestamp
                     if feature_time is not None:
-                        out[category][name] = feature_time
+                        out[category][id] = {'name': self.feature_usage[category][id]['name'], 'firstUsed': feature_time}
         return out
 
     ##########################################################################
     #   Netlog
     ##########################################################################
     def ProcessNetlogEvent(self, trace_event):
-        if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event and \
-                'source_type' in trace_event['args']:
+        if 'args' in trace_event and 'id' in trace_event and 'name' in trace_event:
             try:
                 if isinstance(trace_event['id'], (str, unicode)):
                     trace_event['id'] = int(trace_event['id'], 16)
-                event_type = trace_event['args']['source_type']
-                if event_type == 'HOST_RESOLVER_IMPL_JOB' or \
-                        trace_event['name'].startswith('HOST_RESOLVER'):
-                    self.ProcessNetlogDnsEvent(trace_event)
-                elif event_type == 'CONNECT_JOB' or \
-                        event_type == 'SSL_CONNECT_JOB' or \
-                        event_type == 'TRANSPORT_CONNECT_JOB':
-                    self.ProcessNetlogConnectJobEvent(trace_event)
-                elif event_type == 'HTTP_STREAM_JOB':
-                    self.ProcessNetlogStreamJobEvent(trace_event)
-                elif event_type == 'HTTP2_SESSION':
-                    self.ProcessNetlogHttp2SessionEvent(trace_event)
-                elif event_type == 'QUIC_SESSION':
-                    self.ProcessNetlogQuicSessionEvent(trace_event)
-                elif event_type == 'SOCKET':
-                    self.ProcessNetlogSocketEvent(trace_event)
-                elif event_type == 'UDP_SOCKET':
-                    self.ProcessNetlogUdpSocketEvent(trace_event)
-                elif event_type == 'URL_REQUEST':
-                    self.ProcessNetlogUrlRequestEvent(trace_event)
+                event_type = None
+                name = trace_event['name']
+                if 'source_type' in trace_event['args']:
+                    event_type = trace_event['args']['source_type']
+                    if name not in self.netlog_event_types:
+                        self.netlog_event_types[name] = event_type
+                elif name in self.netlog_event_types:
+                    event_type = self.netlog_event_types[name]
+                if event_type is not None:
+                    if event_type == 'HOST_RESOLVER_IMPL_JOB' or \
+                            trace_event['name'].startswith('HOST_RESOLVER'):
+                        self.ProcessNetlogDnsEvent(trace_event)
+                    elif event_type == 'CONNECT_JOB' or \
+                            event_type == 'SSL_CONNECT_JOB' or \
+                            event_type == 'TRANSPORT_CONNECT_JOB':
+                        self.ProcessNetlogConnectJobEvent(trace_event)
+                    elif event_type == 'HTTP_STREAM_JOB':
+                        self.ProcessNetlogStreamJobEvent(trace_event)
+                    elif event_type == 'HTTP2_SESSION':
+                        self.ProcessNetlogHttp2SessionEvent(trace_event)
+                    elif event_type == 'QUIC_SESSION':
+                        self.ProcessNetlogQuicSessionEvent(trace_event)
+                    elif event_type == 'SOCKET':
+                        self.ProcessNetlogSocketEvent(trace_event)
+                    elif event_type == 'UDP_SOCKET':
+                        self.ProcessNetlogUdpSocketEvent(trace_event)
+                    elif event_type == 'URL_REQUEST':
+                        self.ProcessNetlogUrlRequestEvent(trace_event)
+                    elif event_type == 'DISK_CACHE_ENTRY':
+                        self.ProcessNetlogDiskCacheEvent(trace_event)
             except Exception:
-                pass
+                logging.exception('Error processing netlog event')
 
     def post_process_netlog_events(self):
         """Post-process the raw netlog events into request data"""
         if self.netlog_requests is not None:
             return self.netlog_requests
         requests = []
+        known_hosts = ['cache.pack.google.com', 'clients1.google.com', 'redirector.gvt1.com']
+        last_time = 0
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
                 request['fromNet'] = bool('start' in request)
+                if 'start' in request and request['start'] > last_time:
+                    last_time = request['start']
+                if 'end' in request and request['end'] > last_time:
+                    last_time = request['end']
+                # build a URL from the request headers if one wasn't explicitly provided
+                if 'url' not in request and 'request_headers' in request:
+                    scheme = None
+                    origin = None
+                    path = None
+                    if 'line' in request:
+                        match = re.search(r'^[^\s]+\s([^\s]+)', request['line'])
+                        if match:
+                            path = match.group(1)
+                    if 'group' in request:
+                        scheme = 'http'
+                        if request['group'].find('ssl/') >= 0:
+                            scheme = 'https'
+                    elif 'socket' in request and 'socket' in self.netlog and request['socket'] in self.netlog['socket']:
+                        socket = self.netlog['socket'][request['socket']]
+                        scheme = 'http'
+                        if 'certificates' in socket or 'ssl_start' in socket:
+                            scheme = 'https'
+                    for header in request['request_headers']:
+                        try:
+                            index = header.find(u':', 1)
+                            if index > 0:
+                                key = header[:index].strip(u': ').lower()
+                                value = header[index + 1:].strip(u': ')
+                                if key == u'scheme':
+                                    scheme = unicode(value)
+                                elif key == u'host':
+                                    origin = unicode(value)
+                                elif key == u'authority':
+                                    origin = unicode(value)
+                                elif key == u'path':
+                                    path = unicode(value)
+                        except Exception:
+                            logging.exception("Error generating url from request headers")
+                    if scheme and origin and path:
+                        request['url'] = scheme + u'://' + origin + path
                 if 'url' in request and not request['url'].startswith('http://127.0.0.1') and \
                         not request['url'].startswith('http://192.168.10.'):
+                    request_host = urlparse(request['url']).hostname
+                    if request_host not in known_hosts:
+                        known_hosts.append(request_host)
                     # Match orphaned request streams with their h2 sessions
                     if 'stream_id' in request and 'h2_session' not in request and 'url' in request:
-                        request_host = urlparse.urlparse(request['url']).hostname
                         for h2_session_id in self.netlog['h2_session']:
                             h2_session = self.netlog['h2_session'][h2_session_id]
                             if 'host' in h2_session:
@@ -750,7 +1036,7 @@ class Trace():
                             'h2_session' in request and \
                             request['h2_session'] in self.netlog['h2_session']:
                         h2_session = self.netlog['h2_session'][request['h2_session']]
-                        if 'socket' not in request and 'socket' in h2_session:
+                        if 'socket' in h2_session:
                             request['socket'] = h2_session['socket']
                         if 'stream_id' in request and \
                                 'stream' in h2_session and \
@@ -766,6 +1052,19 @@ class Trace():
                                 request['parent_stream_id'] = stream['parent_stream_id']
                             if 'weight' in stream:
                                 request['weight'] = stream['weight']
+                                if 'priority' not in request:
+                                    if request['weight'] >= 256:
+                                        request['priority'] = 'HIGHEST'
+                                    elif request['weight'] >= 220:
+                                        request['priority'] = 'MEDIUM'
+                                    elif request['weight'] >= 183:
+                                        request['priority'] = 'LOW'
+                                    elif request['weight'] >= 147:
+                                        request['priority'] = 'LOWEST'
+                                    else:
+                                        request['priority'] = 'IDLE'
+                                    if request['priority'] in self.PRIORITY_MAP:
+                                        request['priority'] = self.PRIORITY_MAP[request['priority']]
                             if 'first_byte' not in request and 'first_byte' in stream:
                                 request['first_byte'] = stream['first_byte']
                             if 'end' not in request and 'end' in stream:
@@ -775,6 +1074,35 @@ class Trace():
                                 request['chunks'] = stream['chunks']
                     if 'phantom' not in request and 'request_headers' in request:
                         requests.append(request)
+            # See if there were any connections for hosts that we didn't know abot that timed out
+            if 'urls' in self.netlog:
+                failed_hosts = {}
+                if 'stream_job' in self.netlog:
+                    for stream_job_id in self.netlog['stream_job']:
+                        stream_job = self.netlog['stream_job'][stream_job_id]
+                        if 'group' in stream_job and 'socket_start' in stream_job and 'socket' not in stream_job:
+                            matches = re.match(r'^.*/([^:]+)\:\d+$', stream_job['group'])
+                            if matches:
+                                group_hostname = matches.group(1)
+                                if group_hostname not in known_hosts and group_hostname not in failed_hosts:
+                                    failed_hosts[group_hostname] = {'start': stream_job['socket_start']}
+                                    if 'socket_end' in stream_job:
+                                        failed_hosts[group_hostname]['end'] = stream_job['socket_end']
+                                    else:
+                                        failed_hosts[group_hostname]['end'] = max(stream_job['socket_start'], last_time)
+                if failed_hosts:
+                    for url in self.netlog['urls']:
+                        host = urlparse(url).hostname
+                        if host in failed_hosts:
+                            request = {'url': url,
+                                       'created': failed_hosts[host]['start'],
+                                       'start': failed_hosts[host]['start'],
+                                       'end': failed_hosts[host]['end'],
+                                       'connect_start': failed_hosts[host]['start'],
+                                       'connect_end': failed_hosts[host]['end'],
+                                       'fromNet': True,
+                                       'status': 12029}
+                            requests.append(request)
             if len(requests):
                 # Sort the requests by the start time
                 requests.sort(key=lambda x: x['start'] if 'start' in x else x['created'])
@@ -840,7 +1168,7 @@ class Trace():
                     # Go through the requests and assign the DNS lookups as needed
                     for request in requests:
                         if 'connect_start' in request:
-                            hostname = urlparse.urlparse(request['url']).hostname
+                            hostname = urlparse(request['url']).hostname
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
@@ -855,6 +1183,24 @@ class Trace():
                                                 elapsed = dns['elapsed']
                                                 request['dns_start'] = dns['start']
                                                 request['dns_end'] = dns['end']
+                    # Make another pass for any DNS lookups that didn't establish a connection (HTTP/2 coalescing)
+                    for request in requests:
+                        hostname = urlparse(request['url']).hostname
+                        if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
+                            dns = dns_lookups[hostname]
+                            dns['claimed'] = True
+                            # Find the longest DNS time that completed before the request start
+                            if 'times' in dns_lookups[hostname]:
+                                elapsed = None
+                                for dns in dns_lookups[hostname]['times']:
+                                    dns['end'] = min(dns['end'], request['start'])
+                                    if dns['end'] >= dns['start']:
+                                        dns['elapsed'] = dns['end'] - dns['start']
+                                        if elapsed is None or dns['elapsed'] > elapsed:
+                                            elapsed = dns['elapsed']
+                                            request['dns_start'] = dns['start']
+                                            request['dns_end'] = dns['end']
+
                 # Find the start timestamp if we didn't have one already
                 times = ['dns_start', 'dns_end',
                          'connect_start', 'connect_end',
@@ -862,7 +1208,7 @@ class Trace():
                          'start', 'created', 'first_byte', 'end']
                 for request in requests:
                     for time_name in times:
-                        if time_name in request:
+                        if time_name in request and self.marked_start_time is None:
                             if self.start_time is None or request[time_name] < self.start_time:
                                 self.start_time = request[time_name]
                 # Go through and adjust all of the times to be relative in ms
@@ -890,10 +1236,14 @@ class Trace():
             self.netlog['connect_job'] = {}
         request_id = trace_event['id']
         if request_id not in self.netlog['connect_job']:
-            self.netlog['connect_job'][request_id] = {}
+            self.netlog['connect_job'][request_id] = {'created': trace_event['ts']}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['connect_job'][request_id]
         name = trace_event['name']
+        if name == 'TRANSPORT_CONNECT_JOB_CONNECT' and trace_event['ph'] == 'b':
+            entry['connect_start'] = trace_event['ts']
+        if name == 'TRANSPORT_CONNECT_JOB_CONNECT' and trace_event['ph'] == 'e':
+            entry['connect_end'] = trace_event['ts']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'CONNECT_JOB_SET_SOCKET':
                 socket_id = params['source_dependency']['id']
@@ -905,6 +1255,8 @@ class Trace():
                         self.netlog['socket'][socket_id]['dns'] = entry['dns']
         if 'group_name' in params:
             entry['group'] = params['group_name']
+        if 'group_id' in params:
+            entry['group'] = params['group_id']
 
     def ProcessNetlogStreamJobEvent(self, trace_event):
         """Strem jobs leank requests to sockets"""
@@ -912,21 +1264,36 @@ class Trace():
             self.netlog['stream_job'] = {}
         request_id = trace_event['id']
         if request_id not in self.netlog['stream_job']:
-            self.netlog['stream_job'][request_id] = {}
+            self.netlog['stream_job'][request_id] = {'created': trace_event['ts']}
         params = trace_event['args']['params'] if 'params' in trace_event['args'] else {}
         entry = self.netlog['stream_job'][request_id]
         name = trace_event['name']
+        if 'group_name' in params:
+            entry['group'] = params['group_name']
+        if 'group_id' in params:
+            entry['group'] = params['group_id']
+        if name == 'HTTP_STREAM_REQUEST_STARTED_JOB':
+            entry['start'] = trace_event['ts']
+        if name == 'TCP_CLIENT_SOCKET_POOL_REQUESTED_SOCKET':
+            entry['socket_start'] = trace_event['ts']
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             if name == 'SOCKET_POOL_BOUND_TO_SOCKET':
                 socket_id = params['source_dependency']['id']
+                entry['socket_end'] = trace_event['ts']
                 entry['socket'] = socket_id
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
                     self.netlog['urlrequest'][entry['urlrequest']]['socket'] = socket_id
+                    if 'group' in entry:
+                        self.netlog['urlrequest'][entry['urlrequest']]['group'] = entry['group']
             if name == 'HTTP_STREAM_JOB_BOUND_TO_REQUEST':
                 url_request_id = params['source_dependency']['id']
                 entry['url_request'] = url_request_id
+                if 'socket_end' not in entry:
+                    entry['socket_end'] = trace_event['ts']
                 if url_request_id in self.netlog['url_request']:
                     url_request = self.netlog['url_request'][url_request_id]
+                    if 'group' in entry:
+                        url_request['group'] = entry['group']
                     if 'socket' in entry:
                         url_request['socket'] = entry['socket']
                     if 'h2_session' in entry:
@@ -936,6 +1303,8 @@ class Trace():
                     name == 'HTTP2_SESSION_POOL_FOUND_EXISTING_SESSION_FROM_IP_POOL':
                 h2_session_id = params['source_dependency']['id']
                 entry['h2_session'] = h2_session_id
+                if 'socket_end' not in entry:
+                    entry['socket_end'] = trace_event['ts']
                 if h2_session_id in self.netlog['h2_session'] and 'socket' in self.netlog['h2_session'][h2_session_id]:
                     entry['socket'] = self.netlog['h2_session'][h2_session_id]['socket']
                 if 'url_request' in entry and entry['urlrequest'] in self.netlog['urlrequest']:
@@ -998,13 +1367,21 @@ class Trace():
                     stream['response_headers'] = params['headers']
             if name == 'HTTP2_STREAM_ADOPTED_PUSH_STREAM' and 'url' in params and \
                     'url_request' in self.netlog:
-                # Find the phantom request with the matching url and mark it
+                # Clone the fake urlrequest entry to the real one and delete the fake entry
+                old_request = stream['url_request'] if 'url_request' in stream else None
                 url = params['url'].split('#', 1)[0]
                 for request_id in self.netlog['url_request']:
                     request = self.netlog['url_request'][request_id]
                     if 'url' in request and url == request['url'] and 'start' not in request:
-                        request['phantom'] = True
+                        new_request = request_id
                         break
+                if old_request and new_request and old_request != new_request and old_request in self.netlog['url_request'] and new_request in self.netlog['url_request']:
+                    old = self.netlog['url_request'][old_request]
+                    new = self.netlog['url_request'][new_request]
+                    for key in old:
+                        new[key] = old[key]
+                    stream['url_request'] = new_request
+                    del self.netlog['url_request'][old_request]
         if name == 'HTTP2_SESSION_RECV_PUSH_PROMISE' and 'promised_stream_id' in params:
             # Create a fake request to match the push
             if 'url_request' not in self.netlog:
@@ -1154,10 +1531,13 @@ class Trace():
             entry['connect_start'] = trace_event['ts']
         if name == 'TCP_CONNECT_ATTEMPT' and trace_event['ph'] == 'e':
             entry['connect_end'] = trace_event['ts']
-        if 'ssl_start' not in entry and name == 'SSL_CONNECT' and trace_event['ph'] == 'b':
-            entry['ssl_start'] = trace_event['ts']
-        if name == 'SSL_CONNECT' and trace_event['ph'] == 'e':
-            entry['ssl_end'] = trace_event['ts']
+        if name == 'SSL_CONNECT':
+            if 'connect_end' not in entry:
+                entry['connect_end'] = trace_event['ts']
+            if 'ssl_start' not in entry and trace_event['ph'] == 'b':
+                entry['ssl_start'] = trace_event['ts']
+            if trace_event['ph'] == 'e':
+                entry['ssl_end'] = trace_event['ts']
             if 'version' in params:
                 entry['tls_version'] = params['version']
             if 'is_resumed' in params:
@@ -1167,6 +1547,8 @@ class Trace():
             if 'cipher_suite' in params:
                 entry['tls_cipher_suite'] = params['cipher_suite']
         if name == 'SOCKET_BYTES_SENT' and 'byte_count' in params:
+            if 'connect_end' not in entry:
+                entry['connect_end'] = trace_event['ts']
             entry['bytes_out'] += params['byte_count']
             entry['chunks_out'].append({'ts': trace_event['ts'], 'bytes': params['byte_count']})
         if name == 'SOCKET_BYTES_RECEIVED' and 'byte_count' in params:
@@ -1215,16 +1597,23 @@ class Trace():
         entry = self.netlog['url_request'][request_id]
         name = trace_event['name']
         if 'priority' in params:
+            if params['priority'] in self.PRIORITY_MAP:
+                params['priority'] = self.PRIORITY_MAP[params['priority']]
             entry['priority'] = params['priority']
+            if 'initial_priority' not in entry:
+                entry['initial_priority'] = params['priority']
         if 'method' in params:
             entry['method'] = params['method']
         if 'url' in params:
             entry['url'] = params['url'].split('#', 1)[0]
-        if 'start' not in entry and name == 'HTTP_TRANSACTION_SEND_REQUEST' and \
-                trace_event['ph'] == 'e':
+        if 'start' not in entry and name == 'HTTP_TRANSACTION_SEND_REQUEST':
             entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_SEND_REQUEST_HEADERS':
             entry['request_headers'] = params['headers']
+            if 'line' in params:
+                entry['line'] = params['line']
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_HTTP2_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -1233,6 +1622,10 @@ class Trace():
             else:
                 entry['request_headers'] = params['headers']
             entry['protocol'] = 'HTTP/2'
+            if 'line' in params:
+                entry['line'] = params['line']
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_QUIC_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -1240,7 +1633,11 @@ class Trace():
                     entry['request_headers'].append('{0}: {1}'.format(key, params['headers'][key]))
             else:
                 entry['request_headers'] = params['headers']
+            if 'line' in params:
+                entry['line'] = params['line']
             entry['protocol'] = 'QUIC'
+            if 'start' not in entry:
+                entry['start'] = trace_event['ts']
         if 'headers' in params and name == 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS':
             entry['response_headers'] = params['headers']
             if 'first_byte' not in entry:
@@ -1266,6 +1663,15 @@ class Trace():
             self.netlog['next_request_id'] += 1
             self.netlog['url_request'][new_id] = entry
             del self.netlog['url_request'][request_id]
+    
+    def ProcessNetlogDiskCacheEvent(self, trace_event):
+        """Disk cache events"""
+        if 'args' in trace_event and 'params' in trace_event['args'] and 'key' in trace_event['args']['params']:
+            url = trace_event['args']['params']['key']
+            if 'urls' not in self.netlog:
+                self.netlog['urls'] = {}
+            if url not in self.netlog['urls']:
+                self.netlog['urls'][url] = {'start': trace_event['ts']}
 
 
     #######################################################################
@@ -1308,8 +1714,7 @@ class Trace():
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["count"] += int(trace_event["args"]["runtime-call-stats"][stat][0])
                                 self.v8stats['threads'][thread][name]['breakdown'][stat]["dur"] += float(trace_event["args"]["runtime-call-stats"][stat][1]) / 1000.0
         except BaseException:
-            pass
-        pass
+            logging.exception('Error processing V8 event')
 
 
 ##########################################################################
@@ -1332,9 +1737,11 @@ def main():
                         help="Output blink feature usage file.")
     parser.add_argument('-i', '--interactive',
                         help="Output list of interactive times.")
+    parser.add_argument('-x', '--longtasks', help="Output list of long main thread task times.")
     parser.add_argument('-n', '--netlog', help="Output netlog details file.")
+    parser.add_argument('-r', '--requests', help="Output timeline requests file.")
     parser.add_argument('-s', '--stats', help="Output v8 Call stats file.")
-    options, unknown = parser.parse_known_args()
+    options, _ = parser.parse_known_args()
 
     # Set up logging
     log_level = logging.CRITICAL
@@ -1373,9 +1780,15 @@ def main():
 
     if options.interactive:
         trace.WriteInteractive(options.interactive)
+    
+    if options.longtasks:
+        trace.WriteLongTasks(options.longtasks)
 
     if options.netlog:
         trace.WriteNetlog(options.netlog)
+    
+    if options.requests:
+        trace.WriteTimelineRequests(options.requests)
 
     if options.stats:
         trace.WriteV8Stats(options.stats)
@@ -1386,7 +1799,7 @@ def main():
 
 
 ##########################################################################
-#   Blink feature names from https://cs.chromium.org/chromium/src/third_party/blink/public/mojom/web_feature/web_feature.mojom
+#   Blink feature names from https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/public/mojom/web_feature/web_feature.mojom
 ##########################################################################
 BLINK_FEATURES = {
     "0": "PageDestruction",
@@ -4083,11 +4496,905 @@ BLINK_FEATURES = {
     "3056": "OriginCleanImageBitmapSerialization",
     "3057": "NonOriginCleanImageBitmapSerialization",
     "3058": "OriginCleanImageBitmapTransfer",
-    "3059": "NonOriginCleanImageBitmapTransfer"
+    "3059": "NonOriginCleanImageBitmapTransfer",
+    "3060": "CompressionStreamConstructor",
+    "3061": "DecompressionStreamConstructor",
+    "3062": "V8RTCRtpReceiver_PlayoutDelayHint_AttributeGetter",
+    "3063": "V8RTCRtpReceiver_PlayoutDelayHint_AttributeSetter",
+    "3064": "V8RegExpExecCalledOnSlowRegExp",
+    "3065": "V8RegExpReplaceCalledOnSlowRegExp",
+    "3066": "HasMarkerPseudoElement",
+    "3067": "WindowMove",
+    "3068": "WindowResize",
+    "3069": "MovedOrResizedPopup",
+    "3070": "MovedOrResizedPopup2sAfterCreation",
+    "3071": "DOMWindowOpenPositioningFeatures",
+    "3072": "MouseEventScreenX",
+    "3073": "MouseEventScreenY",
+    "3074": "CredentialManagerIsUserVerifyingPlatformAuthenticatorAvailable",
+    "3075": "ObsoleteWebrtcTlsVersion",
+    "3076": "UpgradeInsecureRequestsUpgradedRequestBlockable",
+    "3077": "UpgradeInsecureRequestsUpgradedRequestOptionallyBlockable",
+    "3078": "UpgradeInsecureRequestsUpgradedRequestWebsocket",
+    "3079": "UpgradeInsecureRequestsUpgradedRequestForm",
+    "3080": "UpgradeInsecureRequestsUpgradedRequestUnknown",
+    "3081": "HasGlyphRelativeUnits",
+    "3082": "CountQueuingStrategyConstructor",
+    "3083": "ByteLengthQueuingStrategyConstructor",
+    "3084": "ClassicDedicatedWorker",
+    "3085": "ModuleDedicatedWorker",
+    "3086": "FetchBodyStreamInServiceWorker",
+    "3087": "FetchBodyStreamOutsideServiceWorker",
+    "3088": "GetComputedStyleOutsideFlatTree",
+    "3089": "ARIADescriptionAttribute",
+    "3090": "StrictMimeTypeChecksWouldBlockWorker",
+    "3091": "ResourceTimingTaintedOriginFlagFail",
+    "3092": "RegisterProtocolHandlerSameOriginAsTop",
+    "3093": "RegisterProtocolHandlerCrossOriginSubframe",
+    "3094": "WebNfcNdefReaderScan",
+    "3095": "WebNfcNdefWriterWrite",
+    "3096": "HTMLPortalElement",
+    "3097": "V8HTMLPortalElement_Activate_Method",
+    "3098": "V8HTMLPortalElement_PostMessage_Method",
+    "3099": "V8Window_PortalHost_AttributeGetter",
+    "3100": "V8PortalHost_PostMessage_Method",
+    "3101": "V8PortalActivateEvent_Data_AttributeGetter",
+    "3102": "V8PortalActivateEvent_AdoptPredecessor_Method",
+    "3103": "LinkRelPrefetchForSignedExchanges",
+    "3104": "MessageEventSharedArrayBufferSameOrigin",
+    "3105": "MessageEventSharedArrayBufferSameAgentCluster",
+    "3106": "MessageEventSharedArrayBufferDifferentAgentCluster",
+    "3107": "CacheStorageCodeCacheHint",
+    "3108": "V8Metadata_ModificationTime_AttributeGetter",
+    "3109": "V8RTCLegacyStatsReport_Timestamp_AttributeGetter",
+    "3110": "InputElementValueAsDateGetter",
+    "3111": "InputElementValueAsDateSetter",
+    "3112": "HTMLMetaElementReferrerPolicy",
+    "3113": "NonWebbyMixedContent",
+    "3114": "V8SharedArrayBufferConstructed",
+    "3115": "ScrollSnapCausesScrollOnInitialLayout",
+    "3116": "ClientHintsUAMobile",
+    "3117": "V8VideoPlaybackQuality_CorruptedVideoFrames_AttributeGetter",
+    "3118": "LongTaskBufferFull",
+    "3119": "HTMLMetaElementMonetization",
+    "3120": "HTMLLinkElementMonetization",
+    "3121": "InputTypeCheckboxRenderedNonSquare",
+    "3122": "InputTypeRadioRenderedNonSquare",
+    "3123": "WebkitBoxPackJustifyDoesSomething",
+    "3124": "WebkitBoxPackCenterDoesSomething",
+    "3125": "WebkitBoxPackEndDoesSomething",
+    "3126": "V8KeyframeEffect_Constructor",
+    "3127": "WebNfcAPI",
+    "3128": "HostCandidateAttributeGetter",
+    "3129": "CSPWithReasonableObjectRestrictions",
+    "3130": "CSPWithReasonableBaseRestrictions",
+    "3131": "CSPWithReasonableScriptRestrictions",
+    "3132": "CSPWithReasonableRestrictions",
+    "3133": "CSPROWithReasonableObjectRestrictions",
+    "3134": "CSPROWithReasonableBaseRestrictions",
+    "3135": "CSPROWithReasonableScriptRestrictions",
+    "3136": "CSPROWithReasonableRestrictions",
+    "3137": "CSPWithBetterThanReasonableRestrictions",
+    "3138": "CSPROWithBetterThanReasonableRestrictions",
+    "3139": "MeasureMemory",
+    "3140": "V8Animation_ReplaceState_AttributeGetter",
+    "3141": "V8Animation_Persist_Method",
+    "3142": "TaskControllerConstructor",
+    "3143": "TaskControllerSetPriority",
+    "3144": "TaskSignalPriority",
+    "3145": "SchedulerPostTask",
+    "3146": "V8Animation_Onremove_AttributeGetter",
+    "3147": "V8Animation_Onremove_AttributeSetter",
+    "3148": "ClassicSharedWorker",
+    "3149": "ModuleSharedWorker",
+    "3150": "V8Animation_CommitStyles_Method",
+    "3151": "SameOriginIframeWindowAlert",
+    "3152": "SameOriginIframeWindowConfirm",
+    "3153": "SameOriginIframeWindowPrompt",
+    "3154": "SameOriginIframeWindowPrint",
+    "3155": "LargeStickyAd",
+    "3156": "OverlayInterstitialAd",
+    "3157": "CSSComparisonFunctions",
+    "3158": "FeaturePolicyProposalWouldChangeBehaviour",
+    "3159": "RTCLocalSdpModificationSimulcast",
+    "3160": "TrustedTypesEnabledEnforcing",
+    "3161": "TrustedTypesEnabledReportOnly",
+    "3162": "TrustedTypesAllowDuplicates",
+    "3163": "V8ArrayPrototypeHasElements",
+    "3164": "V8ObjectPrototypeHasElements",
+    "3165": "DisallowDocumentAccess",
+    "3166": "XRSessionRequestHitTestSource",
+    "3167": "XRSessionRequestHitTestSourceForTransientInput",
+    "3168": "XRDOMOverlay",
+    "3169": "CssStyleSheetReplaceWithImport",
+    "3170": "CryptoAlgorithmEd25519",
+    "3171": "CryptoAlgorithmX25519",
+    "3172": "DisplayNames",
+    "3173": "NumberFormatStyleUnit",
+    "3174": "DateTimeFormatRange",
+    "3175": "DateTimeFormatDateTimeStyle",
+    "3176": "BreakIteratorTypeWord",
+    "3177": "BreakIteratorTypeLine",
+    "3178": "V8FileSystemDirectoryHandle_Resolve_Method",
+    "3179": "V8FileSystemHandle_IsSameEntry_Method",
+    "3180": "V8RTCRtpSender_CreateEncodedAudioStreams_Method",
+    "3181": "V8RTCRtpSender_CreateEncodedVideoStreams_Method",
+    "3182": "V8RTCRtpReceiver_CreateEncodedAudioStreams_Method",
+    "3183": "V8RTCRtpReceiver_CreateEncodedVideoStreams_Method",
+    "3184": "QuicTransport",
+    "3185": "QuicTransportStreamApis",
+    "3186": "QuicTransportDatagramApis",
+    "3187": "V8Document_GetAnimations_Method",
+    "3188": "V8ShadowRoot_GetAnimations_Method",
+    "3189": "ClientHintsUAFullVersion",
+    "3190": "SchedulerCurrentTaskSignal",
+    "3191": "ThirdPartyFileSystem",
+    "3192": "ThirdPartyIndexedDb",
+    "3193": "ThirdPartyCacheStorage",
+    "3194": "ThirdPartyLocalStorage",
+    "3195": "ThirdPartySessionStorage",
+    "3196": "DeclarativeShadowRoot",
+    "3197": "CrossOriginOpenerPolicySameOrigin",
+    "3198": "CrossOriginOpenerPolicySameOriginAllowPopups",
+    "3199": "CrossOriginEmbedderPolicyRequireCorp",
+    "3200": "CoopAndCoepIsolated",
+    "3201": "WrongBaselineOfButtonElement",
+    "3202": "V8Document_HasTrustToken_Method",
+    "3203": "ForceLoadAtTop",
+    "3204": "LegacyLayoutByButton",
+    "3205": "LegacyLayoutByDeprecatedFlexBox",
+    "3206": "LegacyLayoutByDetailsMarker",
+    "3207": "LegacyLayoutByEditing",
+    "3208": "LegacyLayoutByFieldSet",
+    "3209": "LegacyLayoutByFileUploadControl",
+    "3210": "LegacyLayoutByFlexBox",
+    "3211": "LegacyLayoutByFrameSet",
+    "3212": "LegacyLayoutByGrid",
+    "3213": "LegacyLayoutByMenuList",
+    "3214": "LegacyLayoutByMultiCol",
+    "3215": "LegacyLayoutByPrinting",
+    "3216": "LegacyLayoutByRuby",
+    "3217": "LegacyLayoutBySVG",
+    "3218": "LegacyLayoutBySlider",
+    "3219": "LegacyLayoutByTable",
+    "3220": "LegacyLayoutByTextCombine",
+    "3221": "LegacyLayoutByTextControl",
+    "3222": "LegacyLayoutByVTTCue",
+    "3223": "LegacyLayoutByWebkitBoxWithoutVerticalLineClamp",
+    "3224": "LegacyLayoutByTableFlexGridBlockInNGFragmentationContext",
+    "3225": "DocumentPolicyHeader",
+    "3226": "DocumentPolicyReportOnlyHeader",
+    "3227": "RequireDocumentPolicyHeader",
+    "3228": "DocumentPolicyIframePolicyAttribute",
+    "3229": "DocumentPolicyCausedPageUnload",
+    "3230": "RequiredDocumentPolicy",
+    "3231": "PerformanceObserverEntryTypesAndBuffered",
+    "3232": "PerformanceObserverTypeError",
+    "3233": "ImageCaptureWhiteBalanceMode",
+    "3234": "ImageCaptureExposureMode",
+    "3235": "ImageCaptureFocusMode",
+    "3236": "ImageCapturePointsOfInterest",
+    "3237": "ImageCaptureExposureCompensation",
+    "3238": "ImageCaptureExposureTime",
+    "3239": "ImageCaptureColorTemperature",
+    "3240": "ImageCaptureIso",
+    "3241": "ImageCaptureBrightness",
+    "3242": "ImageCaptureContrast",
+    "3243": "ImageCaptureSaturation",
+    "3244": "ImageCaptureSharpness",
+    "3245": "ImageCaptureFocusDistance",
+    "3246": "ImageCapturePan",
+    "3247": "ImageCaptureTilt",
+    "3248": "ImageCaptureZoom",
+    "3249": "ImageCaptureTorch",
+    "3250": "XRFrameCreateAnchor",
+    "3251": "XRHitTestResultCreateAnchor",
+    "3252": "CSSKeywordRevert",
+    "3253": "OverlayPopupAd",
+    "3254": "EventTimingFirstInputExplicitlyRequested",
+    "3255": "CustomScrollbarPercentThickness",
+    "3256": "CustomScrollbarPartPercentLength",
+    "3257": "V8InvalidatedArrayBufferDetachingProtector",
+    "3258": "V8InvalidatedArrayConstructorProtector",
+    "3259": "V8InvalidatedArrayIteratorLookupChainProtector",
+    "3260": "V8InvalidatedArraySpeciesLookupChainProtector",
+    "3261": "V8InvalidatedIsConcatSpreadableLookupChainProtector",
+    "3262": "V8InvalidatedMapIteratorLookupChainProtector",
+    "3263": "V8InvalidatedNoElementsProtector",
+    "3264": "V8InvalidatedPromiseHookProtector",
+    "3265": "V8InvalidatedPromiseResolveLookupChainProtector",
+    "3266": "V8InvalidatedPromiseSpeciesLookupChainProtector",
+    "3267": "V8InvalidatedPromiseThenLookupChainProtector",
+    "3268": "V8InvalidatedRegExpSpeciesLookupChainProtector",
+    "3269": "V8InvalidatedSetIteratorLookupChainProtector",
+    "3270": "V8InvalidatedStringIteratorLookupChainProtector",
+    "3271": "V8InvalidatedStringLengthOverflowLookupChainProtector",
+    "3272": "V8InvalidatedTypedArraySpeciesLookupChainProtector",
+    "3273": "ClientHintsUAPlatformVersion",
+    "3274": "IFrameCSPAttribute",
+    "3275": "NavigatorCookieEnabled",
+    "3276": "TrustTokenFetch",
+    "3277": "TrustTokenXhr",
+    "3278": "TrustTokenIframe",
+    "3279": "TrustedTypesPolicyCreated",
+    "3280": "V8HTMLVideoElement_RequestVideoFrameCallback_Method",
+    "3281": "V8HTMLVideoElement_CancelVideoFrameCallback_Method",
+    "3282": "RubyElementWithDisplayBlock",
+    "3283": "LocationFragmentDirectiveAccessed",
+    "3284": "CanvasRenderingContext",
+    "3285": "SchemefulSameSiteContextDowngrade",
+    "3286": "OriginIsolationHeader",
+    "3287": "V8WasmSimdOpcodes",
+    "3288": "GridRowGapPercent",
+    "3289": "GridRowGapPercentIndefinite",
+    "3290": "FlexRowGapPercent",
+    "3291": "FlexRowGapPercentIndefinite",
+    "3292": "V8RTCRtpSender_CreateEncodedStreams_Method",
+    "3293": "V8RTCRtpReceiver_CreateEncodedStreams_Method",
+    "3294": "ForceEncodedAudioInsertableStreams",
+    "3295": "ForceEncodedVideoInsertableStreams",
+    "3296": "TransformStyleContainingBlockComputedUsedMismatch",
+    "3297": "AdditionalGroupingPropertiesForCompat",
+    "3298": "PopupDoesNotExceedOwnerWindowBounds",
+    "3299": "PopupExceedsOwnerWindowBounds",
+    "3300": "PopupExceedsOwnerWindowBoundsForIframe",
+    "3301": "PopupGestureTapExceedsOwnerWindowBounds",
+    "3302": "PopupMouseDownExceedsOwnerWindowBounds",
+    "3303": "PopupMouseWheelExceedsOwnerWindowBounds",
+    "3304": "V8VarRedeclaredCatchBinding",
+    "3305": "WebBluetoothRemoteCharacteristicWriteValueWithResponse",
+    "3306": "WebBluetoothRemoteCharacteristicWriteValueWithoutResponse",
+    "3307": "FlexGapSpecified",
+    "3308": "FlexGapPositive",
+    "3309": "PluginInstanceAccessSuccessful",
+    "3310": "StorageAccessAPI_HasStorageAccess_Method",
+    "3311": "StorageAccessAPI_requestStorageAccess_Method",
+    "3312": "WebBluetoothWatchAdvertisements",
+    "3313": "RubyTextWithNonDefaultTextAlign",
+    "3314": "HTMLMetaElementReferrerPolicyOutsideHead",
+    "3315": "HTMLMetaElementReferrerPolicyMultipleTokens",
+    "3316": "FetchAPINonGetOrHeadOpaqueResponse",
+    "3317": "FetchAPINonGetOrHeadOpaqueResponseWithRedirect",
+    "3318": "DynamicImportModuleScriptRelativeClassicSameOrigin",
+    "3319": "DynamicImportModuleScriptRelativeClassicCrossOrigin",
+    "3320": "V8WasmBulkMemory",
+    "3321": "V8WasmRefTypes",
+    "3322": "V8WasmMultiValue",
+    "3323": "HiddenBackfaceWithPossible3D",
+    "3324": "HiddenBackfaceWithPreserve3D",
+    "3325": "CSSAtRuleScrollTimeline",
+    "3326": "FetchUploadStreaming",
+    "3327": "WebkitLineClampWithoutWebkitBox",
+    "3328": "WebBluetoothGetDevices",
+    "3329": "DialogWithNonZeroScrollOffset",
+    "3330": "DialogHeightLargerThanViewport",
+    "3331": "OverlayPopup",
+    "3332": "ContentVisibilityAuto",
+    "3333": "ContentVisibilityHidden",
+    "3334": "ContentVisibilityHiddenMatchable",
+    "3335": "InlineOverflowAutoWithInlineEndPadding",
+    "3336": "InlineOverflowScrollWithInlineEndPadding",
+    "3337": "CSSSelectorPseudoWebKitDetailsMarker",
+    "3338": "SerialPortGetInfo",
+    "3339": "FileSystemPickerMethod",
+    "3340": "V8Window_ShowOpenFilePicker_Method",
+    "3341": "V8Window_ShowSaveFilePicker_Method",
+    "3342": "V8Window_ShowDirectoryPicker_Method",
+    "3343": "V8Window_GetOriginPrivateDirectory_Method",
+    "3344": "RTCConstraintEnableRtpDataChannelsTrue",
+    "3345": "RTCConstraintEnableRtpDataChannelsFalse",
+    "3346": "NativeFileSystemDragAndDrop",
+    "3347": "RTCAdaptivePtime",
+    "3348": "HTMLMetaElementReferrerPolicyMultipleTokensAffectingRequest",
+    "3349": "NavigationTimingL2",
+    "3350": "ResourceTiming",
+    "3351": "V8PointerEvent_AzimuthAngle_AttributeGetter",
+    "3352": "V8PointerEvent_AltitudeAngle_AttributeGetter",
+    "3353": "CrossBrowsingContextGroupMainFrameNulledNonEmptyNameAccessed",
+    "3354": "PositionSticky",
+    "3355": "CommaSeparatorInAllowAttribute",
+    "3359": "MainFrameCSPViaHTTP",
+    "3360": "MainFrameCSPViaMeta",
+    "3361": "MainFrameCSPViaOriginPolicy",
+    "3362": "HtmlClipboardApiRead",
+    "3363": "HtmlClipboardApiWrite",
+    "3364": "CSSSystemColorComputeToSelf",
+    "3365": "ConversionAPIAll",
+    "3366": "ImpressionRegistration",
+    "3367": "ConversionRegistration",
+    "3368": "WebSharePolicyAllow",
+    "3369": "WebSharePolicyDisallow",
+    "3370": "FormAssociatedCustomElement",
+    "3371": "WindowClosed",
+    "3372": "WrongBaselineOfMultiLineButton",
+    "3373": "WrongBaselineOfEmptyLineButton",
+    "3374": "V8RTCRtpTransceiver_Stopped_AttributeGetter",
+    "3375": "V8RTCRtpTransceiver_Stop_Method",
+    "3376": "SecurePaymentConfirmation",
+    "3377": "CSSInvalidVariableUnset",
+    "3378": "ElementInternalsShadowRoot",
+    "3379": "AnyPiiFieldDetected_PredictedTypeMatch",
+    "3380": "EmailFieldDetected_PredictedTypeMatch",
+    "3381": "PhoneFieldDetected_PredictedTypeMatch",
+    "3382": "EmailFieldDetected_PatternMatch",
+    "3383": "LastLetterSpacingAffectsRendering",
+    "3384": "V8FontMetadata_GetTables_Method",
+    "3385": "V8FontMetadata_Blob_Method",
+    "3386": "V8FontManager_Query_Method",
+    "3387": "AudioContextBaseLatency",
+    "3388": "V8Window_GetScreens_Method",
+    "3389": "V8Window_IsMultiScreen_Method",
+    "3390": "V8Window_Onscreenschange_AttributeGetter",
+    "3391": "V8Window_Onscreenschange_AttributeSetter",
+    "3392": "DOMWindowOpenPositioningFeaturesCrossScreen",
+    "3393": "DOMWindowSetWindowRectCrossScreen",
+    "3394": "FullscreenCrossScreen",
+    "3395": "BatterySavingsMeta",
+    "3396": "DigitalGoodsGetDigitalGoodsService",
+    "3397": "DigitalGoodsGetDetails",
+    "3398": "DigitalGoodsAcknowledge",
+    "3399": "MediaRecorder_MimeType",
+    "3400": "MediaRecorder_VideoBitsPerSecond",
+    "3401": "MediaRecorder_AudioBitsPerSecond",
+    "3402": "OBSOLETE_BluetoothRemoteGATTCharacteristic_Uuid",
+    "3403": "OBSOLETE_BluetoothRemoteGATTDescriptor_Uuid",
+    "3404": "OBSOLETE_BluetoothRemoteGATTService_Uuid",
+    "3405": "GPUAdapter_Name",
+    "3406": "WindowScreenInternal",
+    "3407": "WindowScreenPrimary",
+    "3408": "ThirdPartyCookieRead",
+    "3409": "ThirdPartyCookieWrite",
+    "3410": "RTCLegacyRtpDataChannelNegotiated",
+    "3411": "CrossSitePostMessage",
+    "3412": "SchemelesslySameSitePostMessage",
+    "3413": "SchemefulSameSitePostMessage",
+    "3414": "UnspecifiedTargetOriginPostMessage",
+    "3415": "SchemelesslySameSitePostMessageSecureToInsecure",
+    "3416": "SchemelesslySameSitePostMessageInsecureToSecure",
+    "3417": "OBSOLETE_BCPBroadcast",
+    "3418": "OBSOLETE_BCPRead",
+    "3419": "OBSOLETE_BCPWriteWithoutResponse",
+    "3420": "OBSOLETE_BCPWrite",
+    "3421": "OBSOLETE_BCPNotify",
+    "3422": "OBSOLETE_BCPIndicate",
+    "3423": "OBSOLETE_BCPAuthenticatedSignedWrites",
+    "3424": "OBSOLETE_BCPReliableWrite",
+    "3425": "OBSOLETE_BCPWritableAuxiliaries",
+    "3426": "TextAlignSpecifiedToLegend",
+    "3427": "V8Document_FragmentDirective_AttributeGetter",
+    "3428": "V8StorageManager_GetDirectory_Method",
+    "3429": "BeforematchHandlerRegistered",
+    "3430": "BluetoothAdvertisingEventName",
+    "3431": "BluetoothAdvertisingEventAppearance",
+    "3432": "BluetoothAdvertisingEventTxPower",
+    "3433": "CrossOriginOpenerPolicyReporting",
+    "3434": "GamepadId",
+    "3435": "ElementAttachInternals",
+    "3436": "BluetoothDeviceName",
+    "3437": "RTCIceCandidateAddress",
+    "3438": "RTCIceCandidateCandidate",
+    "3439": "RTCIceCandidatePort",
+    "3440": "RTCIceCandidateRelatedAddress",
+    "3441": "RTCIceCandidateRelatedPort",
+    "3442": "SlotAssignNode",
+    "3443": "PluginName",
+    "3444": "PluginFilename",
+    "3445": "PluginDescription",
+    "3446": "SubresourceWebBundles",
+    "3447": "RTCPeerConnectionSetRemoteDescriptionPromise",
+    "3448": "RTCPeerConnectionSetLocalDescriptionPromise",
+    "3449": "RTCPeerConnectionCreateOfferPromise",
+    "3450": "RTCPeerConnectionCreateAnswerPromise",
+    "3451": "RTCPeerConnectionSetRemoteDescription",
+    "3452": "RTCPeerConnectionSetLocalDescription",
+    "3453": "RTCPeerConnectionCreateOffer",
+    "3454": "RTCPeerConnectionCreateAnswer",
+    "3455": "V8AuthenticatorAttestationResponse_GetTransports_Method",
+    "3456": "WebCodecsAudioDecoder",
+    "3457": "WebCodecsVideoDecoder",
+    "3458": "WebCodecsVideoEncoder",
+    "3459": "WebCodecsVideoTrackReader",
+    "3460": "WebCodecsImageDecoder",
+    "3461": "BackForwardCacheExperimentHTTPHeader",
+    "3462": "V8Navigator_OpenTCPSocket_Method",
+    "3463": "V8Navigator_OpenUDPSocket_Method",
+    "3464": "WebCodecs",
+    "3465": "CredentialManagerCrossOriginPublicKeyGetRequest",
+    "3466": "CSSContainStrictWithoutContentVisibility",
+    "3467": "CSSContainAllWithoutContentVisibility",
+    "3468": "TimerInstallFromBeforeUnload",
+    "3469": "TimerInstallFromUnload",
+    "3470": "OBSOLETE_ElementAttachInternalsBeforeConstructor",
+    "3471": "SMILElementHasRepeatNEventListener",
+    "3472": "WebTransport",
+    "3477": "IdleDetectionPermissionRequested",
+    "3478": "IdentifiabilityStudyReserved3478",
+    "3479": "SpeechSynthesis_GetVoices_Method",
+    "3480": "IdentifiabilityStudyReserved3480",
+    "3481": "V8Navigator_JavaEnabled_Method",
+    "3482": "IdentifiabilityStudyReserved3482",
+    "3483": "IdentifiabilityStudyReserved3483",
+    "3484": "IdentifiabilityStudyReserved3484",
+    "3485": "IdentifiabilityStudyReserved3485",
+    "3486": "IdentifiabilityStudyReserved3486",
+    "3487": "IdentifiabilityStudyReserved3487",
+    "3488": "IdentifiabilityStudyReserved3488",
+    "3489": "IdentifiabilityStudyReserved3489",
+    "3490": "IdentifiabilityStudyReserved3490",
+    "3491": "IdentifiabilityStudyReserved3491",
+    "3492": "IdentifiabilityStudyReserved3492",
+    "3493": "IdentifiabilityStudyReserved3493",
+    "3494": "IdentifiabilityStudyReserved3494",
+    "3495": "IdentifiabilityStudyReserved3495",
+    "3496": "IdentifiabilityStudyReserved3496",
+    "3497": "IdentifiabilityStudyReserved3497",
+    "3498": "IdentifiabilityStudyReserved3498",
+    "3499": "V8BackgroundFetchRegistration_FailureReason_AttributeGetter",
+    "3500": "V8Document_ElementFromPoint_Method",
+    "3501": "V8Document_ElementsFromPoint_Method",
+    "3502": "V8ShadowRoot_ElementFromPoint_Method",
+    "3503": "V8ShadowRoot_ElementsFromPoint_Method",
+    "3504": "WindowScreenTouchSupport",
+    "3505": "IdentifiabilityStudyReserved3505",
+    "3506": "IdentifiabilityStudyReserved3506",
+    "3507": "V8PushManager_SupportedContentEncodings_AttributeGetter",
+    "3508": "IdentifiabilityStudyReserved3508",
+    "3509": "V8RTCRtpReceiver_GetCapabilities_Method",
+    "3510": "V8RTCRtpSender_GetCapabilities_Method",
+    "3511": "IdentifiabilityStudyReserved3511",
+    "3512": "IdentifiabilityStudyReserved3512",
+    "3513": "IdentifiabilityStudyReserved3513",
+    "3514": "IdentifiabilityStudyReserved3514",
+    "3515": "IdentifiabilityStudyReserved3515",
+    "3516": "IdentifiabilityStudyReserved3516",
+    "3517": "IdentifiabilityStudyReserved3517",
+    "3518": "IdentifiabilityStudyReserved3518",
+    "3519": "IdentifiabilityStudyReserved3519",
+    "3520": "IdentifiabilityStudyReserved3520",
+    "3521": "IdentifiabilityStudyReserved3521",
+    "3522": "IdentifiabilityStudyReserved3522",
+    "3523": "IdentifiabilityStudyReserved3523",
+    "3524": "IdentifiabilityStudyReserved3524",
+    "3525": "IdentifiabilityStudyReserved3525",
+    "3526": "IdentifiabilityStudyReserved3526",
+    "3527": "IdentifiabilityStudyReserved3527",
+    "3528": "IdentifiabilityStudyReserved3528",
+    "3529": "IdentifiabilityStudyReserved3529",
+    "3530": "IdentifiabilityStudyReserved3530",
+    "3531": "IdentifiabilityStudyReserved3531",
+    "3532": "IdentifiabilityStudyReserved3532",
+    "3533": "IdentifiabilityStudyReserved3533",
+    "3534": "IdentifiabilityStudyReserved3534",
+    "3535": "IdentifiabilityStudyReserved3535",
+    "3536": "IdentifiabilityStudyReserved3536",
+    "3537": "IdentifiabilityStudyReserved3537",
+    "3538": "IdentifiabilityStudyReserved3538",
+    "3539": "IdentifiabilityStudyReserved3539",
+    "3540": "IdentifiabilityStudyReserved3540",
+    "3541": "V8WheelEvent_DeltaMode_AttributeGetter",
+    "3542": "V8Touch_Force_AttributeGetter",
+    "3543": "WebGLRenderingContextMakeXRCompatible",
+    "3544": "V8WebGLCompressedTextureASTC_GetSupportedProfiles_Method",
+    "3545": "HTMLCanvasGetContext",
+    "3546": "V8BeforeInstallPromptEvent_Platforms_AttributeGetter",
+    "3547": "IdentifiabilityStudyReserved3547",
+    "3548": "IdentifiabilityStudyReserved3548",
+    "3549": "IdentifiabilityStudyReserved3549",
+    "3550": "IdentifiabilityStudyReserved3550",
+    "3551": "IdentifiabilityStudyReserved3551",
+    "3552": "IdentifiabilityStudyReserved3552",
+    "3553": "IdentifiabilityStudyReserved3553",
+    "3554": "IdentifiabilityStudyReserved3554",
+    "3555": "IdentifiabilityStudyReserved3555",
+    "3556": "IdentifiabilityStudyReserved3556",
+    "3557": "IdentifiabilityStudyReserved3557",
+    "3558": "IdentifiabilityStudyReserved3558",
+    "3559": "IdentifiabilityStudyReserved3559",
+    "3560": "IdentifiabilityStudyReserved3560",
+    "3561": "IdentifiabilityStudyReserved3561",
+    "3562": "IdentifiabilityStudyReserved3562",
+    "3563": "IdentifiabilityStudyReserved3563",
+    "3564": "IdentifiabilityStudyReserved3564",
+    "3565": "IdentifiabilityStudyReserved3565",
+    "3566": "V8BaseAudioContext_SampleRate_AttributeGetter",
+    "3567": "WindowScreenId",
+    "3568": "WebGLRenderingContextGetParameter",
+    "3569": "WebGLRenderingContextGetRenderbufferParameter",
+    "3570": "WebGLRenderingContextGetShaderPrecisionFormat",
+    "3571": "WebGL2RenderingContextGetInternalFormatParameter",
+    "3572": "IdentifiabilityStudyReserved3572",
+    "3573": "IdentifiabilityStudyReserved3573",
+    "3574": "IdentifiabilityStudyReserved3574",
+    "3575": "IdentifiabilityStudyReserved3575",
+    "3576": "IdentifiabilityStudyReserved3576",
+    "3577": "IdentifiabilityStudyReserved3577",
+    "3578": "CascadedCSSZoomNotEqualToOne",
+    "3579": "ForcedDarkMode",
+    "3580": "PreferredColorSchemeDark",
+    "3581": "PreferredColorSchemeDarkSetting",
+    "3582": "IdentifiabilityStudyReserved3582",
+    "3583": "IdentifiabilityStudyReserved3583",
+    "3584": "IdentifiabilityStudyReserved3584",
+    "3585": "IdentifiabilityStudyReserved3585",
+    "3586": "IdentifiabilityStudyReserved3586",
+    "3587": "IdentifiabilityStudyReserved3587",
+    "3588": "IdentifiabilityStudyReserved3588",
+    "3589": "IdentifiabilityStudyReserved3589",
+    "3590": "IdentifiabilityStudyReserved3590",
+    "3591": "IdentifiabilityStudyReserved3591",
+    "3592": "IdentifiabilityStudyReserved3592",
+    "3593": "IdentifiabilityStudyReserved3593",
+    "3594": "IdentifiabilityStudyReserved3594",
+    "3595": "IdentifiabilityStudyReserved3595",
+    "3596": "IdentifiabilityStudyReserved3596",
+    "3597": "IdentifiabilityStudyReserved3597",
+    "3598": "IdentifiabilityStudyReserved3598",
+    "3599": "IdentifiabilityStudyReserved3599",
+    "3600": "IdentifiabilityStudyReserved3600",
+    "3601": "IdentifiabilityStudyReserved3601",
+    "3602": "IdentifiabilityStudyReserved3602",
+    "3603": "IdentifiabilityStudyReserved3603",
+    "3604": "IdentifiabilityStudyReserved3604",
+    "3605": "IdentifiabilityStudyReserved3605",
+    "3606": "IdentifiabilityStudyReserved3606",
+    "3607": "IdentifiabilityStudyReserved3607",
+    "3608": "IdentifiabilityStudyReserved3608",
+    "3609": "IdentifiabilityStudyReserved3609",
+    "3610": "BarcodeDetector_GetSupportedFormats",
+    "3611": "IdentifiabilityStudyReserved3611",
+    "3612": "IdentifiabilityStudyReserved3612",
+    "3613": "IdentifiabilityStudyReserved3613",
+    "3614": "IdentifiabilityStudyReserved3614",
+    "3615": "IdentifiabilityStudyReserved3615",
+    "3616": "IdentifiabilityStudyReserved3616",
+    "3617": "IdentifiabilityStudyReserved3617",
+    "3618": "IdentifiabilityStudyReserved3618",
+    "3619": "IdentifiabilityStudyReserved3619",
+    "3620": "IdentifiabilityStudyReserved3620",
+    "3621": "IdentifiabilityStudyReserved3621",
+    "3622": "IdentifiabilityStudyReserved3622",
+    "3623": "IdentifiabilityStudyReserved3623",
+    "3624": "IdentifiabilityStudyReserved3624",
+    "3625": "IdentifiabilityStudyReserved3625",
+    "3626": "IdentifiabilityStudyReserved3626",
+    "3627": "IdentifiabilityStudyReserved3627",
+    "3628": "IdentifiabilityStudyReserved3628",
+    "3629": "IdentifiabilityStudyReserved3629",
+    "3630": "IdentifiabilityStudyReserved3630",
+    "3631": "IdentifiabilityStudyReserved3631",
+    "3632": "IdentifiabilityStudyReserved3632",
+    "3633": "IdentifiabilityStudyReserved3633",
+    "3634": "IdentifiabilityStudyReserved3634",
+    "3635": "IdentifiabilityStudyReserved3635",
+    "3636": "IdentifiabilityStudyReserved3636",
+    "3637": "IdentifiabilityStudyReserved3637",
+    "3638": "IdentifiabilityStudyReserved3638",
+    "3639": "IdentifiabilityStudyReserved3639",
+    "3640": "IdentifiabilityStudyReserved3640",
+    "3641": "IdentifiabilityStudyReserved3641",
+    "3642": "IdentifiabilityStudyReserved3642",
+    "3643": "IdentifiabilityStudyReserved3643",
+    "3644": "IdentifiabilityStudyReserved3644",
+    "3645": "IdentifiabilityStudyReserved3645",
+    "3646": "IdentifiabilityStudyReserved3646",
+    "3647": "IdentifiabilityStudyReserved3647",
+    "3648": "IdentifiabilityStudyReserved3648",
+    "3649": "IdentifiabilityStudyReserved3649",
+    "3650": "IdentifiabilityStudyReserved3650",
+    "3651": "IdentifiabilityStudyReserved3651",
+    "3652": "IdentifiabilityStudyReserved3652",
+    "3653": "IdentifiabilityStudyReserved3653",
+    "3654": "IdentifiabilityStudyReserved3654",
+    "3655": "IdentifiabilityStudyReserved3655",
+    "3656": "IdentifiabilityStudyReserved3656",
+    "3657": "IdentifiabilityStudyReserved3657",
+    "3658": "IdentifiabilityStudyReserved3658",
+    "3659": "IdentifiabilityStudyReserved3659",
+    "3660": "IdentifiabilityStudyReserved3660",
+    "3661": "IdentifiabilityStudyReserved3661",
+    "3662": "IdentifiabilityStudyReserved3662",
+    "3663": "IdentifiabilityStudyReserved3663",
+    "3664": "IdentifiabilityStudyReserved3664",
+    "3665": "IdentifiabilityStudyReserved3665",
+    "3666": "IdentifiabilityStudyReserved3666",
+    "3667": "IdentifiabilityStudyReserved3667",
+    "3668": "IdentifiabilityStudyReserved3668",
+    "3669": "IdentifiabilityStudyReserved3669",
+    "3670": "IdentifiabilityStudyReserved3670",
+    "3671": "IdentifiabilityStudyReserved3671",
+    "3672": "IdentifiabilityStudyReserved3672",
+    "3673": "IdentifiabilityStudyReserved3673",
+    "3674": "IdentifiabilityStudyReserved3674",
+    "3675": "IdentifiabilityStudyReserved3675",
+    "3676": "IdentifiabilityStudyReserved3676",
+    "3677": "IdentifiabilityStudyReserved3677",
+    "3678": "IdentifiabilityStudyReserved3678",
+    "3679": "IdentifiabilityStudyReserved3679",
+    "3680": "IdentifiabilityStudyReserved3680",
+    "3681": "IdentifiabilityStudyReserved3681",
+    "3682": "UndeferrableThirdPartySubresourceRequestWithCookie",
+    "3683": "XRDepthSensing",
+    "3684": "XRFrameGetDepthInformation",
+    "3685": "XRDepthInformationGetDepth",
+    "3686": "XRDepthInformationDataAttribute",
+    "3687": "InterestCohortAPI_interestCohort_Method",
+    "3688": "AddressSpaceLocalEmbeddedInPrivateSecureContext",
+    "3689": "AddressSpaceLocalEmbeddedInPrivateNonSecureContext",
+    "3690": "AddressSpaceLocalEmbeddedInPublicSecureContext",
+    "3691": "AddressSpaceLocalEmbeddedInPublicNonSecureContext",
+    "3692": "AddressSpaceLocalEmbeddedInUnknownSecureContext",
+    "3693": "AddressSpaceLocalEmbeddedInUnknownNonSecureContext",
+    "3694": "AddressSpacePrivateEmbeddedInPublicSecureContext",
+    "3695": "AddressSpacePrivateEmbeddedInPublicNonSecureContext",
+    "3696": "AddressSpacePrivateEmbeddedInUnknownSecureContext",
+    "3697": "AddressSpacePrivateEmbeddedInUnknownNonSecureContext",
+    "3698": "ThirdPartyAccess",
+    "3699": "ThirdPartyActivation",
+    "3700": "ThirdPartyAccessAndActivation",
+    "3701": "FullscreenAllowedByScreensChange",
+    "3702": "NewLayoutOverflowDifferentBlock",
+    "3703": "NewLayoutOverflowDifferentFlex",
+    "3704": "NewLayoutOverflowDifferentAndAlreadyScrollsBlock",
+    "3705": "NewLayoutOverflowDifferentAndAlreadyScrollsFlex",
+    "3706": "UnicodeBidiPlainText",
+    "3707": "ColorSchemeDarkSupportedOnRoot",
+    "3708": "WebBluetoothGetAvailability",
+    "3709": "DigitalGoodsListPurchases",
+    "3710": "CompositedSVG",
+    "3711": "BarcodeDetectorDetect",
+    "3712": "FaceDetectorDetect",
+    "3713": "TextDetectorDetect",
+    "3714": "LocalStorageFirstUsedBeforeFcp",
+    "3715": "LocalStorageFirstUsedAfterFcp",
+    "3716": "CSSPseudoHostCompoundList",
+    "3717": "CSSPseudoHostContextCompoundList",
+    "3718": "CSSPseudoHostDynamicSpecificity",
+    "3719": "GetCurrentBrowsingContextMedia",
+    "3720": "MouseEventRelativePositionForInlineElement",
+    "3721": "V8SharedArrayBufferConstructedWithoutIsolation",
+    "3722": "V8HTMLVideoElement_GetVideoPlaybackQuality_Method",
+    "3723": "XRWebGLBindingGetReflectionCubeMap",
+    "3724": "XRFrameGetLightEstimate",
+    "3725": "V8HTMLDialogElement_Show_Method",
+    "3726": "V8HTMLDialogElement_ShowModal_Method",
+    "3727": "AdFrameDetected",
+    "3728": "MediaStreamTrackGenerator",
+    "3729": "MediaStreamTrackProcessor",
+    "3730": "AddEventListenerWithAbortSignal",
+    "3731": "XRSessionRequestLightProbe",
+    "3732": "BeforematchRevealedHiddenMatchable",
+    "3733": "AddSourceBufferUsingConfig",
+    "3734": "ChangeTypeUsingConfig",
+    "3735": "V8SourceBuffer_AppendEncodedChunks_Method",
+    "3736": "OversrollBehaviorOnViewportBreaks",
+    "3737": "SameOriginJsonTypeForScript",
+    "3738": "CrossOriginJsonTypeForScript",
+    "3739": "SameOriginStrictNosniffWouldBlock",
+    "3740": "CrossOriginStrictNosniffWouldBlock",
+    "3741": "CSSSelectorPseudoDir",
+    "3742": "CrossOriginSubframeWithoutEmbeddingControl",
+    "3743": "ReadableStreamWithByteSource",
+    "3744": "ReadableStreamBYOBReader",
+    "3746": "SamePartyCookieAttribute",
+    "3747": "SamePartyCookieExclusionOverruledSameSite",
+    "3748": "SamePartyCookieInclusionOverruledSameSite",
+    "3749": "EmbedElementWithoutTypeSrcChanged",
+    "3750": "PaymentHandlerStandardizedPaymentMethodIdentifier",
+    "3751": "WebCodecsAudioEncoder",
+    "3752": "EmbeddedCrossOriginFrameWithoutFrameAncestorsOrXFO",
+    "3753": "AddressSpacePrivateSecureContextEmbeddedLocal",
+    "3754": "AddressSpacePrivateNonSecureContextEmbeddedLocal",
+    "3755": "AddressSpacePublicSecureContextEmbeddedLocal",
+    "3756": "AddressSpacePublicNonSecureContextEmbeddedLocal",
+    "3757": "AddressSpacePublicSecureContextEmbeddedPrivate",
+    "3758": "AddressSpacePublicNonSecureContextEmbeddedPrivate",
+    "3759": "AddressSpaceUnknownSecureContextEmbeddedLocal",
+    "3760": "AddressSpaceUnknownNonSecureContextEmbeddedLocal",
+    "3761": "AddressSpaceUnknownSecureContextEmbeddedPrivate",
+    "3762": "AddressSpaceUnknownNonSecureContextEmbeddedPrivate",
+    "3763": "AddressSpacePrivateSecureContextNavigatedToLocal",
+    "3764": "AddressSpacePrivateNonSecureContextNavigatedToLocal",
+    "3765": "AddressSpacePublicSecureContextNavigatedToLocal",
+    "3766": "AddressSpacePublicNonSecureContextNavigatedToLocal",
+    "3767": "AddressSpacePublicSecureContextNavigatedToPrivate",
+    "3768": "AddressSpacePublicNonSecureContextNavigatedToPrivate",
+    "3769": "AddressSpaceUnknownSecureContextNavigatedToLocal",
+    "3770": "AddressSpaceUnknownNonSecureContextNavigatedToLocal",
+    "3771": "AddressSpaceUnknownSecureContextNavigatedToPrivate",
+    "3772": "AddressSpaceUnknownNonSecureContextNavigatedToPrivate",
+    "3773": "RTCPeerConnectionSdpSemanticsPlanB",
+    "3774": "FetchRespondWithNoResponseWithUsedRequestBody",
+    "3775": "V8TCPSocket_Close_Method",
+    "3776": "V8TCPSocket_Readable_AttributeGetter",
+    "3777": "V8TCPSocket_Writable_AttributeGetter",
+    "3778": "V8TCPSocket_RemoteAddress_AttributeGetter",
+    "3779": "V8TCPSocket_RemotePort_AttributeGetter",
+    "3780": "CSSSelectorTargetText",
+    "3781": "PopupElement",
+    "3782": "V8HTMLPopupElement_Show_Method",
+    "3783": "V8HTMLPopupElement_Hide_Method",
+    "3784": "WindowOpenWithAdditionalBoolParameter",
+    "3785": "RTCPeerConnectionConstructedWithPlanB",
+    "3786": "RTCPeerConnectionConstructedWithUnifiedPlan",
+    "3787": "RTCPeerConnectionUsingComplexPlanB",
+    "3788": "RTCPeerConnectionUsingComplexUnifiedPlan",
+    "3789": "WindowScreenIsExtended",
+    "3790": "WindowScreenChange",
+    "3791": "XRWebGLDepthInformationTextureAttribute",
+    "3792": "XRWebGLBindingGetDepthInformation",
+    "3793": "SessionStorageFirstUsedBeforeFcp",
+    "3794": "SessionStorageFirstUsedAfterFcp",
+    "3795": "GravitySensorConstructor",
+    "3796": "ElementInternalsStates",
+    "3797": "WebPImage",
+    "3798": "AVIFImage",
+    "3799": "SVGTextEdited",
+    "3800": "V8WasmExceptionHandling",
+    "3801": "WasmModuleSharing",
+    "3802": "CrossOriginWasmModuleSharing",
+    "3803": "OverflowClipAlongEitherAxis",
+    "3804": "CreateJSONModuleScript",
+    "3805": "CreateCSSModuleScript",
+    "3806": "InsertHTMLCommandOnInput",
+    "3807": "InsertHTMLCommandOnTextarea",
+    "3808": "InsertHTMLCommandOnReadWritePlainText",
+    "3809": "CSSAtRuleCounterStyle",
+    "3810": "CanvasUseColorSpace",
+    "3811": "SelectMenuElement",
+    "3812": "RTCPeerConnectionSdpSemanticsPlanBWithReverseOriginTrial",
+    "3813": "WebAppManifestCaptureLinks",
+    "3814": "SanitizerAPICreated",
+    "3815": "SanitizerAPIDefaultConfiguration",
+    "3816": "SanitizerAPIToString",
+    "3817": "SanitizerAPIToFragment",
+    "3818": "SanitizerAPIActionTaken",
+    "3819": "SanitizerAPIFromString",
+    "3820": "SanitizerAPIFromDocument",
+    "3821": "SanitizerAPIFromFragment",
+    "3822": "StorageFoundationOpen",
+    "3823": "StorageFoundationRead",
+    "3824": "StorageFoundationReadSync",
+    "3825": "StorageFoundationWrite",
+    "3826": "StorageFoundationWriteSync",
+    "3827": "StorageFoundationFlush",
+    "3828": "StorageFoundationFlushSync",
+    "3829": "UnrestrictedSharedArrayBuffer",
+    "3830": "FeaturePolicyJSAPIAllowsFeatureIFrame",
+    "3831": "FeaturePolicyJSAPIAllowsFeatureDocument",
+    "3832": "FeaturePolicyJSAPIAllowsFeatureOriginIFrame",
+    "3833": "FeaturePolicyJSAPIAllowsFeatureOriginDocument",
+    "3834": "FeaturePolicyJSAPIAllowedFeaturesIFrame",
+    "3835": "FeaturePolicyJSAPIAllowedFeaturesDocument",
+    "3836": "FeaturePolicyJSAPIFeaturesIFrame",
+    "3837": "FeaturePolicyJSAPIFeaturesDocument",
+    "3838": "FeaturePolicyJSAPIGetAllowlistIFrame",
+    "3839": "FeaturePolicyJSAPIGetAllowlistDocument",
+    "3840": "V8Screens_Onchange_AttributeGetter",
+    "3841": "V8Screens_Onchange_AttributeSetter",
+    "3842": "V8ScreenAdvanced_Left_AttributeGetter",
+    "3843": "V8ScreenAdvanced_Top_AttributeGetter",
+    "3844": "V8ScreenAdvanced_IsPrimary_AttributeGetter",
+    "3845": "V8ScreenAdvanced_IsInternal_AttributeGetter",
+    "3846": "V8ScreenAdvanced_DevicePixelRatio_AttributeGetter",
+    "3847": "V8ScreenAdvanced_Id_AttributeGetter",
+    "3848": "V8ScreenAdvanced_PointerTypes_AttributeGetter",
+    "3849": "V8ScreenAdvanced_Label_AttributeGetter",
+    "3850": "PermissionsPolicyHeader",
+    "3851": "WebAppManifestUrlHandlers",
+    "3852": "LaxAllowingUnsafeCookies",
+    "3853": "V8MediaSession_SetMicrophoneActive_Method",
+    "3854": "V8MediaSession_SetCameraActive_Method",
+    "3855": "V8Navigator_JoinAdInterestGroup_Method",
+    "3856": "V8Navigator_LeaveAdInterestGroup_Method",
+    "3857": "V8Navigator_RunAdAuction_Method",
+    "3858": "XHRJSONEncodingDetection",
+    "3859": "WorkerControlledByServiceWorkerOutOfScope",
+    "3860": "XRPlaneDetection",
+    "3861": "XRFrameDetectedPlanes",
+    "3862": "XRImageTracking",
+    "3863": "XRSessionGetTrackedImageScores",
+    "3864": "XRFrameGetImageTrackingResults",
+    "3865": "OpenWebDatabaseThirdPartyContext",
+    "3866": "PointerId",
+    "3867": "Transform3dScene",
+    "3868": "PrefersColorSchemeMediaFeature",
+    "3869": "PrefersContrastMediaFeature",
+    "3870": "ForcedColorsMediaFeature",
+    "3871": "PaymentRequestCSPViolation",
+    "3872": "WorkerControlledByServiceWorkerWithFetchEventHandlerOutOfScope",
+    "3873": "AuthorizationCoveredByWildcard",
+    "3874": "ElementGetInnerHTML",
+    "3875": "FileHandlingLaunch",
+    "3876": "SameOriginDocumentsWithDifferentCOOPStatus",
+    "3877": "HTMLMediaElementSetSinkId",
+    "3878": "PrefixedStorageQuotaThirdPartyContext",
+    "3879": "RequestedFileSystemPersistentThirdPartyContext",
+    "3880": "PrefixedStorageInfoThirdPartyContext",
+    "3881": "CrossOriginEmbedderPolicyCredentialless",
+    "3882": "PostMessageFromSecureToSecure",
+    "3883": "PostMessageFromInsecureToInsecure",
+    "3884": "WebAppManifestProtocolHandlers",
+    "3885": "RTCPeerConnectionOfferAllowExtmapMixedFalse",
+    "3886": "NewCanvas2DAPI",
+    "3887": "ServiceWorkerSubresourceFilter",
+    "3888": "WebGPU",
+    "3889": "CSSFilterColorMatrix",
+    "3890": "HTMLFencedFrameElement",
+    "3891": "CSSFilterLuminanceToAlpha",
+    "3892": "HandwritingRecognitionCreateRecognizer",
+    "3893": "HandwritingRecognitionQuerySupport",
+    "3894": "HandwritingRecognitionStartDrawing",
+    "3895": "HandwritingRecognitionGetPrediction",
+    "3896": "WebBluetoothManufacturerDataFilter",
+    "3897": "SanitizerAPIGetConfig",
+    "3898": "SanitizerAPIGetDefaultConfig",
+    "3899": "ComputePressureObserver_Constructor",
+    "3900": "ComputePressureObserver_Observe",
+    "3901": "ComputePressureObserver_Stop",
+    "3902": "WebAppWindowControlsOverlay",
+    "3903": "PaymentRequestShowWithoutGestureOrToken",
+    "3904": "V8Navigator_UpdateAdInterestGroups_Method",
+    "3905": "V8Screens_Onscreenschange_AttributeGetter",
+    "3906": "V8Screens_Onscreenschange_AttributeSetter",
+    "3907": "V8Screens_Oncurrentscreenchange_AttributeGetter",
+    "3908": "V8Screens_Oncurrentscreenchange_AttributeSetter",
+    "3909": "RTCOfferAnswerOptionsVoiceActivityDetection",
+    "3910": "MultiColAndListItem",
+    "3911": "CaptureHandle",
+    "3912": "SVGText",
+    "3913": "GetBBoxForText",
+    "3914": "SVGTextHangingFromPath",
+    "3915": "ClientHintsPrefersColorScheme",
+    "3916": "OverscrollBehaviorWillBeFixed",
+    "3917": "ControlledWorkerWillBeUncontrolled",
+    "3918": "ARIATouchpassthroughAttribute",
+    "3919": "ARIAVirtualcontentAttribute",
+    "3920": "AccessibilityTouchPassthroughSet",
+    "3921": "TextFragmentBlockedByForceLoadAtTop",
+    "3922": "UrnDocumentAccessedCookies",
+    "3923": "FontFaceAscentOverride",
+    "3924": "FontFaceDescentOverride",
+    "3925": "FontFaceLineGapOverride",
+    "3926": "FontFaceSizeAdjust",
+    "3927": "HiddenBackfaceWith3D",
+    "3928": "MainFrameNonSecurePrivateAddressSpace",
+    "3929": "CSSSelectorPseudoHas",
+    "3930": "HTMLMediaElementControlsListNoPlaybackRate",
+    "3931": "DocumentTransition",
+    "3932": "SpeculationRules",
+    "3933": "V8AbortSignal_Abort_Method",
+    "3934": "SelectionBackgroundColorInversion",
+    "3935": "RTCPeerConnectionPlanBThrewAnException",
+    "3936": "HTMLRootContained",
+    "3937": "HTMLBodyContained",
+    "3938": "XRFrameGetJointPose",
+    "3939": "XRFrameFillJointRadii",
+    "3940": "XRFrameFillPoses",
+    "3941": "WindowOpenNewPopupBehaviorMismatch",
+    "3942": "ExplicitPointerCaptureClickTargetDiff",
+    "3943": "ControlledNonBlobURLWorkerWillBeUncontrolled",
+    "3944": "MediaMetaThemeColor",
+    "3945": "ClientHintsUABitness",
+    "3946": "DifferentPerspectiveCBOrParent",
+    "3947": "WebkitImageSet",
+    "3948": "RTCPeerConnectionWithBlockingCsp",
+    "3949": "SanitizerAPISanitizeFor",
+    "3950": "SanitizerAPIElementSetSanitized",
+    "3951": "TextShadowInHighlightPseudo",
+    "3952": "TextShadowNotNoneInHighlightPseudo",
+    "3953": "SameSiteNoneRequired",
+    "3954": "SameSiteNoneIncludedBySamePartyTopResource",
+    "3955": "SameSiteNoneIncludedBySamePartyAncestors",
+    "3956": "SameSiteNoneIncludedBySameSiteLax",
+    "3957": "SameSiteNoneIncludedBySameSiteStrict",
+    "3958": "PrivateNetworkAccessNonSecureContextsAllowedDeprecationTrial",
+    "3959": "V8URLPattern_Constructor",
+    "3960": "V8URLPattern_Test_Method",
+    "3961": "V8URLPattern_Exec_Method"
 }
 
 ##########################################################################
-#   CSS feature names from https://cs.chromium.org/chromium/src/third_party/blink/renderer/core/frame/use_counter_helper.cc
+#   CSS feature names from https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/public/mojom/use_counter/css_property_id.mojom
 ##########################################################################
 CSS_FEATURES = {
     "2": "CSSPropertyColor",
@@ -4688,7 +5995,58 @@ CSS_FEATURES = {
     "640": "CSSPropertyForcedColorAdjust",
     "641": "CSSPropertyInherits",
     "642": "CSSPropertyInitialValue",
-    "643": "CSSPropertykSyntax"
+    "643": "CSSPropertySyntax",
+    "644": "CSSPropertyOverscrollBehaviorInline",
+    "645": "CSSPropertyOverscrollBehaviorBlock",
+    "647": "CSSPropertyFontOpticalSizing",
+    "648": "CSSPropertyContainIntrinsicBlockSize",
+    "649": "CSSPropertyContainIntrinsicHeight",
+    "650": "CSSPropertyContainIntrinsicInlineSize",
+    "651": "CSSPropertyContainIntrinsicSize",
+    "652": "CSSPropertyContainIntrinsicWidth",
+    "654": "CSSPropertyOriginTrialTestProperty",
+    "656": "CSSPropertyMathStyle",
+    "657": "CSSPropertyAspectRatio",
+    "658": "CSSPropertyAppearance",
+    "660": "CSSPropertyRubyPosition",
+    "661": "CSSPropertyTextUnderlineOffset",
+    "662": "CSSPropertyContentVisibility",
+    "663": "CSSPropertyTextDecorationThickness",
+    "664": "CSSPropertyPageOrientation",
+    "665": "CSSPropertyAnimationTimeline",
+    "666": "CSSPropertyCounterSet",
+    "667": "CSSPropertySource",
+    "668": "CSSPropertyStart",
+    "669": "CSSPropertyEnd",
+    "670": "CSSPropertyTimeRange",
+    "671": "CSSPropertyScrollbarGutter",
+    "672": "CSSPropertyAscentOverride",
+    "673": "CSSPropertyDescentOverride",
+    "674": "CSSPropertyAdvanceOverride",
+    "675": "CSSPropertyLineGapOverride",
+    "676": "CSSPropertyMathShift",
+    "677": "CSSPropertyMathDepth",
+    "679": "CSSPropertyOverflowClipMargin",
+    "680": "CSSPropertyScrollbarWidth",
+    "681": "CSSPropertySystem",
+    "682": "CSSPropertyNegative",
+    "683": "CSSPropertyPrefix",
+    "684": "CSSPropertySuffix",
+    "685": "CSSPropertyRange",
+    "686": "CSSPropertyPad",
+    "687": "CSSPropertyFallback",
+    "688": "CSSPropertySymbols",
+    "689": "CSSPropertyAdditiveSymbols",
+    "690": "CSSPropertySpeakAs",
+    "691": "CSSPropertyBorderStartStartRadius",
+    "692": "CSSPropertyBorderStartEndRadius",
+    "693": "CSSPropertyBorderEndStartRadius",
+    "694": "CSSPropertyBorderEndEndRadius",
+    "695": "CSSPropertyAccentColor",
+    "696": "CSSPropertySizeAdjust",
+    "697": "CSSPropertyContainerName",
+    "698": "CSSPropertyContainerType",
+    "699": "CSSPropertyContainer"
 }
 
 if '__main__' == __name__:

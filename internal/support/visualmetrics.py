@@ -1,31 +1,11 @@
 #!/usr/bin/env python
 """
+Copyright 2019 WebPageTest LLC.
 Copyright (c) 2014, Google Inc.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    * Neither the name of the company nor the names of its contributors may be
-      used to endorse or promote products derived from this software without
-      specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
+Copyright 2020 Catchpoint Systems Inc.
+Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+found in the LICENSE.md file.
+"""
 import gc
 import glob
 import gzip
@@ -37,7 +17,14 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
+if (sys.version_info >= (3, 0)):
+    GZIP_TEXT = 'wt'
+    GZIP_READ_TEXT = 'rt'
+else:
+    GZIP_TEXT = 'w'
+    GZIP_READ_TEXT = 'r'
 
 # Globals
 options = None
@@ -132,26 +119,33 @@ def extract_frames(video, directory, full_resolution, viewport):
                    '-vf', crop + scale + decimate + '=0:64:640:0.001',
                    os.path.join(dir_escaped, 'img-%d.png')]
         logging.debug(' '.join(command))
-        lines = []
-        proc = subprocess.Popen(command, stderr=subprocess.PIPE)
-        while proc.poll() is None:
-            lines.extend(iter(proc.stderr.readline, ""))
+        proc = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+        _, stderr = proc.communicate()
+        if (sys.version_info >= (3, 0)):
+            try:
+                stderr = stderr.decode('utf-8')
+            except Exception:
+                pass
+        lines = stderr.splitlines()
 
         pattern = re.compile(r'keep pts:[0-9]+ pts_time:(?P<timecode>[0-9\.]+)')
         frame_count = 0
         for line in lines:
             match = re.search(pattern, line)
             if match:
-                frame_count += 1
-                frame_time = int(math.ceil(float( \
-                    match.groupdict().get('timecode')) * 1000))
-                src = os.path.join(
-                    directory, 'img-{0:d}.png'.format(frame_count))
-                dest = os.path.join(
-                    directory, 'video-{0:06d}.png'.format(frame_time))
-                logging.debug('Renaming ' + src + ' to ' + dest)
-                os.rename(src, dest)
-                ret = True
+                try:
+                    frame_count += 1
+                    frame_time = int(math.ceil(float( \
+                        match.groupdict().get('timecode')) * 1000))
+                    src = os.path.join(
+                        directory, 'img-{0:d}.png'.format(frame_count))
+                    dest = os.path.join(
+                        directory, 'video-{0:06d}.png'.format(frame_time))
+                    logging.debug('Renaming ' + src + ' to ' + dest)
+                    os.rename(src, dest)
+                    ret = True
+                except Exception:
+                    logging.exception("Error renaming video frame")
     return ret
 
 
@@ -305,7 +299,8 @@ def find_image_viewport(file):
             'width': (right - left),
             'height': (bottom - top)}
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error calculating viewport')
         viewport = None
     
     if im is not None:
@@ -377,7 +372,7 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                             bottom -
                             top)}
                 except Exception:
-                    pass
+                    logging.exception('Error finding vieport pixels')
 
                 if im is not None:
                     try:
@@ -391,7 +386,8 @@ def find_video_viewport(video, directory, find_viewport, viewport_time):
                 viewport = {'x': 0, 'y': 0, 'width': width, 'height': height}
             os.remove(frame)
 
-    except Exception as e:
+    except Exception:
+        logging.exception('Error finding viewport')
         viewport = None
 
     return viewport
@@ -446,7 +442,7 @@ def find_first_frame(directory, white_file):
             count = len(files)
             if count > 1:
                 from PIL import Image
-                for i in xrange(count):
+                for i in range(count):
                     if is_white_frame(files[i], white_file):
                         break
                     else:
@@ -474,7 +470,7 @@ def find_first_frame(directory, white_file):
                 first_frame = None
                 if white_file is None:
                     found_white_frame = True
-                for i in xrange(count):
+                for i in range(count):
                     if not found_first_change:
                         different = not frames_match(
                             files[i], files[i + 1], 5, 100, crop, None)
@@ -513,7 +509,7 @@ def find_last_frame(directory, white_file):
             if count > 2:
                 found_end = False
                 from PIL import Image
-                for i in xrange(2, count):
+                for i in range(2, count):
                     if found_end:
                         logging.debug(
                             'Removing frame {0} from the end'.format(
@@ -564,11 +560,11 @@ def find_render_start(directory, orange_file, gray_file):
                     mask = None
                 top = 10
                 right_margin = 10
-                bottom_margin = 10
+                bottom_margin = 20
                 if height > 400 or width > 400:
                     right_margin = 25
                     bottom_margin = 25
-                    top = int(math.ceil(float(height) * 0.03))
+                    top = max(top, int(math.ceil(float(height) * 0.03)))
                     right_margin = max(right_margin, int(math.ceil(float(width) * 0.04)))
                     bottom_margin = max(bottom_margin, int(math.ceil(float(height) * 0.04)))
                 height = max(height - top - bottom_margin, 1)
@@ -582,7 +578,7 @@ def find_render_start(directory, orange_file, gray_file):
                     top += client_viewport['y']
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(
                     width, height, left, top)
-                for i in xrange(1, count):
+                for i in range(1, count):
                     if frames_match(first, files[i], 10, 0, crop, mask):
                         logging.debug('Removing pre-render frame %s', files[i])
                         os.remove(files[i])
@@ -617,9 +613,11 @@ def eliminate_duplicate_frames(directory):
             right_margin = 8
             bottom_margin = 20
             if height > 400 or width > 400:
-                top = int(math.ceil(float(height) * 0.04))
-                right_margin = int(math.ceil(float(width) * 0.04))
-                bottom_margin = int(math.ceil(float(width) * 0.04))
+                right_margin = 25
+                bottom_margin = 25
+                top = max(top, int(math.ceil(float(height) * 0.04)))
+                right_margin = max(right_margin, int(math.ceil(float(width) * 0.04)))
+                bottom_margin = max(bottom_margin, int(math.ceil(float(width) * 0.04)))
             height = max(height - top - bottom_margin, 1)
             left = 0
             width = max(width - right_margin, 1)
@@ -641,7 +639,7 @@ def eliminate_duplicate_frames(directory):
             # for up to a 10% per-pixel difference for noise in the white
             # field.
             count = len(files)
-            for i in xrange(1, count):
+            for i in range(1, count):
                 if frames_match(blank, files[i], 10, 0, crop, None):
                     logging.debug(
                         'Removing duplicate frame {0} from the beginning'.format(
@@ -660,7 +658,7 @@ def eliminate_duplicate_frames(directory):
                 files.reverse()
                 baseline = files[0]
                 previous_frame = baseline
-                for i in xrange(1, count):
+                for i in range(1, count):
                     if frames_match(baseline, files[i], 10, 0, crop, None):
                         if previous_frame is baseline:
                             duplicates.append(previous_frame)
@@ -694,7 +692,7 @@ def eliminate_similar_frames(directory):
                     crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(client_viewport['width'], client_viewport['height'],
                                                             client_viewport['x'], client_viewport['y'])
                 baseline = files[1]
-                for i in xrange(2, count - 1):
+                for i in range(2, count - 1):
                     if frames_match(baseline, files[i], 1, 0, crop, None):
                         logging.debug(
                             'Removing similar frame {0}'.format(
@@ -730,7 +728,7 @@ def crop_viewport(directory):
             if count > 0:
                 crop = '{0:d}x{1:d}+{2:d}+{3:d}'.format(client_viewport['width'], client_viewport['height'],
                                                         client_viewport['x'], client_viewport['y'])
-                for i in xrange(count):
+                for i in range(count):
                     command = '{0} "{1}" -crop {2} "{1}"'.format(
                         image_magick['convert'], files[i], crop)
                     subprocess.call(command, shell=True)
@@ -742,8 +740,10 @@ def crop_viewport(directory):
 def get_decimate_filter():
     decimate = None
     try:
-        filters = subprocess.check_output(
-            ['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
+        if (sys.version_info >= (3, 0)):
+            filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT, encoding='UTF-8')
+        else:
+            filters = subprocess.check_output(['ffmpeg', '-filters'], stderr=subprocess.STDOUT)
         lines = filters.split("\n")
         match = re.compile(
             r'(?P<filter>[\w]*decimate).*V->V.*Remove near-duplicate frames')
@@ -753,7 +753,7 @@ def get_decimate_filter():
                 decimate = m.groupdict().get('filter')
                 break
     except BaseException:
-        logging.critical('Error checking ffmpeg filters for decimate')
+        logging.exception('Error checking ffmpeg filters for decimate')
         decimate = None
     return decimate
 
@@ -800,14 +800,19 @@ def is_color_frame(file, color_file):
                           ).format(image_magick['convert'], color_file, file, crop,
                                    image_magick['compare'])
                 compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-                out, err = compare.communicate()
+                _, err = compare.communicate()
+                if (sys.version_info >= (3, 0)):
+                    try:
+                        err = err.decode('utf-8')
+                    except Exception:
+                        pass
                 if re.match('^[0-9]+$', err):
                     different_pixels = int(err)
                     if different_pixels < 100:
                         match = True
                         break
         except Exception:
-            pass
+            logging.exception('Error checking frame color')
     if file not in frame_cache:
         frame_cache[file] = {}
     frame_cache[file][color_file] = bool(match)
@@ -835,7 +840,12 @@ def is_white_frame(file, white_file):
                        '{4} -metric AE - -fuzz 10% null:').format(
                            image_magick['convert'], white_file, file, crop, image_magick['compare'])
         compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-        out, err = compare.communicate()
+        _, err = compare.communicate()
+        if (sys.version_info >= (3, 0)):
+            try:
+                err = err.decode('utf-8')
+            except Exception:
+                pass
         if re.match('^[0-9]+$', err):
             different_pixels = int(err)
             if different_pixels < 500:
@@ -847,7 +857,7 @@ def is_white_frame(file, white_file):
 def colors_are_similar(a, b, threshold=15):
     similar = True
     sum = 0
-    for x in xrange(3):
+    for x in range(3):
         delta = abs(a[x] - b[x])
         sum += delta
         if delta > threshold:
@@ -880,7 +890,12 @@ def frames_match(image1, image2, fuzz_percent,
     if platform.system() != 'Windows':
         command = command.replace('(', '\\(').replace(')', '\\)')
     compare = subprocess.Popen(command, stderr=subprocess.PIPE, shell=True)
-    out, err = compare.communicate()
+    _, err = compare.communicate()
+    if (sys.version_info >= (3, 0)):
+        try:
+            err = err.decode('utf-8')
+        except Exception:
+            pass
     if re.match('^[0-9]+$', err):
         different_pixels = int(err)
         if different_pixels <= max_differences:
@@ -954,7 +969,7 @@ def get_timeline_offset(timeline_file):
     try:
         file_name, ext = os.path.splitext(timeline_file)
         if ext.lower() == '.gz':
-            f = gzip.open(timeline_file, 'rb')
+            f = gzip.open(timeline_file, GZIP_READ_TEXT)
         else:
             f = open(timeline_file, 'r')
         timeline = json.load(f)
@@ -980,7 +995,7 @@ def get_timeline_offset(timeline_file):
             logging.info(
                 "Trimming {0:d}ms from the start of the video based on timeline synchronization".format(offset))
     except BaseException:
-        logging.critical("Error processing timeline file " + timeline_file)
+        logging.exception("Error processing timeline file " + timeline_file)
 
     return offset
 
@@ -1088,7 +1103,7 @@ def calculate_histograms(directory, histograms_file, force):
                                  'histogram': histogram})
                 if os.path.isfile(histograms_file):
                     os.remove(histograms_file)
-                f = gzip.open(histograms_file, 'wb')
+                f = gzip.open(histograms_file, GZIP_TEXT)
                 json.dump(histograms, f)
                 f.close()
             else:
@@ -1108,9 +1123,9 @@ def calculate_image_histogram(file):
         im = Image.open(file)
         width, height = im.size
         colors = im.getcolors(width * height)
-        histogram = {'r': [0 for i in xrange(256)],
-                     'g': [0 for i in xrange(256)],
-                     'b': [0 for i in xrange(256)]}
+        histogram = {'r': [0 for i in range(256)],
+                     'g': [0 for i in range(256)],
+                     'b': [0 for i in range(256)]}
         for entry in colors:
             try:
                 count = entry[0]
@@ -1122,7 +1137,7 @@ def calculate_image_histogram(file):
                     histogram['g'][pixel[1]] += count
                     histogram['b'][pixel[2]] += count
             except Exception:
-                pass
+                logging.exception('Error processing histogram pixel')
         colors = None
     except Exception:
         histogram = None
@@ -1223,12 +1238,12 @@ def render_video(directory, video_file):
                         current_frame += 1
                     # hold the end frame for one second so it's actually
                     # visible
-                    for i in xrange(30):
+                    for i in range(30):
                         proc.stdin.write(current_image)
                     proc.stdin.close()
                     proc.communicate()
             except Exception:
-                pass
+                logging.exception('Error rendering video')
 
 
 ##########################################################################
@@ -1313,7 +1328,7 @@ def sample_frames(frames, interval, start_ms, skip_frames):
 ##########################################################################
 
 
-def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, progress_file, hero_elements_file):
+def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, progress_file):
     metrics = None
     histograms = load_histograms(histograms_file, start, end)
     if histograms is not None and len(histograms) > 0:
@@ -1321,9 +1336,9 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
         if progress and progress_file is not None:
             file_name, ext = os.path.splitext(progress_file)
             if ext.lower() == '.gz':
-                f = gzip.open(progress_file, 'wb', 7)
+                f = gzip.open(progress_file, GZIP_TEXT, 7)
             else:
-                f = open(progress_file, 'wb')
+                f = open(progress_file, 'w')
             json.dump(progress, f)
             f.close()
         if len(histograms) > 1:
@@ -1338,35 +1353,6 @@ def calculate_visual_metrics(histograms_file, start, end, perceptual, dirs, prog
             if perceptual:
                 metrics.append({'name': 'Perceptual Speed Index',
                                 'value': calculate_perceptual_speed_index(progress, dirs)})
-            if hero_elements_file is not None and os.path.isfile(hero_elements_file):
-                logging.debug('Calculating hero element times')
-                hero_data = None
-                with gzip.open(hero_elements_file, 'rb') as hero_f_in:
-                    try:
-                        hero_data = json.load(hero_f_in)
-                    except Exception as e:
-                        logging.exception('Could not load hero elements data')
-                        logging.exception(e)
-
-                if hero_data is not None and hero_data['heroes'] is not None and \
-                        hero_data['viewport'] is not None and len(hero_data['heroes']) > 0:
-                    viewport = hero_data['viewport']
-                    hero_timings = []
-                    for hero in hero_data['heroes']:
-                        hero_timings.append({'name': hero['name'],
-                                             'value': calculate_hero_time(progress, dirs, hero, viewport)})
-                    hero_timings_sorted = sorted(hero_timings, key=lambda timing: timing['value'])
-                    hero_timings.append({'name': 'FirstPaintedHero',
-                                         'value': hero_timings_sorted[0]['value']})
-                    hero_timings.append({'name': 'LastPaintedHero',
-                                         'value': hero_timings_sorted[-1]['value']})
-                    hero_data['timings'] = hero_timings
-                    metrics += hero_timings
-
-                    with gzip.open(hero_elements_file, 'wb', 7) as hero_f_out:
-                        json.dump(hero_data, hero_f_out)
-            else:
-                logging.warn('Hero elements file is not valid: ' + str(hero_elements_file))
         else:
             metrics = [
                 {'name': 'First Visual Change',
@@ -1432,16 +1418,16 @@ def calculate_frame_progress(histogram, start, final):
         channel_total = 0
         channel_matched = 0
         buckets = 256
-        available = [0 for i in xrange(buckets)]
-        for i in xrange(buckets):
+        available = [0 for i in range(buckets)]
+        for i in range(buckets):
             available[i] = abs(histogram[channel][i] - start[channel][i])
-        for i in xrange(buckets):
+        for i in range(buckets):
             target = abs(final[channel][i] - start[channel][i])
             if (target):
                 channel_total += target
                 low = max(0, i - slop)
                 high = min(buckets, i + slop)
-                for j in xrange(low, high):
+                for j in range(low, high):
                     this_match = min(target, available[j])
                     available[j] -= this_match
                     channel_matched += this_match
@@ -1476,7 +1462,7 @@ def calculate_speed_index(progress):
 
 
 def calculate_perceptual_speed_index(progress, directory):
-    from ssim import compute_ssim
+    from ssim import compute_ssim # pylint: disable=import-error
     x = len(progress)
     dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
     first_paint_frame = os.path.join(
@@ -1492,7 +1478,6 @@ def calculate_perceptual_speed_index(progress, directory):
     ssim = ssim_1
     for p in progress[1:]:
         elapsed = p['time'] - last_ms
-        # print '*******elapsed %f'%elapsed
         # Full Path of the Current Frame
         current_frame = os.path.join(dir, "ms_{0:06d}.png".format(p["time"]))
         logging.debug("Current Image is %s" % current_frame)
@@ -1504,96 +1489,6 @@ def calculate_perceptual_speed_index(progress, directory):
     return int(per_si)
 
 
-def calculate_hero_time(progress, directory, hero, viewport):
-    hero_time = None
-    abs_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory)
-    n = len(progress)
-    target_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(progress[n - 1]['time']))
-
-    extension = None
-    if os.path.isfile(target_frame + '.png'):
-        extension = '.png'
-    elif os.path.isfile(target_frame + '.jpg'):
-        extension = '.jpg'
-    if extension is not None:
-        hero_width = int(hero['width'])
-        hero_height = int(hero['height'])
-        hero_x = int(hero['x'])
-        hero_y = int(hero['y'])
-        target_frame = target_frame + extension
-        logging.debug('Target image for hero %s is %s' % (hero['name'], target_frame))
-
-        from PIL import Image
-        with Image.open(target_frame) as im:
-            width, height = im.size
-        if width != viewport['width']:
-            scale = float(width) / float(viewport['width'])
-            logging.debug('Frames are %dpx wide but viewport was %dpx. Scaling by %f' % (width, viewport['width'], scale))
-            hero_width = int(hero['width'] * scale)
-            hero_height = int(hero['height'] * scale)
-            hero_x = int(hero['x'] * scale)
-            hero_y = int(hero['y'] * scale)
-
-        logging.debug('Calculating render time for hero element "%s" at position [%d, %d, %d, %d]' % (hero['name'], hero['x'], hero['y'], hero['width'], hero['height']))
-
-        # Create a rectangular mask of the hero element position
-        hero_mask = os.path.join(abs_directory, 'hero_{0}_mask.png'.format(hero['name']))
-        command = '{0} -size {1}x{2} xc:black -fill white -draw "rectangle {3},{4} {5},{6}" PNG24:"{7}"'.format(
-            image_magick['convert'], width, height, hero_x, hero_y, hero_x + hero_width, hero_y + hero_height, hero_mask)
-        subprocess.call(command, shell=True)
-
-        # Apply the mask to the target frame to create the reference frame
-        target_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], progress[n - 1]['time']))
-        command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
-            image_magick['convert'], target_frame, hero_mask, target_mask)
-        subprocess.call(command, shell=True)
-
-        # Allow for small differences like scrollbars and overlaid UI elements
-        # by applying a 10% fuzz and allowing for up to 2% of the pixels to be
-        # different.
-        fuzz = 10
-        max_pixel_diff = math.ceil(hero_width * hero_height * 0.02)
-
-        for p in progress:
-            current_frame = os.path.join(abs_directory, 'ms_{0:06d}'.format(p['time']))
-            extension = None
-            if os.path.isfile(current_frame + '.png'):
-                extension = '.png'
-            elif os.path.isfile(current_frame + '.jpg'):
-                extension = '.jpg'
-            if extension is not None:
-                current_mask = os.path.join(abs_directory, 'hero_{0}_ms_{1:06d}.png'.format(hero['name'], p['time']))
-                # Apply the mask to the current frame
-                command = '{0} {1} {2} -alpha Off -compose CopyOpacity -composite {3}'.format(
-                    image_magick['convert'], current_frame + extension, hero_mask, current_mask)
-                logging.debug(command)
-                subprocess.call(command, shell=True)
-                if os.path.isfile(current_mask):
-                    match = frames_match(target_mask, current_mask, fuzz, max_pixel_diff, None, None)
-                    # Remove each mask after using it
-                    try:
-                        os.remove(current_mask)
-                    except Exception:
-                        pass
-
-                if match:
-                    hero_time = p['time']
-                    break
-
-        # Cleanup the masks
-        try:
-            os.remove(hero_mask)
-        except Exception:
-            pass
-        try:
-            if os.path.isfile(target_mask):
-                os.remove(target_mask)
-        except Exception:
-            pass
-
-    return hero_time
-
-
 ##########################################################################
 #   Check any dependencies
 ##########################################################################
@@ -1602,43 +1497,38 @@ def calculate_hero_time(progress, directory, hero, viewport):
 def check_config():
     ok = True
 
-    print 'ffmpeg:  ',
     if get_decimate_filter() is not None:
-        print 'OK'
+        logging.critical('ffmpeg:  OK')
     else:
-        print 'FAIL'
+        logging.critical('ffmpeg:  FAIL')
         ok = False
 
-    print 'convert: ',
     if check_process('{0} -version'.format(image_magick['convert']), 'ImageMagick'):
-        print 'OK'
+        logging.critical('convert: OK')
     else:
-        print 'FAIL'
+        logging.critical('convert: FAIL')
         ok = False
 
-    print 'compare: ',
     if check_process('{0} -version'.format(image_magick['compare']), 'ImageMagick'):
-        print 'OK'
+        logging.critical('compare: OK')
     else:
-        print 'FAIL'
+        logging.critical('compare: FAIL')
         ok = False
 
-    print 'Pillow:  ',
     try:
         from PIL import Image, ImageDraw
 
-        print 'OK'
+        logging.critical('Pillow:  OK')
     except BaseException:
-        print 'FAIL'
+        logging.critical('Pillow:  FAIL')
         ok = False
 
-    print 'SSIM:    ',
     try:
-        from ssim import compute_ssim
+        from ssim import compute_ssim # pylint: disable=import-error
 
-        print 'OK'
+        logging.critical('SSIM:    OK')
     except BaseException:
-        print 'FAIL'
+        logging.critical('SSIM:    FAIL')
         ok = False
 
     return ok
@@ -1647,8 +1537,10 @@ def check_config():
 def check_process(command, output):
     ok = False
     try:
-        out = subprocess.check_output(
-            command, stderr=subprocess.STDOUT, shell=True)
+        if (sys.version_info >= (3, 0)):
+            out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True, encoding='UTF-8')
+        else:
+            out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         if out.find(output) > -1:
             ok = True
     except BaseException:
@@ -1676,6 +1568,7 @@ def main():
         '-v',
         '--verbose',
         action='count',
+        default=0,
         help="Increase verbosity (specify multiple times for more).")
     parser.add_argument(
         '--logfile',
@@ -1731,10 +1624,10 @@ def main():
     parser.add_argument('-e', '--end', type=int, default=0,
                         help="End time (in milliseconds) for calculating visual metrics.")
     parser.add_argument('--findstart', type=int, default=0,
-                        help="Find the start of activity by looking at the top X% "
+                        help="Find the start of activity by looking at the top X%% "
                              "of the video (like a browser address bar).")
     parser.add_argument('--renderignore', type=int, default=0,
-                        help="Ignore the center X% of the frame when looking for "
+                        help="Ignore the center X%% of the frame when looking for "
                              "the first rendered frame (useful for Opera mini).")
     parser.add_argument('--startwhite', action='store_true', default=False,
                         help="Find the first fully white frame as the start of the video.")
@@ -1753,7 +1646,6 @@ def main():
     parser.add_argument('-j', '--json', action='store_true', default=False,
                         help="Set output format to JSON")
     parser.add_argument('--progress', help="Visual progress output file.")
-    parser.add_argument('--herodata', help="Hero elements data file.")
 
     options = parser.parse_args()
 
@@ -1859,8 +1751,7 @@ def main():
                 # Calculate the histograms and visual metrics
                 calculate_histograms(directory, histogram_file, options.force)
                 metrics = calculate_visual_metrics(histogram_file, options.start, options.end,
-                                                   options.perceptual, directory, options.progress,
-                                                   options.herodata)
+                                                   options.perceptual, directory, options.progress)
 
                 if options.screenshot is not None:
                     quality = 30
@@ -1878,10 +1769,10 @@ def main():
                         for metric in metrics:
                             data[metric['name'].replace(
                                 ' ', '')] = metric['value']
-                        print json.dumps(data)
+                        print(json.dumps(data))
                     else:
                         for metric in metrics:
-                            print "{0}: {1}".format(metric['name'], metric['value'])
+                            print("{0}: {1}".format(metric['name'], metric['value']))
         else:
             ok = check_config()
     except Exception as e:

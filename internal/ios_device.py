@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Interface for iWptBrowser on iOS devices"""
 import base64
 import logging
@@ -10,8 +12,12 @@ import platform
 import select
 import shutil
 import subprocess
+import sys
 import threading
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+else:
+    from monotonic import monotonic
 try:
     import ujson as json
 except BaseException:
@@ -32,32 +38,34 @@ class iOSDevice(object):
         self.video_file = None
         self.last_video_data = None
         self.video_size = 0
-        self.last_restart = monotonic.monotonic()
+        self.last_restart = monotonic()
+        self.device_connected = True
 
     def check_install(self):
         """Check to make sure usbmux is installed and the device is available"""
         ret = False
         plat = platform.system()
         if plat == "Darwin" or plat == "Linux":
-            if not os.path.exists('/var/run/usbmuxd') and plat == "Linux":
-                args = ['sudo', 'python', __file__, '--install']
-                subprocess.call(args)
+            if not os.path.exists('/var/run/usbmuxd'):
+                subprocess.call(['sudo', 'usbmuxd'])
             if os.path.exists('/var/run/usbmuxd'):
                 ret = True
             else:
-                print "usbmuxd is not available, please try installing it manually"
+                logging.critical("usbmuxd is not available, please try installing it manually")
         else:
-            print "iOS is only supported on Mac and Linux"
+            logging.critical("iOS is only supported on Mac and Linux")
         return ret
 
     def startup(self):
         """Initialize USBMux if it isn't already"""
         if self.mux is None:
             try:
-                from .support.ios.usbmux import USBMux
+                if not os.path.exists('/var/run/usbmuxd'):
+                    subprocess.call(['sudo', 'usbmuxd'])
+                from usbmuxwrapper import USBMux
                 self.mux = USBMux()
             except Exception:
-                logging.critical("Error initializing usbmux")
+                logging.exception("Error initializing usbmux")
 
     def get_devices(self):
         """Get a list of available devices"""
@@ -74,6 +82,7 @@ class iOSDevice(object):
         is_ready = False
         response = self.send_message("battery")
         if response:
+            self.device_connected = True
             level = int(round(float(response) * 100))
             if level > 75:
                 logging.debug("Battery level = %d%%", level)
@@ -83,6 +92,7 @@ class iOSDevice(object):
         else:
             logging.debug("Device is not connected (or iWptBrowser is not running)")
             self.disconnect()
+            self.device_connected = False
         return is_ready
 
     def get_os_version(self):
@@ -126,7 +136,7 @@ class iOSDevice(object):
         try:
             ret = json.loads(ret)
         except Exception:
-            pass
+            logging.exception('Error running script')
         return ret
 
     def set_user_agent(self, ua_string):
@@ -217,15 +227,16 @@ class iOSDevice(object):
                             self.message_thread.start()
                             break
         except Exception:
+            logging.exception('Error connecting to device')
             # If the app isn't running restart the device (no more than every 10 minutes)
-            if connecting and monotonic.monotonic() - self.last_restart > 600:
+            if connecting and monotonic() - self.last_restart > 600:
                 needs_restart = True
         if needs_restart:
-            self.last_restart = monotonic.monotonic()
+            self.last_restart = monotonic()
             try:
                 subprocess.call(['idevicediagnostics', 'restart'])
             except Exception:
-                pass
+                logging.exception('Error restarting device')
         return self.socket is not None
 
     def disconnect(self):
@@ -255,26 +266,30 @@ class iOSDevice(object):
             try:
                 self.socket.send(msg + "\n")
                 if wait:
-                    end = monotonic.monotonic() + timeout
-                    while response is None and monotonic.monotonic() < end:
+                    end = monotonic() + timeout
+                    while response is None and monotonic() < end:
                         try:
                             msg = self.messages.get(timeout=1)
-                            self.messages.task_done()
-                            if msg:
-                                if msg['msg'] == 'disconnected':
-                                    self.disconnect()
-                                    self.connect()
-                                elif 'id' in msg and msg['id'] == str(message_id):
-                                    if msg['msg'] == 'OK':
-                                        if 'data' in msg:
-                                            response = msg['data']
+                            try:
+                                self.messages.task_done()
+                                if msg:
+                                    if msg['msg'] == 'disconnected':
+                                        self.disconnect()
+                                        self.connect()
+                                    elif 'id' in msg and msg['id'] == str(message_id):
+                                        if msg['msg'] == 'OK':
+                                            if 'data' in msg:
+                                                response = msg['data']
+                                            else:
+                                                response = True
                                         else:
-                                            response = True
-                                    else:
-                                        break
+                                            break
+                            except Exception:
+                                logging.exception('Error processing message')
                         except Exception:
                             pass
             except Exception:
+                logging.exception('Error sending message')
                 self.disconnect()
         return response
 
@@ -293,25 +308,28 @@ class iOSDevice(object):
         try:
             while not self.must_disconnect and self.socket != None:
                 rlo, _, xlo = select.select([self.socket], [], [self.socket])
-                if xlo:
-                    logging.debug("iWptBrowser disconnected")
-                    self.messages.put({"msg": "disconnected"})
-                    return
-                if rlo:
-                    data_in = self.socket.recv(8192)
-                    if not data_in:
+                try:
+                    if xlo:
                         logging.debug("iWptBrowser disconnected")
                         self.messages.put({"msg": "disconnected"})
                         return
-                    buff += data_in
-                    pos = 0
-                    while pos >= 0:
-                        pos = buff.find("\n")
-                        if pos >= 0:
-                            message = buff[:pos].strip()
-                            buff = buff[pos + 1:]
-                            if message:
-                                self.process_raw_message(message)
+                    if rlo:
+                        data_in = self.socket.recv(8192)
+                        if not data_in:
+                            logging.debug("iWptBrowser disconnected")
+                            self.messages.put({"msg": "disconnected"})
+                            return
+                        buff += data_in
+                        pos = 0
+                        while pos >= 0:
+                            pos = buff.find("\n")
+                            if pos >= 0:
+                                message = buff[:pos].strip()
+                                buff = buff[pos + 1:]
+                                if message:
+                                    self.process_raw_message(message)
+                except Exception:
+                    logging.exception('Error pumping message')
         except Exception:
             pass
 
@@ -348,7 +366,7 @@ class iOSDevice(object):
     def process_message(self, msg):
         """Handle a single decoded message"""
         if msg['msg'] == 'VideoData' and 'data' in msg:
-            now = monotonic.monotonic()
+            now = monotonic()
             self.video_size += len(msg['data'])
             if self.last_video_data is None or now - self.last_video_data >= 0.5:
                 logging.debug('<<< Video data (current size: %d)', self.video_size)
@@ -360,49 +378,10 @@ class iOSDevice(object):
             try:
                 self.messages.put(msg)
             except Exception:
-                pass
+                logging.exception('Error adding message to queue')
         elif self.notification_queue is not None:
             logging.debug('<<< %s', msg['msg'])
             try:
                 self.notification_queue.put(msg)
             except Exception:
-                pass
-
-
-def install_main():
-    """Main entry-point when running as an installer (under sudo permissions)"""
-    if os.getuid() != 0:
-        print "Must run as sudo"
-        exit(1)
-    if not os.path.exists('/var/run/usbmuxd') and platform.system() == "Linux":
-        print "Installing usbmuxd"
-        if os.uname()[4].startswith('arm'):
-            src_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'support', 'ios', 'arm')
-        else:
-            src_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'support', 'ios', 'Linux64')
-        # Make sure all of the files are where they need to be
-        for filename in os.listdir(src_path):
-            src = os.path.join(src_path, filename)
-            if os.path.isfile(src):
-                dest = None
-                if filename == 'usbmuxd':
-                    dest = os.path.join('/usr/local/sbin', filename)
-                elif filename.startswith('idevice'):
-                    dest = os.path.join('/usr/local/bin', filename)
-                elif filename.find('.so') >= 0:
-                    dest = os.path.join('/usr/local/lib', filename)
-                if dest is not None and not os.path.isfile(dest):
-                    print "Copying {0} to {1}".format(filename, dest)
-                    shutil.copy(src, dest)
-        # Update the library cache
-        subprocess.call(['ldconfig'])
-        # Start and initialize usbmuxd
-        print "Starting usbmuxd"
-        subprocess.call(['/usr/local/sbin/usbmuxd'])
-        subprocess.call(['/usr/local/bin/ideviceinfo'])
-
-
-if __name__ == '__main__':
-    install_main()
+                logging.exception('Error adding message to notification queue')

@@ -1,6 +1,8 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Microsoft Internet Explorer testing (based on the Edge support)"""
 import logging
 import os
@@ -51,7 +53,7 @@ class InternetExplorer(Edge):
                     values.append(value[0])
                     index += 1
             except Exception:
-                pass
+                logging.exception('Error processing registry')
             for value in values:
                 _winreg.DeleteValue(key, value)
             if 'AppendUA' in task and len(task['AppendUA']):

@@ -1,27 +1,52 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Main entry point for interfacing with WebPageTest server"""
+import base64
 from datetime import datetime
 import gzip
+import hashlib
 import logging
 import multiprocessing
 import os
 import platform
+import random
 import re
 import shutil
 import socket
+import string
 import subprocess
+import sys
 import threading
 import time
-import urllib
 import zipfile
 import psutil
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    from urllib.parse import quote_plus # pylint: disable=import-error
+    from urllib.parse import urlsplit # pylint: disable=import-error
+    GZIP_READ_TEXT = 'rt'
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
+    from urlparse import urlsplit # pylint: disable=import-error
+    GZIP_READ_TEXT = 'r'
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
     import json
+"""
+try:
+    import http.client as http_client
+except ImportError:
+    # Python 2
+    import httplib as http_client
+http_client.HTTPConnection.debuglevel = 1
+"""
 
 DEFAULT_JPEG_QUALITY = 30
 
@@ -33,22 +58,46 @@ class WebPageTest(object):
         self.fetch_queue = multiprocessing.JoinableQueue()
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
+        self.raw_job = None
         self.first_failure = None
+        self.is_rebooting = False
+        self.is_dead = False
+        self.health_check_server = None
+        self.metadata_blocked = False
         self.session = requests.Session()
+        self.session.headers.update({'User-Agent': 'wptagent'})
         self.options = options
+        self.last_test_id = None
         self.fps = options.fps
         self.test_run_count = 0
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
                                                datefmt="%H:%M:%S")
         self.log_handler = None
         # Configurable options
-        self.url = options.server
+        self.work_servers = []
+        self.needs_zip = []
+        self.url = ''
+        if options.server is not None:
+            self.work_servers_str = options.server
+            if self.work_servers_str == 'www.webpagetest.org':
+                self.work_servers_str = 'http://www.webpagetest.org/'
+            self.work_servers = self.work_servers_str.split(',')
+            self.url = str(self.work_servers[0])
         self.location = ''
         self.test_locations = []
         if options.location is not None:
             self.test_locations = options.location.split(',')
             self.location = str(self.test_locations[0])
+        self.wpthost = None
+        self.license_pinged = False
         self.key = options.key
+        self.scheduler = options.scheduler
+        self.scheduler_salt = options.schedulersalt
+        self.scheduler_nodes = []
+        if options.schedulernode is not None:
+            self.scheduler_nodes = options.schedulernode.split(',')
+        self.scheduler_node = None
+        self.last_diagnostics = None
         self.time_limit = 120
         self.cpu_scale_multiplier = None
         # get the hostname or build one automatically if we are on a vmware system
@@ -67,12 +116,22 @@ class WebPageTest(object):
                         server = match.group(1)
                         machine = match.group(2)
                         hostname = 'VM{0}-{1}'.format(server, machine)
+        if platform.system() == 'Linux':
+            try:
+                out = subprocess.check_output(["ip", "-o", "route", "get", "1.1.1.1"],
+                                        universal_newlines=True)
+                addr = (out.split(" ")[6]).strip()
+                if addr is not None and len(addr):
+                    hostname += '-' + addr
+            except Exception:
+                pass
         self.pc_name = hostname if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
         self.validate_server_certificate = options.validcertificate
         self.instance_id = None
         self.zone = None
+        self.cpu_pct = None
         # Get the screen resolution if we're in desktop mode
         self.screen_width = None
         self.screen_height = None
@@ -82,23 +141,42 @@ class WebPageTest(object):
                 self.screen_height = 1200
             elif platform.system() == 'Windows':
                 try:
-                    from win32api import GetSystemMetrics
+                    from win32api import GetSystemMetrics # pylint: disable=import-error
                     self.screen_width = GetSystemMetrics(0)
                     self.screen_height = GetSystemMetrics(1)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
             elif platform.system() == 'Darwin':
                 try:
-                    from AppKit import NSScreen
+                    from AppKit import NSScreen # pylint: disable=import-error
                     self.screen_width = int(NSScreen.screens()[0].frame().size.width)
                     self.screen_height = int(NSScreen.screens()[0].frame().size.height)
                 except Exception:
-                    pass
+                    logging.exception('Error getting screen resolution')
+            elif platform.system() == 'Linux':
+                out = subprocess.check_output(['xprop','-notype','-len','16','-root','_NET_DESKTOP_GEOMETRY'], universal_newlines=True)
+                if out is not None:
+                    logging.debug(out)
+                    parts = out.split('=', 1)
+                    if len(parts) == 2:
+                        dimensions = parts[1].split(',', 1)
+                        if len(dimensions) == 2:
+                            self.screen_width = int(dimensions[0].strip())
+                            self.screen_height = int(dimensions[1].strip())
+        # Grab the list of configured DNS servers
+        self.dns_servers = None
+        try:
+            from dns import resolver
+            dns_resolver = resolver.Resolver()
+            self.dns_servers = '-'.join(dns_resolver.nameservers)
+        except Exception:
+            pass
         # See if we have to load dynamic config options
         if self.options.ec2:
             self.load_from_ec2()
         elif self.options.gce:
             self.load_from_gce()
+        self.block_metadata()
         # Set the session authentication options
         if self.auth_name is not None:
             self.session.auth = (self.auth_name, self.auth_password)
@@ -119,28 +197,27 @@ class WebPageTest(object):
                 pass
         # If we are running in a git clone, grab the date of the last
         # commit as the version
-        self.version = '19.04'
+        self.version = '21.07'
         try:
             directory = os.path.abspath(os.path.dirname(__file__))
-            out = subprocess.check_output('git log -1 --format=%cd --date=raw',
-                                          shell=True, cwd=directory)
+            if (sys.version_info >= (3, 0)):
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory, encoding='UTF-8')
+            else:
+                out = subprocess.check_output('git log -1 --format=%cd --date=raw', shell=True, cwd=directory)
             if out is not None:
                 matches = re.search(r'^(\d+)', out)
                 if matches:
                     timestamp = int(matches.group(1))
                     git_date = datetime.utcfromtimestamp(timestamp)
-                    self.version = git_date.strftime('%y%m%d.%H%m%S')
+                    self.version = git_date.strftime('%y%m%d.%H%M%S')
         except Exception:
             pass
         # Load the discovered browser margins
         self.margins = {}
         margins_file = os.path.join(self.persistent_dir, 'margins.json')
         if os.path.isfile(margins_file):
-            with open(margins_file, 'rb') as f_in:
+            with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
-        # Override the public webpagetest server automatically
-        if self.url is not None and self.url.find('www.webpagetest.org') >= 0:
-            self.url = 'http://agent.webpagetest.org/work/'
     # pylint: enable=E0611
 
     def benchmark_cpu(self):
@@ -152,11 +229,13 @@ class WebPageTest(object):
             hash_val = hashlib.sha256()
             with open(__file__, 'rb') as f_in:
                 hash_data = f_in.read(4096)
-            start = monotonic.monotonic()
+            start = monotonic()
             # 106k iterations takes ~1 second on the reference machine
-            for _ in xrange(106000):
+            iteration = 0
+            while iteration < 106000:
                 hash_val.update(hash_data)
-            elapsed = monotonic.monotonic() - start
+                iteration += 1
+            elapsed = monotonic() - start
             self.cpu_scale_multiplier = 1.0 / elapsed
             logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
                           elapsed, self.cpu_scale_multiplier)
@@ -183,8 +262,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/user-data',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/user-data', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.parse_user_data(response.text)
                     ok = True
@@ -195,8 +273,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get('http://169.254.169.254/latest/meta-data/instance-id',
-                                       timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/instance-id', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.instance_id = response.text.strip()
                     ok = True
@@ -207,9 +284,7 @@ class WebPageTest(object):
         ok = False
         while not ok:
             try:
-                response = session.get(
-                    'http://169.254.169.254/latest/meta-data/placement/availability-zone',
-                    timeout=30, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/placement/availability-zone', timeout=30, proxies=proxies)
                 if len(response.text):
                     self.zone = response.text.strip()
                     if not len(self.test_locations):
@@ -225,6 +300,7 @@ class WebPageTest(object):
         # Block access to the metadata server
         if platform.system() == "Linux":
             subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
+            self.metadata_blocked = True
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
@@ -281,6 +357,27 @@ class WebPageTest(object):
                 if not ok:
                     time.sleep(10)
 
+    def block_metadata(self):
+        """Block access to the metadata service if we are on EC2 or Azure"""
+        if not self.metadata_blocked:
+            import requests
+            needs_block = False
+            session = requests.Session()
+            proxies = {"http": None, "https": None}
+            try:
+                response = session.get('http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance', timeout=10, proxies=proxies)
+                if response.status_code == 200:
+                    needs_block = True
+                else:
+                    response = session.get('http://169.254.169.254/metadata/instance?api-version=2017-04-02', timeout=10, proxies=proxies)
+                    if response.status_code == 200:
+                        needs_block = True
+            except Exception:
+                pass
+            if needs_block:
+                subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
+                self.metadata_blocked = True
+
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
         logging.debug("User Data: %s", user_data)
@@ -293,16 +390,22 @@ class WebPageTest(object):
                     value = parts[1].strip()
                     logging.debug('Setting config option "%s" to "%s"', key, value)
                     if key == 'wpt_server':
+                        server = ''
                         if re.search(r'^https?://', value):
-                            self.url = value
+                            server = value
                             if value.endswith('/'):
-                                self.url += 'work/'
+                                server += 'work/'
                             else:
-                                self.url += '/work/'
+                                server += '/work/'
                         else:
-                            self.url = 'http://{0}/work/'.format(value)
+                            server = 'http://{0}/work/'.format(value)
+                        self.work_servers_str = str(server)
+                        self.work_servers = self.work_servers_str.split(',')
+                        self.url = str(self.work_servers[0])
                     if key == 'wpt_url':
-                        self.url = value
+                        self.work_servers_str = str(value)
+                        self.work_servers = self.work_servers_str.split(',')
+                        self.url = str(self.work_servers[0])
                     elif key == 'wpt_loc' or key == 'wpt_location':
                         if value is not None:
                             self.test_locations = value.split(',')
@@ -325,12 +428,18 @@ class WebPageTest(object):
                         self.validate_server_certificate = True
                     elif key == 'validcertificate' and value == '1':
                         self.validate_server_certificate = True
+                    elif key == 'wpt_scheduler':
+                        self.scheduler = value
+                    elif key == 'wpt_scheduler_salt':
+                        self.scheduler_salt = value
+                    elif key == 'wpt_scheduler_node':
+                        self.scheduler_nodes = value.split(',')
                     elif key == 'wpt_fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
                     elif key == 'fps':
                         self.fps = int(re.search(r'\d+', str(value)).group())
             except Exception:
-                pass
+                logging.exception('Error parsing metadata')
 
     # pylint: disable=E1101
     def get_uptime_minutes(self):
@@ -359,23 +468,147 @@ class WebPageTest(object):
     # pylint: enable=E1101
 
     def reboot(self):
+        self.is_rebooting = True
         if platform.system() == 'Windows':
             subprocess.call(['shutdown', '/r', '/f'])
         else:
             subprocess.call(['sudo', 'reboot'])
 
+    def get_cpid(self, node = None):
+        """Get a salt-signed header for the scheduler"""
+        entity = node if node else self.scheduler_node
+        hash_src = entity.upper() + ';' + datetime.now().strftime('%Y%m') + self.scheduler_salt
+        hash_string = base64.b64encode(hashlib.sha1(hash_src.encode('ascii')).digest()).decode('ascii')
+        cpid_header = 'm;' + entity + ';' + hash_string
+        return cpid_header
+
+    def process_job_json(self, test_json):
+        """Process the JSON of a test into a job file"""
+        job = test_json
+        if job is not None:
+            try:
+                logging.debug("Job: %s", json.dumps(job))
+                # set some default options
+                job['agent_version'] = self.version
+                if 'imageQuality' not in job:
+                    job['imageQuality'] = DEFAULT_JPEG_QUALITY
+                if 'pngScreenShot' not in job:
+                    job['pngScreenShot'] = 0
+                if 'fvonly' not in job:
+                    job['fvonly'] = 1
+                if 'width' not in job:
+                    job['width'] = 1366
+                if 'height' not in job:
+                    job['height'] = 768
+                if 'browser_width' in job:
+                    job['width'] = job['browser_width']
+                if 'browser_height' in job:
+                    job['height'] = job['browser_height']
+                if 'timeout' not in job:
+                    job['timeout'] = self.time_limit
+                if 'noscript' not in job:
+                    job['noscript'] = 0
+                if 'type' not in job:
+                    job['type'] = ''
+                if job['type'] == 'traceroute':
+                    job['fvonly'] = 1
+                if 'fps' not in job:
+                    job['fps'] = self.fps
+                if 'warmup' not in job:
+                    job['warmup'] = 0
+                if job['type'] == 'lighthouse':
+                    job['fvonly'] = 1
+                    job['lighthouse'] = 1
+                job['keep_lighthouse_trace'] = bool('lighthouseTrace' in job and job['lighthouseTrace'])
+                job['keep_lighthouse_screenshots'] = bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
+                job['lighthouse_throttle'] = bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
+                job['lighthouse_config'] = str(job['lighthouseConfig']) if 'lighthouseConfig' in job else False
+                if 'video' not in job:
+                    job['video'] = bool('Capture Video' not in job or job['Capture Video'])
+                job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
+                job['dtShaper'] = bool('dtShaper' in job and job['dtShaper'])
+                job['disable_video'] = bool(not job['video'] and 'disable_video' in job and job['disable_video'])
+                job['atomic'] = bool('atomic' in job and job['atomic'])
+                job['interface'] = None
+                job['persistent_dir'] = self.persistent_dir
+                if 'throttle_cpu' in job:
+                    throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
+                    if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
+                        throttle *= self.cpu_scale_multiplier
+                    job['throttle_cpu_requested'] = job['throttle_cpu']
+                    job['throttle_cpu'] = throttle
+                if 'work_servers' in job and job['work_servers'] != self.work_servers_str:
+                        self.work_servers_str = job['work_servers']
+                        self.work_servers = self.work_servers_str.split(',')
+                        logging.debug("Servers changed to: %s", self.work_servers_str)
+                if 'wpthost' in job:
+                    self.wpthost = job['wpthost']
+                job['started'] = time.time()
+                if 'testinfo' in job:
+                    job['testinfo']['started'] = job['started']
+                # Add the security insights custom metrics locally if requested
+                if 'securityInsights' in job:
+                    js_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'js')
+                    if 'customMetrics' not in job:
+                        job['customMetrics'] = {}
+                    if 'jsLibsVulns' not in job['customMetrics']:
+                        with open(os.path.join(js_directory, 'jsLibsVulns.js'), 'rt') as f_in:
+                            job['customMetrics']['jsLibsVulns'] = f_in.read()
+                    if 'securityHeaders' not in job['customMetrics']:
+                        with open(os.path.join(js_directory, 'securityHeaders.js'), 'rt') as f_in:
+                            job['customMetrics']['securityHeaders'] = f_in.read()
+                if 'browser' not in job:
+                    job['browser'] = 'Chrome'
+                if 'runs' not in job:
+                    job['runs'] = 1
+                if 'timeline' not in job:
+                    job['timeline'] = 1
+                if self.options.location is not None:
+                    job['location'] = self.options.location
+                if self.scheduler_node is not None and 'saas_test_id' in job:
+                    job['saas_node_id'] = self.scheduler_node
+                # For CLI tests, write out the raw job file
+                if self.options.testurl or self.options.testspec:
+                    if not os.path.isdir(self.workdir):
+                        os.makedirs(self.workdir)
+                    job_path = os.path.join(self.workdir, 'job.json')
+                    logging.debug('Job Path: {}'.format(job_path))
+                    with open(job_path, 'wt') as f_out:
+                        json.dump(job, f_out)
+                    self.needs_zip.append({'path': job_path, 'name': 'job.json'})
+                # Add the non-serializable members
+                if self.health_check_server is not None:
+                    job['health_check_server'] = self.health_check_server
+            except Exception:
+                logging.exception("Error processing job json")
+        self.job = job
+        return job
+
     def get_test(self, browsers):
         """Get a job from the server"""
+        if self.is_rebooting or self.is_dead:
+            return
         import requests
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
-        if self.url is None:
+        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0:
             return None
         job = None
+        self.raw_job = None
+        scheduler_nodes = list(self.scheduler_nodes)
+        if len(scheduler_nodes) > 0:
+            random.shuffle(scheduler_nodes)
+            self.scheduler_node = str(scheduler_nodes.pop(0)).strip(', ')
+        servers = list(self.work_servers)
+        if len(servers) >0 :
+            random.shuffle(servers)
+            self.url = str(servers.pop(0))
         locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
-        location = str(locations.pop(0))
+        if len(locations) > 0:
+            random.shuffle(locations)
+            location = str(locations.pop(0))
         # Shuffle the list order
         if len(self.test_locations) > 1:
             self.test_locations.append(str(self.test_locations.pop(0)))
@@ -384,15 +617,15 @@ class WebPageTest(object):
         while count < 3 and retry:
             retry = False
             count += 1
-            url = self.url + "getwork.php?f=json&shards=1&reboot=1"
-            url += "&location=" + urllib.quote_plus(location)
-            url += "&pc=" + urllib.quote_plus(self.pc_name)
+            url = self.url + "getwork.php?f=json&shards=1&reboot=1&servers=1&testinfo=1"
+            url += "&location=" + quote_plus(location)
+            url += "&pc=" + quote_plus(self.pc_name)
             if self.key is not None:
-                url += "&key=" + urllib.quote_plus(self.key)
+                url += "&key=" + quote_plus(self.key)
             if self.instance_id is not None:
-                url += "&ec2=" + urllib.quote_plus(self.instance_id)
+                url += "&ec2=" + quote_plus(self.instance_id)
             if self.zone is not None:
-                url += "&ec2zone=" + urllib.quote_plus(self.zone)
+                url += "&ec2zone=" + quote_plus(self.zone)
             if self.options.android:
                 url += '&apk=1'
             url += '&version={0}'.format(self.version)
@@ -400,6 +633,8 @@ class WebPageTest(object):
                 url += '&screenwidth={0:d}'.format(self.screen_width)
             if self.screen_height is not None:
                 url += '&screenheight={0:d}'.format(self.screen_height)
+            if self.dns_servers is not None:
+                url += '&dns=' + quote_plus(self.dns_servers)
             free_disk = get_free_disk_space()
             url += '&freedisk={0:0.3f}'.format(free_disk)
             uptime = self.get_uptime_minutes()
@@ -413,79 +648,67 @@ class WebPageTest(object):
                         versions.append('{0}:{1}'.format(name, \
                                 browsers[name]['version']))
                 browser_versions = ','.join(versions)
-                url += '&browsers=' + urllib.quote_plus(browser_versions)
-            logging.info("Checking for work: %s", url)
+                url += '&browsers=' + quote_plus(browser_versions)
             try:
-                response = self.session.get(url, timeout=30, proxies=proxies)
+                if self.scheduler and self.scheduler_salt and self.scheduler_node:
+                    url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
+                    logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
+                    response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid(self.scheduler_node)})
+                else:
+                    logging.info("Checking for work: %s", url)
+                    response = self.session.get(url, timeout=10, proxies=proxies)
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
+                if self.health_check_server is not None:
+                    self.health_check_server.healthy()
                 self.first_failure = None
                 if len(response.text):
                     if response.text == 'Reboot':
                         self.reboot()
                         return None
-                    job = response.json()
-                    logging.debug("Job: %s", json.dumps(job))
-                    # set some default options
-                    job['agent_version'] = self.version
-                    if 'imageQuality' not in job:
-                        job['imageQuality'] = DEFAULT_JPEG_QUALITY
-                    if 'pngScreenShot' not in job:
-                        job['pngScreenShot'] = 0
-                    if 'fvonly' not in job:
-                        job['fvonly'] = 0
-                    if 'width' not in job:
-                        job['width'] = 1024
-                    if 'height' not in job:
-                        job['height'] = 768
-                    if 'browser_width' in job:
-                        job['width'] = job['browser_width']
-                    if 'browser_height' in job:
-                        job['height'] = job['browser_height']
-                    if 'timeout' not in job:
-                        job['timeout'] = self.time_limit
-                    if 'noscript' not in job:
-                        job['noscript'] = 0
-                    if 'Test ID' not in job or 'browser' not in job or 'runs' not in job:
-                        job = None
-                    if 'type' not in job:
-                        job['type'] = ''
-                    if job['type'] == 'traceroute':
-                        job['fvonly'] = 1
-                    if 'fps' not in job:
-                        job['fps'] = self.fps
-                    if 'warmup' not in job:
-                        job['warmup'] = 0
-                    if job['type'] == 'lighthouse':
-                        job['fvonly'] = 1
-                        job['lighthouse'] = 1
-                    job['keep_lighthouse_trace'] = \
-                        bool('lighthouseTrace' in job and job['lighthouseTrace'])
-                    job['keep_lighthouse_screenshots'] = \
-                        bool(job['lighthouseScreenshots']) if 'lighthouseScreenshots' in job else False
-                    job['lighthouse_throttle'] = \
-                        bool('lighthouseThrottle' in job and job['lighthouseThrottle'])
-                    job['video'] = bool('Capture Video' in job and job['Capture Video'])
-                    job['keepvideo'] = bool('keepvideo' in job and job['keepvideo'])
-                    job['disable_video'] = bool(not job['video'] and
-                                                'disable_video' in job and
-                                                job['disable_video'])
-                    job['interface'] = None
-                    job['persistent_dir'] = self.persistent_dir
-                    if 'throttle_cpu' in job:
-                        throttle = float(re.search(r'\d+\.?\d*', str(job['throttle_cpu'])).group())
-                        if 'bypass_cpu_normalization' not in job or not job['bypass_cpu_normalization']:
-                            throttle *= self.cpu_scale_multiplier
-                        job['throttle_cpu_requested'] = job['throttle_cpu']
-                        job['throttle_cpu'] = throttle
-                if job is None and len(locations) > 0:
+                    elif response.text.startswith('Servers:') or response.text.startswith('Scheduler:'):
+                        for line in response.text.splitlines():
+                            line = line.strip()
+                            if line.startswith('Servers:'):
+                                servers_str = line[8:]
+                                if servers_str and servers_str != self.work_servers_str:
+                                    self.work_servers_str = servers_str
+                                    self.work_servers = self.work_servers_str.split(',')
+                                    logging.debug("Servers changed to: %s", self.work_servers_str)
+                            elif line.startswith('Scheduler:'):
+                                scheduler_parts = line[10:].split(' ')
+                                if scheduler_parts and len(scheduler_parts) == 3:
+                                    self.scheduler = scheduler_parts[0].strip()
+                                    self.scheduler_salt = scheduler_parts[1].strip()
+                                    self.scheduler_node = scheduler_parts[2].strip()
+                                    self.scheduler_nodes = [self.scheduler_node]
+                                    retry = True
+                                    logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
+                    job = self.process_job_json(response.json())
+                    # Store the raw job info in case we need to re-queue it
+                    if job is not None and 'Test ID' in job and 'signature' in job and 'work_server' in job:
+                        self.raw_job = {
+                            'id': job['Test ID'],
+                            'signature': job['signature'],
+                            'work_server': job['work_server'],
+                            'location': location,
+                            'payload': str(response.text)
+                        }
+                        if 'jobID' in job:
+                            self.raw_job['jobID'] = job['jobID']
+                # Rotate through the list of locations
+                if job is None and len(locations) > 0 and not self.scheduler:
                     location = str(locations.pop(0))
+                    count -= 1
+                    retry = True
+                if job is None and len(scheduler_nodes) > 0 and self.scheduler:
+                    self.scheduler_node = str(scheduler_nodes.pop(0)).strip(', ')
+                    count -= 1
                     retry = True
             except requests.exceptions.RequestException as err:
                 logging.critical("Get Work Error: %s", err.strerror)
-                retry = True
-                now = monotonic.monotonic()
+                now = monotonic()
                 if self.first_failure is None:
                     self.first_failure = now
                 # Reboot if we haven't been able to reach the server for 30 minutes
@@ -495,11 +718,35 @@ class WebPageTest(object):
                 time.sleep(0.1)
             except Exception:
                 pass
-        self.job = job
+            # Rotate through the list of servers
+            if not retry and job is None and len(servers) > 0 and not self.scheduler:
+                self.url = str(servers.pop(0))
+                locations = list(self.test_locations) if len(self.test_locations) > 1 else [self.location]
+                random.shuffle(locations)
+                location = str(locations.pop(0))
+                count -= 1
+                retry = True
+        self.needs_zip = []
+        if job is not None and 'work_server' in job and 'jobID' in job:
+            self.notify_test_started(job)
+        self.report_diagnostics()
         return job
+
+    def notify_test_started(self, job):
+        """Tell the server that we have started the test. Used when the queueing isn't handled directly by the server responsible for a test"""
+        if 'work_server' in job and 'Test ID' in job:
+            try:
+                url = job['work_server'] + 'started.php?id=' + quote_plus(job['Test ID'])
+                proxies = {"http": None, "https": None}
+                self.session.get(url, timeout=30, proxies=proxies)
+            except Exception:
+                logging.exception('Error notifying test start')
 
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
+        if self.is_dead:
+            return None
+        self.report_diagnostics()
         task = None
         if self.log_handler is not None:
             try:
@@ -532,7 +779,10 @@ class WebPageTest(object):
                     job['current_state']['run'] += 1
                 job['current_state']['repeat_view'] = False
             if job['current_state']['run'] <= job['runs']:
-                test_id = job['Test ID']
+                if 'Test ID' in job:
+                    test_id = job['Test ID']
+                else:
+                    test_id = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
                 run = job['current_state']['run']
                 profile_dir = '{0}.{1}.{2:d}'.format(self.profile_dir, test_id, run)
                 task = {'id': test_id,
@@ -545,10 +795,18 @@ class WebPageTest(object):
                         'activity_time': 2,
                         'combine_steps': False,
                         'video_directories': [],
-                        'page_data': {},
+                        'page_data': {'tester': self.pc_name, 'start_epoch': time.time()},
                         'navigated': False,
                         'page_result': None,
                         'script_step_count': 1}
+                # Increase the activity timeout for high-latency tests
+                if 'latency' in job:
+                    try:
+                        factor = int(min(job['latency'] / 100, 4))
+                        if factor > 1:
+                            task['activity_time'] *= factor
+                    except Exception:
+                        pass
                 # Set up the task configuration options
                 task['port'] = 9222 + (self.test_run_count % 500)
                 task['task_prefix'] = "{0:d}".format(run)
@@ -617,7 +875,17 @@ class WebPageTest(object):
                             task['block_domains'].append(domain)
                             task['host_rules'].append('"MAP {0} 127.0.0.1"'.format(domain))
                             if re.match(r'^[a-zA-Z0-9\-\.]+$', domain):
-                                task['dns_override'].append([domain, "127.0.0.1"])
+                                task['dns_override'].append([domain, "0.0.0.0"])
+                # Load the crypto mining block list
+                crypto_list = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'support', 'adblock', 'nocoin', 'hosts.txt')
+                if os.path.exists(crypto_list):
+                    with open(crypto_list, 'rt') as f_in:
+                        if 'dns_override' not in task:
+                            task['dns_override'] = []
+                        for line in f_in:
+                            if line.startswith('0.0.0.0'):
+                                domain = line[8:].strip()
+                                task['dns_override'].append([domain, "0.0.0.0"])
                 self.build_script(job, task)
                 task['width'] = job['width']
                 task['height'] = job['height']
@@ -630,19 +898,38 @@ class WebPageTest(object):
                     else:
                         task['width'] = job['width'] + 20
                         task['height'] = job['height'] + 120
+                if 'time' in job:
+                    task['minimumTestSeconds'] = job['time']
                 task['time_limit'] = job['timeout']
                 task['test_time_limit'] = task['time_limit'] * task['script_step_count']
                 task['stop_at_onload'] = bool('web10' in job and job['web10'])
-                task['run_start_time'] = monotonic.monotonic()
+                task['run_start_time'] = monotonic()
+                if 'profile_data' in job:
+                    task['profile_data'] = {
+                        'lock': threading.Lock(),
+                        'start': monotonic(),
+                        'test':{
+                            'id': task['id'],
+                            'run': task['run'],
+                            'cached': task['cached'],
+                            's': 0}}
                 # Keep the full resolution video frames if the browser window is smaller than 600px
                 if 'thumbsize' not in job and (task['width'] < 600 or task['height'] < 600):
                     job['fullSizeVideo'] = 1
+                # Pass-through the SaaS fields
+                if 'saas_test_id' in job:
+                    task['page_data']['saas_test_id'] = job['saas_test_id']
+                    if 'saas_node_id' in job:
+                        task['page_data']['saas_node_id'] = job['saas_node_id']
+                    if 'saas_device_type_id' in job:
+                        task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
+                    else:
+                        task['page_data']['saas_device_type_id'] = 0
                 self.test_run_count += 1
-        if task is None and os.path.isdir(self.workdir):
-            try:
-                shutil.rmtree(self.workdir)
-            except Exception:
-                pass
+        if task is None and self.job is not None:
+            self.upload_test_result()
+        if 'reboot' in job and job['reboot']:
+            self.reboot()
         return task
 
     def running_another_test(self, task):
@@ -690,21 +977,24 @@ class WebPageTest(object):
                                 task['overrideHosts'] = {}
                             task['overrideHosts'][target] = value
                     elif command == 'setcookie' and target is not None and value is not None:
-                        url = target
-                        cookie = value
-                        pos = cookie.find(';')
-                        if pos > 0:
-                            cookie = cookie[:pos]
-                        pos = cookie.find('=')
-                        if pos > 0:
-                            cookie_name = cookie[:pos].strip()
-                            cookie_value = cookie[pos + 1:].strip()
-                            if len(cookie_name) and len(cookie_value) and len(url):
-                                if 'cookies' not in task:
-                                    task['cookies'] = []
-                                task['cookies'].append({'url': url,
-                                                        'name': cookie_name,
-                                                        'value': cookie_value})
+                        try:
+                            url = target
+                            cookie = value
+                            pos = cookie.find(';')
+                            if pos > 0:
+                                cookie = cookie[:pos]
+                            pos = cookie.find('=')
+                            if pos > 0:
+                                cookie_name = cookie[:pos].strip()
+                                cookie_value = cookie[pos + 1:].strip()
+                                if len(cookie_name) and len(cookie_value) and len(url):
+                                    if 'cookies' not in task:
+                                        task['cookies'] = []
+                                    task['cookies'].append({'url': url,
+                                                            'name': cookie_name,
+                                                            'value': cookie_value})
+                        except Exception:
+                            logging.exception('Error setting cookie')
                     # commands that get pre-processed
                     elif command == 'setuseragent' and target is not None:
                         job['uastring'] = target
@@ -809,7 +1099,7 @@ class WebPageTest(object):
                                                 addr = sockaddr[0]
                                                 break
                             except Exception:
-                                pass
+                                logging.exception('Error resolving DNS for %s', value)
                             if addr is not None and target.find('"') == -1:
                                 if 'dns_override' not in task:
                                     task['dns_override'] = []
@@ -881,7 +1171,7 @@ class WebPageTest(object):
                 if not os.path.isdir(self.persistent_dir):
                     os.makedirs(self.persistent_dir)
                 margins_file = os.path.join(self.persistent_dir, 'margins.json')
-                with open(margins_file, 'wb') as f_out:
+                with open(margins_file, 'w') as f_out:
                     json.dump(self.margins, f_out)
 
     def body_fetch_thread(self):
@@ -890,8 +1180,10 @@ class WebPageTest(object):
         session = requests.session()
         proxies = {"http": None, "https": None}
         try:
-            while True:
-                task = self.fetch_queue.get_nowait()
+            while not self.is_dead:
+                task = self.fetch_queue.get(5)
+                if task is None:
+                    break
                 try:
                     url = task['url']
                     dest = task['file']
@@ -924,9 +1216,13 @@ class WebPageTest(object):
                 self.fetch_queue.task_done()
         except Exception:
             pass
+        self.fetch_result_queue.put(None)
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
+        if self.is_dead:
+            return
+        self.profile_start(task, 'wpt.get_bodies')
         all_bodies = False
         html_body = False
         if 'bodies' in self.job and self.job['bodies']:
@@ -940,7 +1236,7 @@ class WebPageTest(object):
             path = os.path.join(task['dir'], 'bodies')
             requests = []
             devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
-            with gzip.open(devtools_file, 'rb') as f_in:
+            with gzip.open(devtools_file, GZIP_READ_TEXT) as f_in:
                 requests = json.load(f_in)
             count = 0
             bodies_zip = path_base + '_bodies.zip'
@@ -960,9 +1256,10 @@ class WebPageTest(object):
                                 body_index = index
                             bodies.append(request_id)
                 except Exception:
-                    pass
+                    logging.exception('Error matching requests to bodies')
                 for request in requests['requests']:
                     if 'full_url' in request and \
+                            request['full_url'].startswith('http') and \
                             'responseCode' in request \
                             and request['responseCode'] == 200 and \
                             request['full_url'].find('ocsp') == -1 and\
@@ -1003,7 +1300,9 @@ class WebPageTest(object):
                 logging.debug("Fetching bodies for %d requests", count)
                 threads = []
                 thread_count = min(count, 10)
-                for _ in xrange(thread_count):
+                for _ in range(thread_count):
+                    self.fetch_queue.put(None)
+                for _ in range(thread_count):
                     thread = threading.Thread(target=self.body_fetch_thread)
                     thread.daemon = True
                     thread.start()
@@ -1014,20 +1313,26 @@ class WebPageTest(object):
                 bodies = []
                 try:
                     while True:
-                        task = self.fetch_result_queue.get_nowait()
-                        if os.path.isfile(task['file']):
-                            # check to see if it is text or utf-8 data
-                            try:
-                                data = ''
-                                with open(task['file'], 'rb') as f_in:
-                                    data = f_in.read()
-                                json.loads('"' + data.replace('"', '\\"') + '"')
-                                body_index += 1
-                                file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
-                                bodies.append({'name': file_name, 'file': task['file']})
-                            except Exception:
-                                pass
-                        self.fetch_result_queue.task_done()
+                        task = self.fetch_result_queue.get(5)
+                        if task is None:
+                            thread_count -= 1
+                            self.fetch_result_queue.task_done()
+                            if thread_count == 0:
+                                break
+                        else:
+                            if os.path.isfile(task['file']):
+                                # check to see if it is text or utf-8 data
+                                try:
+                                    data = ''
+                                    with open(task['file'], 'r') as f_in:
+                                        data = f_in.read()
+                                    json.loads('"' + data.replace('"', '\\"') + '"')
+                                    body_index += 1
+                                    file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
+                                    bodies.append({'name': file_name, 'file': task['file']})
+                                except Exception:
+                                    logging.exception('Error appending bodies')
+                            self.fetch_result_queue.task_done()
                 except Exception:
                     pass
                 # Add the files
@@ -1036,13 +1341,150 @@ class WebPageTest(object):
                         for body in bodies:
                             zip_file.write(body['file'], body['name'])
         except Exception:
-            pass
+            logging.exception('Error backfilling bodies')
+        self.profile_end(task, 'wpt.get_bodies')
+
+    def upload_test_result(self):
+        """Upload the full result if the test is not being sharded"""
+        if self.is_dead:
+            return
+        if self.job is not None and 'run' not in self.job:
+            # Write out the testinfo ini and json files if they are part of the job
+            if 'testinfo_ini' in self.job:
+                from datetime import datetime
+                self.job['testinfo_ini'] = self.job['testinfo_ini'].replace('[test]', '[test]\r\ncompleteTime={}'.format(datetime.now().strftime("%m/%d/%y %H:%M:%S")))
+                ini_path = os.path.join(self.workdir, 'testinfo.ini')
+                with open(ini_path, 'wt') as f_out:
+                    f_out.write(self.job['testinfo_ini'])
+                self.needs_zip.append({'path': ini_path, 'name': 'testinfo.ini'})
+            if 'testinfo' in self.job:
+                self.job['testinfo']['completed'] = time.time()
+                if 'test_runs' not in self.job['testinfo']:
+                    self.job['testinfo']['test_runs'] = {}
+                if 'runs' in self.job['testinfo']:
+                    max_steps = 0
+                    for run in range(self.job['testinfo']['runs']):
+                        run_num = run + 1
+                        # Count the number of steps in the test data
+                        step_count = 0
+                        if self.needs_zip:
+                            for zipitem in self.needs_zip:
+                                matches = re.match(r'^(\d+)_(\d+)_', zipitem['name'])
+                                if matches and run_num == int(matches.group(1)):
+                                    step = int(matches.group(2))
+                                    if step > step_count:
+                                        step_count = step
+                        run_info = {'done': True}
+                        if step_count > 0:
+                            run_info['steps'] = step_count
+                            if step_count > max_steps:
+                                max_steps = step_count
+                        self.job['testinfo']['test_runs'][run_num] = run_info
+                    self.job['testinfo']['steps'] = max_steps
+                json_path = os.path.join(self.workdir, 'testinfo.json')
+                with open(json_path, 'wt') as f_out:
+                    json.dump(self.job['testinfo'], f_out)
+                self.needs_zip.append({'path': json_path, 'name': 'testinfo.json'})
+
+            # Zip the files
+            zip_path = None
+            if len(self.needs_zip):
+                zip_path = os.path.join(self.workdir, "result.zip")
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
+                    for zipitem in self.needs_zip:
+                        logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
+                        zip_file.write(zipitem['path'], zipitem['name'])
+                        try:
+                            os.remove(zipitem['path'])
+                        except Exception:
+                            pass
+            data = {'location': self.location,
+                    'pc': self.pc_name,
+                    'testinfo': '1',
+                    'done': '1'}
+            if 'Test ID' in self.job:
+                data['id'] = self.job['Test ID']
+            if self.key is not None:
+                data['key'] = self.key
+            if self.instance_id is not None:
+                data['ec2'] = self.instance_id
+            if self.zone is not None:
+                data['ec2zone'] = self.zone
+            if self.cpu_pct is not None:
+                data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+            if 'error' in self.job:
+                data['error'] = self.job['error']
+            uploaded = False
+            if 'work_server' in self.job:
+                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+            if not uploaded:
+                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+        self.raw_job = None
+        self.needs_zip = []
+        # Clean up the work directory
+        if os.path.isdir(self.workdir):
+            try:
+                shutil.rmtree(self.workdir)
+            except Exception:
+                pass
+        self.scheduler_job_done()
+        #self.license_ping()
+
+    def scheduler_job_done(self):
+        """Signal to the scheduler that the test is complete"""
+        if self.job is not None and 'jobID' in self.job and self.scheduler and self.scheduler_salt and self.scheduler_node and not self.is_dead:
+            try:
+                proxies = {"http": None, "https": None}
+                url = self.scheduler + 'hawkscheduleserver/wpt-test-update.ashx'
+                payload = '{"test":"' + self.job['jobID'] +'","update":0}'
+                self.session.post(url, headers={'CPID': self.get_cpid(self.scheduler_node), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+            except Exception:
+                logging.exception("Error reporting job done to scheduler")
+
+    def collect_crux_data(self, task):
+        """Collect CrUX data for the URL that was tested"""
+        if self.job is not None and 'url' in self.job and 'crux_api_key' in self.job:
+            form_factor = 'DESKTOP'
+            if self.options.iOS or self.options.android:
+                form_factor = 'PHONE'
+            if 'mobile' in self.job and self.job['mobile']:
+                form_factor = 'PHONE'
+            if 'browser' in self.job:
+                if self.job['browser'].startswith('iPhone') or self.job['browser'].startswith('iPod'):
+                    form_factor = 'PHONE'
+            try:
+                proxies = {"http": None, "https": None}
+                url = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=' + self.job['crux_api_key']
+                test_url = self.job['url']
+                if not test_url.startswith('http'):
+                    test_url = 'http://' + test_url
+                req = {
+                    'url': test_url,
+                    'formFactor': form_factor
+                }
+                payload = json.dumps(req)
+                logging.debug(payload)
+                response = self.session.post(url, headers={'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                if response:
+                    crux_data = response.text
+                    if crux_data and len(crux_data):
+                        logging.debug(crux_data)
+                        path = os.path.join(task['dir'], 'crux.json.gz')
+                        with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                            outfile.write(crux_data)
+            except Exception:
+                logging.exception("Error fetching CrUX data")
 
     def upload_task_result(self, task):
-        """Upload the result of an individual test run"""
+        """Upload the result of an individual test run if it is being sharded"""
+        if self.is_dead:
+            return
         logging.info('Uploading result')
-        cpu_pct = None
+        self.profile_start(task, 'wpt.upload')
+        self.cpu_pct = None
         self.update_browser_viewport(task)
+        if task['run'] == 1 and not task['cached']:
+            self.collect_crux_data(task)
         # Stop logging to the file
         if self.log_handler is not None:
             try:
@@ -1064,11 +1506,12 @@ class WebPageTest(object):
             logging.debug('Discarding warmup run')
         else:
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
-                cpu_pct = task['page_data']['fullyLoadedCPUpct']
+                self.cpu_pct = task['page_data']['fullyLoadedCPUpct']
             data = {'id': task['id'],
                     'location': self.location,
                     'run': str(task['run']),
                     'cached': str(task['cached']),
+                    'testinfo': '1',
                     'pc': self.pc_name}
             if self.key is not None:
                 data['key'] = self.key
@@ -1076,7 +1519,8 @@ class WebPageTest(object):
                 data['ec2'] = self.instance_id
             if self.zone is not None:
                 data['ec2zone'] = self.zone
-            needs_zip = []
+            if 'run' in self.job:
+                self.needs_zip = []
             zip_path = None
             if os.path.isdir(task['dir']):
                 # upload any video images
@@ -1088,17 +1532,8 @@ class WebPageTest(object):
                                 filepath = os.path.join(video_dir, filename)
                                 if os.path.isfile(filepath):
                                     name = video_subdirectory + '/' + filename
-                                    if os.path.getsize(filepath) > 100000:
-                                        logging.debug('Uploading %s (%d bytes)', filename,
-                                                    os.path.getsize(filepath))
-                                        if self.post_data(self.url + "resultimage.php", data,
-                                                        filepath, task['prefix'] + '_' + filename):
-                                            os.remove(filepath)
-                                        else:
-                                            needs_zip.append({'path': filepath, 'name': name})
-                                    else:
-                                        needs_zip.append({'path': filepath, 'name': name})
-                # Upload the separate large files (> 100KB)
+                                    self.needs_zip.append({'path': filepath, 'name': name})
+                # Upload the separate files
                 for filename in os.listdir(task['dir']):
                     filepath = os.path.join(task['dir'], filename)
                     if os.path.isfile(filepath):
@@ -1109,68 +1544,201 @@ class WebPageTest(object):
                                 os.remove(filepath)
                             except Exception:
                                 pass
-                        elif os.path.getsize(filepath) > 100000:
-                            logging.debug('Uploading %s (%d bytes)', filename,
-                                        os.path.getsize(filepath))
-                            if self.post_data(self.url + "resultimage.php", data, filepath, filename):
-                                try:
-                                    os.remove(filepath)
-                                except Exception:
-                                    pass
-                            else:
-                                needs_zip.append({'path': filepath, 'name': filename})
                         else:
-                            needs_zip.append({'path': filepath, 'name': filename})
-                # Zip the remaining files
-                if len(needs_zip):
+                            self.needs_zip.append({'path': filepath, 'name': filename})
+                # Zip the files
+                if len(self.needs_zip) and 'run' in self.job:
                     zip_path = os.path.join(task['dir'], "result.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
-                        for zipitem in needs_zip:
-                            logging.debug('Storing %s (%d bytes)', zipitem['name'],
-                                        os.path.getsize(zipitem['path']))
+                        for zipitem in self.needs_zip:
+                            logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
                             zip_file.write(zipitem['path'], zipitem['name'])
                             try:
                                 os.remove(zipitem['path'])
                             except Exception:
                                 pass
+                    self.needs_zip = []
             # Post the workdone event for the task (with the zip attached)
-            if task['done']:
-                data['done'] = '1'
-            if task['error'] is not None:
-                data['error'] = task['error']
-            if cpu_pct is not None:
-                data['cpu'] = '{0:0.2f}'.format(cpu_pct)
-            logging.debug('Uploading result zip')
-            self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            if 'run' in self.job:
+                if task['done']:
+                    data['done'] = '1'
+                if task['error'] is not None:
+                    data['error'] = task['error']
+                if self.cpu_pct is not None:
+                    data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+                uploaded = False
+                if 'work_server' in self.job:
+                    uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+                if not uploaded:
+                    self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            else:
+                # Keep track of test-level errors for reporting
+                if task['error'] is not None:
+                    self.job['error'] = task['error']
         # Clean up so we don't leave directories lying around
-        if os.path.isdir(task['dir']):
+        if os.path.isdir(task['dir']) and 'run' in self.job:
             try:
                 shutil.rmtree(task['dir'])
             except Exception:
                 pass
-        if task['done'] and os.path.isdir(self.workdir):
+        self.profile_end(task, 'wpt.upload')
+        if 'profile_data' in task:
             try:
-                shutil.rmtree(self.workdir)
+                self.profile_end(task, 'test')
+                del task['profile_data']['start']
+                del task['profile_data']['lock']
+                raw_data = json.dumps(task['profile_data'])
+                logging.debug("%s", raw_data)
+                self.session.post(self.job['profile_data'], raw_data)
             except Exception:
-                pass
+                logging.exception('Error uploading profile data')
+            del task['profile_data']
 
-    def post_data(self, url, data, file_path, filename):
+    def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
+        if self.is_dead:
+            return False
         ret = True
         # pass the data fields as query params and any files as post data
         url += "?"
         for key in data:
             if data[key] != None:
-                url += key + '=' + urllib.quote_plus(data[key]) + '&'
+                url += key + '=' + quote_plus(data[key]) + '&'
         logging.debug(url)
+        response = None
         try:
             if file_path is not None and os.path.isfile(file_path):
-                self.session.post(url,
+                logging.debug('Uploading filename : %d bytes', os.path.getsize(file_path))
+                response = self.session.post(url,
                                   files={'file': (filename, open(file_path, 'rb'))},
-                                  timeout=300,)
+                                  timeout=600)
             else:
-                self.session.post(url)
+                response = self.session.post(url, timeout=600)
         except Exception:
             logging.exception("Upload Exception")
             ret = False
+        if ret and response is not None:
+            self.last_test_id = response.text
         return ret
+
+    def license_ping(self):
+        """Ping the license server"""
+        if not self.license_pinged and not self.is_dead:
+            self.license_pinged = True
+            parts = urlsplit(self.url)
+            data = {
+                'loc': self.location,
+                'server': parts.netloc
+            }
+            if self.wpthost:
+                data['wpthost'] = self.wpthost
+            self.post_data('https://license.webpagetest.org/', data)
+
+    def profile_start(self, task, event_name):
+        if task is not None and 'profile_data' in task:
+            with task['profile_data']['lock']:
+                task['profile_data'][event_name] = {'s': round(monotonic() - task['profile_data']['start'], 3)}
+
+    def profile_end(self, task, event_name):
+        if task is not None and 'profile_data' in task:
+            with task['profile_data']['lock']:
+                if event_name in task['profile_data']:
+                    task['profile_data'][event_name]['e'] = round(monotonic() - task['profile_data']['start'], 3)
+                    task['profile_data'][event_name]['d'] = round(task['profile_data'][event_name]['e'] - task['profile_data'][event_name]['s'], 3)
+
+    def report_diagnostics(self):
+        """Send a periodic diagnostics report"""
+        if self.is_dead:
+            return
+        # Don't report more often than once per minute
+        now = monotonic()
+        if self.last_diagnostics and now < self.last_diagnostics + 60:
+            return
+        import psutil
+        self.last_diagnostics = now
+        cpu = self.cpu_pct if self.cpu_pct else psutil.cpu_percent(interval=1)
+        # Ping the scheduler diagnostics endpoint
+        if self.scheduler and self.scheduler_salt and len(self.scheduler_nodes) > 0:
+            for node in self.scheduler_nodes:
+                try:
+                    import json as json_native
+                    disk = psutil.disk_usage(__file__)
+                    mem = psutil.virtual_memory()
+                    ver = platform.uname()
+                    os = '{0} {1}'.format(ver[0], ver[2])
+                    cpu = min(max(int(round(cpu)), 0), 100)
+                    info = {
+                        'Machine': self.pc_name,
+                        'Version': self.version,
+                        'Instance': self.instance_id if self.instance_id else '',
+                        'Cpu': cpu,
+                        'Memcap': mem.total,
+                        'Memused': mem.total - mem.available,
+                        'Diskcap': disk.total,
+                        'Diskused': disk.used,
+                        'Os': os
+                    }
+                    payload = json_native.dumps(info, separators=(',', ':'))
+                    logging.debug(payload)
+                    proxies = {"http": None, "https": None}
+                    url = self.scheduler + 'hawkscheduleserver/wpt-diagnostics.ashx'
+                    response = self.session.post(url, headers={'CPID': self.get_cpid(node), 'Content-Type': 'application/json'}, data=payload, proxies=proxies, timeout=30)
+                    logging.debug(response.headers)
+                except Exception:
+                    logging.exception('Error reporting diagnostics')
+        # Ping the WPT servers if there are multiple (a single doesn't need a separate ping)
+        if len(self.work_servers) and len(self.test_locations):
+            try:
+                from .os_util import get_free_disk_space
+                proxies = {"http": None, "https": None}
+                for server in self.work_servers:
+                    for location in self.test_locations:
+                        url = server + 'ping.php?'
+                        url += "location=" + quote_plus(location)
+                        url += "&pc=" + quote_plus(self.pc_name)
+                        url += "&cpu={0:0.2f}".format(cpu)
+                        if self.key is not None:
+                            url += "&key=" + quote_plus(self.key)
+                        if self.instance_id is not None:
+                            url += "&ec2=" + quote_plus(self.instance_id)
+                        if self.zone is not None:
+                            url += "&ec2zone=" + quote_plus(self.zone)
+                        if self.options.android:
+                            url += '&apk=1'
+                        url += '&version={0}'.format(self.version)
+                        if self.screen_width is not None:
+                            url += '&screenwidth={0:d}'.format(self.screen_width)
+                        if self.screen_height is not None:
+                            url += '&screenheight={0:d}'.format(self.screen_height)
+                        if self.dns_servers is not None:
+                            url += '&dns=' + quote_plus(self.dns_servers)
+                        free_disk = get_free_disk_space()
+                        url += '&freedisk={0:0.3f}'.format(free_disk)
+                        uptime = self.get_uptime_minutes()
+                        if uptime is not None:
+                            url += '&upminutes={0:d}'.format(uptime)
+                        if self.job is not None and 'Test ID' in self.job:
+                            url += '&test=' + quote_plus(self.job['Test ID'])
+                        try:
+                            self.session.get(url, timeout=5, proxies=proxies)
+                        except Exception:
+                            pass
+            except Exception:
+                logging.exception('Error reporting diagnostics')
+
+    def shutdown(self):
+        """Agent is dying.  Re-queue the test if possible and if we have one"""
+        if not self.is_dead:
+            self.is_dead = True
+            # requeue the raw test through the original server
+            if self.raw_job is not None:
+                url = self.raw_job['work_server'] + 'requeue.php?id=' + quote_plus(self.raw_job['id'])
+                url += '&sig=' + quote_plus(self.raw_job['signature'])
+                url += '&location=' + quote_plus(self.raw_job['location'])
+                if self.scheduler_node is not None:
+                    url += '&node=' + quote_plus(self.scheduler_node)
+                if 'jobID' in self.raw_job:
+                    url += '&jobID=' + quote_plus(self.raw_job['jobID'])
+                proxies = {"http": None, "https": None}
+                self.session.post(url, headers={'Content-Type': 'text/plain'}, data=self.raw_job['payload'], timeout=30, proxies=proxies)
+                self.scheduler_job_done()

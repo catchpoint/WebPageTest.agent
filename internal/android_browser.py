@@ -1,19 +1,30 @@
-# Copyright 2017 Google Inc. All rights reserved.
-# Use of this source code is governed by the Apache 2.0 license that can be
-# found in the LICENSE file.
+# Copyright 2019 WebPageTest LLC.
+# Copyright 2017 Google Inc.
+# Copyright 2020 Catchpoint Systems Inc.
+# Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
+# found in the LICENSE.md file.
 """Base class support for android browsers"""
 import gzip
 import hashlib
 import logging
+import multiprocessing
 import os
 import shutil
 import subprocess
+import sys
+import threading
 import time
-import monotonic
+if (sys.version_info >= (3, 0)):
+    from time import monotonic
+    GZIP_TEXT = 'wt'
+else:
+    from monotonic import monotonic
+    GZIP_TEXT = 'w'
 try:
     import ujson as json
 except BaseException:
     import json
+
 from .base_browser import BaseBrowser
 
 
@@ -41,6 +52,9 @@ class AndroidBrowser(BaseBrowser):
         self.job = job
         self.options = options
         self.config = config
+        self.recording = False
+        self.usage_queue = None
+        self.thread = None
         self.video_processing = None
         self.tcpdump_processing = None
         self.task = None
@@ -65,7 +79,7 @@ class AndroidBrowser(BaseBrowser):
                                              self.config['package'] + '.md5')
             last_md5 = None
             if os.path.isfile(last_install_file):
-                with open(last_install_file, 'rb') as f_in:
+                with open(last_install_file, 'r') as f_in:
                     last_md5 = f_in.read()
             if last_md5 is None or last_md5 != self.config['md5']:
                 valid = False
@@ -91,7 +105,7 @@ class AndroidBrowser(BaseBrowser):
                         if md5 == self.config['md5']:
                             valid = True
                 except Exception:
-                    pass
+                    logging.exception('Error downloading browser update')
                 if os.path.isfile(tmp_file):
                     if valid:
                         # Uninstall the previous install of the same package if we are installing a custom browser.
@@ -100,7 +114,7 @@ class AndroidBrowser(BaseBrowser):
                             self.adb.adb(['uninstall', self.config['package']])
                         logging.debug('Installing browser APK')
                         self.adb.adb(['install', '-rg', tmp_file])
-                        with open(last_install_file, 'wb') as f_out:
+                        with open(last_install_file, 'w') as f_out:
                             f_out.write(md5)
                     else:
                         logging.error('Error downloading browser APK')
@@ -110,6 +124,41 @@ class AndroidBrowser(BaseBrowser):
                         pass
         # kill any running instances
         self.adb.shell(['am', 'force-stop', self.config['package']])
+        # Modify the hosts file for non-Chrome browsers
+        if 'dns_override' in task:
+            self.modify_hosts(task, task['dns_override'])
+        self.profile_end('desktop.prepare')
+
+    def modify_hosts(self, task, hosts):
+        """Add entries to the system's hosts file"""
+        hosts_tmp = os.path.join(task['dir'], "hosts.wpt")
+        hosts_remote_tmp = '/data/local/tmp/hosts.wpt'
+        hosts_file = '/etc/hosts'
+        if len(hosts):
+            logging.debug('Modifying hosts file:')
+            # Make sure the system files are writable
+            self.adb.su('mount -o rw,remount /system')
+            try:
+                hosts_text = "127.0.0.1       localhost\n::1             ip6-localhost"
+                if hosts_text is not None:
+                    hosts_text += "\n"
+                    for pair in hosts:
+                        hosts_text += "{0}    {1}\n".format(pair[1], pair[0])
+                    with open(hosts_tmp, 'w') as f_out:
+                        f_out.write(hosts_text)
+                    self.adb.adb(['push', hosts_tmp, hosts_remote_tmp])
+                    self.adb.su('cp {} {}'.format(hosts_remote_tmp, hosts_file))
+                    self.adb.su('rm {}'.format(hosts_remote_tmp))
+                    self.adb.su('chown root:root {}'.format(hosts_file))
+                    self.adb.su('chmod 644 {}'.format(hosts_file))
+                    os.unlink(hosts_tmp)
+                    logging.debug(hosts_text)
+            except Exception as err:
+                logging.exception("Exception modifying hosts file: %s", err.__str__())
+
+    def stop(self, job, task):
+        """ Post-test cleanup """
+        pass
 
     def stop_all_browsers(self):
         """Kill all instances of known browsers"""
@@ -131,28 +180,33 @@ class AndroidBrowser(BaseBrowser):
         """Run javascipt (stub for overriding"""
         return None
 
-    def prepare_script_for_record(self, script):
+    def prepare_script_for_record(self, script, mark_start = False):
         """Convert a script command into one that first removes the orange frame"""
+        mark = "fetch('http://127.0.0.1:8888/wpt-start-recording');" if mark_start else ''
         return "(function() {" \
                "var wptDiv = document.getElementById('wptorange');" \
                "if(wptDiv) {wptDiv.parentNode.removeChild(wptDiv);}" \
                "window.requestAnimationFrame(function(){" \
-               "window.requestAnimationFrame(function(){" + script + "});"\
+               "window.requestAnimationFrame(function(){" + mark + script + "});"\
                "});" \
                "})();"
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
+        if self.must_exit:
+            return
         if task['log_data']:
+            self.recording = True
             task['page_data']['osVersion'] = self.adb.version
             task['page_data']['os_version'] = self.adb.version
             version = self.adb.get_package_version(self.config['package'])
             if version is not None:
                 task['page_data']['browserVersion'] = version
                 task['page_data']['browser_version'] = version
-            if not self.job['shaper'].configure(self.job, task):
-                task['error'] = "Error configuring traffic-shaping"
-                task['page_data']['result'] = 12999
+            if not self.job['dtShaper']:
+                if not self.job['shaper'].configure(self.job, task):
+                    task['error'] = "Error configuring traffic-shaping"
+                    task['page_data']['result'] = 12999
             if self.tcpdump_enabled:
                 self.adb.start_tcpdump()
             if self.video_enabled and not self.job['disable_video']:
@@ -164,12 +218,42 @@ class AndroidBrowser(BaseBrowser):
             if self.tcpdump_enabled or self.video_enabled:
                 time.sleep(2)
 
+            # start the background thread for monitoring bandwidth if reverse-tethered
+            if self.options.simplert or self.options.vpntether or self.options.vpntether2:
+                self.usage_queue = multiprocessing.JoinableQueue()
+                self.thread = threading.Thread(target=self.background_thread)
+                self.thread.daemon = True
+                self.thread.start()
+
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         pass
 
     def on_stop_recording(self, task):
         """Notification that we are done with an operation that needs to be recorded"""
+        if self.thread is not None:
+            self.thread.join(10)
+            self.thread = None
+        # record the CPU/Bandwidth/memory info
+        self.recording = False
+        if self.usage_queue is not None and not self.usage_queue.empty() and task is not None:
+            file_path = os.path.join(task['dir'], task['prefix']) + '_progress.csv.gz'
+            gzfile = gzip.open(file_path, GZIP_TEXT, 7)
+            if gzfile:
+                logline = "Offset Time (ms),Bandwidth In (bps),CPU Utilization (%),Memory\n"
+                logging.debug(logline)
+                gzfile.write(logline)
+                try:
+                    while True:
+                        snapshot = self.usage_queue.get(5)
+                        if snapshot is None:
+                            break
+                        logline = '{0:d},{1:d},-1,-1\n'.format(snapshot['time'], snapshot['bw'])
+                        logging.debug(logline)
+                        gzfile.write(logline)
+                except Exception:
+                    logging.Exception("Error processing usage queue")
+                gzfile.close()
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'
             self.adb.stop_tcpdump(tcpdump)
@@ -180,6 +264,8 @@ class AndroidBrowser(BaseBrowser):
 
     def on_start_processing(self, task):
         """Start any processing of the captured data"""
+        if self.must_exit:
+            return
         # kick off the video processing (async)
         if 'video_file' in task and task['video_file'] is not None and \
                 os.path.isfile(task['video_file']):
@@ -196,16 +282,13 @@ class AndroidBrowser(BaseBrowser):
             progress_file = os.path.join(task['dir'], task['prefix']) + \
                 '_visual_progress.json.gz'
             visualmetrics = os.path.join(support_path, "visualmetrics.py")
-            args = ['python', visualmetrics, '-i', task['video_file'],
+            args = [sys.executable, visualmetrics, '-i', task['video_file'],
                     '-d', video_path, '--force', '--quality',
                     '{0:d}'.format(self.job['imageQuality']),
                     '--viewport', '--maxframes', '50', '--histogram', histograms,
                     '--progress', progress_file]
             if 'debug' in self.job and self.job['debug']:
                 args.append('-vvvv')
-            if 'heroElementTimes' in self.job and self.job['heroElementTimes']:
-                hero_elements_file = os.path.join(task['dir'], task['prefix']) + '_hero_elements.json.gz'
-                args.extend(['--herodata', hero_elements_file])
             if 'renderVideo' in self.job and self.job['renderVideo']:
                 video_out = os.path.join(task['dir'], task['prefix']) + '_rendered_video.mp4'
                 args.extend(['--render', video_out])
@@ -222,6 +305,10 @@ class AndroidBrowser(BaseBrowser):
                 args.extend(self.config['videoFlags'])
             else:
                 args.append('--orange')
+            try:
+                logging.debug('Video file size: %d', os.path.getsize(video_path))
+            except Exception:
+                pass
             logging.debug(' '.join(args))
             self.video_processing = subprocess.Popen(args, close_fds=True)
         if self.tcpdump_enabled:
@@ -238,7 +325,7 @@ class AndroidBrowser(BaseBrowser):
                     slices_file = path_base + '_pcap_slices.json.gz'
                     pcap_parser = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                                'support', "pcap-parser.py")
-                    cmd = ['python', pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
+                    cmd = [sys.executable, pcap_parser, '--json', '-i', pcap_out, '-d', slices_file]
                     logging.debug(' '.join(cmd))
                     self.tcpdump_processing = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                                                stderr=subprocess.PIPE)
@@ -269,7 +356,7 @@ class AndroidBrowser(BaseBrowser):
                     if self.tcpdump_file is not None:
                         os.remove(self.tcpdump_file)
             except Exception:
-                pass
+                logging.exception('Error processing tcpdump')
 
     def step_complete(self, task):
         """All of the processing for the current test step is complete"""
@@ -281,15 +368,17 @@ class AndroidBrowser(BaseBrowser):
                 task['page_data']['eventName'] = task['step_name']
             if 'run_start_time' in task:
                 task['page_data']['test_run_time_ms'] = \
-                    int(round((monotonic.monotonic() - task['run_start_time']) * 1000.0))
+                    int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
             logging.debug('Page Data: %s', json_page_data)
-            with gzip.open(path, 'wb', 7) as outfile:
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 
     def screenshot(self, task):
         """Grab a screenshot using adb"""
+        if self.must_exit:
+            return
         png_file = os.path.join(task['dir'], task['prefix'] + '_screen.png')
         self.adb.screenshot(png_file, self.job['image_magick']['mogrify'])
         task['page_data']['result'] = 0
@@ -308,3 +397,48 @@ class AndroidBrowser(BaseBrowser):
                         os.remove(png_file)
                     except Exception:
                         pass
+
+    def wait_for_network_idle(self, timeout=60, threshold=1000):
+        """Wait for 5 one-second intervals that receive less than 1KB"""
+        logging.debug('Waiting for network idle')
+        end_time = monotonic() + timeout
+        self.adb.get_bytes_rx()
+        idle_count = 0
+        while idle_count < 5 and monotonic() < end_time and not self.must_exit:
+            time.sleep(1)
+            bytes_rx = self.adb.get_bytes_rx()
+            logging.debug("Bytes received: %d", bytes_rx)
+            if bytes_rx > threshold:
+                idle_count = 0
+            else:
+                idle_count += 1
+
+    def get_net_bytes(self):
+        """Get the bytes "received" on the tun0 interface when reberse tethering"""
+        import psutil
+        bytes_in = 0
+        net = psutil.net_io_counters(True)
+        for interface in net:
+            if interface[:3] == 'tun':
+                bytes_in += net[interface].bytes_sent
+        return bytes_in
+
+    def background_thread(self):
+        """Background thread for monitoring CPU and bandwidth usage"""
+        import psutil
+        last_time = start_time = monotonic()
+        last_bytes = self.get_net_bytes()
+        snapshot = {'time': 0, 'bw': 0}
+        self.usage_queue.put(snapshot)
+        while self.recording and not self.must_exit:
+            snapshot = {'bw': 0}
+            now = monotonic()
+            snapshot['time'] = int((now - start_time) * 1000)
+            # calculate the bandwidth over the last interval in Kbps
+            bytes_in = self.get_net_bytes()
+            if now > last_time:
+                snapshot['bw'] = int((bytes_in - last_bytes) * 8.0 / (now - last_time))
+            last_time = now
+            last_bytes = bytes_in
+            self.usage_queue.put(snapshot)
+        self.usage_queue.put(None)
