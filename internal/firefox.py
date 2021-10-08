@@ -113,6 +113,8 @@ class Firefox(DesktopBrowser):
                 shutil.rmtree(crash_dir)
             except Exception:
                 pass
+
+
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
             config = None
@@ -188,6 +190,15 @@ class Firefox(DesktopBrowser):
             time.sleep(0.5)
             self.wait_for_extension()
             if self.connected:
+                # Disable image types in prefs 
+                # eventually, we might want to consider exposing more prefs this way somewhere in here
+                if 'disableAVIF' in self.job and self.job['disableAVIF']:
+                    self.set_pref('image.avif.enabled', 'false')
+                if 'disableWEBP' in self.job and self.job['disableWEBP']:
+                    self.set_pref('image.webp.enabled', 'false')
+                if 'disableJXL' in self.job and self.job['disableJXL']:
+                    self.set_pref('image.jxl.enabled', 'false')
+
                 # Override the UA String if necessary
                 ua_string = self.execute_js('return navigator.userAgent;')
                 modified = False
