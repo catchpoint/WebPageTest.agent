@@ -191,11 +191,11 @@ class Firefox(DesktopBrowser):
             if self.connected:
                 # Disable image types in prefs 
                 # eventually, we might want to consider exposing more prefs this way somewhere in here
-                if 'disableAVIF' in self.job and self.job['disableAVIF']:
+                if self.job.get('disableAVIF'):
                     self.set_pref('image.avif.enabled', 'false')
-                if 'disableWEBP' in self.job and self.job['disableWEBP']:
+                if self.job.get('disableWEBP'):
                     self.set_pref('image.webp.enabled', 'false')
-                if 'disableJXL' in self.job and self.job['disableJXL']:
+                if self.job.get('disableJXL'):
                     self.set_pref('image.jxl.enabled', 'false')
 
                 # Override the UA String if necessary
