@@ -114,7 +114,6 @@ class Firefox(DesktopBrowser):
             except Exception:
                 pass
 
-
         # Prepare the config for the extension to query
         if self.job['message_server'] is not None:
             config = None
