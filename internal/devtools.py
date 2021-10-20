@@ -879,13 +879,15 @@ class DevTools(object):
             if wait:
                 self.pending_commands.append(command_id)
             end_time = monotonic() + timeout
-            self.send_command('Target.sendMessageToTarget',
+            target_response = self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
                               wait=wait, timeout=timeout)
             if wait:
                 if command_id in self.command_responses:
                     ret = self.command_responses[command_id]
                     del self.command_responses[command_id]
+                elif target_response is None or 'error' in target_response:
+                    ret = target_response
                 else:
                     while ret is None and monotonic() < end_time:
                         try:

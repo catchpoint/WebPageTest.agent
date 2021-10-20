@@ -988,10 +988,14 @@ class DevtoolsBrowser(object):
                 with open(os.path.join(self.support_path, 'Wappalyzer', 'wappalyzer.js')) as f_in:
                     wappalyzer = f_in.read()
                 if wappalyzer is not None:
-                    json_data = None
-                    with open(os.path.join(self.support_path, 'Wappalyzer', 'technologies.json')) as f_in:
-                        json_data = f_in.read()
-                    if json is not None:
+                    technologies = {}
+                    categories = {}
+                    with io.open(os.path.join(self.support_path, 'Wappalyzer', 'categories.json'), 'r', encoding='utf-8') as f_in:
+                        categories = json.load(f_in)
+                    for filename in sorted(glob.glob(os.path.join(self.support_path, 'Wappalyzer', 'technologies', '*.json'))):
+                        with io.open(filename, 'r', encoding='utf-8') as f_in:
+                            technologies.update(json.load(f_in))
+                    if technologies and categories:
                         # Format the headers as a dictionary of lists
                         headers = {}
                         if response_headers is not None:
@@ -1017,9 +1021,10 @@ class DevtoolsBrowser(object):
                                             headers[key] = []
                                         headers[key].append(value)
                         script = script.replace('%WAPPALYZER%', wappalyzer)
-                        script = script.replace('%JSON%', json_data)
                         script = script.replace('%COOKIES%', json.dumps(cookies))
                         script = script.replace('%RESPONSE_HEADERS%', json.dumps(headers))
+                        script = script.replace('%CATEGORIES%', json.dumps(categories))
+                        script = script.replace('%TECHNOLOGIES%', json.dumps(technologies))
         except Exception:
             logging.exception('Error building wappalyzer script')
         return script
