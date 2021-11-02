@@ -797,7 +797,7 @@ class DevtoolsBrowser(object):
             if self.job['keep_lighthouse_trace']:
                 command.append('--save-assets')
             if not self.job['keep_lighthouse_screenshots']:
-                command.extend(['--skip-audits', 'screenshot-thumbnails,final-screenshot'])
+                command.extend(['--skip-audits', 'screenshot-thumbnails,final-screenshot,full-page-screenshot'])
             form_factor_command = '--form-factor'
             if self.options.android:
                 command.extend([form_factor_command, 'mobile'])
