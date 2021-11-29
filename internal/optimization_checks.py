@@ -220,6 +220,7 @@ class OptimizationChecks(object):
                        '.doubleclick.net'],
             'HiberniaCDN': ['.hiberniacdn.com'],
             'Highwinds': ['hwcdn.net'],
+            'HSITX': ['.gtmc.hscdn.com'],
             'Hosting4CDN': ['.hosting4cdn.com'],
             'ImageEngine': ['.imgeng.in'],
             'Incapsula': ['.incapdns.net'],
