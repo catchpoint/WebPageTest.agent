@@ -1209,7 +1209,7 @@ class DevTools(object):
             if self.headers:
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
-                ua = self.job['user_agent_string']
+                user_agent_string = self.job['user_agent_string']
                 full_version = self.browser_version
                 main_version = str(int(self.browser_version))
                 metadata = {
@@ -1224,14 +1224,14 @@ class DevTools(object):
                         {'brand': 'Google Chrome', 'version': full_version}
                     ],
                     'platform': 'Unknown',
-                    'mobile': 'mobile' in self.job and self.job['mobile']
+                    'mobile': self.job.get('mobile', False)
                     }
                 try:
-                    if ua.find('Android') >= 0:
+                    if 'Android' in user_agent_string:
                         metadata['platform'] = 'Android'
                         metadata['platformVersion'] = '10'
                         metadata['architecture'] = 'arm'
-                    elif ua.find('iPhone') >= 0:
+                    elif 'iPhone' in user_agent_string:
                         metadata['platform'] = 'iOS'
                         metadata['platformVersion'] = '15'
                         metadata['architecture'] = 'arm'
@@ -1243,18 +1243,19 @@ class DevTools(object):
                             {'brand': ' Not A;Brand', 'version': '99'},
                             {'brand': 'Safari', 'version': full_version},
                         ]
-                    elif ua.find('(Windows') >= 0:
+                    elif '(Windows' in user_agent_string:
                         metadata['platform'] = 'Windows'
                         metadata['platformVersion'] = '10'
-                    elif ua.find('(Macintosh') >= 0:
+                    elif '(Macintosh' in user_agent_string:
                         metadata['platform'] = 'macOS'
-                    elif ua.find('(Linux') >= 0:
+                    elif '(Linux' in user_agent_string:
                         metadata['platform'] = 'Linux'
+
                     if self.options.android or self.is_ios:
                         metadata['mobile'] = True
                 except Exception:
                     logging.exception('Error generating UA metadata')
-                self.send_command('Network.setUserAgentOverride', {'userAgent': self.job['user_agent_string'], 'userAgentMetadata': metadata}, target_id=target_id, wait=True)
+                self.send_command('Network.setUserAgentOverride', {'userAgent': user_agent_string, 'userAgentMetadata': metadata}, target_id=target_id, wait=True)
             if len(self.task['block']):
                 for block in self.task['block']:
                     self.send_command('Network.addBlockedURL', {'url': block}, target_id=target_id)
