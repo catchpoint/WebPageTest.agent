@@ -226,6 +226,7 @@ class OptimizationChecks(object):
             'Instart Logic': ['.insnw.net',
                               '.inscname.net'],
             'Internap': ['.internapcdn.net'],
+            'iSF CDN': ['.isfcdn.com'],
             'jsDelivr': ['cdn.jsdelivr.net'],
             'JuraganCDN': ['.b.juragancdn.com',
                           'juragancdn.com'],
