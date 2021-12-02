@@ -1210,8 +1210,22 @@ class DevTools(object):
                 self.send_command('Network.setExtraHTTPHeaders', {'headers': self.headers}, target_id=target_id, wait=True)
             if 'user_agent_string' in self.job:
                 ua = self.job['user_agent_string']
-                full_version = self.browser_version
-                main_version = str(int(self.browser_version))
+                browser_version = "0"
+                full_version = "0"
+                main_version = "0"
+                try:
+                    if self.is_ios:
+                        match = re.search(r'Version\/(\d+\.\d+\.\d+)', ua)
+                    elif self.is_webkit:
+                        match = re.search(r'WebKit\/(\d+\.\d+\.\d+)', ua)
+                    else:
+                        match = re.search(r'Chrome\/(\d+\.\d+\.\d+\.\d+)', ua)
+                    if match:
+                        browser_version = match.group(1)
+                    full_version = browser_version
+                    main_version = str(int(re.search(r'\d+', browser_version).group()))
+                except Exception:
+                    logging.exception('Error extracting browser version')
                 metadata = {
                     'brands': [
                         {'brand': ' Not A;Brand', 'version': '99'},
@@ -1224,7 +1238,10 @@ class DevTools(object):
                         {'brand': 'Google Chrome', 'version': full_version}
                     ],
                     'platform': 'Unknown',
-                    'mobile': 'mobile' in self.job and self.job['mobile']
+                    'platformVersion': '0',
+                    'architecture': 'x86',
+                    'model': 'Model',
+                    'mobile': bool('mobile' in self.job and self.job['mobile'])
                     }
                 try:
                     if ua.find('Android') >= 0:
