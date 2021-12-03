@@ -921,6 +921,10 @@ class WebPageTest(object):
                     task['page_data']['saas_test_id'] = job['saas_test_id']
                     if 'saas_node_id' in job:
                         task['page_data']['saas_node_id'] = job['saas_node_id']
+                    if 'saas_report_window_start' in job:
+                        task['page_data']['saas_report_window_start'] = job['saas_report_window_start']
+                    if 'saas_report_window_end' in job:
+                        task['page_data']['saas_report_window_end'] = job['saas_report_window_end']
                     if 'saas_device_type_id' in job:
                         task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
                     else:
