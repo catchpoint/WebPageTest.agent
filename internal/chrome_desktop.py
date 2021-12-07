@@ -34,7 +34,9 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-breakpad',
     '--dont-require-litepage-redirect-infobar',
     '--override-https-image-compression-infobar',
-    '--disable-fetching-hints-at-navigation-start'
+    '--disable-fetching-hints-at-navigation-start',
+    '--disable-back-forward-cache',
+    '--disable-site-isolation-trials'
 ]
 
 HOST_RULES = [
