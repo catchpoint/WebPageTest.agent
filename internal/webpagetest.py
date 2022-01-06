@@ -516,6 +516,8 @@ class WebPageTest(object):
                     job['fps'] = self.fps
                 if 'warmup' not in job:
                     job['warmup'] = 0
+                if 'wappalyzer' not in job:
+                    job['wappalyzer'] = 1
                 if job['type'] == 'lighthouse':
                     job['fvonly'] = 1
                     job['lighthouse'] = 1
