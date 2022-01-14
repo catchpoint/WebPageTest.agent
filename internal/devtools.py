@@ -93,6 +93,8 @@ class DevTools(object):
         self.default_target = None
         self.dom_tree = None
         self.key_definitions = {}
+        self.wait_interval = 5.0
+        self.wait_for_script = None
         keyfile = os.path.join(os.path.dirname(__file__), 'support', 'keys.json')
         try:
             with open(keyfile, 'rt') as f_in:
@@ -950,6 +952,7 @@ class DevTools(object):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
+            last_wait_interval = start_time
             max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 if self.page_loaded is not None:
@@ -982,6 +985,7 @@ class DevTools(object):
                         else:
                             self.task['page_data']['result'] = 12999
                 elif now >= end_time:
+                    logging.debug('Test step timed out.')
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
@@ -993,6 +997,13 @@ class DevTools(object):
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
                         self.task['page_data']['result'] = 99997
+                elif self.wait_for_script is not None:
+                    elapsed_interval = now - last_wait_interval
+                    if elapsed_interval >= self.wait_interval:
+                        last_wait_interval = now
+                        ret = self.execute_js(self.wait_for_script)
+                        if ret == True:
+                            done = True
                 else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
