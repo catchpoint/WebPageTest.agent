@@ -298,7 +298,8 @@ class DevtoolsBrowser(object):
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
-            self.wappalyzer_detect(task, self.devtools.main_request_headers)
+            if self.job.get('wappalyzer'):
+                self.wappalyzer_detect(task, self.devtools.main_request_headers)
             # wait for the background optimization checks
             optimization.join()
 
