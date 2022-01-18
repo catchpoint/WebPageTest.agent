@@ -69,6 +69,8 @@ class Edge(DesktopBrowser):
         self.edge_registry_path = r"SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\MicrosoftEdge\Privacy"
         self.edge_registry_key_value = 0
         self.total_sleep = 0
+        self.wait_interval = 5.0
+        self.wait_for_script = None
 
     def reset(self):
         """Reset the ETW tracking"""
@@ -337,6 +339,7 @@ class Edge(DesktopBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             self.last_activity = None
+            last_wait_interval = start_time
             max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 try:
@@ -368,6 +371,13 @@ class Edge(DesktopBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
                         self.task['page_data']['result'] = 99997
+                elif self.wait_for_script is not None:
+                    elapsed_interval = now - last_wait_interval
+                    if elapsed_interval >= self.wait_interval:
+                        last_wait_interval = now
+                        ret = self.execute_js('return (' + self.wait_for_script + ');')
+                        if ret == True:
+                            done = True
                 elif self.last_activity is not None:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -923,6 +933,18 @@ class Edge(DesktopBrowser):
                                 logging.exception("Error setting cookie: %s", str(err))
                 except Exception:
                     logging.exception('Error setting cookie')
+        elif command['command'] == 'waitfor':
+            try:
+                self.wait_for_script = command['target'] if command['target'] else None
+            except Exception:
+                logging.exception('Error processing waitfor command')
+        elif command['command'] == 'waitinterval':
+            try:
+                interval = float(command['target'])
+                if interval > 0:
+                    self.wait_interval = interval
+            except Exception:
+                logging.exception('Error processing waitfor command')
 
     def navigate(self, url):
         """Navigate to the given URL"""

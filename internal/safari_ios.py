@@ -82,6 +82,8 @@ class iWptBrowser(BaseBrowser):
         self.workers = []
         self.default_target = None
         self.total_sleep = 0
+        self.wait_interval = 5.0
+        self.wait_for_script = None
 
     def prepare(self, job, task):
         """Prepare the OS for the browser"""
@@ -256,6 +258,7 @@ class iWptBrowser(BaseBrowser):
             end_time = start_time + self.task['time_limit']
             done = False
             interval = 1
+            last_wait_interval = start_time
             max_requests = int(self.job['max_requests']) if 'max_requests' in self.job else 0
             while not done and not self.must_exit:
                 if self.page_loaded is not None:
@@ -293,6 +296,13 @@ class iWptBrowser(BaseBrowser):
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
                         self.task['page_data']['result'] = 99997
+                elif self.wait_for_script is not None:
+                    elapsed_interval = now - last_wait_interval
+                    if elapsed_interval >= self.wait_interval:
+                        last_wait_interval = now
+                        ret = self.execute_js(self.wait_for_script)
+                        if ret == True:
+                            done = True
                 else:
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
@@ -1186,6 +1196,18 @@ class iWptBrowser(BaseBrowser):
             self.set_header(command['target'])
         elif command['command'] == 'resetheaders':
             self.reset_headers()
+        elif command['command'] == 'waitfor':
+            try:
+                self.wait_for_script = command['target'] if command['target'] else None
+            except Exception:
+                logging.exception('Error processing waitfor command')
+        elif command['command'] == 'waitinterval':
+            try:
+                interval = float(command['target'])
+                if interval > 0:
+                    self.wait_interval = interval
+            except Exception:
+                logging.exception('Error processing waitfor command')
 
     def navigate(self, url):
         """Navigate to the given URL"""

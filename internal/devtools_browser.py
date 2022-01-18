@@ -714,6 +714,18 @@ class DevtoolsBrowser(object):
             self.devtools.type_text(command['target'])
         elif command['command'] == 'keypress':
             self.devtools.keypress(command['target'])
+        elif command['command'] == 'waitfor':
+            try:
+                self.devtools.wait_for_script = command['target'] if command['target'] else None
+            except Exception:
+                logging.exception('Error processing waitfor command')
+        elif command['command'] == 'waitinterval':
+            try:
+                interval = float(command['target'])
+                if interval > 0:
+                    self.devtools.wait_interval = interval
+            except Exception:
+                logging.exception('Error processing waitfor command')
 
     def navigate(self, url):
         """Navigate to the given URL"""
