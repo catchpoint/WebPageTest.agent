@@ -285,8 +285,8 @@ class FirefoxLogParser(object):
                 if connection in self.http['connections']:
                     if 'ssl_start' not in self.http['connections'][connection]:
                         self.http['connections'][connection]['ssl_start'] = msg['timestamp']
-        elif msg['message'].startswith('nsHttpConnection::EnsureNPNComplete '):
-            match = re.search(r'^nsHttpConnection::EnsureNPNComplete (?P<connection>[\w\d]+)',
+        elif msg['message'].startswith('nsHttpConnection::HandshakeDone '):
+            match = re.search(r'^nsHttpConnection::HandshakeDone \[this=(?P<connection>[\w\d]+)\]',
                               msg['message'])
             if match:
                 connection = match.groupdict().get('connection')
