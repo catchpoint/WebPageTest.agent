@@ -83,6 +83,24 @@
     },
     "website": "http://www.eprints.org"
   },
+  "EWWW Image Optimizer": {
+    "cats": [
+      87,
+      92
+    ],
+    "description": "EWWW Image Optimizer is an image optimisation WordPress plugin designed to improve the performance of your website.",
+    "icon": "EWWW Image Optimizer.png",
+    "js": {
+      "ewww_webp_supported": ""
+    },
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/ewww-image-optimizer/",
+    "website": "https://github.com/nosilver4u/ewww-image-optimizer"
+  },
   "EX.CO": {
     "cats": [
       5
@@ -153,6 +171,30 @@
     "scriptSrc": "\\.easystore\\.co/",
     "website": "https://www.easystore.co"
   },
+  "Easylog": {
+    "cats": [
+      99
+    ],
+    "description": "EasyLog is a logistics company based in Brazil.",
+    "requiresCategory": 6,
+    "text": [
+      "\\bEasylog\\b"
+    ],
+    "website": "http://www.easylog.com.br"
+  },
+  "Ecovium": {
+    "cats": [
+      99
+    ],
+    "description": "Ecovium is an end-to-end logistics company in Germany.",
+    "icon": "Ecovium.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bMHP\\b",
+      "\\bEcovium\\b"
+    ],
+    "website": "https://ecovium.com"
+  },
   "Ecwid": {
     "cats": [
       6
@@ -187,6 +229,21 @@
     "url": "https?://(?:[^/]+\\.)?edgecastcdn\\.net/",
     "website": "http://www.edgecast.com"
   },
+  "Editor.js": {
+    "cats": [
+      24
+    ],
+    "description": "Editor.js is a Javascript library which allows developers to implement a block base text editor with plugins on their page.",
+    "icon": "Editor.js.png",
+    "js": {
+      "EditorJS": ""
+    },
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "website": "https://editorjs.io"
+  },
   "Elastic APM": {
     "cats": [
       10,
@@ -202,6 +259,54 @@
       "elasticApm": ""
     },
     "website": "https://www.elastic.co/apm"
+  },
+  "ElasticPress": {
+    "cats": [
+      87
+    ],
+    "description": "ElasticPress is a hosting service that connects your WordPress site to search hosting.",
+    "headers": {
+      "x-elasticpress-query": ""
+    },
+    "icon": "elasticpress.svg",
+    "implies": [
+      "Elasticsearch"
+    ],
+    "pricing": ["recurring", "freemium", "mid"],
+    "saas": true,
+    "website": "https://www.elasticpress.io/"
+  },
+  "ElasticSuite": {
+    "cats": [
+      29
+    ],
+    "cookies": {
+      "STUID": "\\;confidence:50",
+      "STVID": "\\;confidence:50"
+    },
+    "description": "ElasticSuite is a merchandising suite for Magento and OroCommerce.",
+    "html": [
+      "<input [^>]*Smile_Elasticsuite[^>]*>",
+      "<[\\S\\s.*]*Smile_Elasticsuite[\\S\\s.*]*>"
+    ],
+    "icon": "ElasticSuite.svg",
+    "implies": [
+      "PHP",
+      "Elasticsearch"
+    ],
+    "js": {
+      "smileTracker": ""
+    },
+    "oss": true,
+    "pricing": [
+      "poa"
+    ],
+    "requires": [
+      "OroCommerce",
+      "Magento"
+    ],
+    "scriptSrc": "Smile_ElasticsuiteTracker/js/tracking\\.js",
+    "website": "https://elasticsuite.io"
   },
   "Elasticsearch": {
     "cats": [
@@ -265,6 +370,23 @@
     },
     "scriptSrc": "elementor/assets/js/[^/]+\\.js\\?ver=([\\d.]+)$\\;version:\\1",
     "website": "https://elementor.com"
+  },
+  "Elementor Header & Footer Builder": {
+    "cats": [
+      87
+    ],
+    "description": "Elementor Header & Footer Builder is a simple yet powerful WordPress plugin that allows you to create a layout with Elementor and set it as.",
+    "dom": "link[href*='/wp-content/plugins/header-footer-elementor/']",
+    "icon": "Elementor Header & Footer Builder.svg",
+    "implies": "Elementor",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": [
+      "WordPress",
+      "Elementor"
+    ],
+    "website": "https://github.com/brainstormforce/header-footer-elementor"
   },
   "Elevar": {
     "cats": [
@@ -343,6 +465,20 @@
     "scriptSrc": "(?:static|cdn)\\.scarabresearch\\.com",
     "website": "https://emarsys.com/"
   },
+  "EmbedPlus": {
+    "cats": [
+      87
+    ],
+    "description": "EmbedPlus is a WordPress plugin for YouTube allows you to embed gallery, channel, playlist, or even live stream on your webpage.",
+    "icon": "EmbedPlus.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/youtube-embed-plus(?:-pro)?/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://www.embedplus.com"
+  },
   "EmbedSocial": {
     "cats": [
       5
@@ -372,19 +508,35 @@
     "icon": "Embedthis.png",
     "website": "http://embedthis.com/appweb"
   },
+  "Embedly": {
+    "cats": [
+      5
+    ],
+    "description": "Embedly is a service that allows developers to convert URLs into rich previews and embeddable content.",
+    "icon": "Embedly.svg",
+    "js": {
+      "embedly": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.embedly\\.com/",
+    "website": "https://embed.ly"
+  },
   "Ember.js": {
     "cats": [
       12
     ],
     "cpe": "cpe:/a:emberjs:ember.js",
     "icon": "Ember.js.png",
-    "implies": "Handlebars",
-    "scripts": "@overview\\s+Ember -[\\s\\S]+@version\\s+(.+)\\;version:\\1",
     "js": {
       "Ember": "",
-      "EmberENV": "",
-      "Ember.VERSION": "^(.+)$\\;version:\\1"
+      "Ember.VERSION": "^(.+)$\\;version:\\1",
+      "EmberENV": ""
     },
+    "scripts": "@overview\\s+Ember -[\\s\\S]+@version\\s+(.+)\\;version:\\1",
     "website": "http://emberjs.com"
   },
   "Emotion": {
@@ -397,6 +549,24 @@
     "icon": "Emotion.png",
     "website": "http://emotion.sh"
   },
+  "Enable": {
+    "cats": [
+      68,
+      87
+    ],
+    "description": "Enable is a web accessibility plugin by uPress.",
+    "icon": "Enable.png",
+    "js": {
+      "enable_toolbar.is_premium": ""
+    },
+    "pricing": [
+      "freemium",
+      "poa"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "cdn\\.enable\\.co\\.il/.+\\.js\\?ver=(\\d+(?:\\.\\d+)+)\\;version:\\1",
+    "website": "https://www.enable-accessibility.com"
+  },
   "Engagio": {
     "cats": [
       10
@@ -407,6 +577,19 @@
       "web-analytics\\.engagio\\.com/api/"
     ],
     "website": "https://www.engagio.com/"
+  },
+  "Enigma": {
+    "cats": [
+      80
+    ],
+    "description": "Enigma is the popular superfine multipurpose responsive WordPress theme from Infigo Software.",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/enigma/",
+    "website": "https://wordpress.org/themes/enigma"
   },
   "Enjin CMS": {
     "cats": [
@@ -427,6 +610,21 @@
     "scriptSrc": "\\.enjin\\.com/",
     "website": "https://www.enjin.com"
   },
+  "Ensi": {
+    "cats": [
+      6
+    ],
+    "description": "Ensi is an open source ecommerce platform based on service oriented architecture.",
+    "headers": {
+      "X-Ensi-Platform": ""
+    },
+    "icon": "Ensi.png",
+    "meta": {
+      "generator": "Ensi Platform"
+    },
+    "oss": true,
+    "website": "https://ensi.tech"
+  },
   "Ensighten": {
     "cats": [
       42
@@ -435,6 +633,66 @@
     "icon": "ensighten.png",
     "scriptSrc": "//nexus\\.ensighten\\.com/",
     "website": "https://success.ensighten.com/hc/en-us"
+  },
+  "Envialia": {
+    "cats": [
+      99
+    ],
+    "description": "",
+    "icon": "Envialia.png",
+    "requiresCategory": 6,
+    "text": [
+      "\\bEnvialia\\b"
+    ],
+    "website": "https://www.envialia.com"
+  },
+  "Envo Shop": {
+    "cats": [
+      80
+    ],
+    "description": "Envo Shop is a fast, clean and modern-looking responsive free WooCommerce WordPress theme by Envo Themes.",
+    "icon": "Envo Themes.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/envo-shop/.+customscript\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://envothemes.com/free-envo-shop"
+  },
+  "Envo Storefront": {
+    "cats": [
+      80
+    ],
+    "description": "Envo Storefront is a fast, clean and modern-looking responsive WooCommerce theme for WordPress.",
+    "icon": "Envo Themes.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/envo-storefront/.+customscript\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://envothemes.com/free-envo-storefront"
+  },
+  "Envo eCommerce": {
+    "cats": [
+      80
+    ],
+    "description": "Envo eCommerce is a fast, clean and modern-looking responsive free WooCommerce theme for WordPress.",
+    "icon": "Envo Themes.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/envo-ecommerce/.+customscript\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://envothemes.com/free-envo-ecommerce/"
   },
   "Envoy": {
     "cats": [
@@ -448,6 +706,24 @@
     },
     "icon": "Envoy.png",
     "website": "https://www.envoyproxy.io/"
+  },
+  "Envybox": {
+    "cats": [
+      5,
+      52
+    ],
+    "description": "Envybox is a multiservice for increasing sales.",
+    "icon": "Envybox.svg",
+    "js": {
+      "EnvyWidget": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "static\\.saas-support\\.com/",
+    "website": "https://envybox.io"
   },
   "Enyo": {
     "cats": [
@@ -503,6 +779,22 @@
     "icon": "Erlang.png",
     "website": "http://www.erlang.org"
   },
+  "Errorception": {
+    "cats": [
+      10
+    ],
+    "description": "Errorception is a error reporting service for client-side in-browser JavaScript errors.",
+    "icon": "Errorception.png",
+    "js": {
+      "_errs": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://errorception.com"
+  },
   "Essent SiteBuilder Pro": {
     "cats": [
       1,
@@ -520,6 +812,22 @@
     ],
     "saas": true,
     "website": "https://www.essent.com/SiteBuilderPro.html"
+  },
+  "Essential Addons for Elementor": {
+    "cats": [
+      87
+    ],
+    "description": "Essential Addons for Elementor gives you 70+ creative elements and extensions to help you extend the stock features of Elementor page builder.",
+    "dom": "link[href*='/wp-content/uploads/essential-addons-elementor/']",
+    "icon": "Essential Addons for Elementor.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/uploads/essential-addons-elementor/",
+    "website": "https://essential-addons.com/elementor/"
   },
   "Essential JS 2": {
     "cats": [
@@ -573,22 +881,17 @@
     ],
     "website": "https://etherpad.org"
   },
-  "etika": {
+  "EthicalAds": {
     "cats": [
-      91
+      36
     ],
-    "description": "etika is a fintech company based in Manchester which provide buy now pay later solution.",
-    "icon": "etika.svg",
-    "js": {
-      "etikaGlobal": "",
-      "EtikaProductJsHelper": "",
-      "etikaBannerInject": ""
-    },
-    "pricing": [
-      "payg"
-    ],
+    "description": "EthicalAds is a privacy-preserving ad network targeting developers.",
+    "icon": "EthicalAds.svg",
     "saas": true,
-    "website": "https://etika.com"
+    "scriptSrc": [
+      "media\\.ethicalads\\.io"
+    ],
+    "website": "https://www.ethicalads.io/"
   },
   "Etracker": {
     "cats": [
@@ -624,6 +927,44 @@
     "saas": true,
     "website": "https://www.eveve.com"
   },
+  "Evidon": {
+    "cats": [
+      67
+    ],
+    "description": "Evidon is a transparency company that helps organizations educate consumers on how and why data is collected, as well as provide consumers with the ability to give and withdraw consent to their data being used.",
+    "dom": "a[href*='info.evidon.com/pub_info/']",
+    "icon": "Evidon.png",
+    "js": {
+      "EB.EvidonConsent": "",
+      "evidon": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.evidon\\.com/",
+    "website": "https://www.evidon.com"
+  },
+  "ExactMetrics": {
+    "cats": [
+      87,
+      10
+    ],
+    "description": "ExactMetrics (formerly Google Analytics Dashboard for WP) plugin helps you properly setup all the powerful Google Analytics tracking features without writing any code or hiring a developer.",
+    "icon": "ExactMetrics.svg",
+    "js": {
+      "ExactMetrics": "",
+      "exactmetrics_frontend": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/google-analytics-dashboard-for-wp/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://www.exactmetrics.com"
+  },
   "Exhibit": {
     "cats": [
       25
@@ -656,12 +997,31 @@
     "scriptSrc": "(?:get.)?exitintel\\.com",
     "website": "https://exitintelligence.com"
   },
+  "ExoClick": {
+    "cats": [
+      36
+    ],
+    "description": "ExoClick is a Barcelona-based online advertising company, which provides online advertising services to both advertisers and publishers.",
+    "icon": "ExoClick.png",
+    "meta": {
+      "exoclick-site-verification": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.exoclick\\.com/",
+    "website": "https://www.exoclick.com"
+  },
   "ExpertRec": {
     "cats": [
       29
     ],
     "description": "ExpertRec is a collaborative Web search engine, which allows users share search histories through a web browser.",
     "icon": "ExpertRec.png",
+    "js": {
+      "_er_config": ""
+    },
     "pricing": [
       "low",
       "recurring"
@@ -730,6 +1090,115 @@
     "scriptSrc": "ext-base\\.js",
     "website": "https://www.sencha.com"
   },
+  "ExtendThemes Calliope": {
+    "cats": [
+      80
+    ],
+    "description": "ExtendThemes Calliope is an flexible, multipurpose WordPress child theme of Colibri WP.",
+    "dom": "link[href*='/wp-content/themes/calliope/']",
+    "icon": "ExtendThemes.svg",
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/calliope/",
+    "website": "https://wordpress.org/themes/calliope"
+  },
+  "ExtendThemes EmpowerWP": {
+    "cats": [
+      80
+    ],
+    "description": "ExtendThemes EmpowerWP is an flexible, multipurpose WordPress theme.",
+    "dom": "link[href*='/wp-content/themes/empowerwp']",
+    "excludes": "ExtendThemes Mesmerize",
+    "icon": "ExtendThemes.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/empowerwp(?:-pro)?/",
+    "website": "https://extendthemes.com/empowerwp"
+  },
+  "ExtendThemes Highlight": {
+    "cats": [
+      80
+    ],
+    "description": "ExtendThemes Highlight is an flexible, multipurpose WordPress theme.",
+    "dom": "link[href*='/wp-content/themes/highlight/'], link[href*='/wp-content/themes/highlight-pro/']",
+    "excludes": "ExtendThemes Mesmerize",
+    "icon": "ExtendThemes.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/highlight(?:-pro)?/",
+    "website": "https://extendthemes.com/highlight"
+  },
+  "ExtendThemes Materialis": {
+    "cats": [
+      80
+    ],
+    "description": "ExtendThemes Materialis is an flexible, multipurpose WordPress theme.",
+    "dom": "link#materialis-style-css",
+    "icon": "ExtendThemes.svg",
+    "js": {
+      "MaterialisTheme": "",
+      "materialisSetHeaderTopSpacing": "",
+      "materialis_theme_pro_settings": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/materialis(?:-pro)?/",
+    "website": "https://extendthemes.com/materialis"
+  },
+  "ExtendThemes Mesmerize": {
+    "cats": [
+      80
+    ],
+    "description": "ExtendThemes Mesmerize is an flexible, multipurpose WordPress theme.",
+    "dom": "link#mesmerize-style-css",
+    "icon": "ExtendThemes.svg",
+    "js": {
+      "MesmerizeKube": "",
+      "mesmerizeDomReady": "",
+      "mesmerizeFooterParalax": "",
+      "mesmerizeMenuSticky": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/mesmerize(?:-pro)?/",
+    "website": "https://extendthemes.com/mesmerize"
+  },
+  "Extendify": {
+    "cats": [
+      87
+    ],
+    "description": "Extendify (formerly Redux framework) is one of the most popular, advanced, and free to use option panel frameworks for WordPress themes and plugins.",
+    "icon": "Extendify.svg",
+    "meta": {
+      "framework": "^Redux ([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://extendify.com"
+  },
   "Extole": {
     "cats": [
       94,
@@ -769,6 +1238,20 @@
     "saas": true,
     "scriptSrc": "\\.ezo(?:js|ic|dn)\\.(?:com|net)",
     "website": "https://www.ezoic.com"
+  },
+  "e-Shop Commerce": {
+    "cats": [
+      6
+    ],
+    "description": "e-Shop is a all-in-one Software-as-a-Service (SaaS) that allows Israeli customers to set up an online store and sell their products.",
+    "icon": "eShop eCommerce.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "/template_inc/eshopstoresframework",
+    "website": "https://www.e-shop.co.il"
   },
   "e-goi": {
     "cats": [
@@ -814,6 +1297,20 @@
     "icon": "eBay.svg",
     "scriptSrc": "epnt\\.ebay\\.com/",
     "website": "https://partnernetwork.ebay.com"
+  },
+  "eCaupo": {
+    "cats": [
+      6
+    ],
+    "description": "eCaupo is no delivery portal, but your own shop.",
+    "icon": "eCaupo.png",
+    "pricing": [
+      "low",
+      "recurring",
+      "payg"
+    ],
+    "scriptSrc": "\\.ecaupo\\.(?:at|com)/",
+    "website": "https://www.ecaupo.com"
   },
   "eClass": {
     "cats": [
@@ -992,6 +1489,23 @@
     "icon": "enduro.js.svg",
     "implies": "Node.js",
     "website": "http://endurojs.com"
+  },
+  "etika": {
+    "cats": [
+      91
+    ],
+    "description": "etika is a fintech company based in Manchester which provide buy now pay later solution.",
+    "icon": "etika.svg",
+    "js": {
+      "EtikaProductJsHelper": "",
+      "etikaBannerInject": "",
+      "etikaGlobal": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://etika.com"
   },
   "eucookie.eu": {
     "cats": [

@@ -1,4 +1,21 @@
 {
+  "U-KOMI": {
+    "cats": [
+      90
+    ],
+    "description": "U-KOMI is a user generated content review marketing tool.",
+    "icon": "U-KOMI.svg",
+    "js": {
+      "GetUkomiSliderItemInfo": "",
+      "ukomiInstaLikeStep01": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://u-komi.com/en/"
+  },
   "UIKit": {
     "cats": [
       66
@@ -8,6 +25,34 @@
     "icon": "UIKit.png",
     "scriptSrc": "uikit.*\\.js",
     "website": "https://getuikit.com"
+  },
+  "UK Mail": {
+    "cats": [
+      99
+    ],
+    "description": "UK Mail is a postal service company operating in the United Kingdom.",
+    "icon": "UK Mail.png",
+    "requiresCategory": 6,
+    "text": [
+      "\\bUK Mail\\b"
+    ],
+    "website": "https://www.ukmail.com"
+  },
+  "UKFast": {
+    "cats": [
+      88,
+      62
+    ],
+    "description": "UKFast is a business-to-business internet hosting company based in Manchester, UK.",
+    "dns": {
+      "SOA": "\\.ukfast\\.net"
+    },
+    "icon": "UKFast.png",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "website": "https://www.ukfast.co.uk"
   },
   "UMI.CMS": {
     "cats": [
@@ -30,6 +75,31 @@
     },
     "icon": "UNIX.png",
     "website": "http://unix.org"
+  },
+  "UPS": {
+    "cats": [
+      99
+    ],
+    "description": "UPS is an American multinational shipping & receiving and supply chain management company.",
+    "icon": "UPS.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\b(?<!-)UPS\\b"
+    ],
+    "website": "https://www.ups.com"
+  },
+  "USWDS": {
+    "cats": [
+      18
+    ],
+    "description": "USWDS is a design system for the federal government.",
+    "icon": "USWDS.svg",
+    "js": {
+      "uswdsPresent": ""
+    },
+    "oss": true,
+    "scriptSrc": "\\buswds\\b",
+    "website": "https://designsystem.digital.gov"
   },
   "Ubercart": {
     "cats": [
@@ -68,6 +138,36 @@
     "saas": true,
     "website": "https://www.ueeshop.com"
   },
+  "Ultimate GDPR & CCPA": {
+    "cats": [
+      67,
+      87
+    ],
+    "description": "Ultimate GDPR & CCPA is a compliance toolkit for WordPress by createIT",
+    "icon": "Ultimate GDPR & CCPA.png",
+    "js": {
+      "ct_ultimate_gdpr_cookie": ""
+    },
+    "pricing": [
+      "low"
+    ],
+    "requires": "WordPress",
+    "website": "https://www.createit.com/gdpr"
+  },
+  "UltimatelySocial": {
+    "cats": [
+      87
+    ],
+    "description": "Ultimately Social (Share Buttons & Sharing Icons) is a plugin that allows you to place fancy social media icons and buttons on your WordPress website.",
+    "icon": "UltimatelySocial.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/ultimate-social-media-icons/",
+    "website": "https://www.ultimatelysocial.com"
+  },
   "UltraCart": {
     "cats": [
       6
@@ -81,16 +181,26 @@
     "url": "/cgi-bin/UCEditor\\?",
     "website": "http://ultracart.com"
   },
+  "Umami": {
+    "cats": [
+      10
+    ],
+    "description": "Umami is a self-hosted web analytics solution. It's goal is to provide a friendlier, privacy-focused alternative to Google Analytics and a free, open-sourced alternative to paid solutions.",
+    "icon": "umami.svg",
+    "oss": true,
+    "scriptSrc": "umami\\.js",
+    "website": "https://umami.is/"
+  },
   "Umbraco": {
     "cats": [
       1
-    ],
+    ], 
+    "description": "Umbraco is an open-source Microsoft ASP.NET based content management system.",
+    "icon": "Umbraco.png",
+    "implies": "Microsoft ASP.NET",
     "headers": {
       "X-Umbraco-Version": "^(.+)$\\;version:\\1"
     },
-    "html": "powered by <a href=[^>]+umbraco",
-    "icon": "Umbraco.png",
-    "implies": "Microsoft ASP.NET",
     "js": {
       "UC_IMAGE_SERVICE|ITEM_INFO_SERVICE": "",
       "UC_ITEM_INFO_SERVICE": "",
@@ -100,7 +210,16 @@
     "meta": {
       "generator": "umbraco"
     },
+    "scripts": "/Umbraco/Api/",
     "url": "/umbraco/login\\.aspx(?:$|\\?)",
+    "xhr": "/umbraco/api/",
+    "oss": true,
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
     "website": "http://umbraco.com"
   },
   "Unbounce": {
@@ -151,6 +270,23 @@
     "scriptSrc": "underscore.*\\.js(?:\\?ver=([\\d.]+))?\\;version:\\1",
     "website": "http://underscorejs.org"
   },
+  "Understrap": {
+    "cats": [
+      80
+    ],
+    "description": "Understrap is a renowned WordPress starter theme framework that combined Underscores and Bootstrap.",
+    "icon": "Understrap.png",
+    "implies": [
+      "Bootstrap",
+      "Underscore.js"
+    ],
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "wp-content/themes/understrap(?:[masterchild-]+)?(?:[masterchild-]+)?/",
+    "website": "https://understrap.com"
+  },
   "Uniconsent": {
     "cats": [
       67
@@ -169,6 +305,22 @@
     "oss": true,
     "scriptSrc": "unpkg\\.com/",
     "website": "https://unpkg.com"
+  },
+  "Unruly": {
+    "cats": [
+      36
+    ],
+    "description": "Unruly is a video advertising platform.",
+    "dom": "link[href*='.unrulymedia.com']",
+    "icon": "Unruly.png",
+    "js": {
+      "unruly.native": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://unruly.co"
   },
   "UpSellit": {
     "cats": [
@@ -189,6 +341,22 @@
     "saas": true,
     "scriptSrc": "www\\.upsellit\\.com/",
     "website": "https://us.upsellit.com"
+  },
+  "Uploadcare": {
+    "cats": [
+      31
+    ],
+    "description": "Uploadcare is a complete file handling platform for online business. Receive files from you users via File Uploader or File Upload API, implement image optimization and transformations with Image CDN API, and get HIPAA-compliant storage.",
+    "dom": "img[src*='.ucarecdn.com/'], link[href*='ucarecdn.com'], img[data-src*='.ucarecdn.com/']",
+    "icon": "Uploadcare.svg",
+    "js": {
+      "uploadcare.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://uploadcare.com"
   },
   "Upserve": {
     "cats": [
@@ -264,19 +432,6 @@
     "saas": true,
     "website": "https://uscreen.tv/"
   },
-  "USWDS": {
-    "cats": [
-      18
-    ],
-    "description": "USWDS is a design system for the federal government.",
-    "icon": "USWDS.svg",
-    "js": {
-      "uswdsPresent": ""
-    },
-    "scriptSrc": "\\buswds\\b",
-    "oss": true,
-    "website": "https://designsystem.digital.gov"
-  },
   "UserLike": {
     "cats": [
       52
@@ -299,6 +454,22 @@
       "api\\.userlike\\.com"
     ],
     "website": "http://userlike.com"
+  },
+  "UserReport": {
+    "cats": [
+      13,
+      73
+    ],
+    "description": "UserReport is an online survey and feedback management platform.",
+    "dom": "a[href*='feedback.userreport.com/'][target='_blank']",
+    "icon": "UserReport.svg",
+    "pricing": [
+      "freemium",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.userreport\\.com/",
+    "website": "https://www.userreport.com"
   },
   "UserRules": {
     "cats": [
@@ -358,6 +529,7 @@
       67
     ],
     "description": "Usercentrics is a SaaS enterprise solution for Consent Management (CMP) that helps enterprise customers to obtain, manage and document the user consent.",
+    "dom": "link[href*='app.usercentrics.eu'], script[data-usercentrics]",
     "icon": "Usercentrics.svg",
     "js": {
       "usercentrics.appVersion": "([\\d.]+)\\;version:\\1"
@@ -401,12 +573,24 @@
     "js": {
       "uSizyUniversal": ""
     },
-    "scriptSrc": "static\\.usizy\\.es/",
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "static\\.usizy\\.es/",
     "website": "https://usizy.com"
+  },
+  "Uvicorn": {
+    "cats": [
+      22
+    ],
+    "headers": {
+      "Server": "uvicorn"
+    },
+    "icon": "uvicorn.png",
+    "implies": "Python",
+    "oss": true,
+    "website": "https://www.uvicorn.org/"
   },
   "uKnowva": {
     "cats": [
@@ -425,6 +609,21 @@
     },
     "scriptSrc": "/media/conv/js/jquery\\.js",
     "website": "https://uknowva.com"
+  },
+  "uLogin": {
+    "cats": [
+      69
+    ],
+    "description": "uLogin is a tool that enables its users to get unified access to various Internet services.",
+    "icon": "uLogin.png",
+    "js": {
+      "uLogin.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "saas": true,
+    "website": "https://ulogin.ru"
   },
   "uPortal": {
     "cats": [

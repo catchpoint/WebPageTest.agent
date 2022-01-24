@@ -52,6 +52,38 @@
     },
     "website": "https://github.com/ruby/rdoc"
   },
+  "REDAXO": {
+    "cats": [
+      1
+    ],
+    "description": "REDAXO is a content management system that provides business optimisation through web projects and output codes.",
+    "icon": "REDAXO.png",
+    "implies": "PHP",
+    "js": {
+      "redaxo": "\\;confidence:50"
+    },
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "url": "^https?://(?:www\\.)?[\\d\\w\\-]+\\.[\\w]+/redaxo/\\;confidence:50",
+    "website": "https://redaxo.org"
+  },
+  "REG.RU": {
+    "cats": [
+      88
+    ],
+    "description": "REG.RU is a web hosting provider and internet domain registrar.",
+    "dns": {
+      "SOA": "(?:\\.hosting)?\\.reg\\.ru"
+    },
+    "icon": "REG.RU.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.reg.ru"
+  },
   "RTB House": {
     "cats": [
       77
@@ -151,6 +183,23 @@
     "icon": "Ramda.png",
     "scriptSrc": "ramda.*\\.js",
     "website": "http://ramdajs.com"
+  },
+  "RankMath SEO": {
+    "cats": [
+      87,
+      54
+    ],
+    "description": "RankMath SEO is a search engine optimization plugin for WordPress.",
+    "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/']",
+    "icon": "RankMath SEO.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/seo-by-rank-math(?:-pro)?/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://rankmath.com"
   },
   "Raphael": {
     "cats": [
@@ -315,6 +364,20 @@
     "scriptSrc": "\\.reamaze\\.com/",
     "website": "https://www.reamaze.com"
   },
+  "ReCaptcha v2 for Contact Form 7": {
+    "cats": [
+      87
+    ],
+    "description": "Contact Form 7 v5.1 dropped support for reCaptcha v2 along with the [recaptcha] tag December 2018. This plugin brings that functionality back from Contact Form 7 5.0.5 and re-adds the [recaptcha] tag.",
+    "icon": "ReCaptcha v2 for Contact Form 7.svg",
+    "implies": "Contact Form 7",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/wpcf7-recaptcha/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://wordpress.org/plugins/wpcf7-recaptcha/"
+  },
   "ReDoc": {
     "cats": [
       4
@@ -383,6 +446,20 @@
     ],
     "website": "https://reactrouter.com/"
   },
+  "Really Simple CAPTCHA": {
+    "cats": [
+      87
+    ],
+    "description": "Really Simple CAPTCHA does not work alone and is intended to work with other plugins. It is originally created for Contact Form 7, however, you can use it with your own plugin.",
+    "dom": "img[src*='/wp-content/plugins/really-simple-captcha/']",
+    "icon": "Really Simple CAPTCHA.png",
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/really-simple-captcha"
+  },
   "RebelMouse": {
     "cats": [
       1
@@ -441,15 +518,37 @@
     "scriptSrc": "api\\.recart\\.com",
     "website": "https://recart.com/"
   },
+  "Recent Posts Widget With Thumbnails": {
+    "cats": [
+      87
+    ],
+    "description": "Recent Posts Widget With Thumbnails is based on the well-known WordPress default widget 'Recent Posts' and extended to display more informations about the posts.",
+    "dom": {
+      "link[href*='/wp-content/plugins/recent-posts-widget-with-thumbnails/']": {
+        "attributes": {
+          "href": "/wp-content/plugins/recent-posts-widget-with-thumbnails/.+\\.css(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
+        }
+      }
+    },
+    "icon": "Recent Posts Widget With Thumbnails.png",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/recent-posts-widget-with-thumbnails/"
+  },
   "Recharge": {
     "cats": [
       41
     ],
     "description": "Recharge is the a subscription payments platform designed for merchants to set up and manage dynamic recurring billing across web and mobile.",
-    "icon": "Recharge.png",
+    "icon": "Recharge.svg",
     "implies": [
       "Cart Functionality"
     ],
+    "js": {
+      "ReChargeWidget": ""
+    },
     "pricing": [
       "recurring",
       "payg",
@@ -472,7 +571,8 @@
   },
   "RecoverMyCart": {
     "cats": [
-      76
+      76,
+      100
     ],
     "description": "RecoverMyCart is a shopify app for abandoned basket recovery.",
     "icon": "RecoverMyCart.png",
@@ -510,6 +610,18 @@
     },
     "icon": "Red Hat.svg",
     "website": "https://www.redhat.com"
+  },
+  "Red je Pakketje": {
+    "cats": [
+      99
+    ],
+    "description": "Red je Pakketje is a Dutch company specialised in same-day-delivery.",
+    "icon": "Red je Pakketje.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bRed je Pakketje\\b"
+    ],
+    "website": "https://redjepakketje.nl"
   },
   "RedCart": {
     "cats": [
@@ -699,6 +811,34 @@
     },
     "website": "http://www.reinvigorate.net"
   },
+  "Relais Colis": {
+    "cats": [
+      99
+    ],
+    "description": "Relais Colis is a French parcel delivery network.",
+    "icon": "Relais Colis.png",
+    "requiresCategory": 6,
+    "text": [
+      "\\bRelais Colis\\b"
+    ],
+    "website": "https://www.relaiscolis.com"
+  },
+  "Remix": {
+    "cats": [
+      18,
+      22
+    ],
+    "description": "Remix is a full stack web framework focused on web fundamentals and modern UX.",
+    "icon": "Remix.svg",
+    "implies": [
+      "Node.js"
+    ],
+    "js": {
+      "__remixContext": ""
+    },
+    "oss": true,
+    "website": "https://remix.run/"
+  },
   "RequireJS": {
     "cats": [
       12
@@ -803,6 +943,43 @@
     "scriptSrc": "static\\.resmio\\.\\w+/static/",
     "website": "https://www.resmio.com"
   },
+  "Responsive Lightbox & Gallery": {
+    "cats": [
+      87,
+      7
+    ],
+    "description": "Responsive Lightbox & Gallery plugin is a lightweight WordPress gallery plugin by Digital Factory.",
+    "icon": "Digital Factory.png",
+    "js": {
+      "rlArgs.activeGalleries": "",
+      "rl_hide_image": "",
+      "rl_view_image": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/responsive-lightbox/.+front\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://dfactory.eu/products/responsive-lightbox-gallery-extensions/"
+  },
+  "ResponsiveVoice": {
+    "cats": [
+      19
+    ],
+    "description": "ResponsiveVoice is a Text-To-Speech API supported in 51 languages.",
+    "icon": "ResponsiveVoice.png",
+    "js": {
+      "responsiveVoice.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://responsivevoice.org"
+  },
   "Resy": {
     "cats": [
       93
@@ -843,6 +1020,19 @@
     "saas": true,
     "scriptSrc": "cdn\\.retailrocket\\.net",
     "website": "https://retailrocket.net"
+  },
+  "RevJet": {
+    "cats": [
+      36
+    ],
+    "description": "RevJet is the first comprehensive Ad Experience Platform, for every audience, channel, format, inventory, and device.",
+    "dom": "link[href*='.revjet.com']",
+    "icon": "RevJet.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.revjet.com"
   },
   "RevLifter": {
     "cats": [
@@ -1038,6 +1228,26 @@
     "scriptSrc": "riot(?:\\+compiler)?(?:\\.min)?\\.js",
     "website": "https://riot.js.org/"
   },
+  "Rise.ai": {
+    "cats": [
+      84,
+      94
+    ],
+    "description": "Rise.ai is a strategic re-engagement solution that provides brands and retailers with a unique currency of their own.",
+    "icon": "Rise.ai.svg",
+    "js": {
+      "Rise.shop": "",
+      "RiseStoreFront": ""
+    },
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "strn\\.rise-ai\\.com/",
+    "website": "https://rise.ai"
+  },
   "Riskified": {
     "cats": [
       10,
@@ -1124,6 +1334,39 @@
     },
     "website": "http://www.rockrms.com"
   },
+  "Rockerbox": {
+    "cats": [
+      32
+    ],
+    "description": "Rockerbox is a provider of multi-touch attribution software.",
+    "icon": "Rockerbox.png",
+    "js": {
+      "RB.source": "\\;confidence:50"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "wxyz\\.rb\\.js",
+    "website": "https://www.rockerbox.com"
+  },
+  "Rocket.Chat": {
+    "cats": [
+      52
+    ],
+    "description": "Rocket.Chat is a communication hub that facilitates team collaboration and organizes conversations.",
+    "icon": "Rocket.Chat.svg",
+    "js": {
+      "RocketChat.livechat": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://rocket.chat"
+  },
   "Rollbar": {
     "cats": [
       13
@@ -1133,6 +1376,22 @@
       "rollbar\\.js/([0-9.]+)\\;version:\\1"
     ],
     "website": "https://rollbar.com/"
+  },
+  "Rotic": {
+    "cats": [
+      52
+    ],
+    "description": "Rotic is a conversion chatbot that answers questions, captures contacts, and books meetings.",
+    "icon": "Rotic.svg",
+    "js": {
+      "Rotic.setting": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://rotic.ir"
   },
   "RoundCube": {
     "cats": [
@@ -1147,6 +1406,30 @@
       "roundcube": ""
     },
     "website": "http://roundcube.net"
+  },
+  "Route": {
+    "cats": [
+      19
+    ],
+    "description": "Route is a delivery and shipping tracking app",
+    "icon": "route.png",
+    "js": {
+      "Routeapp": ""
+    },
+    "scriptSrc": "//cdn.routeapp.io/",
+    "website": "https://route.com/"
+  },
+  "Royal Mail": {
+    "cats": [
+      99
+    ],
+    "description": "Royal Mail is a British multinational postal service and courier company.",
+    "icon": "Royal Mail.png",
+    "requiresCategory": 6,
+    "text": [
+      "\\bRoyal Mail\\b"
+    ],
+    "website": "https://www.royalmail.com"
   },
   "Rubicon Project": {
     "cats": [

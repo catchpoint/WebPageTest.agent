@@ -1,4 +1,38 @@
 {
+  "VAPTCHA": {
+    "cats": [
+      16
+    ],
+    "description": "VAPTCHA is the abbreviation of (Variation Analysis based Public Turing Test to Tell Computers and Humans Apart), also known as gesture verification code, is a human-machine verification solution based on artificial intelligence and big data.",
+    "icon": "VAPTCHA.svg",
+    "js": {
+      "vaptcha": ""
+    },
+    "pricing": [
+      "poa",
+      "freemium"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.vaptcha\\.com/v([\\d\\.]+)\\.js\\;version:\\1",
+    "website": "https://en.vaptcha.com"
+  },
+  "VDX.tv": {
+    "cats": [
+      36
+    ],
+    "description": "VDX.tv (formerly Exponential) is a global advertising technology company that is transforming the way brands connect with relevant audiences in today's converging video landscape.",
+    "dom": "link[href*='.tribalfusion.com'], link[href*='.exponential.com']",
+    "icon": "VDX.tv.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "\\.tribalfusion\\.com/",
+      "\\.exponential\\.com"
+    ],
+    "website": "https://vdx.tv"
+  },
   "VIVVO": {
     "cats": [
       1
@@ -181,6 +215,22 @@
     "icon": "Venmo.svg",
     "website": "https://venmo.com"
   },
+  "VentraIP": {
+    "cats": [
+      88
+    ],
+    "description": "VentraIP is the largest privately owned web host and domain name registrar in Australia.",
+    "dns": {
+      "NS": "\\.(?:nameserver|hostingplatform)\\.net\\.au",
+      "SOA": "\\.(?:nameserver|hostingplatform)\\.net\\.au"
+    },
+    "icon": "VentraIP.svg",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "website": "https://ventraip.com.au"
+  },
   "Veoxa": {
     "cats": [
       36
@@ -195,16 +245,30 @@
   },
   "Vercel": {
     "cats": [
-      22
+      62
     ],
     "headers": {
-      "server": "^now$",
+      "server": "^now|Vercel$",
       "x-now-trace": "",
       "x-vercel-cache": "",
       "x-vercel-id": ""
     },
     "icon": "vercel.svg",
     "website": "https://vercel.com"
+  },
+  "Verifone": {
+    "cats": [
+      41
+    ],
+    "description": "Verifone is an American multinational corporation headquartered in Coral Springs, Florida, that provides technology for electronic payment transactions and value-added services at the point-of-sale.",
+    "icon": "Verifone.svg",
+    "dom":"link[href*='.2checkout.com']",
+    "scripts": "2checkout\\.com",
+    "saas": true,
+    "pricing": [
+      "payg"
+    ],
+    "website": "https://www.2checkout.com"
   },
   "VerifyPass": {
     "cats": [
@@ -242,7 +306,10 @@
       }
     },
     "icon": "Verizon Media.svg",
-    "scriptSrc": "\\.advertising\\.com",
+    "scriptSrc": [
+      "\\.advertising\\.com",
+      "\\.vidible\\.tv/"
+    ],
     "website": "https://www.verizonmedia.com"
   },
   "Verloop": {
@@ -577,7 +644,7 @@
     "icon": "VuePress.svg",
     "implies": "Vue.js",
     "meta": {
-      "generator": "^VuePress(?: ([0-9.]+))?$\\;version:\\1"
+      "generator": "^VuePress(?: ([0-9.]+)(-[a-z]+.[0-9]+)?)?$\\;version:\\1"
     },
     "website": "https://vuepress.vuejs.org/"
   },

@@ -63,6 +63,23 @@
     ],
     "website": "https://truendo.com"
   },
+  "TVSquared": {
+    "cats": [
+      36
+    ],
+    "description": "TVSquared is a cross-platform TV ad measurement, analytics and optimisation platform.",
+    "dom": "link[href*='.tvsquared.com']",
+    "icon": "TVSquared.png",
+    "js": {
+      "TV2Track": "",
+      "_tvq": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.tvsquared.com"
+  },
   "TWiki": {
     "cats": [
       8
@@ -149,6 +166,20 @@
     "scriptSrc": "tc_widget\\.js",
     "website": "https://www.tablecheck.com"
   },
+  "TablePress": {
+    "cats": [
+      87
+    ],
+    "description": "TablePress is a free and open source plugin for the WordPress publishing platform. It enables you to create and manage tables on your website, without any coding knowledge.",
+    "dom": "link[href*='/wp-content/plugins/tablepress/']",
+    "icon": "TablePress.png",
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://tablepress.org"
+  },
   "Taboola": {
     "cats": [
       36
@@ -232,11 +263,11 @@
     ],
     "description": "Tail is a customer data management platform.",
     "icon": "Tail.svg",
-    "scriptSrc": "\\.tailtarget\\.com/",
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "\\.tailtarget\\.com/",
     "website": "https://www.tail.digital"
   },
   "Tailwind CSS": {
@@ -309,6 +340,25 @@
     "saas": true,
     "scriptSrc": "cdn\\.tamara\\.co",
     "website": "https://tamara.co/"
+  },
+  "Tapcart": {
+    "cats": [
+      19
+    ],
+    "description": "Tapcart is a mobile commerce SaaS platform that integrates directly with Shopify.",
+    "dom": "a[href*='tapcart.app'][target='_blank']",
+    "icon": "Tapcart.svg",
+    "js": {
+      "tapcartwebBanner": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "cdn\\.tapcart\\.com/",
+    "website": "https://tapcart.com"
   },
   "Target2Sell": {
     "cats": [
@@ -479,6 +529,31 @@
     "scriptSrc": "tajs\\.qq\\.com/stats",
     "website": "https://ta.qq.com/"
   },
+  "Tencent Cloud": {
+    "cats": [
+      31,
+      62
+    ],
+    "description": "Tencent Cloud is China's leading public cloud service provider.",
+    "icon": "Tencent Cloud.svg",
+    "meta": {
+      "copyright": "^.+Tencent\\sCloud\\.$"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "scriptSrc": "\\.tencent-cloud\\.(?:cn|com)/",
+    "website": "https://intl.cloud.tencent.com"
+  },
+  "Tencent QQ": {
+    "cats": [
+      52
+    ],
+    "description": "Tencent QQ also known as QQ, is an instant messaging software service and web portal developed by the Chinese tech giant Tencent.",
+    "dom": "a[href*='tencent://message/']",
+    "icon": "Tencent QQ.svg",
+    "website": "https://im.qq.com"
+  },
   "Tencent Waterproof Wall": {
     "cats": [
       9,
@@ -574,6 +649,34 @@
     },
     "website": "http://textpattern.com"
   },
+  "The Arena Group": {
+    "cats": [
+      36
+    ],
+    "description": "The Arena Group is a media coalition of professional content destinations. It operates on a shared digital publishing, advertising, and distribution platform, providing a major media-scale alternative to news and information distributed on social platforms.",
+    "icon": "The Arena Group.svg",
+    "meta": {
+      "generator": "^Tempest\\s-\\smaven\\.io$"
+    },
+    "saas": true,
+    "website": "https://thearenagroup.net"
+  },
+  "The Events Calendar": {
+    "cats": [
+      87
+    ],
+    "description": "The Events Calendar is a free event management plugin for WordPress.",
+    "dom": "link[href*='/wp-content/plugins/the-events-calendar/']",
+    "icon": "The Events Calendar.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/the-events-calendar(?:-pro)?/",
+    "website": "https://theeventscalendar.com"
+  },
   "The Hut Group": {
     "cats": [
       6
@@ -583,6 +686,26 @@
       "THEHUT-.*\\.js"
     ],
     "website": "https://www.thg.com/"
+  },
+  "The Theme Foundry Make": {
+    "cats": [
+      80
+    ],
+    "description": "Make is a free, open-source builder WordPress theme by The Theme Foundry.",
+    "icon": "The Theme Foundry.svg",
+    "js": {
+      "MakeDynamicStylesheet": "\\;confidence:50",
+      "MakeFrontEnd": "\\;confidence:50"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/make(?:-child)?/.+frontend\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://thethemefoundry.com/wordpress-themes/make"
   },
   "Thefork": {
     "cats": [
@@ -623,9 +746,452 @@
     ],
     "website": "http://thelia.net"
   },
+  "Theme Freesia Edge": {
+    "cats": [
+      80
+    ],
+    "description": "Edge is a responsive blogger WordPress theme by Theme Freesia.",
+    "icon": "Theme Freesia.png",
+    "js": {
+      "edge_slider_value": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/edge(?:-plus)?/",
+    "website": "https://themefreesia.com/themes/edge"
+  },
+  "Theme Freesia Photograph": {
+    "cats": [
+      80
+    ],
+    "description": "Photograph is a WordPress theme exclusively built for photographer, blogger, portfolio, photography agency or photo studio websites.",
+    "icon": "Theme Freesia.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/photograph(?:-plus)?/",
+    "website": "https://themefreesia.com/themes/Photograph"
+  },
+  "Theme Freesia ShoppingCart": {
+    "cats": [
+      80
+    ],
+    "description": "ShoppingCart is a WordPress theme especially build for store and ecommerce by Theme Freesia.",
+    "icon": "Theme Freesia.png",
+    "js": {
+      "shoppingcart_slider_value": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/shoppingcart(?:-plus)?/",
+    "website": "https://themefreesia.com/themes/shoppingcart"
+  },
+  "Theme Horse Attitude": {
+    "cats": [
+      80
+    ],
+    "description": "Attitude is a simple, clean and responsive retina ready WordPress theme by Theme Horse.",
+    "dom": "link[href*='/wp-content/themes/attitude-pro/']",
+    "icon": "Theme Horse.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/attitude(?:-pro)?/",
+    "website": "https://www.themehorse.com/themes/attitude"
+  },
+  "Theme Horse NewsCard": {
+    "cats": [
+      80
+    ],
+    "description": "NewsCard is a multi-purpose magazine/news WordPress theme by Theme Horse.",
+    "dom": "link[href*='/wp-content/themes/newscard-pro/']",
+    "icon": "Theme Horse.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/newscard(?:-pro)?/",
+    "website": "https://www.themehorse.com/themes/newscard"
+  },
+  "Theme Vision Agama": {
+    "cats": [
+      80
+    ],
+    "description": "Agama is a free multi-purpose WordPress theme by Theme Vision.",
+    "icon": "Theme Vision.png",
+    "js": {
+      "agama": "",
+      "agama_pro": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/agama(?:-pro)?/.+functions\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://theme-vision.com/agama"
+  },
+  "Theme4Press Evolve": {
+    "cats": [
+      80
+    ],
+    "description": "Theme4Press Evolve is an multipurpose and minimal WordPress theme.",
+    "icon": "Theme4Press.png",
+    "js": {
+      "evolve_js_local_vars": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/evolve(?:-plus)?/",
+    "website": "https://theme4press.com/evolve-multipurpose-wordpress-theme"
+  },
+  "ThemeGrill Accelerate": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill Accelerate is free minimal WordPress theme.",
+    "dom": "link#accelerate_style-css",
+    "icon": "ThemeGrill.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/accelerate(?:-pro)?/",
+    "website": "https://themegrill.com/themes/accelerate"
+  },
+  "ThemeGrill Cenote": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill Cenote is a creative blogging WordPress theme, fully compatible with WooCommerce and popular page builders.",
+    "dom": "link[href*='/wp-content/themes/cenote/'], link[href*='/wp-content/themes/cenote-pro/']",
+    "icon": "ThemeGrill.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/cenote(?:-pro)?/",
+    "website": "https://themegrill.com/themes/cenote"
+  },
+  "ThemeGrill ColorMag": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill ColorMag is most popular magazine-newspaper style WordPress theme.",
+    "dom": "link#colormag_style-css",
+    "icon": "ThemeGrill.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/colormag(?:-pro)?/",
+    "website": "https://themegrill.com/themes/colormag"
+  },
+  "ThemeGrill Flash": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill Flash is one of the most flexible multipurpose WordPress themes.",
+    "dom": "link[href='/wp-content/themes/flash']",
+    "icon": "ThemeGrill.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/flash(?:-pro)?/",
+    "website": "https://themegrill.com/themes/flash"
+  },
+  "ThemeGrill Radiate": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill Radiate is a simple and minimal WordPress theme focused on blogging.",
+    "dom": "link#radiate-style-css",
+    "icon": "ThemeGrill.png",
+    "js": {
+      "radiateScriptParam": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/radiate(?:-pro)?/",
+    "website": "https://themegrill.com/themes/radiate"
+  },
+  "ThemeGrill Spacious": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill Spacious is beautiful small to medium business responsive WordPress theme.",
+    "dom": "link#spacious_style-css",
+    "icon": "ThemeGrill.png",
+    "js": {
+      "spacious_slider_value": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/spacious(?:-pro)?/",
+    "website": "https://themegrill.com/themes/spacious"
+  },
+  "ThemeGrill eStore": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeGrill eStore is one of the most popular WooCommerce integrated WordPress themes.",
+    "icon": "ThemeGrill.png",
+    "implies": "Cart Functionality",
+    "meta": {
+      "generator": "eStore v\\.([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/e(?:s|S)tore(?:-pro)?/",
+    "website": "https://themegrill.com/themes/estore"
+  },
+  "ThemeIsle Menu Icons": {
+    "cats": [
+      87
+    ],
+    "description": "ThemeIsle Menu Icons plugin gives you the ability to add icons to your menu items, similar to the look of the latest dashboard menu.",
+    "dom": "link[href*='/wp-content/plugins/menu-icons/']",
+    "icon": "ThemeIsle.png",
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/menu-icons"
+  },
+  "ThemeZee Donovan": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeZee Donovan is a flexible, yet easy-to-use blogging WordPress theme.",
+    "icon": "ThemeZee.png",
+    "js": {
+      "donovanScreenReaderText": "",
+      "donovan_menu_title": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/donovan/",
+    "website": "https://themezee.com/themes/donovan"
+  },
+  "ThemeZee Poseidon": {
+    "cats": [
+      80
+    ],
+    "description": "ThemeZee Poseidon is an elegant designed WordPress theme featuring a splendid fullscreen image slideshow.",
+    "icon": "ThemeZee.png",
+    "js": {
+      "poseidonScreenReaderText": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/poseidon/",
+    "website": "https://themezee.com/themes/poseidon"
+  },
+  "ThemeZee Wellington": {
+    "cats": [
+      80
+    ],
+    "description": "Wellington is a clean and simple magazine WordPress theme by ThemeZee.",
+    "icon": "ThemeZee.png",
+    "js": {
+      "wellingtonScreenReaderText": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/wellington/",
+    "website": "https://themezee.com/themes/wellington"
+  },
+  "Themeansar Newsberg": {
+    "cats": [
+      80
+    ],
+    "description": "Themeansar Newsberg is a fast, clean, modern-looking, responsive news magazine WordPress theme.",
+    "dom": "link#newsberg-style-css",
+    "excludes": "Themeansar Newsup",
+    "icon": "Themeansar.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "website": "https://themeansar.com/free-themes/newsberg"
+  },
+  "Themeansar Newsup": {
+    "cats": [
+      80
+    ],
+    "description": "Themeansar Newsup is a fast, clean, modern-looking responsive news magazine WordPress theme.",
+    "icon": "Themeansar.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/newsup(?:-pro)?/",
+    "website": "https://themeansar.com/free-themes/newsup"
+  },
+  "Themebeez Cream Magazine": {
+    "cats": [
+      80
+    ],
+    "description": "Cream Magazine is a news and magazine WordPress theme by Themebeez.",
+    "icon": "Themebeez.png",
+    "js": {
+      "cream_magazine_script_obj": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "website": "https://themebeez.com/themes/cream-magazine"
+  },
+  "Themebeez Orchid Store": {
+    "cats": [
+      80
+    ],
+    "description": "Orchid Store is a clean, flexible, stylish and dynamic ecommerce WordPress theme by Themebeez.",
+    "icon": "Themebeez.png",
+    "js": {
+      "orchid_store_obj": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/orchid-store(?:-child)?/.+bundle\\.min\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://themebeez.com/themes/orchid-store"
+  },
+  "Themegraphy Graphy": {
+    "cats": [
+      80
+    ],
+    "description": "Themegraphy Graphy is now compatible with WordPress 5.0 and Gutenberg blog-oriented WordPress theme.",
+    "icon": "Themegraphy.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/graphy(?:-pro)?/",
+    "website": "https://themegraphy.com/wordpress-themes/graphy"
+  },
+  "Themes4Wp Bulk": {
+    "cats": [
+      80
+    ],
+    "description": "Themes4Wp Bulk is a modern and responsive multipurpose WordPress theme.",
+    "icon": "Themes4Wp.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/bulk(?:-pro)?/.+customscript\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://themes4wp.com/theme/bulk"
+  },
+  "ThemezHut Bam": {
+    "cats": [
+      80
+    ],
+    "description": "ThemezHut Bam is a great flexible WordPress theme for blogging sites.",
+    "icon": "ThemezHut.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/bam(?:-pro)?/",
+    "website": "https://themezhut.com/themes/bam"
+  },
+  "ThemezHut HitMag": {
+    "cats": [
+      80
+    ],
+    "description": "ThemezHut HitMag is a stylish and powerful WordPress theme crafted for magazines, newspapers or personal blogs.",
+    "icon": "ThemezHut.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/hitmag(?:-pro)?/",
+    "website": "https://themezhut.com/themes/hitmag"
+  },
+  "Themonic Iconic One": {
+    "cats": [
+      80
+    ],
+    "description": "Themonic Iconic One is a premium quality WordPress theme with pixel perfect typography and responsiveness and is built for speed.",
+    "icon": "Themonic.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/iconic-one(?:-[\\w]+)?/",
+    "website": "https://themonic.com/iconic-one"
+  },
   "Thimatic": {
     "cats": [
-      90
+      90,
+      100
     ],
     "description": "Thimatic is a Shopify app for product reviews.",
     "icon": "Thimatic.png",
@@ -636,6 +1202,36 @@
     "saas": true,
     "scriptSrc": "thimatic-apps\\.com/product_review/.*?v=([\\d.]+)\\;version:\\1",
     "website": "https://thimatic-apps.com/"
+  },
+  "Think Up Themes Consulting": {
+    "cats": [
+      80
+    ],
+    "description": "Think Up Themes Consulting is a multipurpose WordPress theme that is available for free download and also offers a pro version.",
+    "dom": "link#consulting-style-css",
+    "icon": "Think Up Themes.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/consulting(?:-pro)?/",
+    "website": "https://www.thinkupthemes.com/themes/consulting"
+  },
+  "Think Up Themes Minamaze": {
+    "cats": [
+      80
+    ],
+    "description": "Think Up Themes Minamaze is a multipurpose WordPress theme that is available for free download and also offers a pro version.",
+    "dom": "link#minamaze-style-css",
+    "icon": "Think Up Themes.png",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/minamaze(?:-pro)?/",
+    "website": "https://www.thinkupthemes.com/themes/minamaze"
   },
   "ThinkPHP": {
     "cats": [
@@ -838,15 +1434,18 @@
     "cats": [
       72
     ],
-    "description": "The Online Scheduling and Resource Management Software.",
+    "description": "Timify is an online scheduling and resource management software for small, medium and large businesses.",
     "icon": "Timify.svg",
+    "js": {
+      "TimifyWidget": ""
+    },
     "pricing": [
       "low",
       "freemium",
       "recurring"
     ],
-    "scriptSrc": "https://widget\\.timify\\.com/js/widget\\.js",
-    "website": "https://www.timify.com/"
+    "scriptSrc": "\\.timify\\.com/",
+    "website": "https://www.timify.com"
   },
   "TinyMCE": {
     "cats": [
@@ -860,6 +1459,35 @@
     },
     "scriptSrc": "/tiny_?mce(?:\\.min)?\\.js",
     "website": "http://tinymce.com"
+  },
+  "Tipsa": {
+    "cats": [
+      99
+    ],
+    "description": "TIPSA is a parcel delivery company in Spain, Portugal and Andorra.",
+    "icon": "Tipsa.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bTipsa\\b"
+    ],
+    "website": "https://www.tip-sa.com"
+  },
+  "Tiqets": {
+    "cats": [
+      5,
+      71
+    ],
+    "description": "Tiqets provides a complete overview of a city - museums, attractions, zoos, canal cruises, concerts. Publishers joined to the Tiqets affiliate program can receive 6% commission during our 30-day cookie window from completed total bookings resulting from featuring links to Tiqets products and content across their brand: blog/website, social media, newsletters, etc.",
+    "dom": "a[href*='.tiqets.com/'][target='_blank'], iframe[src*='.tiqets.com/']",
+    "icon": "Tiqets.svg",
+    "js": {
+      "__TIQETS_LOADER_REINIT": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.tiqets.com/affiliate"
   },
   "Titan": {
     "cats": [
@@ -909,6 +1537,16 @@
     "icon": "TornadoServer.png",
     "website": "http://tornadoweb.org"
   },
+  "TotalCode": {
+    "cats": [
+      6
+    ],
+    "headers": {
+      "X-Powered-By": "^TotalCode$"
+    },
+    "icon": "TotalCode.png",
+    "website": "http://www.totalcode.com"
+  },
   "Totango": {
     "cats": [
       97
@@ -919,26 +1557,16 @@
       "totango": "",
       "totangoLoader": ""
     },
-    "scriptSrc": [
-      "\\.totango\\.com/totango([\\d\\.]+)\\.js\\;version:\\1",
-      "\\.amazonaws\\.com/totango-cdn/totango\\d\\.js"
-    ],
-    "saas": true,
     "pricing": [
       "freemium",
       "poa"
     ],
-    "website": "https://www.totango.com"
-  },
-  "TotalCode": {
-    "cats": [
-      6
+    "saas": true,
+    "scriptSrc": [
+      "\\.totango\\.com/totango([\\d\\.]+)\\.js\\;version:\\1",
+      "\\.amazonaws\\.com/totango-cdn/totango\\d\\.js"
     ],
-    "headers": {
-      "X-Powered-By": "^TotalCode$"
-    },
-    "icon": "TotalCode.png",
-    "website": "http://www.totalcode.com"
+    "website": "https://www.totango.com"
   },
   "Touch2Success": {
     "cats": [
@@ -1009,6 +1637,20 @@
     "scriptSrc": "swrap\\.tradedoubler\\.com",
     "website": "https://www.tradedoubler.com/"
   },
+  "TrafficStars": {
+    "cats": [
+      36
+    ],
+    "description": "TrafficStars is a self-served ad network and ad exchange that operates mainly in adult-related verticals.",
+    "dom": "img[src*='tsyndicate.com/'], a[href*='trafficstars.com']",
+    "icon": "TrafficStars.png",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.tsyndicate\\.com/",
+    "website": "https://trafficstars.com"
+  },
   "Transifex": {
     "cats": [
       12
@@ -1018,6 +1660,17 @@
       "Transifex.live.lib_version": "(.+)\\;version:\\1"
     },
     "website": "https://www.transifex.com"
+  },
+  "Translate WordPress": {
+    "cats": [
+      87,
+      89
+    ],
+    "description": "Translate WordPress is a website translator plugin which can translate any website to any language automatically. Translate WordPress plugin is now a part of GTranslate family.",
+    "icon": "GTranslate.svg",
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/google-language-translator/.+scripts\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://gtranslate.io"
   },
   "Translucide": {
     "cats": [
@@ -1030,6 +1683,17 @@
     ],
     "scriptSrc": "lucide\\.init(?:\\.min)?\\.js",
     "website": "http://www.translucide.net"
+  },
+  "Transmart": {
+    "cats": [
+      99
+    ],
+    "description": "Transmart is a shipping company in Turkey.",
+    "requiresCategory": 6,
+    "text": [
+      "\\bTransmart\\b"
+    ],
+    "website": "https://transmartshipping.com"
   },
   "Tray": {
     "cats": [
@@ -1073,6 +1737,7 @@
       97
     ],
     "description": "Treasure Data is the only enterprise customer data platform.",
+    "dom": "link[href*='.treasuredata.com']",
     "icon": "Treasure Data.svg",
     "js": {
       "Treasure.version": "(.+)\\;version:\\1"
@@ -1131,6 +1796,17 @@
     "website": "https://triplelift.com",
     "xhr": "\\.3lift\\.com"
   },
+  "Trix": {
+    "cats": [
+      24
+    ],
+    "description": "Trix is an open-source project from Basecamp, the creators of Ruby on Rails.",
+    "icon": "trix.png",
+    "js": {
+      "Trix.VERSION": "^(.+)$\\;version:\\1"
+    },
+    "website": "https://trix-editor.org"
+  },
   "TruValidate": {
     "cats": [
       16,
@@ -1171,6 +1847,18 @@
     "scriptSrc": "cdn\\.nexternal\\.com/",
     "website": "https://www.truecommerce.com"
   },
+  "Trunkrs": {
+    "cats": [
+      99
+    ],
+    "description": "Trunkrs is a Dutch parcel delivery service.",
+    "icon": "Trunkrs.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bTrunkrs\\b"
+    ],
+    "website": "https://trunkrs.nl"
+  },
   "TrustArc": {
     "cats": [
       67
@@ -1209,6 +1897,22 @@
     "saas": true,
     "scriptSrc": "widgets\\.trustedshops\\.com/",
     "website": "https://www.trustedshops.co.uk"
+  },
+  "Trustindex Google Reviews": {
+    "cats": [
+      87,
+      90
+    ],
+    "description": "Google Reviews s a premium plugin that can help you to embed reviews on your site by Trustindex.",
+    "dom": "link[href*='/wp-content/plugins/widget-google-reviews/']",
+    "icon": "Trustindex.svg",
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "scriptSrc": "/wp-content/plugins/widget-google-reviews/",
+    "website": "https://www.trustindex.io"
   },
   "Trustpilot": {
     "cats": [
@@ -1254,6 +1958,18 @@
     "url": "^https?://(?:www\\.)?[^/]+\\.tumblr\\.com/",
     "website": "http://www.tumblr.com"
   },
+  "Turbo": {
+    "cats": [
+      92
+    ],
+    "description": "Turbo is a JavaScript framework for building fast web applications.",
+    "icon": "Turbo.svg",
+    "js": {
+      "Turbo": ""
+    },
+    "oss": true,
+    "website": "https://turbo.hotwired.dev/"
+  },
   "Turbolinks": {
     "cats": [
       92
@@ -1279,6 +1995,185 @@
     },
     "scriptSrc": "(turf@[\\d.]+)?/?turf\\.min\\.js",
     "website": "https://turfjs.org/"
+  },
+  "TurnTo": {
+    "cats": [
+      90
+    ],
+    "description": "TurnTo Networks Inc provides customer-generated content solutions platform for large retailers and the global brands that sell through them.",
+    "icon": "TurnTo.svg",
+    "js": {
+      "TurnTo": "",
+      "turnToConfig": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.turntonetworks.com"
+  },
+  "Twenty Eleven": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Eleven is the default WordPress theme for 2011.",
+    "dom": "link[href*='/wp-content/themes/twentyeleven/']",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://wordpress.org/themes/twentyeleven"
+  },
+  "Twenty Fifteen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Fifteen is the default WordPress theme for 2015.",
+    "dom": "link#twentyfifteen-style-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentyfifteen/",
+    "website": "https://wordpress.org/themes/twentyfifteen"
+  },
+  "Twenty Fourteen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Fourteen is the default WordPress theme for 2014.",
+    "dom": "link#twentyfourteen-style-css, style#twentyfourteen-lato-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentyfourteen/",
+    "website": "https://wordpress.org/themes/twentyfourteen"
+  },
+  "Twenty Nineteen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Nineteen is the default WordPress theme for 2019.",
+    "dom": "link#twentynineteen-style-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentynineteen/",
+    "website": "https://wordpress.org/themes/twentynineteen"
+  },
+  "Twenty Seventeen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Seventeen is the default WordPress theme for 2017.",
+    "dom": "link#twentyseventeen-style-css",
+    "icon": "WordPress.svg",
+    "js": {
+      "twentyseventeenScreenReaderText": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentyseventeen/",
+    "website": "https://wordpress.org/themes/twentyseventeen"
+  },
+  "Twenty Sixteen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Sixteen is the default WordPress theme for 2016.",
+    "dom": "link#twentysixteen-style-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentysixteen/",
+    "website": "https://wordpress.org/themes/twentysixteen"
+  },
+  "Twenty Ten": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Ten is the default WordPress theme for 2010.",
+    "dom": "link[href*='/wp-content/themes/twentyten/']",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentyten/",
+    "website": "https://wordpress.org/themes/twentyten"
+  },
+  "Twenty Thirteen": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Thirteen is the default WordPress theme for 2013.",
+    "dom": "link#twentythirteen-style-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentythirteen/",
+    "website": "https://wordpress.org/themes/twentythirteen"
+  },
+  "Twenty Twelve": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Twelve is the default WordPress theme for 2012.",
+    "dom": "link#twentytwelve-style-css",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentytwelve/",
+    "website": "https://wordpress.org/themes/twentytwelve"
+  },
+  "Twenty Twenty": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Twenty is the default WordPress theme for 2020.",
+    "dom": "link#twentytwenty-style-css",
+    "icon": "WordPress.svg",
+    "js": {
+      "twentytwenty": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentytwenty/",
+    "website": "https://wordpress.org/themes/twentytwenty"
+  },
+  "Twenty Twenty-One": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Twenty-One is the default WordPress theme for 2021.",
+    "dom": "link#twenty-twenty-one-style-css",
+    "icon": "WordPress.svg",
+    "js": {
+      "twentytwentyoneCollapseMenuOnClickOutside": "",
+      "twentytwentyoneResponsiveEmbeds": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentytwentyone/",
+    "website": "https://wordpress.org/themes/twentytwentyone"
   },
   "TwicPics": {
     "cats": [
@@ -1363,7 +2258,20 @@
       "Server": "TwistedWeb(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "TwistedWeb.png",
+    "oss": true,
     "website": "http://twistedmatrix.com/trac/wiki/TwistedWeb"
+  },
+  "Twitch Player": {
+    "cats": [
+      14
+    ],
+    "description": "Twitch is an American video live streaming service that focuses on video game live streaming, including broadcasts of esports competitions.",
+    "dom": "iframe[src*='player\\.twitch\\.tv']",
+    "icon": "Twitch.svg",
+    "js": {
+      "Twitch.Player": ""
+    },
+    "website": "https://dev.twitch.tv/docs/embed/video-and-clips/"
   },
   "Twitter": {
     "cats": [
@@ -1501,6 +2409,24 @@
     ],
     "scriptSrc": "use\\.typekit\\.com",
     "website": "http://typekit.com"
+  },
+  "Typof": {
+    "cats": [
+      6
+    ],
+    "cookies": {
+      "typof_session": "\\;confidence:50"
+    },
+    "description": "Typof is an ecommerce platform for artisans that allows to create a premium website and sell items directly to the consumer.",
+    "icon": "Typof.png",
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "scriptSrc": "portal/js/typof\\.js\\;confidence:50",
+    "website": "https://typof.com"
   },
   "theTradeDesk": {
     "cats": [
