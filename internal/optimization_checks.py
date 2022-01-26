@@ -293,6 +293,8 @@ class OptimizationChecks(object):
                        'tbcdn.cn',
                        '.taobaocdn.com'],
             'Telenor': ['.cdntel.net'],
+            'Tencent': ['.cdn.dnsv1.com',
+                        '.dsa.dnsv1.com'],
             'TRBCDN': ['.trbcdn.net'],
             'Twitter': ['.twimg.com'],
             'UnicornCDN': ['.unicorncdn.net'],
