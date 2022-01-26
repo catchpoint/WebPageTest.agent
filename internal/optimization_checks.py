@@ -771,15 +771,18 @@ class OptimizationChecks(object):
                 answers = dns_resolver.query(domain, 'CNAME')
                 if answers and len(answers):
                     for rdata in answers:
-                        name = '.'.join(rdata.target).strip(' .')
-                        logging.debug("CNAME %s => %s", domain, name)
-                        if name != domain:
-                            provider = self.check_cdn_name(name)
-                            if provider is None and depth < 10:
-                                provider = self.find_dns_cdn(name, depth + 1)
-                        if provider is not None:
-                            logging.debug("provider %s => %s", domain, provider)
-                            break
+                        try:
+                            name = str(rdata.target).strip(' .')
+                            logging.debug("CNAME %s => %s", domain, name)
+                            if name != domain:
+                                provider = self.check_cdn_name(name)
+                                if provider is None and depth < 10:
+                                    provider = self.find_dns_cdn(name, depth + 1)
+                            if provider is not None:
+                                logging.debug("provider %s => %s", domain, provider)
+                                break
+                        except Exception:
+                            pass
             except Exception:
                 pass
         # Try a reverse-lookup of the address
