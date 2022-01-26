@@ -221,6 +221,7 @@ class OptimizationChecks(object):
             'HiberniaCDN': ['.hiberniacdn.com'],
             'Highwinds': ['hwcdn.net'],
             'Hosting4CDN': ['.hosting4cdn.com'],
+            'HyosungITX': ['.gtmc.hscdn.com'],
             'ImageEngine': ['.imgeng.in'],
             'Incapsula': ['.incapdns.net'],
             'Instart Logic': ['.insnw.net',
