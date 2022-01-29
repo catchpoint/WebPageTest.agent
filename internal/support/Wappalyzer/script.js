@@ -42,9 +42,11 @@
 
     // Run the analysis 
     const html = new window.XMLSerializer().serializeToString(document);
+    const text = document.body && document.body.innerText;
     let detections = await Wappalyzer.analyze({
       url: window.top.location.href,
       html: html,
+      text: text,
       css: css,
       headers: responseHeaders,
       meta: meta,
@@ -69,6 +71,7 @@
       detections = detections.concat(await Wappalyzer.analyze({
           url: window.top.location.href,
           html: html,
+          text: text,
           css: css,
           headers: responseHeaders,
           meta: meta,
