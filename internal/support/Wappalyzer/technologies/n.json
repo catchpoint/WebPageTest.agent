@@ -1,4 +1,16 @@
 {
+  "NACEX": {
+    "cats": [
+      99
+    ],
+    "description": "NACEX is an express courier company in Spain, Andorra and Portugal.",
+    "icon": "NACEX.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bNACEX\\b"
+    ],
+    "website": "https://www.nacex.es"
+  },
   "NEO - Omnichannel Commerce Platform": {
     "cats": [
       6
@@ -101,6 +113,26 @@
     "scriptSrc": "static\\.narrativ\\.com/",
     "website": "https://narrativ.com/"
   },
+  "Nativo": {
+    "cats": [
+      36
+    ],
+    "description": "Nativo is an advertising technology provider.",
+    "dom": "link[href*='.postrelease.com/'], img[src*='.postrelease.com/']",
+    "icon": "Nativo.png",
+    "js": {
+      "ntvConfig": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "\\.ntv\\.io/",
+      "\\.postrelease\\.com/"
+    ],
+    "website": "https://www.nativo.com"
+  },
   "Navegg": {
     "cats": [
       10
@@ -108,6 +140,51 @@
     "icon": "Navegg.png",
     "scriptSrc": "tag\\.navdmp\\.com",
     "website": "https://www.navegg.com/"
+  },
+  "Naver RUA": {
+    "cats": [
+      92,
+      78
+    ],
+    "description": "Naver RUA (Real User Analytics) collects performance data from real users to analyze the speed of your website by country, operating system, and browser.",
+    "icon": "Naver.svg",
+    "scriptSrc": "rua-api\\.ncloud\\.com/",
+    "saas": true,
+    "pricing": [
+      "payg"
+    ],
+    "website": "https://analytics.naver.com"
+  },
+  "Naver Maps": {
+    "cats": [
+      35
+    ],
+    "description": "Naver Maps help develop location-based services which provided by Naver.",
+    "icon": "Naver.svg",
+    "js": {
+      "naver.maps": ""
+    },
+    "scriptSrc": "openapi\\.map\\.naver\\.com/openapi/v([\\d\\.]+)\\;version:\\1",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://www.ncloud.com/product/applicationService/maps"
+  },
+  "Naver Analytics": {
+    "cats": [
+      10
+    ],
+    "description": "Naver Analytics is a Korean based analytics service.",
+    "icon": "Naver.svg",
+    "scriptSrc": "wcs\\.naver\\.net/wcslog\\.js",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://analytics.naver.com"
   },
   "Neos CMS": {
     "cats": [
@@ -143,6 +220,21 @@
     },
     "icon": "nepso.svg",
     "website": "https://www.nepso.com"
+  },
+  "Nestify": {
+    "cats": [
+      88
+    ],
+    "description": "Nestify is a fully managed WordPress hosting platform that runs on AWS graviton processors.",
+    "headers": {
+      "x-nestify-cache": ""
+    },
+    "icon": "Nestify.png",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "website": "https://nestify.io"
   },
   "NetSuite": {
     "cats": [
@@ -219,7 +311,7 @@
         }
       }
     },
-    "icon": "themeisle.png",
+    "icon": "ThemeIsle.png",
     "requires": "WordPress",
     "scriptSrc": "themes/neve\\S*\\.js(?:\\?ver=([0-9.]+))?\\;version:\\1",
     "website": "https://themeisle.com/themes/neve/"
@@ -270,6 +362,18 @@
       "recurring"
     ],
     "website": "https://newspack.pub/"
+  },
+  "Nexive": {
+    "cats": [
+      99
+    ],
+    "description": "Nexive is a postal operator in Italy.",
+    "icon": "Nexive.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bNexive\\b"
+    ],
+    "website": "https://www.nexive.it"
   },
   "Next.js": {
     "cats": [
@@ -340,6 +444,41 @@
     "icon": "Nginx.svg",
     "website": "http://nginx.org/en"
   },
+  "Niagahoster": {
+    "cats": [
+      88
+    ],
+    "description": "Niagahoster is a web hosting service for small and medium enterprises. It provides shared hosting, WordPress hosting, Virtual Private Server (VPS), and more.",
+    "headers": {
+      "x-powered-by": "Niagahoster"
+    },
+    "icon": "Niagahoster.svg",
+    "implies": "Niagahoster",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://niagahoster.co.id"
+  },
+  "Ninja Forms": {
+    "cats": [
+      87
+    ],
+    "description": "Ninja Forms is the WordPress form builder.",
+    "dom": "link[href*='/wp-content/plugins/ninja-forms/']",
+    "icon": "Ninja Forms.svg",
+    "js": {
+      "nfForms": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/ninja-forms/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://ninjaforms.com"
+  },
   "NitroPack": {
     "cats": [
       23
@@ -351,6 +490,20 @@
     },
     "website": "https://nitropack.io/"
   },
+  "NoFraud": {
+    "cats": [
+      16
+    ],
+    "description": "NoFraud is a fraud prevention solution for ecommerce businesses.",
+    "icon": "NoFraud.svg",
+    "pricing": [
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "scriptSrc": "services\\.nofraud\\.com/",
+    "website": "https://www.nofraud.com"
+  },
   "Noddus": {
     "cats": [
       10,
@@ -358,11 +511,11 @@
     ],
     "description": "Noddus offers brands and agencies access to an advanced proprietary content marketing platform automating content production, distribution and analytics.",
     "icon": "Noddus.png",
-    "scriptSrc": "noddus\\.com/",
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "noddus\\.com/",
     "website": "https://www.enterprise.noddus.com"
   },
   "Node.js": {
@@ -531,21 +684,5 @@
     },
     "oss": true,
     "website": "http://www.nopcommerce.com"
-  },
-  "Niagahoster": {
-    "cats": [
-      88
-    ],
-    "headers": {
-      "x-powered-by": "Niagahoster"
-    },
-    "description": "Niagahoster is a web hosting service for small and medium enterprises. It provides shared hosting, WordPress hosting, Virtual Private Server (VPS), and more.",
-    "icon": "niagahoster.png",
-    "implies": "Niagahoster",
-    "pricing": [
-      "low",
-      "recurring"
-    ],
-    "website": "https://niagahoster.co.id"
   }
 }

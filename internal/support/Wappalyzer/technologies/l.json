@@ -11,6 +11,18 @@
     },
     "website": "http://www.lepton-cms.org"
   },
+  "LINE Login": {
+    "cats": [
+      69
+    ],
+    "description": "LINE Login is an API that allows you to implement a login function into your services, regardless of whether they are web apps or native apps.",
+    "dom": "a[href*='access.line.me/']",
+    "icon": "LINE.svg",
+    "js": {
+      "Constants.authorization_request_url": "access\\.line\\.me/oauth2/v([\\d\\.]+)/\\;version:\\1"
+    },
+    "website": "https://developers.line.biz/en/services/line-login/"
+  },
   "LKQD": {
     "cats": [
       36
@@ -185,6 +197,19 @@
     "scriptSrc": "/__layer0__/cache-manifest\\.js",
     "website": "https://www.layer0.co"
   },
+  "LazySizes": {
+    "cats": [
+      59
+    ],
+    "description": "LazySizes is a JavaScript library used to delay the loading of images (iframes, scripts, etc) until they come into view.",
+    "icon": "default.svg",
+    "js": {
+      "lazySizes": "",
+      "lazySizesConfig": ""
+    },
+    "oss": true,
+    "website": "https://github.com/aFarkas/lazysizes"
+  },
   "Leadinfo": {
     "cats": [
       10
@@ -233,6 +258,22 @@
     "saas": true,
     "scriptSrc": "npm/leanplum-sdk\\@([\\d.]+)\\;version:\\1",
     "website": "https://www.leanplum.com"
+  },
+  "Leaseweb": {
+    "cats": [
+      63,
+      88
+    ],
+    "description": "Leaseweb is an Infrastructure-as-a-Service (IaaS) provider offering dedicated servers, CDN, cloud hosting and hybrid cloud on a global network.",
+    "dns": {
+      "SOA": "\\.leaseweb\\.nl"
+    },
+    "icon": "Leaseweb.svg",
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "website": "https://www.leaseweb.com"
   },
   "Lede": {
     "cats": [
@@ -292,6 +333,47 @@
     "icon": "Lets Encrypt.svg",
     "website": "https://letsencrypt.org/"
   },
+  "Level 5": {
+    "cats": [
+      51
+    ],
+    "description": "Level 5 is a page builder constructed with WordPress and powered with WP Engine hosting featuring advanced caching and performance optimisation.",
+    "icon": "Level 5.png",
+    "js": {
+      "l5_inventory_url": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "website": "https://level5advertising.com/websites/"
+  },
+  "Libravatar": {
+    "cats": [
+      19
+    ],
+    "description": "Libravatar is a service for fetching avatar images for e-mail addresses and OpenIDs in a privacy respecting way.",
+    "dom": "img[src*='.libravatar.org/avatar/']",
+    "icon": "libravatar.png",
+    "oss": true,
+    "website": "https://www.libravatar.org/"
+  },
+  "Lieferando": {
+    "cats": [
+      1,
+      93
+    ],
+    "description": "Lieferando is an online portal for food orders.",
+    "icon": "Lieferando.svg",
+    "js": {
+      "Tealium.pagedata.country": "lieferando\\.de"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "website": "https://www.lieferando.de"
+  },
   "Liferay": {
     "cats": [
       1
@@ -348,6 +430,25 @@
     "scriptSrc": "lightbox(?:-plus-jquery)?.{0,32}\\.js",
     "website": "http://lokeshdhakar.com/projects/lightbox2/"
   },
+  "Lightning": {
+    "cats": [
+      80
+    ],
+    "description": "Lightning is a very simple and easy to customize WordPress theme which is based on the Bootstrap.",
+    "dom": "link[href*='/wp-content/themes/lightning/'], link[href*='/wp-content/themes/lightning-pro/']",
+    "icon": "Lightning.png",
+    "js": {
+      "lightningOpt.header_scrool": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/lightning(?:-pro)?/.+lightning\\.min\\.js(?:.+ver=([\\d\\.]+))?\\;version:\\1",
+    "website": "https://lightning.vektor-inc.co.jp/en/"
+  },
   "Lightspeed eCom": {
     "cats": [
       6
@@ -374,6 +475,22 @@
     "saas": true,
     "scriptSrc": "\\.limechat\\.ai/",
     "website": "https://www.limechat.ai"
+  },
+  "Limit Login Attempts Reloaded": {
+    "cats": [
+      87,
+      16
+    ],
+    "description": "Limit Login Attempts Reloaded stops brute-force attacks and optimizes your site performance by limiting the number of login attempts that are possible through the normal login as well as XMLRPC, Woocommerce and custom login pages.",
+    "dom": "link#llar-login-page-styles-css",
+    "icon": "Limit Login Attempts Reloaded.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://www.limitloginattempts.com"
   },
   "LinkSmart": {
     "cats": [
@@ -415,12 +532,21 @@
   },
   "Liquid Web": {
     "cats": [
-      62
+      62,
+      88
     ],
+    "description": "Liquid Web is a US-based host offering premium managed web hosting solutions.",
+    "dns": {
+      "SOA": "\\.liquidweb\\.com"
+    },
     "headers": {
       "x-lw-cache": ""
     },
-    "icon": "liquidweb.svg",
+    "icon": "Liquid Web.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
     "website": "https://www.liquidweb.com"
   },
   "List.js": {
@@ -586,12 +712,29 @@
     ],
     "description": "LivePerson is a tool for conversational chatbots and messaging.",
     "icon": "LivePerson.png",
+    "js": {
+      "lpTag.Chronos": ""
+    },
     "pricing": [
-      "poa"
+      "mid",
+      "recurring",
+      "payg"
     ],
     "saas": true,
-    "scriptSrc": "^https?://lptag\\.liveperson\\.net/tag/tag\\.js",
-    "website": "https://www.liveperson.com/"
+    "scriptSrc": "\\.(?:liveperson|contactatonce)?\\.(?:com|net|co\\.uk)/",
+    "website": "https://www.liveperson.com"
+  },
+  "LiveRamp DPM": {
+    "cats": [
+      36
+    ],
+    "description": "LiveRamp DPM is a TV advertising metrics and analytics platform.",
+    "icon": "LiveRamp.svg",
+    "js": {
+      "dpmComscoreVars": ""
+    },
+    "scriptSrc": "c\\.tvpixel\\.com/js/current/dpm_pixel_min\\.js",
+    "website": "https://liveramp.com/data-plus-math"
   },
   "LiveRamp PCM": {
     "cats": [
@@ -829,6 +972,18 @@
     ],
     "website": "https://www.loginradius.com"
   },
+  "LogoiX": {
+    "cats": [
+      99
+    ],
+    "description": "LogoiX is a German shipping company.",
+    "icon": "LogoiX.png",
+    "requiresCategory": 6,
+    "text": [
+      "\\bLogoiX\\b"
+    ],
+    "website": "https://www.logoix.com"
+  },
   "Loja Integrada": {
     "cats": [
       6
@@ -919,7 +1074,7 @@
   "Lootly": {
     "cats": [
       84,
-      32
+      94
     ],
     "description": "Lootly is a loyalty and referral marketing automation software suite for ecommerce businesses.",
     "dom": "iframe[src*='lootly.io/']",
@@ -938,10 +1093,12 @@
   },
   "Loox": {
     "cats": [
-      90
+      90,
+      100
     ],
     "description": "Loox is a reviews app for Shopify that helps you gather reviews and user-generated photos from your customers.",
     "icon": "Loox.svg",
+    "requires": "Shopify",
     "js": {
       "loox_global_hash": ""
     },
@@ -952,6 +1109,39 @@
     "saas": true,
     "scriptSrc": "loox\\.io/widget",
     "website": "https://loox.app"
+  },
+  "Loqate": {
+    "cats": [
+      19
+    ],
+    "description": "Loqate is an address verification solution.",
+    "icon": "Loqate.svg",
+    "js": {
+      "loqateAccountCode": "",
+      "pca.platform.productList": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.loqate.com"
+  },
+  "LottieFiles": {
+    "cats": [
+      19
+    ],
+    "description": "LottieFiles is an open-source animation file format that's tiny, high quality, interactive, and can be manipulated at runtime.",
+    "dom": "lottie-player, div[data-animation-type='lottie'], div[data-testid='lottie-player'], clipPath[id*='__lottie_element_']",
+    "icon": "LottieFiles.svg",
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "scriptSrc": [
+      "/dist/lottie-player\\.js",
+      "/dist/tgs-player\\.js"
+    ],
+    "website": "https://lottiefiles.com"
   },
   "Lotus Domino": {
     "cats": [
@@ -1004,6 +1194,25 @@
     "implies": "Java",
     "website": "http://lucene.apache.org/core/"
   },
+  "Lucky Orange": {
+    "cats": [
+      10
+    ],
+    "description": "Lucky Orange is a conversion optimisation tool with features including heatmaps, session recording, conversion funnels, form analytics, and chat.",
+    "dom": "link[href*='.luckyorange.com']",
+    "icon": "Lucky Orange.svg",
+    "js": {
+      "__wtw_lucky_site_id": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.luckyorange\\.com/",
+    "website": "https://www.luckyorange.com"
+  },
   "Luigi’s Box": {
     "cats": [
       10,
@@ -1014,6 +1223,41 @@
       "Luigis": ""
     },
     "website": "https://www.luigisbox.com"
+  },
+  "LyraThemes Kale": {
+    "cats": [
+      80
+    ],
+    "description": "LyraThemes Kale is a charming and elegant, aesthetically minimal and uncluttered food blog WordPress theme.",
+    "icon": "LyraThemes.png",
+    "js": {
+      "kale_responsive_videos": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/kale(?:-pro)?/",
+    "website": "https://www.lyrathemes.com/kale"
+  },
+  "Lytics": {
+    "cats": [
+      97
+    ],
+    "description": "Lytics is a customer data platform built for marketing teams.",
+    "icon": "Lytics.svg",
+    "js": {
+      "__lytics__jstag__.version": "(.+)\\;version:\\1"
+    },
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.lytics\\.io/",
+    "website": "https://www.lytics.com"
   },
   "libwww-perl-daemon": {
     "cats": [
@@ -1030,27 +1274,15 @@
     "cats": [
       22
     ],
+    "description": "Lighttpd is an open-source web server optimised for speed-critical environment.",
     "headers": {
-      "Server": "lighttpd(?:/([\\d.]+))?\\;version:\\1"
+      "Server": "(?:L|l)ight(?:y)?(?:tpd)?(?:/([\\d\\.]+))?\\;version:\\1"
     },
-    "icon": "lighttpd.png",
-    "website": "http://www.lighttpd.net"
-  },
-  "Lytics": {
-    "cats": [
-      97
-    ],
-    "description": "Lytics is a customer data platform built for marketing teams.",
-    "icon": "Lytics.svg",
-    "js": {
-      "__lytics__jstag__.version": "(.+)\\;version:\\1"
-    },
-    "scriptSrc": "\\.lytics\\.io/",
-    "saas": true,
+    "icon": "lighttpd.svg",
+    "oss": true,
     "pricing": [
-      "high",
-      "recurring"
+      "freemium"
     ],
-    "website": "https://www.lytics.com"
+    "website": "http://www.lighttpd.net"
   }
 }

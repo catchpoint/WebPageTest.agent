@@ -94,6 +94,22 @@
     },
     "website": "https://halo.run"
   },
+  "Hamechio": {
+    "cats": [
+      18
+    ],
+    "description": "Hamechio is a web application framework.",
+    "icon": "Hamechio.svg",
+    "implies": "PHP",
+    "meta": {
+      "generator": "hamech\\.io/"
+    },
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "website": "https://hamech.io"
+  },
   "Hammer.js": {
     "cats": [
       59
@@ -145,6 +161,32 @@
     },
     "scriptSrc": "haravan.*\\.js",
     "website": "https://www.haravan.com"
+  },
+  "HashThemes Total": {
+    "cats": [
+      80
+    ],
+    "description": "HashThemes Total is the powerful and creative multipurpose WordPress theme.",
+    "icon": "HashThemes.png",
+    "pricing": [
+      "freemium",
+      "onetime",
+      "low"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/(?:t|T)otal(?:-plus)?/",
+    "website": "https://hashthemes.com/wordpress-theme/total"
+  },
+  "Hashnode": {
+    "cats": [
+      11
+    ],
+    "description": "Hashnode is a free developer blogging platform that allows you to publish articles on your own domain and helps you stay connected with a global developer community.",
+    "dom": "div.css-zigog8",
+    "icon": "hashnode.png",
+    "scriptSrc": "hashnode\\.com",
+    "url": "^https?://[^/]+\\.(?:hashnode)\\.dev",
+    "website": "https://hashnode.com/"
   },
   "Haskell": {
     "cats": [
@@ -259,6 +301,25 @@
     "requires": "WordPress",
     "website": "https://elementor.com/hello-theme/"
   },
+  "Help Scout": {
+    "cats": [
+      13,
+      52
+    ],
+    "description": "Help Scout is a customer service platform including email, a knowledge base tool and live chat.",
+    "icon": "Help Scout.svg",
+    "js": {
+      "__onBeaconDestroy": "\\;confidence:25",
+      "beaconStore": "\\;confidence:25"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.helpscout\\.net/",
+    "website": "https://www.helpscout.com"
+  },
   "HelpDocs": {
     "cats": [
       4,
@@ -279,22 +340,17 @@
     "scriptSrc": "cdn\\.helpdocs\\.io",
     "website": "https://www.helpdocs.io"
   },
-  "Helpscout": {
+  "Hermes": {
     "cats": [
-      52
+      99
     ],
-    "description": "Helpscout is a customer service platform including email, a knowledge base tool and live chat.",
-    "icon": "Helpscout.svg",
-    "js": {
-      "Beacon": "\\;confidence:25"
-    },
-    "pricing": [
-      "low",
-      "recurring"
+    "description": "Hermes offers integrated solutions along the supply chain and partners with national and international trading companies.",
+    "icon": "Hermes.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bHermes\\b"
     ],
-    "saas": true,
-    "scriptSrc": "beacon-v2\\.helpscout\\.net",
-    "website": "https://www.helpscout.com/"
+    "website": "https://www.hermesworld.com"
   },
   "Hero": {
     "cats": [
@@ -343,10 +399,30 @@
         }
       }
     },
-    "icon": "themeisle.png",
+    "icon": "ThemeIsle.png",
     "requires": "WordPress",
     "scriptSrc": "themes/hestia.*\\.js(?:\\?ver=([0-9.]+))?\\;version:\\1",
     "website": "https://themeisle.com/themes/hestia/"
+  },
+  "Hetzner": {
+    "cats": [
+      88,
+      62
+    ],
+    "description": "Hetzner provides dedicated hosting, shared web hosting, virtual private servers, managed servers, domain names, SSL certificates, storage boxes, and cloud.",
+    "dns": {
+      "NS": "\\.ns\\.hetzner\\.com",
+      "SOA": "\\.hetzner\\.com"
+    },
+    "headers": {
+      "X-Powered-By": "Hetzner"
+    },
+    "icon": "Hetzner.svg",
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "website": "https://www.hetzner.com"
   },
   "Hexo": {
     "cats": [
@@ -389,6 +465,22 @@
     },
     "icon": "Hiawatha.png",
     "website": "http://hiawatha-webserver.org"
+  },
+  "HighStore": {
+    "cats": [
+      6
+    ],
+    "description": "HighStore is an ecommerce platform from Iran.",
+    "implies": "Microsoft ASP.NET",
+    "meta": {
+      "generator": "^HighStore\\.IR$",
+      "hs:version": "^([\\d\\.]+)$\\;version:\\1\\;confidence:50"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://digitalserver.ir"
   },
   "Highcharts": {
     "cats": [
@@ -462,6 +554,22 @@
     },
     "website": "http://hinzaco.com"
   },
+  "Histats": {
+    "cats": [
+      10
+    ],
+    "description": "Histats is a simple website visitor analysis and tracking tool.",
+    "dom": "img[src*='.histats.com/']",
+    "icon": "Histats.png",
+    "js": {
+      "Histats.ver": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "saas": true,
+    "website": "https://www.histats.com"
+  },
   "History": {
     "cats": [
       19
@@ -486,6 +594,18 @@
     ],
     "website": "https://twitter.github.io/hogan.js/"
   },
+  "Homerr": {
+    "cats": [
+      99
+    ],
+    "description": "Homerr is a logistics company operating in the Netherlands and Belgium.",
+    "icon": "Homerr.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bHomerr\\b"
+    ],
+    "website": "https://www.homerr.com"
+  },
   "Homestead": {
     "cats": [
       51
@@ -502,21 +622,95 @@
     "saas": true,
     "website": "https://www.homestead.com"
   },
-  "hoolah": {
+  "HostEurope": {
     "cats": [
-      91
+      88
     ],
-    "description": "hoolah is Asia's omni-channel buy now pay later platform.",
-    "icon": "hoolah.png",
-    "js": {
-      "hoolah": ""
+    "description": "HostEurope is a European website hosting, email and domain name registrar company headquartered Hayes, West London.",
+    "dns": {
+      "SOA": "\\.hosteurope\\.com"
     },
-    "scriptSrc": "merchant\\.cdn\\.hoolah\\.co/",
+    "icon": "HostEurope.png",
     "pricing": [
-      "poa"
+      "low",
+      "recurring"
     ],
-    "saas": true,
-    "website": "https://www.hoolah.co"
+    "website": "https://www.hosteurope.de"
+  },
+  "Hostens": {
+    "cats": [
+      88
+    ],
+    "description": "Hostens is a web hosting company specialising in hosting services, virtual private server hosting, and the domain name or transition.",
+    "dns": {
+      "SOA": "\\.hostens\\.com"
+    },
+    "icon": "Hostens.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.hostens.com"
+  },
+  "Hostgator": {
+    "cats": [
+      88
+    ],
+    "description": "HostGator is a Houston-based provider of shared, reseller, virtual private server, and dedicated web hosting with an additional presence in Austin, Texas.",
+    "dns": {
+      "SOA": "\\.hostgator\\.com"
+    },
+    "icon": "Hostgator.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.hostgator.com"
+  },
+  "Hosting Ukraine": {
+    "cats": [
+      88
+    ],
+    "description": "Hosting Ukraine is a web hosting provider and internet domain registrar.",
+    "dns": {
+      "SOA": "ns\\d+\\.ukraine\\.com\\.ua"
+    },
+    "icon": "Hosting Ukraine.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.ukraine.com.ua"
+  },
+  "Hostinger": {
+    "cats": [
+      88
+    ],
+    "description": "Hostinger is an employee-owned Web hosting provider and internet domain registrar.",
+    "dns": {
+      "SOA": "\\.(?:dns-parking|hostinger)\\.com"
+    },
+    "icon": "Hostinger.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.hostinger.com"
+  },
+  "Hostiq": {
+    "cats": [
+      88
+    ],
+    "description": "Hostiq is a web hosting provider and internet domain registrar.",
+    "dns": {
+      "SOA": "\\.hostiq\\.ua"
+    },
+    "icon": "Hostiq.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://hostiq.ua"
   },
   "Hostmeapp": {
     "cats": [
@@ -532,6 +726,21 @@
     "saas": true,
     "scriptSrc": "tables\\.hostmeapp\\.com",
     "website": "https://www.hostmeapp.com"
+  },
+  "Hostpoint": {
+    "cats": [
+      88
+    ],
+    "description": "Hostpoint is a Switzerland-based web hosting company.",
+    "dns": {
+      "SOA": "\\.hostpoint\\.ch"
+    },
+    "icon": "Hostpoint.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.hostpoint.ch"
   },
   "Hotaru CMS": {
     "cats": [
@@ -558,7 +767,23 @@
       "HotleadController": "",
       "hj.apiUrlBase": ""
     },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
     "scriptSrc": "//static\\.hotjar\\.com/",
+    "website": "https://www.hotjar.com"
+  },
+  "Hotjar Incoming Feedback": {
+    "cats": [
+      5
+    ],
+    "description": "Hotjar Incoming Feedback is a widget that sits at the edge of a page.",
+    "dom": "a[href*='hotjar.com/incoming-feedback'][target='_blank']",
+    "icon": "Hotjar.svg",
+    "scriptSrc": "\\.hotjar\\.com/preact-incoming-feedback",
     "website": "https://www.hotjar.com"
   },
   "Howler.js": {
@@ -579,6 +804,19 @@
     ],
     "website": "https://howlerjs.com"
   },
+  "HrFlow.ai": {
+    "cats": [
+      19
+    ],
+    "description": "HrFlow.ai is an HR data automation API platform.",
+    "icon": "HrFlow.ai.svg",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.hrflow\\.ai",
+    "website": "https://hrflow.ai"
+  },
   "HubSpot": {
     "cats": [
       32
@@ -595,6 +833,11 @@
       "_hsq": "",
       "hubspot": ""
     },
+    "pricing": [
+      "recurring",
+      "high"
+    ],
+    "saas": true,
     "website": "https://www.hubspot.com"
   },
   "HubSpot Analytics": {
@@ -651,6 +894,39 @@
     "dom": "#hs-eu-cookie-confirmation",
     "icon": "HubSpot.png",
     "website": "https://knowledge.hubspot.com/reports/customize-your-cookie-tracking-settings-and-privacy-policy-alert"
+  },
+  "Huberway": {
+    "cats": [
+      1
+    ],
+    "cookies": {
+      "huberway_session": ""
+    },
+    "description": "Huberway is a content management system, based on PHP and JavaScript, used to create advanced sales portals oriented towards industrialization 4.0.",
+    "icon": "Huberway.svg",
+    "implies": [
+      "PHP",
+      "MySQL"
+    ],
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.huberway.com"
+  },
+  "Huberway Analytics": {
+    "cats": [
+      10
+    ],
+    "description": "Huberway Analytics is a free web analytics service that tracks and reports website traffic.",
+    "icon": "Huberway.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "saas": true,
+    "scriptSrc": "analytics\\.huberway\\.com/pixel/",
+    "website": "https://www.huberway.com/analytics-software"
   },
   "Hugo": {
     "cats": [
@@ -770,6 +1046,21 @@
     ],
     "website": "https://www.shophumm.com"
   },
+  "Hund.io": {
+    "cats": [
+      13
+    ],
+    "description": "Hund.io is an automated status pages with monitoring.",
+    "dom": "link[href*='hund-client-logos']",
+    "icon": "Hund.io.svg",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.hund\\.io/",
+    "website": "https://hund.io"
+  },
   "Hushly": {
     "cats": [
       32
@@ -786,6 +1077,18 @@
     "saas": true,
     "scriptSrc": "\\.hushly\\.com/",
     "website": "https://www.hushly.com"
+  },
+  "Hypercorn": {
+    "cats": [
+      22
+    ],
+    "headers": {
+      "Server": "hypercorn"
+    },
+    "icon": "hypercorn.png",
+    "implies": "Python",
+    "oss": true,
+    "website": "https://pgjones.gitlab.io/hypercorn/"
   },
   "Hyperspeed": {
     "cats": [
@@ -823,5 +1126,21 @@
     },
     "scriptSrc": "//hantana\\.org/widget",
     "website": "https://hantana.org/"
+  },
+  "hoolah": {
+    "cats": [
+      91
+    ],
+    "description": "hoolah is Asia's omni-channel buy now pay later platform.",
+    "icon": "hoolah.png",
+    "js": {
+      "hoolah": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "merchant\\.cdn\\.hoolah\\.co/",
+    "website": "https://www.hoolah.co"
   }
 }

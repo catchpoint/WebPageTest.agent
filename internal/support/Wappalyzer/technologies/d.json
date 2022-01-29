@@ -30,6 +30,23 @@
     },
     "website": "https://derak.cloud"
   },
+  "DHL": {
+    "cats": [
+      99
+    ],
+    "description": "DHL is an international courier, package delivery and express mail service, which is a division of the German logistics firm Deutsche Post.",
+    "dom": {
+      "img[alt*='dhl' i]": {
+        "attributes": {
+          "alt": "\\bDHL\\b"
+        }
+      }
+    },
+    "icon": "DHL.svg",
+    "requiresCategory": 6,
+    "text": "\\bDHL\\b",
+    "website": "https://www.dhl.com"
+  },
   "DHTMLX": {
     "cats": [
       59
@@ -80,6 +97,55 @@
     ],
     "website": "http://dnnsoftware.com"
   },
+  "DPD": {
+    "cats": [
+      99
+    ],
+    "description": "DPD is an international parcel delivery service for sorter compatible parcels.",
+    "icon": "DPD.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bDPD\\b"
+    ],
+    "website": "https://www.dpd.com"
+  },
+  "DTScout": {
+    "cats": [
+      36
+    ],
+    "description": "DTScout is a marketing data intelligence software.",
+    "icon": "DTScout.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.dtscout\\.com/",
+    "website": "https://www.dtscout.com"
+  },
+  "DX": {
+    "cats": [
+      99
+    ],
+    "description": "DX (also known as DX Freight) is a British mail, courier and logistics company.",
+    "icon": "DX.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bDX\\b"
+    ],
+    "website": "https://www.dxdelivery.com"
+  },
+  "Dachser": {
+    "cats": [
+      99
+    ],
+    "description": "Dachser is a German freight company.",
+    "icon": "Dachser.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bDachser\\b"
+    ],
+    "website": "https://www.dachser.com"
+  },
   "Daily Deals": {
     "cats": [
       5
@@ -96,6 +162,37 @@
     "saas": true,
     "scriptSrc": "assets\\.dailydeals\\.ai/",
     "website": "https://dailydeals.ai"
+  },
+  "DailyKarma": {
+    "cats": [
+      5
+    ],
+    "description": "DailyKarma is a turnkey cause marketing solutions for ecommerce merchants.",
+    "icon": "DailyKarma.png",
+    "js": {
+      "dkWidgetInit": "\\;confidence:50",
+      "dk_widget": "\\;confidence:50"
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "assets\\.dailykarma\\.io/",
+    "website": "https://www.dailykarma.com"
+  },
+  "Dailymotion": {
+    "cats": [
+      14
+    ],
+    "description": "Dailymotion is a French video-sharing technology platform.",
+    "dom": "img[data-src*='.dailymotion.com/'], iframe[scr*='.dailymotion.com/']",
+    "icon": "Dailymotion.svg",
+    "meta": {
+      "name": "dailymotion-domain-verification"
+    },
+    "website": "https://www.dailymotion.com"
   },
   "Dancer": {
     "cats": [
@@ -131,6 +228,22 @@
     },
     "website": "http://danneo.com"
   },
+  "Daphne": {
+    "cats": [
+      22
+    ],
+    "headers": {
+      "Server": "Daphne"
+    },
+    "icon": "daphne.svg",
+    "implies": [
+      "TwistedWeb",
+      "Python",
+      "Zope"
+    ],
+    "oss": true,
+    "website": "https://github.com/django/daphne"
+  },
   "Dart": {
     "cats": [
       27
@@ -141,7 +254,6 @@
     ],
     "html": "/(?:<script)[^>]+(?:type=\"application/dart\")/",
     "icon": "Dart.svg",
-    "implies": "AngularDart",
     "js": {
       "___dart__$dart_dartObject_ZxYxX_0_": "",
       "___dart_dispatch_record_ZxYxX_0_": ""
@@ -315,6 +427,18 @@
     "scriptSrc": "dedeajax",
     "website": "http://dedecms.com"
   },
+  "Delivengo": {
+    "cats": [
+      99
+    ],
+    "description": "Delivengo is an international shipping service powered by La Poste.",
+    "icon": "La Poste.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bDelivengo\\b"
+    ],
+    "website": "https://mydelivengo.laposte.fr/"
+  },
   "Detectify": {
     "cats": [
       16
@@ -327,6 +451,18 @@
     },
     "icon": "Detectify.svg",
     "website": "https://detectify.com/"
+  },
+  "Deutsche Post": {
+    "cats": [
+      99
+    ],
+    "description": "Deutsche Post is a German multinational package delivery and supply chain management company in Germany.",
+    "icon": "Deutsche Post.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bDeutsche Post\\b"
+    ],
+    "website": "https://www.deutschepost.de"
   },
   "Dianomi": {
     "cats": [
@@ -393,6 +529,20 @@
     ],
     "website": "https://www.digistore24.com"
   },
+  "Digital Showroom": {
+    "cats": [
+      6
+    ],
+    "description": "Digital Showroom is an ecommerce platform.",
+    "dom": "div.dd-showrom__layout",
+    "icon": "Digital Showroom.png",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://digitalshowroom.in"
+  },
   "DigitalRiver": {
     "cats": [
       6,
@@ -413,20 +563,6 @@
     "saas": true,
     "scriptSrc": "\\.digitalriver\\.com/",
     "website": "https://www.digitalriver.com"
-  },
-  "Digital Showroom": {
-    "cats": [
-      6
-    ], 
-    "description": "Digital Showroom is an ecommerce platform.",
-    "icon": "Digital Showroom.png",
-    "dom": "div.dd-showrom__layout",
-    "saas": true,
-    "pricing": [
-      "freemium",
-      "payg"
-    ],
-    "website": "https://digitalshowroom.in"
   },
   "DirectAdmin": {
     "cats": [
@@ -604,7 +740,26 @@
       "__admin_media_prefix__": "",
       "django": ""
     },
+    "oss": true,
     "website": "https://djangoproject.com"
+  },
+  "Django CMS": {
+    "cats": [
+      1
+    ],
+    "cookies": {
+      "django_language": ""
+    },
+    "description": "Django CMS is a free and open source content management system platform for publishing content on the World Wide Web and intranets.",
+    "icon": "Django CMS.png",
+    "implies": [
+      "Python",
+      "Django",
+      "PostgreSQL"
+    ],
+    "oss": true,
+    "scriptSrc": "/djangocms_",
+    "website": "https://www.django-cms.org"
   },
   "DocFX": {
     "cats": [
@@ -734,6 +889,38 @@
     },
     "website": "https://www.dokuwiki.org"
   },
+  "DomainFactory": {
+    "cats": [
+      88
+    ],
+    "description": "DomainFactory has been operating as a web hosting company. It is owned by GoDaddy and targets businesses in Austria and Germany.",
+    "dns": {
+      "SOA": "ns(?:\\d+)?\\.namespace4you\\.de"
+    },
+    "icon": "DomainFactory.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.df.eu"
+  },
+  "Dominate WooCommerce": {
+    "cats": [
+      87
+    ],
+    "description": "Dominate WooCommerce is a cloud-based checkout-page which supports PayPal Smart buttons for Venmo, PayPal Credit, and other payment methods.",
+    "icon": "Dominate.png",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": [
+      "WordPress",
+      "WooCommerce"
+    ],
+    "saas": true,
+    "scriptSrc": "/wp-content/plugins/iwd-checkout-connector/",
+    "website": "https://www.dominate.co/woocommerce"
+  },
   "Doofinder": {
     "cats": [
       29
@@ -826,6 +1013,20 @@
     "scriptSrc": "googletagservices\\.com/tag/js/gpt(?:_mobile)?\\.js",
     "website": "http://www.google.com/dfp"
   },
+  "DoubleVerify": {
+    "cats": [
+      36,
+      10
+    ],
+    "description": "DoubleVerify is a software platform for digital media measurement, data, and analytics.",
+    "dom": "link[href*='.doubleverify.com']",
+    "icon": "DoubleVerify.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://doubleverify.com"
+  },
   "Doxygen": {
     "cats": [
       4
@@ -848,6 +1049,37 @@
     "scriptSrc": "draft-js(@|/)([\\d.]+)\\;version:\\2",
     "website": "https://draftjs.org/"
   },
+  "Draftpress HFCM": {
+    "cats": [
+      87
+    ],
+    "description": "Header Footer Code Manager by Draftpress is a easy interface to add snippets to the header or footer or above or below the content of your page.",
+    "html": "<!--[^>]*HFCM\\sby\\s99\\sRobots",
+    "icon": "Draftpress.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://draftpress.com/products/header-footer-code-manager-pro/"
+  },
+  "DreamHost": {
+    "cats": [
+      88
+    ],
+    "description": "DreamHost is a Los Angeles-based web hosting provider and domain name registrar.",
+    "dns": {
+      "NS": "ns\\d+\\.dreamhost\\.com",
+      "SOA": "ns\\d+\\.dreamhost\\.com"
+    },
+    "icon": "DreamHost.svg",
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "website": "https://www.dreamhost.com"
+  },
   "DreamWeaver": {
     "cats": [
       20
@@ -863,6 +1095,27 @@
     },
     "website": "https://www.adobe.com/products/dreamweaver.html"
   },
+  "Dreamdata": {
+    "cats": [
+      32,
+      10
+    ],
+    "description": "Dreamdata is a B2B revenue attribution platform.",
+    "dom": "link[href*='.bizible.com']",
+    "icon": "Dreamdata.png",
+    "js": {
+      "BizTrackingA": "",
+      "Bizible": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.bizible\\.com/",
+    "website": "https://dreamdata.io"
+  },
   "Drift": {
     "cats": [
       52
@@ -874,10 +1127,21 @@
       "driftt": ""
     },
     "pricing": [
-      "poa"
+      "poa",
+      "mid"
     ],
     "saas": true,
     "website": "https://www.drift.com/"
+  },
+  "Dropbox": {
+    "cats": [
+      95
+    ],
+    "dns": {
+      "TXT": "dropbox-domain-verification"
+    },
+    "icon": "Dropbox.svg",
+    "website": "https://www.dropbox.com"
   },
   "Drupal": {
     "cats": [

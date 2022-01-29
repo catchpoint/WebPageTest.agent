@@ -110,6 +110,17 @@
     },
     "website": "https://developers.facebook.com/docs/facebook-login/"
   },
+  "Facebook Pay": {
+    "cats": [
+      41
+    ],
+    "description": "Facebook pay is a payment solution which can be used on any site or app outside Facebook ecosystem.",
+    "dom": [
+      "[aria-labelledby='pi-facebook_pay']"
+    ],
+    "icon": "Facebook.svg",
+    "website": "https://pay.facebook.com/"
+  },
   "Facebook Pixel": {
     "cats": [
       10
@@ -145,6 +156,53 @@
     "scriptSrc": "Suggest\\.ff",
     "url": "(?:/ViewParametricSearch|ffsuggest\\.[a-z]htm)",
     "website": "http://fact-finder.com"
+  },
+  "FalguniThemes Nisarg": {
+    "cats": [
+      80
+    ],
+    "description": "FalguniThemes Nisarg is a new fully responsive and translation ready WordPress theme.",
+    "icon": "FalguniThemes.png",
+    "js": {
+      "nisargpro_script_vars": ""
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/nisarg(?:pro)?/",
+    "website": "https://www.falgunithemes.com/downloads/nisarg"
+  },
+  "FameThemes OnePress": {
+    "cats": [
+      80
+    ],
+    "description": "FameThemes OnePress is a free portfolio one page WordPress theme suited for an individual or digital agency.",
+    "icon": "FameThemes.svg",
+    "js": {
+      "OnePress_Plus": "",
+      "onepressIsMobile": "",
+      "onepress_js_settings": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://www.famethemes.com/themes/onepress"
+  },
+  "FameThemes Screenr": {
+    "cats": [
+      80
+    ],
+    "description": "FameThemes Screenr is a fullscreen parallax WordPress theme suited for business, portfolio, digital agency, freelancers.",
+    "icon": "FameThemes.svg",
+    "js": {
+      "Screenr.autoplay": "",
+      "Screenr_Plus": ""
+    },
+    "requires": "WordPress",
+    "website": "https://www.famethemes.com/themes/screenr"
   },
   "FancyBox": {
     "cats": [
@@ -219,6 +277,21 @@
     "saas": true,
     "scriptSrc": "js\\.fast\\.co/",
     "website": "https://www.fast.co"
+  },
+  "FastComet": {
+    "cats": [
+      88
+    ],
+    "description": "FastComet is a hosting service company from San Francisco, California.",
+    "dns": {
+      "SOA": "\\.fcomet\\.com"
+    },
+    "icon": "FastComet.png",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "website": "https://www.fastcomet.com"
   },
   "Fastcommerce": {
     "cats": [
@@ -322,6 +395,18 @@
     },
     "website": "https://www.traycorp.com.br"
   },
+  "FedEx": {
+    "cats": [
+      99
+    ],
+    "description": "FedEx is an American multinational company which focuses on transportation, ecommerce and business services.",
+    "icon": "FedEx.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bFedEx\\b"
+    ],
+    "website": "https://www.fedex.com"
+  },
   "Fedora": {
     "cats": [
       28
@@ -342,6 +427,25 @@
     "icon": "feedback-fish.svg",
     "scriptSrc": "^https://feedback\\.fish/ff\\.js",
     "website": "https://feedback.fish"
+  },
+  "Feefo": {
+    "cats": [
+      90
+    ],
+    "description": "Feefo is a cloud-based consumer review and rating management software.",
+    "dom": "a[href*='.feefo.com/'][target='_blank'], link[href*='.feefo.com/'], img[src*='.feefo.com/']",
+    "icon": "Feefo.svg",
+    "js": {
+      "feefoTracker": "",
+      "feefoWidget": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.feefo\\.com/",
+    "website": "https://www.feefo.com"
   },
   "Fera": {
     "cats": [
@@ -485,6 +589,20 @@
     "scriptSrc": "cdn\\.firepush\\.\\w+",
     "website": "https://getfirepush.com"
   },
+  "FirstHive": {
+    "cats": [
+      97
+    ],
+    "description": "FirstHive is a full-stack customer data platform that enables consumer marketers and brands to take control of their first-party data from all sources.",
+    "icon": "FirstHive.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "firsthive\\.com/engage/",
+    "website": "https://firsthive.com"
+  },
   "FirstImpression.io": {
     "cats": [
       36
@@ -564,6 +682,7 @@
     },
     "icon": "Flask.png",
     "implies": "Python",
+    "oss": true,
     "website": "http://flask.pocoo.org"
   },
   "Flat UI": {
@@ -649,6 +768,22 @@
     "scriptSrc": "(?:shopify-)?cdn\\.flow\\.io/",
     "website": "https://www.flow.io/"
   },
+  "Flutter": {
+    "cats": [
+      66
+    ],
+    "description": "Flutter is an open source framework by Google for building beautiful, natively compiled, multi-platform applications from a single codebase.",
+    "icon": "Flutter.svg",
+    "implies": "Dart",
+    "js": {
+      "flutterCanvasKit": ""
+    },
+    "meta": {
+      "id": "^flutterweb-theme$"
+    },
+    "oss": true,
+    "website": "https://flutter.dev"
+  },
   "FluxBB": {
     "cats": [
       2
@@ -729,6 +864,31 @@
     ],
     "website": "https://fontawesome.com/"
   },
+  "FooPlugins FooGallery": {
+    "cats": [
+      87,
+      7
+    ],
+    "description": "FooPlugins FooGallery is a great image gallery plugin for WordPress.",
+    "dom": {
+      "link[href*='/wp-content/plugins/foogallery/']": {
+        "attributes": {
+          "href": "/wp-content/plugins/foogallery/.+\\.css(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
+        }
+      }
+    },
+    "icon": "FooPlugins.svg",
+    "js": {
+      "FooGallery": ""
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "requires": "WordPress",
+    "website": "https://fooplugins.com/foogallery-wordpress-gallery-plugin"
+  },
   "Fork Awesome": {
     "cats": [
       17
@@ -761,6 +921,22 @@
       "generator": "^Fork CMS$"
     },
     "website": "http://www.fork-cms.com/"
+  },
+  "Formidable Form": {
+    "cats": [
+      87,
+      73
+    ],
+    "description": "Formidable Forms is a WordPress plugin that enables you to create quizzes, surveys, calculators, timesheets, multi-page application forms.",
+    "dom": "link[href*='/wp-content/plugins/formidable/']",
+    "icon": "Formidable Form.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://formidableforms.com"
   },
   "Formitable": {
     "cats": [
@@ -893,6 +1069,26 @@
     "scriptSrc": "foursixty\\.com",
     "website": "https://foursixty.com/"
   },
+  "Fourthwall": {
+    "cats": [
+      6
+    ],
+    "description": "Fourthwall helps to create and launch a branded website.",
+    "icon": "Fourthwall.svg",
+    "js": {
+      "FourthwallAnalytics": "",
+      "fourthwallTheme": ""
+    },
+    "meta": {
+      "version": "^(.+)$\\;version:\\1\\;confidence:0"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.fourthwall\\.com",
+    "website": "https://fourthwall.com/"
+  },
   "Foxy.io": {
     "cats": [
       6
@@ -906,6 +1102,37 @@
     "saas": true,
     "scriptSrc": "cdn\\.foxycart\\.com",
     "website": "https://www.foxy.io"
+  },
+  "France Express": {
+    "cats": [
+      99
+    ],
+    "description": "France Express is a delivery service based in France.",
+    "icon": "France Express.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bFrance Express\\b"
+    ],
+    "website": "https://www.france-express.com"
+  },
+  "FreakOut": {
+    "cats": [
+      36
+    ],
+    "description": "FreakOut is a marketing technology company with programmatic solutions (DSP,SSP) that delivers in-feed display and video formats across global publishers.",
+    "dom": "img[src*='.fout.jp/'], link[href*='.fout.jp']",
+    "icon": "FreakOut.png",
+    "js": {
+      "FOut": "",
+      "_fout_jsurl": "",
+      "_fout_queue": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.fout\\.jp/",
+    "website": "https://www.fout.co.jp"
   },
   "FreeBSD": {
     "cats": [
@@ -940,6 +1167,33 @@
     "icon": "Freespee.svg",
     "scriptSrc": "analytics\\.freespee\\.com/js/external/fs\\.(?:min\\.)?js",
     "website": "https://www.freespee.com"
+  },
+  "Frequenceo": {
+    "cats": [
+      99
+    ],
+    "description": "Frequenceo is a fixed-rate postage service in France.",
+    "icon": "La Poste.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bFrequenceo\\b"
+    ],
+    "website": "https://www.laposte.fr/entreprise/produit-entreprise/frequenceo"
+  },
+  "Fresco": {
+    "cats": [
+      59
+    ],
+    "description": "Fresco is a responsive lightbox. Fresco comes with thumbnail support, fullscreen zoom, Youtube and Vimeo integration for HTML5 video and a powerful Javascript API.",
+    "icon": "default.svg",
+    "js": {
+      "Fresco.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "pricing": [
+      "freemium"
+    ],
+    "website": "https://github.com/staaky/fresco"
   },
   "Freshchat": {
     "cats": [
@@ -1145,5 +1399,40 @@
     "icon": "futureshop.png",
     "scriptSrc": "future-shop.*\\.js",
     "website": "https://www.future-shop.jp"
+  },
+  "Futurio": {
+    "cats": [
+      80
+    ],
+    "description": "Futurio is a lightweight and customizable multi-purpose and WooCommerce WordPress theme.",
+    "dom": "link[href*='/wp-content/themes/futurio/']",
+    "icon": "Futurio.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/futurio/.+customscript\\.js(?:\\?ver=([\\d\\.]+))?\\;version:\\1",
+    "website": "https://futuriowp.com"
+  },
+  "Fynd Platform": {
+    "cats": [
+      6
+    ],
+    "description": "Fynd Platform is a subscription based software as a service where brands can mange their catalog, send marketing sms/emailers and sell their products.",
+    "icon": "Fynd Platform.png",
+    "implies": "Vue.js",
+    "js": {
+      "__fyndAction": ""
+    },
+    "pricing": [
+      "high",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://platform.fynd.com"
   }
 }
