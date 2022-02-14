@@ -46,7 +46,8 @@ HOST_RULES = [
     '"MAP redirector.gvt1.com 127.0.0.1"',
     '"MAP laptop-updates.brave.com 127.0.0.1"',
     '"MAP offlinepages-pa.googleapis.com 127.0.0.1"',
-    '"MAP edge.microsoft.com 127.0.0.1"'
+    '"MAP edge.microsoft.com 127.0.0.1"',
+    '"MAP optimizationguide-pa.googleapis.com 127.0.0.1"'
 ]
 
 ENABLE_CHROME_FEATURES = [
