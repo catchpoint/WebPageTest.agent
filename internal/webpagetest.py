@@ -519,7 +519,7 @@ class WebPageTest(object):
                 if 'wappalyzer' not in job:
                     job['wappalyzer'] = 1
                 if 'axe' not in job:
-                    job['axe'] = 0
+                    job['axe'] = 1
                 if 'axe_categories' not in job:
                     job['axe_categories'] = 'wcag2a,wcag2aa'
                 if job['type'] == 'lighthouse':
