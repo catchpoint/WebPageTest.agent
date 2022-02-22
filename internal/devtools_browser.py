@@ -329,6 +329,13 @@ class DevtoolsBrowser(object):
             task['step_name'] = self.event_name
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
+        if 'steps' not in task:
+            task['steps'] = []
+        task['steps'].append({
+            'prefix': task['prefix'],
+            'video_subdirectory': task['video_subdirectory'],
+            'step_name': task['step_name']
+        })
 
     def process_video(self):
         """Post process the video"""

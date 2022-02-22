@@ -1511,6 +1511,13 @@ class WebPageTest(object):
         if self.job['warmup'] > 0:
             logging.debug('Discarding warmup run')
         else:
+            # Post-process the given test run
+            try:
+                from internal.process_test import ProcessTest
+                ProcessTest(self.options, self.job, task)
+            except Exception:
+                logging.exception('Error post-processing test')
+            # Continue with the upload
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
                 self.cpu_pct = task['page_data']['fullyLoadedCPUpct']
             data = {'id': task['id'],
