@@ -677,7 +677,7 @@ class ProcessTest(object):
         """Pull in the lighthouse stats if present"""
         page_data = self.data['pageData']
         # Copy the local crux data file to the shared test directory if there is one
-        audits_file_name = 'lighthouse_audits.json.gx'
+        audits_file_name = 'lighthouse_audits.json.gz'
         lighthouse_file_name = 'lighthouse.json.gz'
         for file_name in [audits_file_name, lighthouse_file_name]:
             local_file = os.path.join(self.task['dir'], file_name)
@@ -685,29 +685,10 @@ class ProcessTest(object):
             if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
                 shutil.copyfile(local_file, metrics_file)
         audits_file = os.path.join(self.job['test_shared_dir'], audits_file_name)
-        lighthouse_file = os.path.join(self.job['test_shared_dir'], lighthouse_file_name)
         if os.path.isfile(audits_file):
             with gzip.open(audits_file, GZIP_READ_TEXT) as f:
                 audits = json.load(f)
                 if audits:
+                    logging.debug(audits)
                     for name in audits:
                         page_data['lighthouse.{}'.format(name)] = audits[name]
-        elif os.path.isfile(lighthouse_file):
-            with gzip.open(lighthouse_file, GZIP_READ_TEXT) as f:
-                lighthouse = json.load(f)
-                if lighthouse:
-                    if 'aggregations' in lighthouse:
-                        for lh in lighthouse['aggregations']:
-                            if 'name' in lh and 'total' in lh and 'scored' in lh and lh['scored']:
-                                page_data['lighthouse.{}'.format(lh['name'].replace(' ', ''))] = lh['total']
-                    elif 'reportCategories' in lighthouse:
-                        for lh in lighthouse['reportCategories']:
-                            if 'name' in lh and 'score' in lh:
-                                name = 'lighthouse.{}'.format(lh['name'].replace(' ', ''))
-                                score = float(lh['score']) / 100.0
-                                page_data[name] = score
-                                if lh['name'] == 'Performance' and 'audits' in lh:
-                                    for audit in lh['audits']:
-                                        if 'id' in audit and 'group' in audit and audit['group'] == 'perf-metric' and 'result' in audit and 'rawValue' in audit['result']:
-                                            name = 'lighthouse.{}.{}'.format(lh['name'].replace(' ', ''), audit['id'].replace(' ', ''))
-                                            page_data[name] = audit['result']['rawValue']
