@@ -593,7 +593,7 @@ class WebPageTest(object):
                 if self.scheduler_node is not None and 'saas_test_id' in job:
                     job['saas_node_id'] = self.scheduler_node
                 # For CLI tests, write out the raw job file
-                if self.options.testurl or self.options.testspec:
+                if self.options.testurl or self.options.testspec or 'saas_test_id' in job:
                     if not os.path.isdir(self.workdir):
                         os.makedirs(self.workdir)
                     job_path = os.path.join(self.workdir, 'job.json')
@@ -601,6 +601,7 @@ class WebPageTest(object):
                     with open(job_path, 'wt') as f_out:
                         json.dump(job, f_out)
                     self.needs_zip.append({'path': job_path, 'name': 'job.json'})
+                    job['testinfo']['started'] = job['started']
                 # Add the non-serializable members
                 if self.health_check_server is not None:
                     job['health_check_server'] = self.health_check_server
@@ -758,7 +759,8 @@ class WebPageTest(object):
                 location = str(locations.pop(0))
                 count -= 1
                 retry = True
-        self.needs_zip = []
+        if not self.needs_zip:
+            self.needs_zip = []
         if job is not None and 'work_server' in job and 'jobID' in job:
             self.notify_test_started(job)
         self.report_diagnostics()
