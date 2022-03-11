@@ -655,8 +655,6 @@ class WebPageTest(object):
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
                     logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
                     response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid(self.scheduler_node)})
-                    with open("dequeue", 'w') as f_out:
-                        json.dump(response.text, f_out)
                 else:
                     logging.info("Checking for work: %s", url)
                     response = self.session.get(url, timeout=10, proxies=proxies)
