@@ -182,7 +182,7 @@ class AndroidBrowser(BaseBrowser):
 
     def prepare_script_for_record(self, script, mark_start = False):
         """Convert a script command into one that first removes the orange frame"""
-        mark = "await fetch('http://127.0.0.1:8888/wpt-start-recording');" if mark_start else ''
+        mark = "fetch('http://127.0.0.1:8888/wpt-start-recording');" if mark_start else ''
         return "(function() {" \
                "var wptDiv = document.getElementById('wptorange');" \
                "if(wptDiv) {wptDiv.parentNode.removeChild(wptDiv);}" \
