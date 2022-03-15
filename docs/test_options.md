@@ -64,6 +64,8 @@ wptagent runs test jobs specified as a JSON object with the keys specified below
 * **v8rcs** (int) : Set to 1 to enable recording of the V8 runtime call stats.
 
 ## Other test options
+* **axe** (int) : Set to 0 to stop Axe accessibility testing from running.
+* **axe_categories** (string) : Comma-delimited list of [Axe-Core tags](https://www.deque.com/axe/core-documentation/api-documentation/#axe-core-tags) to determine which audits to run. Defaults to: 'wcag2a,wcag2aa'
 * **block** (string) : Space-separated list of URL patterns to block.
 * **blockDomains** (string) : Space-separated list of domains to block (fully-qualified domain names, i.e. www.example.com).
 * **bodies** (int) : Set to 1 to store response bodies for text resources (html, JS, css).
@@ -84,6 +86,7 @@ wptagent runs test jobs specified as a JSON object with the keys specified below
 * **time** (int) : Minimum test time in seconds.
 * **timeout** (int) : Maximum time in seconds to allow for each run of the test (defaults to 120).
 * **type** (string) : Set to "traceroute" to run a traceroute test or "lighthouse" to run a lighthouse-only test.
+* **wappalyzer** (int) : Set to 0 to stop Wappalyzer detection from running.
 * **warmup** (int) : Number of "warmup" runs to run before recording the test (defaults to 0).
 * **web10** (int) : Set to 1 to stop the test at "onload" instead of waiting for network activity.
 

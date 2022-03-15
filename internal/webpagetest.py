@@ -6,6 +6,7 @@
 """Main entry point for interfacing with WebPageTest server"""
 import base64
 from datetime import datetime
+import glob
 import gzip
 import hashlib
 import logging
@@ -218,7 +219,25 @@ class WebPageTest(object):
         if os.path.isfile(margins_file):
             with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
+        # Load any locally-defined custom metrics from {agent root}/custom/metrics/*.js
+        self.custom_metrics = {}
+        self.load_local_custom_metrics()
     # pylint: enable=E0611
+
+    def load_local_custom_metrics(self):
+        metrics_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'custom', 'metrics')
+        if (os.path.isdir(metrics_dir)):
+            files = glob.glob(metrics_dir + '/*.js')
+            for file in files:
+                try:
+                    with open(file, 'rt') as f:
+                        metric_value = f.read()
+                        if metric_value:
+                            metric_name = os.path.basename(file)[:-3]
+                            self.custom_metrics[metric_name] = metric_value
+                            logging.debug('Loaded custom metric %s from %s', metric_name, file)
+                except Exception:
+                    pass
 
     def benchmark_cpu(self):
         """Benchmark the CPU for mobile emulation"""
@@ -518,6 +537,10 @@ class WebPageTest(object):
                     job['warmup'] = 0
                 if 'wappalyzer' not in job:
                     job['wappalyzer'] = 1
+                if 'axe' not in job:
+                    job['axe'] = 1
+                if 'axe_categories' not in job:
+                    job['axe_categories'] = 'wcag2a,wcag2aa'
                 if job['type'] == 'lighthouse':
                     job['fvonly'] = 1
                     job['lighthouse'] = 1
@@ -570,7 +593,7 @@ class WebPageTest(object):
                 if self.scheduler_node is not None and 'saas_test_id' in job:
                     job['saas_node_id'] = self.scheduler_node
                 # For CLI tests, write out the raw job file
-                if self.options.testurl or self.options.testspec:
+                if self.options.testurl or self.options.testspec or 'saas_test_id' in job:
                     if not os.path.isdir(self.workdir):
                         os.makedirs(self.workdir)
                     job_path = os.path.join(self.workdir, 'job.json')
@@ -578,9 +601,17 @@ class WebPageTest(object):
                     with open(job_path, 'wt') as f_out:
                         json.dump(job, f_out)
                     self.needs_zip.append({'path': job_path, 'name': 'job.json'})
+                    job['testinfo']['started'] = job['started']
                 # Add the non-serializable members
                 if self.health_check_server is not None:
                     job['health_check_server'] = self.health_check_server
+                # add any locally-defined custom metrics (server versions override locals with the same name)
+                if self.custom_metrics:
+                    if 'customMetrics' not in job:
+                        job['customMetrics'] = {}
+                    for name in self.custom_metrics:
+                        if name not in job['customMetrics']:
+                            job['customMetrics'][name] = self.custom_metrics[name]
             except Exception:
                 logging.exception("Error processing job json")
         self.job = job
@@ -728,7 +759,8 @@ class WebPageTest(object):
                 location = str(locations.pop(0))
                 count -= 1
                 retry = True
-        self.needs_zip = []
+        if not self.needs_zip:
+            self.needs_zip = []
         if job is not None and 'work_server' in job and 'jobID' in job:
             self.notify_test_started(job)
         self.report_diagnostics()

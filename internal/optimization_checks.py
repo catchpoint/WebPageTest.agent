@@ -151,6 +151,7 @@ class OptimizationChecks(object):
                        'w.queniuyk.com'],
             'Alimama': ['.gslb.tbcache.com'],
             'Amazon CloudFront': ['.cloudfront.net'],
+            'ArvanCloud': ['.arvancloud.com'],
             'Aryaka': ['.aads1.net',
                        '.aads-cn.net',
                        '.aads-cng.net'],

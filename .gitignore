@@ -8,6 +8,7 @@
 /visible.sh
 /update.sh
 /work
+/custom
 /*.cmd
 /alive.txt
 /10fps.sh

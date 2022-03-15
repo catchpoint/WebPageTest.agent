@@ -300,6 +300,9 @@ class DevtoolsBrowser(object):
                 self.process_video()
             if self.job.get('wappalyzer'):
                 self.wappalyzer_detect(task, self.devtools.main_request_headers)
+            if self.job.get('axe'):
+                self.run_axe(task)
+
             # wait for the background optimization checks
             optimization.join()
 
@@ -954,6 +957,58 @@ class DevtoolsBrowser(object):
                 except Exception:
                     logging.exception('Error compressing lighthouse report')
         self.profile_end('dtbrowser.run_lighthouse_test')
+    def run_axe(self, task):
+        """Build the axe script to run in-browser"""
+        self.profile_start('dtbrowser.axe_run')
+        start = monotonic()
+        script = None
+        try:
+            with open(os.path.join(self.support_path, 'axe', 'axe-core', 'axe.min.js')) as f_in:
+                script = f_in.read()
+            if script is not None:
+                script += 'axe.run({runOnly:['
+                axe_cats = self.job.get('axe_categories').split(',')
+                script += "'" + "', '".join(axe_cats) + "'"
+                script += ']}).then(results=>{return results;});'
+        except Exception as err:
+            logging.exception("Exception running Axe: %s", err.__str__())
+        if self.must_exit_now:
+            return
+        completed = False
+        if self.devtools is not None:
+            try:
+                logging.debug('run_axe')
+                # Run the axe library (give it 30 seconds at most)
+                response = self.devtools.send_command("Runtime.evaluate",
+                                                {'expression': script,
+                                                'awaitPromise': True,
+                                                'returnByValue': True,
+                                                'timeout': 30000},
+                                                wait=True, timeout=30)
+                if response is not None and 'result' in response and\
+                        'result' in response['result'] and\
+                        'value' in response['result']['result']:
+                    result = response['result']['result']['value']
+                    if result:
+                        completed = True
+                        axe_results = result
+                        axe_info = {}
+                        if 'testEngine' in axe_results:
+                            axe_info['testEngine'] = axe_results['testEngine']['version']
+                        if 'violations' in axe_results:
+                            axe_info['violations'] = axe_results['violations']
+                        if 'passes' in axe_results:
+                            axe_info['passes'] = axe_results['passes']
+                        if 'incomplete' in axe_results:
+                            axe_info['incomplete'] = axe_results['incomplete']
+                        task['page_data']['axe'] = axe_info
+            except Exception as err:
+                logging.exception("Exception running Axe: %s", err.__str__())
+        if not completed:
+            task['page_data']['axe_failed'] = 1
+        self.axe_time = monotonic() - start
+        logging.debug("axe test took %0.3f seconds", self.axe_time)
+        self.profile_end('dtbrowser.axe_run')
 
     def wappalyzer_detect(self, task, request_headers):
         """Run the wappalyzer detection"""
