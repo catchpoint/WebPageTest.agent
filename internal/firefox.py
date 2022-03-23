@@ -59,6 +59,7 @@ class Firefox(DesktopBrowser):
         self.wait_for_script = None
         self.log_pos = {}
         self.log_level = 5
+        self.must_exit_now = False
         if 'browser_info' in job and 'log_level' in job['browser_info']:
             self.log_level = job['browser_info']['log_level']
         self.page = {}
@@ -330,6 +331,50 @@ class Firefox(DesktopBrowser):
     def run_lighthouse_test(self, task):
         """Stub for lighthouse test"""
         pass
+        
+    def run_axe(self, task):
+        """Build the axe script to run in-browser"""
+        self.profile_start('dtbrowser.axe_run')
+        start = monotonic()
+        script = None
+        try:
+            with open(os.path.join(self.support_path, 'axe', 'axe-core', 'axe.min.js')) as f_in:
+                script = f_in.read()
+            if script is not None:
+                script += 'return axe.run({runOnly:['
+                axe_cats = self.job.get('axe_categories').split(',')
+                script += "'" + "', '".join(axe_cats) + "'"
+                script += ']}).then(results=>{return results;});'
+        except Exception as err:
+            logging.exception("Exception running Axe: %s", err.__str__())
+        if self.must_exit_now:
+            return
+        completed = False
+        try:
+            # Run the axe library (give it 30 seconds at most)
+            response = self.execute_js(script)
+            if response is not None:
+                result = response
+                if result:
+                    completed = True
+                    axe_results = result
+                    axe_info = {}
+                    if 'testEngine' in axe_results:
+                        axe_info['testEngine'] = axe_results['testEngine']['version']
+                    if 'violations' in axe_results:
+                        axe_info['violations'] = axe_results['violations']
+                    if 'passes' in axe_results:
+                        axe_info['passes'] = axe_results['passes']
+                    if 'incomplete' in axe_results:
+                        axe_info['incomplete'] = axe_results['incomplete']
+                    task['page_data']['axe'] = axe_info
+        except Exception as err:
+            logging.exception("Exception running Axe: %s", err.__str__())
+        if not completed:
+            task['page_data']['axe_failed'] = 1
+        self.axe_time = monotonic() - start
+        logging.debug("axe test took %0.3f seconds", self.axe_time)
+        self.profile_end('dtbrowser.axe_run')
 
     def run_task(self, task):
         """Run an individual test"""
@@ -768,6 +813,9 @@ class Firefox(DesktopBrowser):
                 f_out.write(json.dumps(interactive_periods))
         except Exception:
             logging.exception("Error writing the interactive periods")
+        # Run Axe before we close the browser
+        if self.job.get('axe'):
+            self.run_axe(task)
         # Close the browser if we are done testing (helps flush logs)
         if not len(task['script']):
             self.close_browser(self.job, task)
@@ -821,6 +869,7 @@ class Firefox(DesktopBrowser):
         if len(request_timings) and task['current_step'] >= 1:
             self.adjust_timings(request_timings)
         self.process_requests(request_timings, task)
+
 
     def adjust_timings(self, requests):
         """Adjust the request timings to start at zero for the earliest timestamp"""
