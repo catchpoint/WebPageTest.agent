@@ -803,6 +803,7 @@ class Edge(DesktopBrowser):
             'prefix': str(task['prefix']),
             'video_subdirectory': str(task['video_subdirectory']),
             'step_name': str(task['step_name']),
+            'start_time': time.time(),
             'num': int(task['current_step'])
         })
 
