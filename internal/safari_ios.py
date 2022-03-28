@@ -1014,6 +1014,8 @@ class iWptBrowser(BaseBrowser):
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)
             self.wpt_result['pageData'] = self.calculate_page_stats(self.wpt_result['requests'])
+            if 'metadata' in self.job:
+                self.wpt_result['pageData']['metadata'] = self.job['metadata']
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
