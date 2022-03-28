@@ -13,7 +13,7 @@ import os
 import re
 import shutil
 import sys
-from xmlrpc.client import DateTime
+import zipfile
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
@@ -95,6 +95,7 @@ class ProcessTest(object):
         if os.path.isfile(devtools_file):
             with gzip.open(devtools_file, GZIP_READ_TEXT) as f:
                 self.data = json.load(f)
+
                 # Merge the task-level page data
                 if self.data and 'pageData' in self.data:
                     if 'page_data' in self.task:
@@ -102,6 +103,12 @@ class ProcessTest(object):
                             if key not in self.data['pageData']:
                                 self.data['pageData'][key] = self.task['page_data'][key]
                     self.task['page_data']['date'] = self.step_start
+                
+                if self.data and 'requests' in self.data:
+                    self.fix_up_request_times()
+                    self.add_response_body_flags()
+                    self.add_script_timings()
+
         if not self.data or 'pageData' not in self.data:
             raise Exception("Devtools file not present")
 
@@ -710,6 +717,109 @@ class ProcessTest(object):
                     for name in audits:
                         page_data['lighthouse.{}'.format(name)] = audits[name]
 
+    def fix_up_request_times(self):
+        """Calculate the aggregated request timings"""
+        requests = self.data['requests']
+        index = 0
+        for req in requests:
+            all_start = req['load_start'] if 'load_start' in req else 0
+            all_ms = req['load_ms'] if 'load_ms' in req else 0
+            for key in ['ssl', 'connect', 'dns']:
+                start_key = "{}_start".format(key)
+                end_key = "{}_end".format(key)
+                ms_key = "{}_ms".format(key)
+                start = req[start_key] if start_key in req else 0
+                end = req[end_key] if end_key in req else 0
+                ms = req[ms_key] if ms_key in req else 0
+                if end > 0 and start > 0 and end >= start:
+                    ms = end - start
+                if ms > 0:
+                    if start == 0:
+                        start = all_start - ms
+                        end = start + ms
+                    all_start = start
+                    all_ms += ms
+                req[start_key] = start
+                req[end_key] = end
+                req[ms_key] = ms
+            req['load_end'] = 0
+            if 'load_start' in req and 'load_ms' in req:
+                req['load_end'] = req['load_start'] + req['load_ms']
+
+            ttfb_ms = req['ttfb_ms'] if 'ttfb_ms' in req else 0
+            req['ttfb_start'] = req['load_start'] if 'load_start' in req else 0
+            req['ttfb_end'] = 0
+            if 'ttfb_start' in req and 'ttfb_ms' in req:
+                req['ttfb_end'] = req['ttfb_start'] + req['ttfb_ms']
+            req['download_start'] = req['load_start'] + ttfb_ms if 'load_start' in req else 0
+            req['download_end'] = req['load_end'] if 'load_end' in req else 0
+            req['download_ms'] = req['download_end'] - req['download_start']
+
+            req['all_start'] = all_start
+            req['all_end'] = req['load_end'] if 'load_end' in req else 0
+            req['all_ms'] = all_ms
+
+            req['index'] = index
+            req['number'] = index + 1
+            index += 1
+
+    def add_response_body_flags(self):
+        """Add the details around response bodies"""
+        requests = self.data['requests']
+        # See what bodies are already in the zip file
+        bodies = {}
+        try:
+            bodies_zip = os.path.join(self.task['dir'], self.prefix + '_bodies.zip')
+            if os.path.isfile(bodies_zip):
+                with zipfile.ZipFile(bodies_zip, 'r') as zip_file:
+                    files = zip_file.namelist()
+                    for filename in files:
+                        matches = re.match(r'^(\d\d\d)-(.*)-body.txt$', filename)
+                        if matches:
+                            request_id = str(matches.group(2))
+                            bodies[request_id] = filename
+                    for request in requests:
+                        if 'raw_id' in request and request['raw_id'] in bodies:
+                            request['body_file'] = bodies[request['raw_id']]
+                        elif 'request_id' in request and request['request_id'] in bodies:
+                            request['body_file'] = bodies[request['request_id']]
+        except Exception:
+            logging.exception('Error matching requests to bodies')
+
+    def add_script_timings(self):
+        """Add the script timings"""
+        requests = self.data['requests']
+        try:
+            script_timings_file = os.path.join(self.task['dir'], self.prefix + '_script_timing.json.gz')
+            if os.path.isfile(script_timings_file):
+                with gzip.open(script_timings_file, GZIP_READ_TEXT) as f:
+                    timings = json.load(f)
+                    if timings and 'main_thread' in timings and timings['main_thread'] in timings:
+                        js_timing = timings[timings['main_thread']]
+                        used = {}
+                        for request in requests:
+                            if 'full_url' in request and request['full_url'] in js_timing and request['full_url'] not in used:
+                                used[request['full_url']] = True
+                                all_total = 0.0
+                                for cpu_event in js_timing[request['full_url']]:
+                                    times = js_timing[request['full_url']][cpu_event]
+                                    total = 0.0
+                                    for pair in times:
+                                        elapsed = pair[1] - pair[0]
+                                        if elapsed > 0:
+                                            total += elapsed
+                                    if total > 0:
+                                        all_total += total
+                                        total = int(round(total))
+                                        if 'cpuTimes' not in request:
+                                            request['cpuTimes'] = {}
+                                        request['cpuTimes'][cpu_event] = total
+                                        request['cpu.{}'.format(cpu_event)] = total
+                                all_total = int(round(all_total))
+                                request['cpuTime'] = all_total
+        except Exception:
+            logging.exception('Error processing script timings')
+
     def generate_har(self):
         """Generate a HAR file for the current step"""
         try:
@@ -742,12 +852,9 @@ class ProcessTest(object):
                     har['log']['entries'].append(self.process_har_request(pd, request))
 
             # Write out the HAR file
-            logging.debug(json.dumps(har, indent=4))
-            """
             har_file = os.path.join(self.task['dir'], self.prefix + '_har.json.gz')
             with gzip.open(har_file, GZIP_TEXT, 7) as f:
                 json.dump(har, f)
-            """
         except Exception:
             logging.exception('Error generating HAR')
 
@@ -858,5 +965,85 @@ class ProcessTest(object):
         entry['request'] = req
 
         # Response Data
+        response = {}
+        response['status'] = int(request['responseCode']) if 'responseCode' in request else -1
+        response['statusText'] = ''
+        response['headersSize'] = -1
+        response['bodySize'] = int(request['objectSize']) if 'objectSize' in request else -1
+        response['headers'] = []
+        ver = ''
+        headers_size = 0
+        if 'headers' in request and 'response' in request['headers']:
+            for header in request['headers']['response']:
+                headers_size += len(header) + 2
+                pos = header.find(':')
+                if pos > 0:
+                    name = header[:pos].strip()
+                    val = header[pos+1:].strip()
+                    response['headers'].append({'name': name, 'value': val})
+                elif ver is None:
+                    pos = header.find('HTTP/')
+                    if pos >= 0:
+                        ver = header[pos:8].strip()
+                        if ver != 'HTTP/0.9' and ver != 'HTTP/1.0' and ver != 'HTTP/1.1':
+                            ver = None
+            response['headersSize'] = headers_size
+        if 'protocol' in request:
+            response['httpVersion'] = request['protocol']
+        elif ver is not None:
+            response['httpVersion'] = ver
+        else:
+            response['httpVersion'] = ''
+        response['content'] = {
+            'size': response['bodySize'],
+            'mimeType': request['contentType'] if 'contentType' in request else ''
+        }
+        response['cookies'] = []
+
+        # Add the response body
+        try:
+            if 'body_file' in request:
+                bodies_zip = os.path.join(self.task['dir'], self.prefix + '_bodies.zip')
+                if os.path.isfile(bodies_zip):
+                    with zipfile.ZipFile(bodies_zip, 'r') as zip_file:
+                        with zip_file.open(request['body_file']) as body_file:
+                            response['content']['text'] = body_file.read().decode('utf-8')
+        except Exception:
+            logging.exception('Error loading request body')
+
+        entry['response'] = response
+
+        # Miscellaneous fields
+        entry['cache'] = {}
+        entry['timings'] = {}
+        entry['timings']['blocked'] = -1
+        if 'created' in request and request['created'] >= 0:
+            if 'dns_start' in request and request['dns_start'] >= request['created']:
+                entry['timings']['blocked'] = request['dns_start'] - request['created']
+            elif 'connect_start' in request and request['connect_start'] >= request['created']:
+                entry['timings']['blocked'] = request['connect_start'] - request['created']
+            elif 'ssl_start' in request and request['ssl_start'] >= request['created']:
+                entry['timings']['blocked'] = request['ssl_start'] - request['created']
+            elif 'ttfb_start' in request and request['ttfb_start'] >= request['created']:
+                entry['timings']['blocked'] = request['ttfb_start'] - request['created']
+        entry['timings']['dns'] = request['dns_ms'] if 'dns_ms' in request else -1
+        entry['timings']['connect'] = -1
+        if 'connect_ms' in request:
+            entry['timings']['connect'] = request['connect_ms']
+            if 'ssl_ms' in request and request['ssl_ms'] > 0:
+                entry['timings']['connect'] += request['ssl_ms']
+        entry['timings']['ssl'] = request['ssl_ms'] if 'ssl_ms' in request else -1
+        entry['timings']['send'] = 0
+        entry['timings']['wait'] = request['ttfb_ms'] if 'ttfb_ms' in request else -1
+        entry['timings']['receive'] = request['download_ms'] if 'download_ms' in request else -1
+
+        entry['time'] = 0
+        for key in entry['timings']:
+            if key != 'ssl' and entry['timings'][key] > 0:
+                entry['time'] += entry['timings'][key]
+        
+        # dump all of the data into the request object directly as custom keys
+        for key in request:
+            entry["_{}".format(key)] = request[key]
 
         return entry
