@@ -803,9 +803,9 @@ class DevtoolsBrowser(object):
             else:
                 cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu']) if 'throttle_cpu' in self.job else '1'
                 if self.job['dtShaper']:
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
-                elif 'throttle_cpu' in self.job and self.job['throttle_cpu'] > 1:
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '-throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                elif 'throttle_cpu_requested' in self.job and self.job['throttle_cpu_requested'] > 1:
+                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 else:
                     command.extend(['--throttling-method', 'provided'])
             if 'debug' in self.job and self.job['debug']:
