@@ -691,5 +691,20 @@
     ],
     "name": "Shopify apps",
     "priority": 9
+  },
+  "101": {
+    "groups": [
+      6,
+      16
+    ],
+    "name": "Recruitment & staffing",
+    "priority": 9
+  },
+  "102": {
+    "groups": [
+      1
+    ],
+    "name": "Returns",
+    "priority": 9
   }
 }

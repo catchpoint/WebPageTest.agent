@@ -114,6 +114,24 @@
     "url": "/typo3/",
     "website": "https://typo3.org/"
   },
+  "Tabarnapp": {
+    "cats": [
+      100
+    ],
+    "description": "Tabarnapp is a platform for Shopify apps and themes.",
+    "icon": "Tabarnapp.png",
+    "js": {
+      "tabarnapp_loaded_ad": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "cdn\\.tabarn\\.app/",
+    "website": "https://tabarnapp.com"
+  },
   "Tabby": {
     "cats": [
       41,
@@ -174,9 +192,6 @@
     "dom": "link[href*='/wp-content/plugins/tablepress/']",
     "icon": "TablePress.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "website": "https://tablepress.org"
   },
@@ -205,6 +220,22 @@
     "scriptSrc": "\\.taboola\\.com",
     "website": "https://www.taboola.com",
     "xhr": "\\.taboola\\.com"
+  },
+  "TagPro": {
+    "cats": [
+      42
+    ],
+    "description": "TagPro is software that updates and allows you to manage tags within websites, identifying various types of variables to optimise loads for advertising.",
+    "icon": "TagPro.png",
+    "js": {
+      "initAdproTags": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "tagpro\\.adpromedia\\.net/",
+    "website": "https://tagpro.adpromedia.net"
   },
   "Tagboard": {
     "cats": [
@@ -282,6 +313,7 @@
         }
       }
     },
+    "css": "\\--tw*\\;confidence:75",
     "icon": "tailwindcss.svg",
     "website": "https://tailwindcss.com/"
   },
@@ -648,6 +680,26 @@
       "generator": "Textpattern"
     },
     "website": "http://textpattern.com"
+  },
+  "The.com": {
+    "cats": [
+      18,
+      51
+    ],
+    "description": "The.com is a low-code website building platform with community-created components that you can share and own.",
+    "icon": "The.com.svg",
+    "implies": [
+      "React",
+      "Amazon S3"
+    ],
+    "scriptSrc": "the-dotcom-public-cdn\\.s3\\.amazonaws\\.com/",
+    "saas": true,
+    "pricing": [
+      "payg",
+      "mid",
+      "recurring"
+    ],
+    "website": "https://www.the.com"
   },
   "The Arena Group": {
     "cats": [
@@ -1188,6 +1240,23 @@
     "scriptSrc": "/wp-content/themes/iconic-one(?:-[\\w]+)?/",
     "website": "https://themonic.com/iconic-one"
   },
+  "Thesis": {
+    "cats": [
+      10
+    ],
+    "description": "Thesis is a conversion rate optimisation company.",
+    "icon": "Thesis.svg",
+    "js": {
+      "thix.history": "\\;confidence:50",
+      "thix.t": "\\;confidence:50"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "thix\\.ttsep\\.com/",
+    "website": "https://www.thesistesting.com"
+  },
   "Thimatic": {
     "cats": [
       90,
@@ -1278,6 +1347,24 @@
     "saas": true,
     "scriptSrc": "\\.online-metrix\\.net",
     "website": "https://risk.lexisnexis.com/products/threatmetrix"
+  },
+  "Threekit": {
+    "cats": [
+      76,
+      95
+    ],
+    "description": "Threekit is a visual customer experience solution that enables brands to create, manage and scale photorealistic images and 3D product visuals, all from a single design file.",
+    "icon": "Threekit.svg",
+    "js": {
+      "threekit.configuratorForm": "",
+      "threekitAR": "",
+      "threekitPlayer": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.threekit.com"
   },
   "ThriveCart": {
     "cats": [
@@ -1807,6 +1894,23 @@
     },
     "website": "https://trix-editor.org"
   },
+  "Trove Recommerce": {
+    "cats": [
+      6
+    ],
+    "description": "Trove (formerly Yerdle) builds white-label technology and end-to-end operations for ecommerce platforms.",
+    "dom": "img[src*='res.cloudinary.com/yerdle']",
+    "headers": {
+      "x-trove-app-name": "",
+      "x-trove-country-code": "",
+      "x-trove-order-uuid": "",
+      "x-yerdle-app-name": ""
+    },
+    "icon": "trove.png",
+    "saas": true,
+    "website": "https://trove.co",
+    "xhr": "reware-production\\.yerdlesite\\.com"
+  },
   "TruValidate": {
     "cats": [
       16,
@@ -1846,6 +1950,25 @@
     "icon": "Truecommerce.svg",
     "scriptSrc": "cdn\\.nexternal\\.com/",
     "website": "https://www.truecommerce.com"
+  },
+  "Trumba": {
+    "cats": [
+      72
+    ],
+    "description": "Trumba offers web-hosted event calendar software for publishing online, interactive, calendars of events.",
+    "dom": "a[href*='www.trumba.com/calendars/']",
+    "icon": "Trumba.png",
+    "js": {
+      "$Trumba": "",
+      "$Trumba.version": "([\\d\\.]+)\\;version:\\1",
+      "Trumba": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.trumba.com"
   },
   "Trunkrs": {
     "cats": [
@@ -2475,6 +2598,18 @@
     },
     "icon": "thttpd.png",
     "website": "https://acme.com/software/thttpd"
+  },
+  "toastr": {
+    "cats": [
+      12
+    ],
+    "description": "toastr is a Javascript library for non-blocking notifications. The goal is to create a simple core library that can be customized and extended.",
+    "icon": "toastr.png",
+    "js": {
+      "toastr.version": "(.*)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/CodeSeven/toastr"
   },
   "total.js": {
     "cats": [

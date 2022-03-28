@@ -94,9 +94,6 @@
       "ewww_webp_supported": ""
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/ewww-image-optimizer/",
     "website": "https://github.com/nosilver4u/ewww-image-optimizer"
@@ -153,6 +150,22 @@
     "implies": "Docker",
     "website": "https://easyengine.io"
   },
+  "Easy Redirects": {
+    "cats": [
+      100
+    ],
+    "description": "Easy Redirects is a Shopify app built by Eastside, and part of the best Shopify Apps collection.",
+    "icon": "Easy Redirects.png",
+    "requires": "Shopify",
+    "scriptSrc": "easy-redirects\\..+/redirect-app\\.js",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://apps.shopify.com/easyredirects"
+  },
   "EasyStore": {
     "cats": [
       6
@@ -181,6 +194,21 @@
       "\\bEasylog\\b"
     ],
     "website": "http://www.easylog.com.br"
+  },
+  "ECharts": {
+    "cats": [
+      25
+    ],
+    "oss": true,
+    "description": "ECharts is an open-source JavaScript visualisation library.",
+    "dom": "div[_echarts_instance_]",
+    "scriptSrc": [
+      "/echarts\\.min\\.[a-zA-Z0-9]*\\.js",
+      "/echarts(?:\\.simple)?(?:\\.esm)?(?:\\.common)?(?:\\.min)?\\.js",
+      "cdn\\.jsdelivr\\.net/(?:npm|gh/apache)/echarts@([\\d.]+(?:-[^/]+)?|latest)/dist/echarts.*\\.js\\;version:\\1"
+    ],
+    "icon": "echarts.png",
+    "website": "https://echarts.apache.org/"
   },
   "Ecovium": {
     "cats": [
@@ -239,9 +267,6 @@
       "EditorJS": ""
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://editorjs.io"
   },
   "Elastic APM": {
@@ -272,7 +297,11 @@
     "implies": [
       "Elasticsearch"
     ],
-    "pricing": ["recurring", "freemium", "mid"],
+    "pricing": [
+      "recurring",
+      "freemium",
+      "mid"
+    ],
     "saas": true,
     "website": "https://www.elasticpress.io/"
   },
@@ -285,10 +314,6 @@
       "STVID": "\\;confidence:50"
     },
     "description": "ElasticSuite is a merchandising suite for Magento and OroCommerce.",
-    "html": [
-      "<input [^>]*Smile_Elasticsuite[^>]*>",
-      "<[\\S\\s.*]*Smile_Elasticsuite[\\S\\s.*]*>"
-    ],
     "icon": "ElasticSuite.svg",
     "implies": [
       "PHP",
@@ -305,7 +330,7 @@
       "OroCommerce",
       "Magento"
     ],
-    "scriptSrc": "Smile_ElasticsuiteTracker/js/tracking\\.js",
+    "scriptSrc": "/Smile_ElasticsuiteTracker/",
     "website": "https://elasticsuite.io"
   },
   "Elasticsearch": {
@@ -436,7 +461,7 @@
       "ELOQUA": ""
     },
     "description": "Eloqua is a Software-as-a-Service (SaaS) platform for marketing automation offered that aims to help B2B marketers and organisations manage marketing campaigns and sales lead generation.",
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "js": {
       "_elq": "",
       "_elqQ": "",
@@ -551,8 +576,7 @@
   },
   "Enable": {
     "cats": [
-      68,
-      87
+      68
     ],
     "description": "Enable is a web accessibility plugin by uPress.",
     "icon": "Enable.png",
@@ -563,9 +587,8 @@
       "freemium",
       "poa"
     ],
-    "requires": "WordPress",
-    "scriptSrc": "cdn\\.enable\\.co\\.il/.+\\.js\\?ver=(\\d+(?:\\.\\d+)+)\\;version:\\1",
-    "website": "https://www.enable-accessibility.com"
+    "scriptSrc": "cdn\\.enable\\.co\\.il/",
+    "website": "https://www.enable.co.il"
   },
   "Engagio": {
     "cats": [

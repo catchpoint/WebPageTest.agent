@@ -216,9 +216,6 @@
     "dom": "link[href*='/wp-content/plugins/wp-pagenavi/']",
     "icon": "WP-PageNavi.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "website": "https://github.com/lesterchan/wp-pagenavi"
   },
@@ -270,7 +267,6 @@
     },
     "oss": true,
     "pricing": [
-      "freemium",
       "onetime"
     ],
     "requires": "WordPress",
@@ -331,6 +327,11 @@
     ],
     "description": "Wagtail is a Django content management system (CMS) focused on flexibility and user experience.",
     "dom": {
+      "[data-block-key]": {
+        "attributes": {
+          "data-block-key": "[a-z0-9]{5}"
+        }
+      },
       "[style*='images/']": {
         "attributes": {
           "style": "(?:\\.[a-z]+|/media)(?:/[\\w-]+)?/(?:original_images/[\\w-]+|images/[\\w-.]+\\.(?:(?:fill|max|min)-\\d+x\\d+(?:-c\\d+)?|(?:width|height|scale)-\\d+|original))\\."
@@ -385,6 +386,19 @@
     "saas": true,
     "scriptSrc": "getwair\\.com",
     "website": "https://getwair.com"
+  },
+  "Wakav Performance Monitoring": {
+    "cats": [
+      78
+    ],
+    "description": "Wakav Performance Monitoring is a real user monitoring (RUM), Web/App performance and availability test platform.",
+    "icon": "Wakav Performance Monitoring.png",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "rum\\.wakav\\.ir/",
+    "website": "https://www.wakav.ir"
   },
   "WalkMe": {
     "cats": [
@@ -446,6 +460,25 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/themes/weaver-xtreme/.+weaverxjslib-end\\.min.\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://weavertheme.com"
+  },
+  "Web Shop Manager": {
+    "cats": [
+      6
+    ],
+    "description": "Web Shop Manager is an ecommerce and search platform for the automotive industry and markets with complex product catalogs.",
+    "icon": "Web Shop Manager.png",
+    "js": {
+      "WSM.Tracking": "",
+      "WSM_CHART_COLORS_OPAQUE": "",
+      "wsmHideHelpBox": "",
+      "wsm_catalogTabby": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://webshopmanager.com"
   },
   "Web2py": {
     "cats": [
@@ -516,9 +549,6 @@
       "mtnc_front_options": ""
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "website": "https://wordpress.org/plugins/maintenance"
   },
@@ -530,9 +560,6 @@
     "dom": "link[href*='/wp-content/plugins/under-construction-page/']",
     "icon": "WebFactory.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "website": "https://wordpress.org/plugins/under-construction-page"
   },
@@ -549,6 +576,22 @@
       "generator": "^WebGUI ([\\d.]+)\\;version:\\1"
     },
     "website": "http://www.webgui.org"
+  },
+  "WebHostUK": {
+    "cats": [
+      88
+    ],
+    "description": "WebHostUK is a UK based web hosting company offering cheap yet reliable and secure web hosting solutions on both Linux and Windows servers.",
+    "dns": {
+      "NS": "ns2\\d\\.dnshostcentral\\.com",
+      "SOA": "ns2\\d\\.dnshostcentral\\.com"
+    },
+    "icon": "WebHostUK.png",
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "website": "https://www.webhostuk.co.uk"
   },
   "WebMetric": {
     "cats": [
@@ -597,24 +640,6 @@
       "generator": "Incomedia WebSite X5 (\\w+ [\\d.]+)\\;version:\\1"
     },
     "website": "http://websitex5.com"
-  },
-  "WebToffee GDPR Cookie Consent": {
-    "cats": [
-      87,
-      67
-    ],
-    "description": "WebToffee GDPR Cookie Consent is a cookie consent and compliance notice WordPress plugin which will assist you in making your website GDPR (RGPD, DSVGO) compliant.",
-    "dom": "link[href*='/wp-content/plugins/cookie-law-info/']",
-    "icon": "WebToffee.svg",
-    "implies": "CookieYes",
-    "pricing": [
-      "freemium",
-      "low",
-      "recurring"
-    ],
-    "requires": "WordPress",
-    "scriptSrc": "/wp-content/plugins/cookie-law-info/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
-    "website": "https://www.webtoffee.com/product/gdpr-cookie-consent/"
   },
   "Webflow": {
     "cats": [
@@ -853,10 +878,10 @@
   },
   "Whatfix": {
     "cats": [
-      19
+      58
     ],
     "description": "Whatfix is a SaaS based platform which provides in-app guidance and performance support for web applications and software products.",
-    "icon": "Whatfix.png",
+    "icon": "Whatfix.svg",
     "js": {
       "_wfx_add_logger": "",
       "_wfx_settings": "",
@@ -866,7 +891,7 @@
       "poa"
     ],
     "saas": true,
-    "scriptSrc": "whatfix\\.com",
+    "scriptSrc": "\\.whatfix\\.com/",
     "website": "https://whatfix.com"
   },
   "WhatsApp Business Chat": {
@@ -1003,13 +1028,13 @@
     ],
     "description": "WildJar is a call tracking and intelligence platform which helps you understand where your leads are coming from, who is calling you, what your conversations are about and connect that data into other platforms.",
     "icon": "WildJar.png",
-    "scriptSrc": "trkcall\\.com/scripts",
-    "saas": true,
     "pricing": [
       "freemium",
       "payg",
       "recurring"
     ],
+    "saas": true,
+    "scriptSrc": "trkcall\\.com/scripts",
     "website": "https://www.wildjar.com"
   },
   "Windows CE": {
@@ -1092,6 +1117,25 @@
     "saas": true,
     "scriptSrc": "loader\\.wisepops\\.com/get-loader\\.js",
     "website": "https://wisepops.com"
+  },
+  "Wishlist King": {
+    "cats": [
+      100
+    ],
+    "description": "Wishlist King is a Shopify app which helps you to add your favorite products or share the wishlist with your friends built by Appmate.",
+    "icon": "Wishlist King.png",
+    "requires": "Shopify",
+    "js": {
+      "Appmate.version": "([\\d\\.]+)\\;version:\\1\\;confidence:1",
+      "Appmate.wk": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://appmate.io"
   },
   "Wistia": {
     "cats": [
@@ -1244,9 +1288,6 @@
     },
     "icon": "WooCommerce Blocks.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": [
       "WordPress",
       "WooCommerce"
@@ -1292,9 +1333,6 @@
     "icon": "WooCommerce PayPal.png",
     "implies": "PayPal",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/woocommerce-paypal-payments/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://github.com/woocommerce/woocommerce-paypal-payments"
@@ -1503,6 +1541,23 @@
     "scriptSrc": "/wp-content/plugins/wordfence/.+login\\.\\d+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.wordfence.com"
   },
+  "Workable": {
+    "cats": [
+      101
+    ],
+    "description": "Workable is the all-in-one hiring solution.",
+    "dom": "a[href*='.workable.com/']",
+    "icon": "Workable.svg",
+    "js": {
+      "webpackChunk_workable_candidate": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.workable.com"
+  },
   "Workarea": {
     "cats": [
       6
@@ -1550,6 +1605,21 @@
     "icon": "worldshopping.png",
     "scriptSrc": "checkout-api\\.worldshopping\\.jp/(v\\d+)?\\;version:\\1",
     "website": "https://www.worldshopping.global/"
+  },
+  "Worldz": {
+    "cats": [
+      5,
+      76
+    ],
+    "description": "Worldz calculates the economic value of a user’s social popularity (qualitatively and quantitatively). In proportion to this value, it provides a personalised discount, which can be applied in exchange for a social sharing by the user on their Instagram or Facebook profile.",
+    "icon": "Worldz.png",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.worldztool\\.com/",
+    "website": "https://www.worldz-business.net"
   },
   "Wufoo": {
     "cats": [
