@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import sys
+from xmlrpc.client import DateTime
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
@@ -47,6 +48,7 @@ class ProcessTest(object):
                 self.video_subdirectory = step['video_subdirectory']
                 self.step_name = step['step_name']
                 self.step_num = step['num']
+                self.step_start = step['start_time']
                 self.data = None
                 self.delete = []
                 self.run_processing()
@@ -74,6 +76,9 @@ class ProcessTest(object):
 
         self.save_data()
 
+        if self.options.har:
+            self.generate_har()
+
         # TODO: Delete any stand-alone files that were post-processed (keep them as backup for now)
         """
         for file in self.delete:
@@ -90,6 +95,13 @@ class ProcessTest(object):
         if os.path.isfile(devtools_file):
             with gzip.open(devtools_file, GZIP_READ_TEXT) as f:
                 self.data = json.load(f)
+                # Merge the task-level page data
+                if self.data and 'pageData' in self.data:
+                    if 'page_data' in self.task:
+                        for key in self.task['page_data']:
+                            if key not in self.data['pageData']:
+                                self.data['pageData'][key] = self.task['page_data'][key]
+                    self.task['page_data']['date'] = self.step_start
         if not self.data or 'pageData' not in self.data:
             raise Exception("Devtools file not present")
 
@@ -697,3 +709,154 @@ class ProcessTest(object):
                     logging.debug(audits)
                     for name in audits:
                         page_data['lighthouse.{}'.format(name)] = audits[name]
+
+    def generate_har(self):
+        """Generate a HAR file for the current step"""
+        try:
+            page_data = self.data['pageData']
+            har = {'log': {
+                    'version': '1.1',
+                    'creator': {
+                        'name': 'WebPageTest',
+                        'version': self.job['agent_version'] if 'agent_version' in self.job else ''},
+                    'browser': {
+                        'name': self.job['browser'] if 'browser' in self.job else '',
+                        'version': self.task['page_data']['browser_version'] if 'browser_version' in page_data else ''},
+                    'pages':[],
+                    'entries':[]
+                    }}
+
+            # Add the lighthouse data
+            lighthouse_file = os.path.join(self.task['dir'], 'lighthouse.json.gz')
+            if os.path.isfile(lighthouse_file):
+                with gzip.open(lighthouse_file, GZIP_READ_TEXT) as f:
+                    har['_lighthouse'] = json.load(f)
+
+            # Add the page data
+            pd = self.get_har_page_data()
+            har['log']['pages'].append(pd)
+
+            # Add each request
+            if 'requests' in self.data:
+                for request in self.data['requests']:
+                    har['log']['entries'].append(self.process_har_request(pd, request))
+
+            # Write out the HAR file
+            logging.debug(json.dumps(har, indent=4))
+            """
+            har_file = os.path.join(self.task['dir'], self.prefix + '_har.json.gz')
+            with gzip.open(har_file, GZIP_TEXT, 7) as f:
+                json.dump(har, f)
+            """
+        except Exception:
+            logging.exception('Error generating HAR')
+
+    def get_har_page_data(self):
+        """Transform the page_data into HAR format"""
+        from datetime import datetime
+        page_data = self.data['pageData']
+        pd = {}
+
+        # Generate the HAR-specific fields
+        if 'page_data' in self.task and 'date' in self.task['page_data']:
+            start_time = datetime.fromtimestamp(self.task['page_data']['date'])
+            pd['startedDateTime'] = start_time.isoformat()
+        pd['title'] = "Run {}, {} for {}".format(self.task['run'], 'Repeat View' if self.task['cached'] else "First View", page_data['URL'])
+        pd['id'] = "page_{}_{}_{}".format(self.task['run'], 1 if self.task['cached'] else 0, self.step_num)
+        pd['testID'] = self.task['id']
+        pd['pageTimings'] = {
+            'onLoad': page_data['docTime'] if 'docTime' in page_data else -1,
+            'onContentLoad': -1,
+            '_startRender': page_data['render'] if 'render' in page_data else -1
+        }
+
+        # Add all of the raw page data
+        for key in page_data:
+            pd['_' + key] = page_data[key]
+
+        # Add the console log
+        console_log_file = os.path.join(self.task['dir'], self.prefix + '_console_log.json.gz')
+        if os.path.isfile(console_log_file):
+            with gzip.open(console_log_file, GZIP_READ_TEXT) as f:
+                pd['_consoleLog'] = json.load(f)
+
+        return pd
+
+    def process_har_request(self, pd, request):
+        """Process an individual request for the HAR"""
+        from datetime import datetime
+        from urllib.parse import urlparse, parse_qs
+        page_data = self.data['pageData']
+        entry = {
+            'pageref': pd['id'],
+            '_run': self.task['run'],
+            '_cached': 1 if self.task['cached'] else 0
+        }
+
+        if 'page_data' in self.task and 'date' in self.task['page_data'] and 'load_start' in request:
+            start_time = datetime.fromtimestamp(self.task['page_data']['date'])
+        if 'date' in page_data and 'load_start' in request:
+            start_time = datetime.fromtimestamp(self.task['page_data']['date'] + (float(request['load_start']) / 1000.0))
+            entry['startedDateTime'] = start_time.isoformat()
+        if 'all_ms' in request:
+            entry['time'] = request['all_ms']
+        
+        # Request data
+        req = {
+            'method': request['method'],
+            'url': request['full_url'],
+            'headersSize': -1,
+            'bodySize': -1,
+            'cookies': [],
+            'headers': []
+        }
+        headers_size = 0
+        ver = None
+        if 'headers' in request and 'request' in request['headers']:
+            for header in request['headers']['request']:
+                headers_size += len(header) + 2
+                pos = header.find(':')
+                if pos > 0:
+                    name = header[:pos].strip()
+                    val = header[pos+1:].strip()
+                    req['headers'].append({'name': name, 'value': val})
+
+                    # Parse out any cookies
+                    if name.lower() == 'cookie':
+                        cookies = val.split(';')
+                        for cookie in cookies:
+                            pos = cookie.find('=')
+                            if pos > 0:
+                                name = cookie[:pos].strip()
+                                val = cookie[pos+1:].strip()
+                                req['cookies'].append({'name': name, 'value': val})
+                elif ver is None:
+                    pos = header.find('HTTP/')
+                    if pos >= 0:
+                        ver = header[pos:8].strip()
+                        if ver != 'HTTP/0.9' and ver != 'HTTP/1.0' and ver != 'HTTP/1.1':
+                            ver = None
+            req['headersSize'] = headers_size
+        if 'protocol' in request:
+            req['httpVersion'] = request['protocol']
+        elif ver is not None:
+            req['httpVersion'] = ver
+        else:
+            req['httpVersion'] = ''
+        
+        req['queryString'] = []
+        parsed_url = urlparse(request['full_url'], allow_fragments=False)
+        qs = parse_qs(parsed_url.query)
+        if qs:
+            for name in qs:
+                for val in qs[name]:
+                    req['queryString'].append({'name': name, 'value': val})
+        
+        if request['method'].lower().strip() == 'post':
+            req['postData'] = {'mimeType': '', 'text': ''}
+
+        entry['request'] = req
+
+        # Response Data
+
+        return entry
