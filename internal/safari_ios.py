@@ -814,6 +814,13 @@ class iWptBrowser(BaseBrowser):
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        if 'steps' not in task:
+            task['steps'] = []
+        task['steps'].append({
+            'prefix': task['prefix'],
+            'video_subdirectory': task['video_subdirectory'],
+            'step_name': task['step_name']
+        })
     
     def enable_target(self, target_id):
         """Enable all of the targe-specific events"""
