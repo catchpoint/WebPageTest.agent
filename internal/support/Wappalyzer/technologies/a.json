@@ -307,6 +307,23 @@
     "saas": true,
     "website": "https://abicart.com/"
   },
+  "Accentuate Custom Fields": {
+    "cats": [
+      100
+    ],
+    "description": "Accentuate Custom Fields is the professional and de facto solution to easily extend your Shopify store with your own custom fields such multi-language text fields, images, checkboxes, dates, selection list and custom JSON objects.",
+    "dom": "a[style*='.accentuate.io/'], a[data-bg*='.accentuate.io/'], div[style*='.accentuate.io/'], img[src*='.accentuate.io/'], img[data-src*='.accentuate.io/']",
+    "icon": "Accentuate Custom Fields.png",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scripts": "\\.accentuate\\.io/",
+    "website": "https://www.accentuate.io"
+  },
   "AccessTrade": {
     "cats": [
       71
@@ -407,6 +424,20 @@
     "saas": true,
     "website": "https://partners.accuweather.com"
   },
+  "Ace": {
+    "cats": [
+      24
+    ],
+    "description": "Ace is an embeddable code editor written in JavaScript.",
+    "icon": "Ace.png",
+    "js": {
+      "ace.EditSession": "",
+      "ace.Editor": "",
+      "ace.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/ajaxorg/ace"
+  },
   "Ackee": {
     "cats": [
       10
@@ -482,7 +513,8 @@
     ],
     "icon": "acquia-site-factory.png",
     "implies": [
-      "Acquia Cloud Platform"
+      "Acquia Cloud Platform",
+      "Drupal Multisite"
     ],
     "saas": true,
     "scriptSrc": [
@@ -964,9 +996,6 @@
     "icon": "AddToAny.svg",
     "implies": "AddToAny",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/add-to-any/addtoany\\.min\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://github.com/projectestac/wordpress-add-to-any"
@@ -1032,6 +1061,25 @@
     "icon": "adminer.png",
     "implies": "PHP",
     "website": "http://www.adminer.org"
+  },
+  "Admiral": {
+    "cats": [
+      19
+    ],
+    "description": "Admiral is a Visitor Relationship Management (VRM) platform.",
+    "icon": "Admiral.svg",
+    "js": {
+      "admiral": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scripts": "admiral(?:-engaged|:enabled)",
+    "website": "https://www.getadmiral.com"
   },
   "Admitad": {
     "cats": [
@@ -1130,6 +1178,7 @@
       86
     ],
     "cookies": {
+      "Demdex": "",
       "aam_uuid": ""
     },
     "description": "Adobe Audience Manager is a versatile audience data management platform.",
@@ -1140,6 +1189,17 @@
     ],
     "saas": true,
     "website": "https://business.adobe.com/products/audience-manager/adobe-audience-manager.html"
+  },
+  "Adobe Client Data Layer": {
+    "cats": [
+      12
+    ],
+    "description": "Adobe Client Data Layer is a framework of JavaScript objects on your site that contains all variable values used in your implementation.",
+    "icon": "Adobe.svg",
+    "js": {
+      "adobeDataLayer.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "website": "https://github.com/adobe/adobe-client-data-layer"
   },
   "Adobe ColdFusion": {
     "cats": [
@@ -1158,6 +1218,19 @@
     "scriptSrc": "/cfajax/",
     "url": "\\.cfm(?:$|\\?)",
     "website": "http://adobe.com/products/coldfusion-family.html"
+  },
+  "Adobe Dynamic Media Classic": {
+    "cats": [
+      95
+    ],
+    "description": "Adobe Dynamic Media Classic is a platform that enables customers to manage, enhance, publish, and deliver dynamic rich media content and personal experiences to consumers across all channels and devices, including web, print material, email campaigns, desktops, social, and mobile.",
+    "icon": "Adobe Experience Platform.svg",
+    "headers": {
+      "Content-Security-Policy": "\\.scene7\\.com"
+    },
+    "dom": "source[srcset*='.scene7.com/'], link[href*='.scene7.com']",
+    "saas": true,
+    "website": "https://business.adobe.com/uk/products/experience-manager/scene7-login.html"
   },
   "Adobe DTM": {
     "cats": [
@@ -1504,9 +1577,12 @@
     "js": {
       "Afterpay": "",
       "AfterpayAttractWidget": "",
+      "AfterpayGenericErrorHtml": "",
+      "AfterpayWidgetHtml": "",
       "afterpay_product": "",
       "checkout.enabledpayments.afterpay": "^true$"
     },
+    "requiresCategory": 6,
     "saas": true,
     "scriptSrc": [
       "portal\\.afterpay\\.com",
@@ -1594,9 +1670,6 @@
     "dom": "form[action*='airform.io/']",
     "icon": "Airform.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://airform.io"
   },
   "Airship": {
@@ -1769,9 +1842,6 @@
       "OpenLayers"
     ],
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://aksaracms.com"
   },
   "Albacross": {
@@ -1828,6 +1898,9 @@
     "cats": [
       29
     ],
+    "cookies": {
+      "_ALGOLIA": ""
+    },
     "description": "Algolia offers a hosted web search product delivering real-time results.",
     "headers": {
       "Content-Security-Policy": "\\.algolia"
@@ -1904,6 +1977,18 @@
     "saas": true,
     "scriptSrc": "portal\\.allyable\\.com/",
     "website": "https://allyable.com"
+  },
+  "AlmaLinux": {
+    "cats": [
+      28
+    ],
+    "description": "AlmaLinux is an open-source, community-driven Linux operating system that fills the gap left by the discontinuation of the CentOS Linux stable release.",
+    "headers": {
+      "server": "AlmaLinux"
+    },
+    "icon": "AlmaLinux.svg",
+    "oss": true,
+    "website": "https://almalinux.org"
   },
   "Alpine Linux": {
     "cats": [
@@ -2481,10 +2566,53 @@
       "antd.version": "^([\\d\\.]+)$\\;version:\\1"
     },
     "oss": true,
+    "website": "https://ant.design"
+  },
+  "AntV G2": {
+    "cats": [
+      25
+    ],
+    "description": "AntV G2 is a highly interactive data-driven visualisation grammar for statistical charts.",
+    "dom": "div.g2-tooltip",
+    "icon": "AntV.svg",
+    "js": {
+      "G2.Chart": "",
+      "G2.VERSION": "([\\d\\.]+)\\;version:\\1"
+    },
     "pricing": [
       "freemium"
     ],
-    "website": "https://ant.design"
+    "saas": true,
+    "website": "https://g2plot.antv.vision"
+  },
+  "AntV G6": {
+    "cats": [
+      25
+    ],
+    "description": "AntV G6 is a graph visualisation framework in JavaScript.",
+    "icon": "AntV.svg",
+    "js": {
+      "g6.Graph": "",
+      "g6.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "saas": true,
+    "website": "https://g6.antv.vision"
+  },
+  "Antsomi CDP 365": {
+    "cats": [
+      97
+    ],
+    "description": "Antsomi CDP 365 is a AI-enabled customer data platform from Southeast Asia.",
+    "icon": "Antsomi.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.cdp\\.asia/",
+    "website": "https://www.antsomi.com"
   },
   "AnyClip": {
     "cats": [
@@ -2627,6 +2755,7 @@
     "cats": [
       59
     ],
+    "description": "Apollo is a fully-featured caching GraphQL client with integrations for React, Angular, and more.",
     "dom": "script#__APOLLO_STATE__",
     "icon": "Apollo.svg",
     "implies": [
@@ -2762,6 +2891,7 @@
     "icon": "Apple.svg",
     "js": {
       "ApplePay": "",
+      "braintree.applePay": "",
       "checkout.enabledpayments.applepay": "^true$",
       "dw.applepay": "",
       "enableApplePay": ""
@@ -2790,6 +2920,21 @@
     },
     "scriptSrc": "appleid\\.auth\\.js",
     "website": "https://developer.apple.com/sign-in-with-apple/"
+  },
+  "ApplicantStack": {
+    "cats": [
+      101
+    ],
+    "description": "ApplicantStack is a full-service applicant tracking system that automates and streamlines all stages of the hiring process.",
+    "dom": "a[href*='.applicantstack.com/']",
+    "icon": "ApplicantStack.png",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.applicantstack\\.com/",
+    "website": "https://www.applicantstack.com"
   },
   "Appointy": {
     "cats": [
@@ -2887,9 +3032,6 @@
     "icon": "Arastta.svg",
     "implies": "PHP",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "scriptSrc": "arastta\\.js",
     "website": "http://arastta.org"
   },
@@ -2919,17 +3061,17 @@
       95
     ],
     "description": "Arc XP is a cloud-based digital experience platform that helps enterprise companies, retail brands and media and entertainment organization create and distribute content, drive digital commerce, and deliver powerful experiences.",
+    "dom": "#pb-root",
     "icon": "Arc XP.svg",
-    "dom":"#pb-root",
     "js": {
       "Fusion.arcSite": ""
     },
-    "saas": true,
     "pricing": [
       "recurring",
       "poa",
       "high"
     ],
+    "saas": true,
     "website": "https://www.arcxp.com"
   },
   "ArcGIS API for JavaScript": {
@@ -3032,6 +3174,19 @@
     },
     "website": "http://www.methods.co.nz/asciidoc"
   },
+  "Asciidoctor": {
+    "cats": [
+      4
+    ],
+    "description": "Asciidoctor is an open-source text processor and publishing toolchain, written in Ruby, for converting AsciiDoc content to HTML 5, DocBook 5, and other formats.",
+    "icon": "Asciidoctor.png",
+    "meta": {
+      "generator": "^Asciidoctor\\s([\\d\\.]+)$\\;version:\\1"
+    },
+    "implies": "Ruby",
+    "oss": true,
+    "website": "https://github.com/asciidoctor/asciidoctor"
+  },
   "Asciinema": {
     "cats": [
       14
@@ -3109,6 +3264,11 @@
     ],
     "description": "Astro is a new JavaScript-based static site builder.",
     "dom": {
+      "[class^='astro-']": {
+        "attributes": {
+          "class": "astro-[\\d\\w]{8,}"
+        }
+      },
       "link[href*='/_astro/']": {
         "attributes": {
           "href": "/_astro/(?:common|index)-[\\d\\w]+\\.css"
@@ -3117,9 +3277,6 @@
     },
     "icon": "Astro.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://astro.build"
   },
   "Astute Solutions": {
@@ -3321,17 +3478,14 @@
       12
     ],
     "description": "Aurelia is an open-source UI JavaScript framework designed to create single page applications.",
+    "dom": "div[aurelia-app], body[aurelia-app], a[au-target-id]",
     "icon": "Aurelia.svg",
-    "dom":"div[aurelia-app], body[aurelia-app], a[au-target-id]",
     "js": {
       "_aureliaConfigureModuleLoader": "",
       "localAurelia": ""
     },
-    "scriptSrc": "/aurelia[\\d\\w\\-\\.]+\\.js",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
+    "scriptSrc": "/aurelia[\\d\\w\\-\\.]+\\.js",
     "website": "http://aurelia.io"
   },
   "Auryc": {
@@ -3349,6 +3503,19 @@
     "saas": true,
     "scriptSrc": "cdn\\.auryc\\.com/",
     "website": "https://www.auryc.com"
+  },
+  "Australia Post": {
+    "cats": [
+      99
+    ],
+    "description": "Australia Post is the government business enterprise that provides postal services in Australia.",
+    "icon": "AusPost.svg",
+    "requiresCategory": 6,
+    "text": [
+      "\\bAusPost\\b",
+      "\\bAustralia Post\\b"
+    ],
+    "website": "https://auspost.com.au"
   },
   "Auth0": {
     "cats": [
@@ -3424,10 +3591,10 @@
     ],
     "description": "Avangate (2Checkout) is a digital ecommerce platform for businesses that sell physical goods or digital products.",
     "icon": "Avangate.svg",
-    "implies": "Verifone",
+    "implies": "Verifone 2Checkout",
     "js": {
-      "__avng8_callbacks": "",
       "AvaCart.version": "(.+)\\;version:\\1",
+      "__avng8_callbacks": "",
       "avaSlugify": ""
     },
     "scriptSrc": "^https?://edge\\.avangate\\.net/",
@@ -3593,6 +3760,25 @@
     "icon": "azure.svg",
     "implies": "Azure",
     "website": "https://azure.microsoft.com/en-us/services/cdn/"
+  },
+  "Azure Monitor": {
+    "cats": [
+      10,
+      92
+    ],
+    "description": "Azure Monitor collects monitoring telemetry from a variety of on-premises and Azure sources. Azure Monitor helps you maximise the availability and performance of your applications and services.",
+    "dom": "link[href*='js.monitor.azure.com']",
+    "headers": {
+      "Content-Security-Policy": "js\\.monitor\\.azure\\.com"
+    },
+    "icon": "azure.svg",
+    "implies": "Azure",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "js\\.monitor\\.azure\\.com/",
+    "website": "https://azure.microsoft.com/en-us/services/monitor"
   },
   "a-blog cms": {
     "cats": [

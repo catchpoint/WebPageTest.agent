@@ -69,6 +69,26 @@
     "implies": "PHP",
     "website": "https://www.oxid-esales.com"
   },
+  "Obviyo": {
+    "cats": [
+      100,
+      76
+    ],
+    "description": "Obviyo is an ecommerce intelligence platform helping merchants personalise and optimise shopping experience.",
+    "icon": "Obviyo.png",
+    "requires": "Shopify",
+    "js": {
+      "__hic.version": "([\\d.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "deploy\\.hiconversion\\.com",
+    "website": "https://www.obviyo.com"
+  },
   "Occasion": {
     "cats": [
       72
@@ -436,6 +456,24 @@
     "scriptSrc": "/wp-content/themes/one-page-express(?:-pro)?/",
     "website": "https://onepageexpress.com"
   },
+  "OnePress Social Locker": {
+    "cats": [
+      87
+    ],
+    "description": "Social Locker locks your most valuable site content behind a set of social buttons until the visitor likes, shares, +1s or tweets your page.",
+    "icon": "OnePress Social Locker.png",
+    "js": {
+      "__pandalockers": "",
+      "bizpanda": ""
+    },
+    "pricing": [
+      "freemium",
+      "low"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/social-?locker(?:-next-premium)?/bizpanda/assets/",
+    "website": "https://wordpress.org/plugins/social-locker"
+  },
   "OneSignal": {
     "cats": [
       32,
@@ -516,6 +554,25 @@
     },
     "scriptSrc": "/opencart_custom\\.js",
     "website": "https://onshop.asia"
+  },
+  "Ookla Speedtest Custom": {
+    "cats": [
+      5
+    ],
+    "description": "Speedtest Custom is a robust and accurate testing solution that is HTML5-based, Flash-free and supports both mobile and desktop browsers built by Ookla.",
+    "dom": "iframe[src*='.speedtestcustom.com'], a[href*='.speedtestcustom.com']",
+    "headers": {
+      "content-security-policy": "\\.speedtestcustom\\.com"
+    },
+    "icon": "Ookla.svg",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.speedtestcustom\\.com/",
+    "website": "https://www.ookla.com/speedtest-custom"
   },
   "Open AdStream": {
     "cats": [
@@ -618,6 +675,23 @@
     "implies": "Java",
     "scriptSrc": "opencms",
     "website": "http://www.opencms.org"
+  },
+  "OpenElement": {
+    "cats": [
+      1
+    ],
+    "description": "OpenElement is a free website building application with a WYSIWYG interface.",
+    "icon": "OpenElement.png",
+    "implies": "PHP",
+    "js": {
+      "OE.GETools": "",
+      "OEConfWEMenu": ""
+    },
+    "meta": {
+      "generator": "openElement\\s\\(([\\d\\.]+)\\)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "http://openelement.uk"
   },
   "OpenGSE": {
     "cats": [
@@ -846,7 +920,9 @@
     "description": "Optimizely is an experimentation platform that helps developers build and run A/B tests on websites.",
     "icon": "Optimizely.svg",
     "js": {
-      "optimizely": ""
+      "optimizely": "",
+      "optimizelyClient.clientVersion": "([\\d\\.]+)\\;version:\\1",
+      "optimizelySdk": ""
     },
     "pricing": [
       "poa",
@@ -912,7 +988,7 @@
     "headers": {
       "Server": "Oracle[- ]Application[- ]Server(?: Containers for J2EE)?(?:[- ](\\d[\\da-z./]+))?\\;version:\\1"
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://www.oracle.com/technetwork/middleware/ias/overview/index.html"
   },
   "Oracle BlueKai": {
@@ -921,7 +997,7 @@
     ],
     "description": "Oracle BlueKai is a cloud-based big data platform that enables companies to personalise online, offline, and mobile marketing campaigns.",
     "dom": "link[href*='tags.bluekai.com'],link[href*='tags.bkrtx.com']",
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "js": {
       "bluekaiLoaded": ""
     },
@@ -937,21 +1013,25 @@
       6
     ],
     "cpe": "cpe:/a:oracle:commerce_platform",
+    "description": "Oracle Commerce is a unified B2B and B2C ecommerce platform.",
+    "dom": "input[name*='/atg/commerce/'], .atgShoppingBagContent",
     "headers": {
       "X-ATG-Version": "(?:ATGPlatform/([\\d.]+))?\\;version:\\1"
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
+    "saas": true,
     "website": "http://www.oracle.com/applications/customer-experience/commerce/products/commerce-platform/index.html"
   },
   "Oracle Commerce Cloud": {
     "cats": [
       6
     ],
+    "description": "Oracle Commerce Cloud is a cloud-native, fully featured, extensible SaaS ecommerce solution, delivered in the Oracle Cloud, supporting B2C and B2B models in a single platform.",
+    "dom": "#oracle-cc",
     "headers": {
       "OracleCommerceCloud-Version": "^(.+)$\\;version:\\1"
     },
-    "html": "<[^>]+id=\"oracle-cc\"",
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://cloud.oracle.com/commerce-cloud"
   },
   "Oracle Dynamic Monitoring Service": {
@@ -961,7 +1041,7 @@
     "headers": {
       "x-oracle-dms-ecid": ""
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://oracle.com"
   },
   "Oracle HTTP Server": {
@@ -972,7 +1052,7 @@
     "headers": {
       "Server": "Oracle-HTTP-Server(?:/([\\d.]+))?\\;version:\\1"
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://oracle.com"
   },
   "Oracle Infinity": {
@@ -980,7 +1060,7 @@
       10
     ],
     "description": "Oracle Infinity is a digital analytics platform for tracking, measuring, and optimizing the performance and visitor behavior of enterprise websites and mobile apps.",
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "pricing": [
       "poa"
     ],
@@ -994,7 +1074,7 @@
       76
     ],
     "description": "Oracle Maxymiser is a real-time behavioral targeting, in-session personalisation, and product recommendations platform.",
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "js": {
       "maxy": "\\;confidence:20",
       "mmsystem.getConfig": "\\;confidence:80"
@@ -1010,7 +1090,7 @@
     "cats": [
       10
     ],
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "scriptSrc": "atgsvcs.+atgsvcs\\.js",
     "website": "http://www.oracle.com/us/products/applications/commerce/recommendations-on-demand/index.html"
   },
@@ -1023,7 +1103,7 @@
     "headers": {
       "Server": "Oracle(?:AS)?[- ]Web[- ]Cache(?:[- /]([\\da-z./]+))?\\;version:\\1"
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://oracle.com"
   },
   "Orankl": {

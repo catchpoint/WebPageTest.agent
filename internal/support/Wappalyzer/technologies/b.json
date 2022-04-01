@@ -17,9 +17,6 @@
     "html": "<[^>]+data-bem",
     "icon": "BEM.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "http://en.bem.info"
   },
   "BIGACE": {
@@ -83,6 +80,15 @@
     },
     "website": "https://www.bablic.com/"
   },
+  "Babylist": {
+    "cats": [
+      5
+    ],
+    "description": "Babylist is a universal wish list.",
+    "icon": "Babylist.svg",
+    "scriptSrc": "babylist\\.com/",
+    "website": "https://www.babylist.com"
+  },
   "Backbone.js": {
     "cats": [
       12
@@ -117,6 +123,22 @@
     },
     "website": "https://backdropcms.org"
   },
+  "Back In Stock": {
+    "cats": [
+      100
+    ],
+    "description": "Back In Stock lets your customers choose restock alerts for specific variant combinations, including size, colour or style.",
+    "icon": "Back In Stock.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "app\\.backinstock\\.org/",
+    "website": "https://backinstock.org"
+  },
   "Baidu Analytics (百度统计)": {
     "cats": [
       10
@@ -138,33 +160,57 @@
     },
     "website": "https://map.baidu.com"
   },
+  "BambooHR": {
+    "cats": [
+      101
+    ],
+    "description": "BambooHR is an American technology company that provides human resources software as a service.",
+    "dom": "a[href*='.bamboohr.com/'][target='_blank']",
+    "headers": {
+      "Content-Security-Policy": "\\.bamboohr\\.com"
+    },
+    "icon": "BambooHR.svg",
+    "js": {
+      "scrollToBambooHR": ""
+    },
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.bamboohr\\.com/",
+    "website": "https://www.bamboohr.com"
+  },
   "Bambuser": {
     "cats": [
       19
     ],
+    "description": "Bambuser is a SaaS company based in Stockholm that provides live video shopping technology.",
     "icon": "Bambuser.png",
     "js": {
-      "_bambuser": ""
+      "_bambuser": "",
+      "BambuserLiveShopping": ""
     },
+    "saas": true,
     "pricing": [
       "poa"
     ],
-    "scriptSrc": "cdn\\.liveshopping\\.bambuser\\.com",
-    "website": "https://bambuser.com/"
+    "scriptSrc": "\\.bambuser\\.com/",
+    "website": "https://bambuser.com"
   },
   "Banshee": {
     "cats": [
       1,
       18
     ],
-    "description": "Banshee is a PHP website framework with a main focus on security. Banshee is protected against common attacks like SQL injection, cross-site scripting, cross-site request forgery and session hijacking.", 
+    "description": "Banshee is a PHP website framework with a main focus on security. Banshee is protected against common attacks like SQL injection, cross-site scripting, cross-site request forgery and session hijacking.",
+    "headers": {
+      "X-Powered-By": "Banshee PHP framework v([\\d\\.]+)\\;version:\\1"
+    },
     "icon": "Banshee.png",
     "implies": "PHP",
     "meta": {
       "generator": "Banshee PHP"
-    },
-    "headers": {
-      "X-Powered-By": "Banshee PHP framework v([\\d\\.]+)\\;version:\\1"
     },
     "website": "http://www.banshee-php.org"
   },
@@ -207,9 +253,6 @@
       "generator": "^Batflat$"
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://batflat.org"
   },
   "Bazaarvoice": {
@@ -279,11 +322,11 @@
     "js": {
       "BentoAnalytics": ""
     },
-    "scriptSrc": "\\.getbento\\.com/",
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "\\.getbento\\.com/",
     "website": "https://getbento.com"
   },
   "Beyable": {
@@ -352,17 +395,6 @@
     "scriptSrc": "(?:\\.|plugins/)?bigcommerce(?:\\.com)?/(?:assets)?",
     "url": "mybigcommerce\\.com",
     "website": "http://www.bigcommerce.com"
-  },
-  "BigDump": {
-    "cats": [
-      3
-    ],
-    "html": "<!-- <h1>BigDump: Staggered MySQL Dump Importer ver\\. ([\\d.b]+)\\;version:\\1",
-    "implies": [
-      "MySQL",
-      "PHP"
-    ],
-    "website": "http://www.ozerov.de/bigdump.php"
   },
   "Bigware": {
     "cats": [
@@ -443,15 +475,15 @@
     ],
     "description": "BiteSpeed is an all-in-one Shopify marketing app which helps ecommerce brands recover revenue.",
     "icon": "BiteSpeed.png",
-    "requires": "Shopify",
-    "scripts": "app\\.bitespeed\\.co/",
-    "scriptSrc": "cdn\\.bitespeed\\.co/",
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "cdn\\.bitespeed\\.co/",
+    "scripts": "app\\.bitespeed\\.co/",
     "website": "https://www.bitespeed.co"
   },
   "Bitrix24": {
@@ -561,23 +593,21 @@
     "icon": "Blesta.png",
     "website": "http://www.blesta.com"
   },
-  "Blip.tv": {
-    "cats": [
-      14
-    ],
-    "description": "Blip.tv is a media platform for web series content and also a dashboard for producers of original web series to distribute and monetise their productions.",
-    "html": "<(?:param|embed|iframe)[^>]+blip\\.tv/play",
-    "icon": "Blip.tv.png",
-    "website": "http://blip.tv"
-  },
   "Blitz": {
     "cats": [
       92
     ],
     "description": "Blitz provides intelligent static page caching for creating lightning-fast sites with Craft CMS.",
+    "headers": {
+      "X-Powered-By": "^Blitz$"
+    },
     "html": "<!-- Cached by Blitz on",
     "icon": "Blitz.svg",
     "implies": "Craft CMS",
+    "js": {
+      "Blitz": "",
+      "blitzReplace": ""
+    },
     "pricing": [
       "onetime",
       "low"
@@ -623,21 +653,19 @@
       1
     ],
     "html": "<[^>]+/binaries/(?:[^/]+/)*content/gallery/",
-    "icon": "Bloomreach.png",
+    "icon": "Bloomreach.svg",
     "website": "https://developers.bloomreach.com"
   },
-  "Bloomreach Search & Merchandising": {
+  "Bloomreach Discovery": {
     "cats": [
       29,
-      10,
-      32,
       74
     ],
-    "description": "Bloomreach Search & Merchandising (brSM) is an AI-driven platform for ecommerce.",
-    "icon": "Bloomreach.png",
+    "description": "Bloomreach Discovery is a powerful combination of AI-powered site search, SEO, recommendations, and product merchandising.",
+    "icon": "Bloomreach.svg",
     "js": {
-      "BrTrk": "",
-      "br_data": ""
+      "BrTrk.scriptVersion": "([\\d\\.]+)\\;version:\\1",
+      "br_data.acct_id": ""
     },
     "pricing": [
       "high",
@@ -645,10 +673,10 @@
     ],
     "saas": true,
     "scriptSrc": [
-      "cdns\\.brsrvr\\.com/v([\\d.]+)\\;version:\\1",
-      "cdn\\.brcdn\\.com/v([\\d.]+)\\;version:\\1"
+      "\\.brsrvr\\.com/",
+      "\\.brcdn\\.com/"
     ],
-    "website": "https://developers.bloomreach.com/products/personalization/dev-studio"
+    "website": "https://www.bloomreach.com/en/products/discovery"
   },
   "Blossom Travel": {
     "cats": [
@@ -1086,9 +1114,6 @@
     },
     "icon": "Bootstrap Icons.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://icons.getbootstrap.com"
   },
   "Bootstrap Table": {
@@ -1352,9 +1377,6 @@
     "html": "<!-- Breadcrumb NavXT ([\\d\\.]+)\\;version:\\1",
     "icon": "Breadcrumb NavXT.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "website": "https://github.com/mtekk/Breadcrumb-NavXT"
   },
@@ -1372,6 +1394,24 @@
     ],
     "saas": true,
     "website": "https://home.breinify.ai"
+  },
+  "BrightEdge": {
+    "cats": [
+      54
+    ],
+    "description": "BrightEdge is an SEO solution and content performance marketing platform.",
+    "icon": "BrightEdge.png",
+    "js": {
+      "BEJSSDK.CLIENT_VERSION": "([\\d\\.]+)\\;version:\\1",
+      "_bright3.VERSION": "([\\d\\.]+)\\;version:\\1",
+      "be_sdk_options": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.brightedge\\.com/",
+    "website": "https://www.brightedge.com"
   },
   "BrightInfo": {
     "cats": [
@@ -1405,6 +1445,7 @@
       "recurring"
     ],
     "saas": true,
+    "scripts": "players\\.brightcove\\.net/",
     "website": "https://www.brightcove.com"
   },
   "Brightspot": {
