@@ -113,19 +113,19 @@
       6
     ],
     "description": "CS Cart is a turnkey ecommerce shopping cart software solution.",
-    "html": [
-      "&nbsp;Powered by (?:<a href=[^>]+cs-cart\\.com|CS-Cart)",
-      "\\.cm-noscript[^>]+</style>"
-    ],
+    "dom": "a[href*='.cs-cart.com'][target='_blank']",
     "icon": "CS Cart.svg",
     "implies": "PHP",
     "js": {
+      "fn_buy_together_apply_discount": "",
+      "fn_calculate_total_shipping": "",
       "fn_compare_strings": ""
     },
     "pricing": [
       "mid",
       "onetime"
     ],
+    "scriptSrc": "var/cache/misc/assets/js/tygh/scripts-(?:[\\d\\w]+)\\.js",
     "website": "http://www.cs-cart.com"
   },
   "CSSIgniter Olsen Light": {
@@ -384,12 +384,18 @@
     "cats": [
       36
     ],
-    "html": "<[a-z]+ [^>]*id=\"carbonads-container\"",
+    "description": "Carbon Ads is an ad tech company, that connects advertisers to users through targeted verticals called Circles.",
+    "dom": "div#carbonads-container",
     "icon": "Carbon Ads.png",
     "js": {
-      "_carbonads": ""
+      "_carbonads": "",
+      "_carbonads_go": ""
     },
-    "scriptSrc": "carbonads\\.com",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.carbonads\\.com/",
     "website": "http://carbonads.net"
   },
   "CareCart": {
@@ -399,11 +405,11 @@
     ],
     "description": "CareCart is a smart app to recover big value carts on all sizes of shopify stores.",
     "icon": "CareCart.png",
-    "requires": "Shopify",
     "pricing": [
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "app\\.carecart\\.io/api/abandoned-cart/",
     "website": "https://carecart.io/abandoned-cart-recovery-app"
@@ -415,26 +421,49 @@
     ],
     "description": "CareCart Sales Pop Up is a stock countdown timer, recent sales notifications, live sales pop up widget.",
     "icon": "CareCart.png",
-    "requires": "Shopify",
     "pricing": [
       "freemium"
     ],
+    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "sales-pop\\.carecart\\.io/",
     "website": "https://carecart.io/sales-pop-up-app"
   },
   "Cargo": {
     "cats": [
-      1
+      51
     ],
-    "html": "<link [^>]+Cargo feed",
+    "description": "Cargo is a professional site building platform for designers and artists.",
     "icon": "Cargo.svg",
     "implies": "PHP",
+    "js": {
+      "Cargo.Config": "",
+      "__cargo_js_ver__": ""
+    },
     "meta": {
       "cargo_title": ""
     },
     "scriptSrc": "/cargo\\.",
-    "website": "http://cargocollective.com"
+    "website": "https://cargo.site"
+  },
+  "Carro": {
+    "cats": [
+      100
+    ],
+    "description": "Carro connects participating Shopify stores together to enable cross-store selling or the ability for like-minded partners to directly sell each other products without the need for inventory, managing returns, or minimum order quantities.",
+    "icon": "Carro.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": [
+      "\\.getcarro\\.com/",
+      "/carro\\.min\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
+    ],
+    "website": "https://getcarro.com"
   },
   "Cart Functionality": {
     "cats": [
@@ -497,6 +526,23 @@
     "saas": true,
     "scriptSrc": "cdn\\.cartsguru\\.io/",
     "website": "https://www.carts.guru"
+  },
+  "Cashew Payments": {
+    "cats": [
+      91
+    ],
+    "description": "Cashew Payments is a buy now, pay later platform that allows its customers to shop now and pay later in equal monthly installments.",
+    "icon": "Cashew Payments.svg",
+    "requiresCategory": 6,
+    "headers": {
+      "Content-Security-Policy": "\\.cashewpayments\\.com"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.cashewpayments\\.com/",
+    "website": "https://www.cashewpayments.com"
   },
   "Catberry.js": {
     "cats": [
@@ -567,6 +613,21 @@
     ],
     "website": "https://celeritastransporte.com"
   },
+  "Celum": {
+    "cats": [
+      95
+    ],
+    "description": "Celum is a software developer that specialises in enterprise digital asset management and marketing content management systems.",
+    "dom": "img[src*='/celum/'], img[src*='/celum_assets/']",
+    "icon": "Celum.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.celum.com"
+  },
   "Censhare": {
     "cats": [
       95
@@ -609,16 +670,77 @@
     ],
     "website": "https://centminmod.com"
   },
+  "Chabokan": {
+    "cats": [
+      62
+    ],
+    "description": "Chabokan is a cloud services provider, offering a wide range of incorporated cloud services including Cloud Object Storage, DBaaS, BaaS, and PaaS.",
+    "headers": {
+      "ch-powered-by": "Chabokan\\s\\(chabokan\\.net\\)"
+    },
+    "icon": "Chabokan.svg",
+    "pricing": [
+      "low",
+      "payg"
+    ],
+    "website": "https://chabokan.net"
+  },
+  "Chakra UI": {
+    "cats": [
+      66
+    ],
+    "description": "Chakra UI is a simple, modular and accessible component library that gives you the building blocks you need to build your React applications.",
+    "dom": "html[style*='chakra-ui-color-mode']",
+    "icon": "Chakra UI.svg",
+    "implies": "React",
+    "oss": true,
+    "scriptSrc": "\\.chakra-ui\\.",
+    "website": "https://chakra-ui.com"
+  },
+  "Chameleon": {
+    "cats": [
+      58
+    ],
+    "description": "Chameleon is a sophisticated no-code platform for product success, empowering SaaS teams to build self-service user onboarding, feature adoption, and feedback collection.",
+    "icon": "Chameleon.png",
+    "js": {
+      "chmln.Snippet.urls.fast": "fast\\.trychameleon\\.com",
+      "chmlnData.organizationAttributes": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.trychameleon\\.com/",
+    "website": "https://www.trychameleon.com"
+  },
+  "Chameleon system": {
+    "cats": [
+      1,
+      6
+    ],
+    "description": "Chameleon system is an ecommerce and content management system all-in-one, capable of being integrated straight from the manufacturer.",
+    "icon": "Chameleon system.png",
+    "meta": {
+      "generator": "Chameleon CMS/Shop System"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.chameleon-system.de"
+  },
   "Chamilo": {
     "cats": [
       21
     ],
     "cpe": "cpe:/a:chamilo:chamilo_lms",
     "description": "Chamilo is an open-source learning management and collaboration system.",
+    "dom": "link[href*='chamilo.org/']",
     "headers": {
       "X-Powered-By": "Chamilo ([\\d.]+)\\;version:\\1"
     },
-    "html": "\">Chamilo ([\\d.]+)</a>\\;version:\\1",
     "icon": "Chamilo.png",
     "implies": "PHP",
     "meta": {
@@ -640,6 +762,21 @@
     "saas": true,
     "scriptSrc": "\\.channeladvisor\\.com/",
     "website": "https://www.channeladvisor.com"
+  },
+  "ChannelApe": {
+    "cats": [
+      6
+    ],
+    "description": "ChannelApe is an ecommerce and inventory management solution for the footwear and apparel industry.",
+    "icon": "ChannelApe.svg",
+    "requiresCategory": 6,
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.channelape.com",
+    "xhr": "\\.channelape\\.com"
   },
   "Chaport": {
     "cats": [
@@ -757,6 +894,24 @@
     "website": "https://chatra.com",
     "xhr": "chat\\.chatra\\.io/"
   },
+  "Chatwoot": {
+    "cats": [
+      52
+    ],
+    "description": "Chatwoot is a customer support tool for instant messaging channels.",
+    "icon": "Chatwoot.svg",
+    "js": {
+      "$chatwoot": "",
+      "chatwootSDK": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.chatwoot.com"
+  },
   "Checkfront": {
     "cats": [
       5,
@@ -827,17 +982,25 @@
   },
   "Chevereto": {
     "cats": [
-      7
+      7,
+      19
     ],
     "description": "Chevereto is an image hosting software that allows you to create a full-featured image hosting website on your own server.",
-    "html": "Powered by <a href=\"https?://chevereto\\.com\">",
-    "icon": "chevereto.png",
+    "icon": "Chevereto.svg",
     "implies": "PHP",
-    "meta": {
-      "generator": "^Chevereto ?([0-9.]+)?$\\;version:\\1"
+    "js": {
+      "CHEVERETO.version": "([\\d\\.]+)\\;version:\\1"
     },
+    "meta": {
+      "generator": "Chevereto\\s(?:[\\d\\.]+)"
+    },
+    "pricing": [
+      "low",
+      "onetime"
+    ],
+    "saas": true,
     "scriptSrc": "/chevereto\\.js",
-    "website": "https://chevereto.com/"
+    "website": "https://chevereto.com"
   },
   "Chili Piper": {
     "cats": [
@@ -898,9 +1061,22 @@
     "cats": [
       1
     ],
-    "html": "<meta data-chorus-version=",
-    "icon": "Chorus.png",
-    "website": "https://getchorus.voxmedia.com/"
+    "cookies": {
+      "_chorus_geoip_continent": "",
+      "chorus_preferences": ""
+    },
+    "description": "Chorus is the only all-in-one publishing, audience, and revenue platform built for modern media companies.",
+    "icon": "Chorus.svg",
+    "js": {
+      "Chorus.AddScript": "",
+      "ChorusAds.beforeAdsRequested": "",
+      "ChorusCampaigns.recordClickUrl": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://getchorus.voxmedia.com"
   },
   "Chronofresh": {
     "cats": [
@@ -925,6 +1101,22 @@
       "\\bChronopost\\b"
     ],
     "website": "https://www.chronopost.fr"
+  },
+  "ChurnZero": {
+    "cats": [
+      97
+    ],
+    "description": "ChurnZero is a real-time customer success platform that helps subscription businesses fight customer churn.",
+    "icon": "ChurnZero.png",
+    "js": {
+      "ChurnZero": "",
+      "ChurnZero.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://churnzero.net"
   },
   "CitrusPay": {
     "cats": [
@@ -975,17 +1167,16 @@
     "cats": [
       66
     ],
-    "html": [
-      "<clr-main-container",
-      "<link [^>]*href=\"[^\"]*clr-ui(?:\\.min)?\\.css"
-    ],
+    "description": "Clarity is an open-source design system that brings together UX guidelines, an HTML/CSS framework, and Angular components.",
+    "dom": "link[href*='clr-ui'], clr-main-container",
     "icon": "clarity.svg",
     "implies": "Angular",
     "js": {
       "ClarityIcons": ""
     },
+    "oss": true,
     "scriptSrc": "clr-angular(?:\\.umd)?(?:\\.min)?\\.js",
-    "website": "https://clarity.design/"
+    "website": "https://clarity.design"
   },
   "Classeh": {
     "cats": [
@@ -1114,11 +1305,23 @@
   },
   "ClickFunnels": {
     "cats": [
-      32
+      32,
+      51
     ],
     "description": "Clickfunnels is an online sales funnel builder that helps businesses market, sell, and deliver their products online.",
-    "html": "<meta property=\"cf:app_domain\" content=\"app\\.clickfunnels\\.com\"",
-    "icon": "ClickFunnels.png",
+    "icon": "ClickFunnels.svg",
+    "js": {
+      "CFAppDomain": "app\\.clickfunnels\\.com",
+      "CFSurveyParticipantID": ""
+    },
+    "meta": {
+      "cf:app_domain:": "app\\.clickfunnels\\.com"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
     "website": "https://www.clickfunnels.com"
   },
   "ClickHeat": {
@@ -1305,6 +1508,25 @@
     },
     "icon": "CloudFlare.svg",
     "website": "https://developers.cloudflare.com/logs/reference/log-fields/zone/nel_reports"
+  },
+  "Cloudimage": {
+    "cats": [
+      31,
+      95
+    ],
+    "description": "Cloudimage automates the transformation and optimisation of images on the fly and accelerates their distribution via the Content Delivery Network (CDN).",
+    "dom": "img[src*='.cloudimg.io/'], link[href*='.cloudimg.io/'], amp-img[src*='.cloudimg.io/']",
+    "icon": "Cloudimage.svg",
+    "js": {
+      "ciResponsive.config.domain": "cloudimg\\.io"
+    },
+    "pricing": [
+      "freemium",
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.cloudimage.io"
   },
   "Cloudinary": {
     "cats": [
@@ -1497,7 +1719,8 @@
       16,
       56
     ],
-    "html": "(?:<div[^>]+class=\"coinhive-captcha[^>]+data-key|<div[^>]+data-key[^>]+class=\"coinhive-captcha)",
+    "description": "Coinhive Captcha provides captcha service that is simple to integrate, where your users’ devices need to solve a number of hashes, adjustable by you, in order to login or post a comment to your site.",
+    "dom": "div.coinhive-captcha",
     "icon": "CoinHive.svg",
     "scriptSrc": "https?://authedmine\\.com/(?:lib/captcha|captcha)",
     "website": "https://coinhive.com"
@@ -1689,23 +1912,17 @@
     "scriptSrc": "/wp-content/themes/travelify/",
     "website": "https://colorlib.com/wp/themes/travelify"
   },
-  "Comandia": {
-    "cats": [
-      6
-    ],
-    "html": "<link[^>]+=['\"]//cdn\\.mycomandia\\.com",
-    "icon": "Comandia.svg",
-    "js": {
-      "Comandia": ""
-    },
-    "website": "http://comandia.com"
-  },
   "Combeenation": {
     "cats": [
-      6
+      76
     ],
-    "html": "<iframe[^>]+src=\"[^>]+portal\\.combeenation\\.com",
+    "description": "Combeenation is a powerful cloud-based configurator platform.",
+    "dom": "iframe[src*='portal.combeenation.com/']",
     "icon": "Combeenation.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
     "website": "https://www.combeenation.com"
   },
   "Comm100": {
@@ -1858,6 +2075,20 @@
     ],
     "website": "https://conekta.com"
   },
+  "Conjured": {
+    "cats": [
+      100
+    ],
+    "description": "Conjured provides Shopify brands with Shopify apps and custom development.",
+    "icon": "Conjured.png",
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "saas": true,
+    "scriptSrc": "app\\.conjured\\.co/",
+    "website": "https://conjured.co"
+  },
   "Constant Contact": {
     "cats": [
       32,
@@ -1916,10 +2147,7 @@
     ],
     "cpe": "cpe:/a:contao:contao_cms",
     "description": "Contao is an open source CMS that allows you to create websites and scalable web applications.",
-    "html": [
-      "<!--[^>]+powered by (?:TYPOlight|Contao)[^>]*-->",
-      "<link[^>]+(?:typolight|contao)\\.css"
-    ],
+    "dom": "link[href*='/typolight.css'], link[href*='/contao.css']",
     "icon": "Contao.svg",
     "implies": "PHP",
     "meta": {
@@ -2139,11 +2367,33 @@
     "cats": [
       32
     ],
-    "description": "SConvertCart helps online businesses deliver outstanding experiences to customers throughout their journey.",
+    "description": "ConvertCart helps online businesses deliver outstanding experiences to customers throughout their journey.",
     "icon": "Convertcart.svg",
     "saas": true,
     "scriptSrc": "cdn\\.convertcart\\.com",
     "website": "https://www.convertcart.com/"
+  },
+  "Convertr": {
+    "cats": [
+      6
+    ],
+    "description": "Convertr is a Brazilian ecommerce platform, fashion specialist.",
+    "icon": "Convertr.svg",
+    "implies": [
+      "PHP",
+      "MySQL",
+      "Vue.js",
+      "Nuxt.js",
+      "Amazon Web Services"
+    ],
+    "meta": {
+      "author": "^Convertr Commerce$"
+    },
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://convertr.com.br"
   },
   "ConveyThis": {
     "cats": [
@@ -2252,6 +2502,9 @@
     "dom": {
       "#cookie-law-info-bar": {
         "text": ""
+      },
+      "link[href*='/wp-content/plugins/cookie-law-info/']": {
+        "exists": ""
       }
     },
     "icon": "cookieyes.svg",
@@ -2260,7 +2513,8 @@
     },
     "scriptSrc": [
       "app\\.cookieyes\\.com/client_data/",
-      "cdn-cookieyes\\.com/client_data/"
+      "cdn-cookieyes\\.com/client_data/",
+      "/wp-content/plugins/cookie-law-info/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
     ],
     "website": "https://www.cookieyes.com/"
   },
@@ -2336,6 +2590,22 @@
     ],
     "website": "https://www.correos.es"
   },
+  "Correos Ecommerce": {
+    "cats": [
+      6
+    ],
+    "description": "Correos Ecommerce is an ecommerce platfrom from Spain.",
+    "icon": "Correos.svg",
+    "js": {
+      "Comandia": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.mycorreosecommerce\\.com/",
+    "website": "https://www.correosecommerce.com"
+  },
   "Cosmoshop": {
     "cats": [
       6
@@ -2407,12 +2677,16 @@
   },
   "CoverManager": {
     "cats": [
-      5,
-      72
+      93
     ],
     "description": "CoverManager is a restaurant table booking widget.",
-    "html": "<iframe[^>]*covermanager\\.com/reservation",
+    "dom": "iframe[src*='.covermanager.com/']",
     "icon": "CoverManager.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.covermanager\\.com/",
     "website": "https://www.covermanager.com"
   },
   "Covet.pics": {
@@ -2727,6 +3001,20 @@
     "scriptSrc": "/wp-content/themes/parabola/.+frontend\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.cryoutcreations.eu/wordpress-themes/parabola"
   },
+  "crypto-js": {
+    "cats": [
+      59
+    ],
+    "description": "crypto-js is a JavaScript library of crypto standards.",
+    "icon": "default.svg",
+    "js": {
+      "CryptoJS.algo": "",
+      "CryptoJS.Rabbit": ""
+    },
+    "scriptSrc": "(?:/([\\d\\.-]+))?/crypto-js(?:\\.min)?\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://github.com/brix/crypto-js"
+  },
   "Crypto-Loot": {
     "cats": [
       56
@@ -2750,12 +3038,14 @@
       6
     ],
     "cpe": "cpe:/a:cubecart:cubecart",
-    "html": "(?:Powered by <a href=[^>]+cubecart\\.com|<p[^>]+>Powered by CubeCart)",
+    "description": "CubeCart is a free ecommerce platform that businesses can use to build, manage, and market their online stores.",
+    "dom": "a[href*='.cubecart.com'][target='_blank']",
     "icon": "CubeCart.png",
     "implies": "PHP",
     "meta": {
       "generator": "cubecart"
     },
+    "oss": true,
     "website": "http://www.cubecart.com"
   },
   "Cubyn": {
@@ -2790,9 +3080,6 @@
     "description": "Custom Fonts plugin helps you easily embed custom fonts files (woff2, woff, ttf, svg, eot, otf) easily in your WordPress website.",
     "icon": "Custom Fonts.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/custom-fonts/",
     "website": "https://github.com/brainstormforce/custom-fonts"
@@ -2908,6 +3195,18 @@
     "icon": "cPanel.png",
     "website": "http://www.cpanel.net"
   },
+  "cState": {
+    "cats": [
+      13
+    ],
+    "description": "cState is an open-source static (serverless) status page.",
+    "icon": "cState.svg",
+    "meta": {
+      "generator": "cState v([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/cstate/cstate"
+  },
   "cdnjs": {
     "cats": [
       31
@@ -2922,10 +3221,7 @@
     "cats": [
       19
     ],
-    "html": [
-      "<[^>]+id='cgit'",
-      "generated by <a href='http://git\\.zx2c4\\.com/cgit/about/'>cgit v([\\d.a-z-]+)</a>\\;version:\\1"
-    ],
+    "description": "cgit is a web interface (cgi) for Git repositories, written in C. licensed under GPLv2.",
     "icon": "cgit.png",
     "implies": [
       "git",
@@ -2934,6 +3230,7 @@
     "meta": {
       "generator": "^cgit v([\\d.a-z-]+)$\\;version:\\1"
     },
+    "oss": true,
     "website": "http://git.zx2c4.com/cgit"
   },
   "clickio": {
@@ -2949,12 +3246,19 @@
     "cats": [
       10
     ],
-    "html": "<iframe[^>]* (?:id=\"comscore\"|scr=[^>]+comscore)|\\.scorecardresearch\\.com/beacon\\.js|COMSCORE\\.beacon",
-    "icon": "comScore.png",
+    "description": "comScore is an American media measurement and analytics company providing marketing data and analytics to enterprises; media and advertising agencies; and publishers.",
+    "dom": "iframe[src*='.scorecardresearch.com/beacon'], iframe#comscore, iframe[src*='COMSCORE.beacon]",
+    "icon": "comScore.svg",
     "js": {
       "COMSCORE": "",
       "_COMSCORE": ""
     },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
     "scriptSrc": "\\.scorecardresearch\\.com/beacon\\.js|COMSCORE\\.beacon",
     "website": "http://comscore.com"
   },

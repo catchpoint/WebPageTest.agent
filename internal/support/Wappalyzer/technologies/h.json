@@ -3,15 +3,17 @@
     "cats": [
       6
     ],
-    "html": "<(?:a|link|script)[^>]*(?:href|src)=\".*(?:/wcsstore/|webapp\\/wcs)",
+    "description": "HCL Commerce is a software platform framework for ecommerce, including marketing, sales, customer and order processing functionality.",
+    "dom": "link[href*='/wcsstore/'], link[href*='webapp/wcs/'], a[href*='/wcsstore/'], a[href*='webapp/wcs/'], script[src*='/wcsstore/'], script[src*='webapp/wcs/']",
     "icon": "HCL Commerce.svg",
     "implies": "Java",
     "pricing": [
       "poa"
     ],
     "saas": true,
+    "scripts": "/webapp/wcs/",
     "url": "/wcs/",
-    "website": "https://www.hcltechsw.com/products/commerce"
+    "website": "https://www.hcltechsw.com/commerce"
   },
   "HCL Digital Experience": {
     "cats": [
@@ -105,9 +107,6 @@
       "generator": "hamech\\.io/"
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://hamech.io"
   },
   "Hammer.js": {
@@ -149,6 +148,50 @@
     },
     "scriptSrc": "api\\.handtalk\\.me",
     "website": "https://www.handtalk.me/"
+  },
+  "HappyFox Helpdesk": {
+    "cats": [
+      53
+    ],
+    "description": "HappyFox is a help desk ticketing system that is hosted on cloud, supporting multiple customer support channels like email, voice and live chat.",
+    "icon": "HappyFox.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.happyfox\\.com/media/",
+    "website": "https://www.happyfox.com/customer-service-software/"
+  },
+  "HappyFox Live Chat": {
+    "cats": [
+      52
+    ],
+    "description": "HappyFox is a help desk ticketing system that is hosted on cloud, supporting multiple customer support channels like email, voice and live chat.",
+    "icon": "HappyFox.svg",
+    "js": {
+      "HappyFoxChatObject": ""
+    },
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.happyfoxchat\\.com/",
+    "website": "https://www.happyfox.com/live-chat"
+  },
+  "Happy Returns": {
+    "cats": [
+      102
+    ],
+    "description": "Happy Returns is a return software and reverse logistics company, provides a packaging-free, in-person way for customers to return an online purchase for an immediate refund.",
+    "icon": "Happy Returns.png",
+    "dom":"a[href*='.happyreturns.com'], img[src*='.happyreturns.com/']",
+    "saas": true,
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "website": "https://happyreturns.com"
   },
   "Haravan": {
     "cats": [
@@ -241,6 +284,23 @@
     "saas": true,
     "scriptSrc": "\\.heartlandportico\\.com",
     "website": "https://www.heartlandpaymentsystems.com"
+  },
+  "Helhost": {
+    "cats": [
+      88
+    ],
+    "description": "Helhost is a web hosting provider and internet domain registrar from Democratic Republic of Congo.",
+    "dns": {
+      "NS": "ns\\d\\.helhost\\.com",
+      "SOA": "ns\\d\\.helhost\\.com"
+    },
+    "icon": "Helhost.svg",
+    "pricing": [
+      "low",
+      "recurring",
+      "payg"
+    ],
+    "website": "https://www.helhost.com"
   },
   "Helix Ultimate": {
     "cats": [
@@ -439,23 +499,6 @@
     },
     "website": "https://hexo.io"
   },
-  "HiConversion": {
-    "cats": [
-      74
-    ],
-    "description": "HiConversion is a SaaS solution that caters to ecommerce brands seeking actionable insights through their adaptive customer experience optimisation.",
-    "icon": "HiConversion.png",
-    "js": {
-      "__hic.version": "([\\d.]+)\\;version:\\1"
-    },
-    "pricing": [
-      "poa",
-      "recurring"
-    ],
-    "saas": true,
-    "scriptSrc": "deploy\\.hiconversion\\.com",
-    "website": "https://www.hiconversion.com"
-  },
   "Hiawatha": {
     "cats": [
       22
@@ -553,6 +596,21 @@
       "generator": "hinzacms"
     },
     "website": "http://hinzaco.com"
+  },
+  "Hireology": {
+    "cats": [
+      101
+    ],
+    "description": "Hireology is a staffing and hiring platform for the franchise and retail-automotive industries.",
+    "dom": "a[href*='sites.hireology.com/']",
+    "icon": "Hireology.png",
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "url": "sites\\.hireology\\.com/",
+    "website": "https://hireology.com"
   },
   "Histats": {
     "cats": [
@@ -806,7 +864,7 @@
   },
   "HrFlow.ai": {
     "cats": [
-      19
+      101
     ],
     "description": "HrFlow.ai is an HR data automation API platform.",
     "icon": "HrFlow.ai.svg",
@@ -1142,5 +1200,20 @@
     "saas": true,
     "scriptSrc": "merchant\\.cdn\\.hoolah\\.co/",
     "website": "https://www.hoolah.co"
+  },
+  "hyva": {
+    "cats": [
+      6
+    ],
+    "description": "Hyvä themes is a frontend for Magento 2.",
+    "headers": {
+      "X-Built-With": "^Hyva Themes$"
+    },
+    "icon": "Hyva.svg",
+    "implies": "Magento",
+    "pricing": [
+      "onetime"
+    ],
+    "website": "https://hyva.io/"
   }
 }

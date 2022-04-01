@@ -131,24 +131,24 @@
   },
   "Launchrock": {
     "cats": [
-      74,
-      51
+      51,
+      75
     ],
     "description": "Launchrock is an online tool designed to help capture email addresses and create online product launching events.",
     "icon": "Launchrock.svg",
     "js": {
       "lrIgnition": "\\;confidence:25",
       "lrLoadedJs": "\\;confidence:25",
+      "lrSiteRenderingData.apiEndpoint": "",
       "lrSiteSettingAsBoolean": "\\;confidence:25",
       "lrignition": "\\;confidence:25"
     },
     "pricing": [
-      "freemium",
       "low",
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "js/ignition-current\\.min\\.js\\;confidence:50",
+    "scriptSrc": "builder\\.launchrock\\.com",
     "website": "https://www.launchrock.com"
   },
   "LayBuy": {
@@ -156,7 +156,7 @@
       91
     ],
     "description": "Laybuy is a payment service that lets you receive your purchase now and spread the total cost over 6 weekly automatic payments interest free.",
-    "dom": "iframe[src='.laybuy.com/']",
+    "dom": "iframe[src='.laybuy.com/'], a[href*='.laybuy.com/what-is-laybuy']",
     "icon": "LayBuy.svg",
     "js": {
       "LaybuyHelper": "",
@@ -167,6 +167,7 @@
     "pricing": [
       "payg"
     ],
+    "requiresCategory": 6,
     "saas": true,
     "scriptSrc": [
       "\\.laybuy\\.com/",
@@ -176,7 +177,8 @@
   },
   "Layer0": {
     "cats": [
-      92
+      31,
+      62
     ],
     "cookies": {
       "layer0_bucket": "",
@@ -184,6 +186,11 @@
       "layer0_eid": ""
     },
     "description": "Layer0 is an all-in-one Jamstack platform to develop, deploy, preview, split test, and monitor the company's frontend.",
+    "headers": {
+      "x-0-status": "",
+      "x-0-t": "",
+      "x-0-version": "^\\d+ ([\\d.]+) \\;version:\\1"
+    },
     "icon": "Layer0.svg",
     "js": {
       "Layer0.Metrics": ""
@@ -348,6 +355,22 @@
     "requires": "WordPress",
     "saas": true,
     "website": "https://level5advertising.com/websites/"
+  },
+  "Lever": {
+    "cats": [
+      101
+    ],
+    "description": "Lever is a software company headquartered in San Francisco, California and Toronto, Canada that provides an applicant tracking system for hiring.",
+    "dom": "a[href*='jobs.lever.co/']",
+    "headers": {
+      "Content-Security-Policy": "\\.lever\\.co"
+    },
+    "icon": "Lever.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.lever.co"
   },
   "Libravatar": {
     "cats": [
@@ -624,6 +647,24 @@
     },
     "website": "https://www.lithium.com"
   },
+  "Littledata": {
+    "cats": [
+      10
+    ],
+    "description": "Littledata provides a seamless connection between your Shopify site, marketing channels, and Google Analytics.",
+    "icon": "Littledata.svg",
+    "js": {
+      "LittledataLayer": "",
+      "LittledataLayer.version": "v([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://www.littledata.io"
+  },
   "Live Story": {
     "cats": [
       1
@@ -824,6 +865,19 @@
     },
     "scriptSrc": "livewire(?:\\.min)?\\.js",
     "website": "https://laravel-livewire.com"
+  },
+  "Loadable-Components": {
+    "cats": [
+      59
+    ],
+    "description": "Loadable-Components is a library to solve the React code-splitting client-side and server-side.",
+    "dom": "script#__LOADABLE_REQUIRED_CHUNKS__",
+    "icon": "Loadable-Components.png",
+    "js": {
+      "__LOADABLE_LOADED_CHUNKS__": ""
+    },
+    "oss": true,
+    "website": "https://github.com/gregberge/loadable-components"
   },
   "LocalFocus": {
     "cats": [
@@ -1051,6 +1105,23 @@
     "scriptSrc": "loja2\\.com\\.br",
     "website": "https://www.loja2.com.br"
   },
+  "Loop Returns": {
+    "cats": [
+      102
+    ],
+    "description": "Loop Returns is a return portal that automated all the returns and refunds of products.",
+    "icon": "Loop.svg",
+    "dom": "a[href*='.loopreturns.com/']",
+    "js": {
+      "Loop.config.variantParam": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.loopreturns.com"
+  },
   "Loop54": {
     "cats": [
       29,
@@ -1098,7 +1169,6 @@
     ],
     "description": "Loox is a reviews app for Shopify that helps you gather reviews and user-generated photos from your customers.",
     "icon": "Loox.svg",
-    "requires": "Shopify",
     "js": {
       "loox_global_hash": ""
     },
@@ -1106,6 +1176,7 @@
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "loox\\.io/widget",
     "website": "https://loox.app"
@@ -1134,9 +1205,6 @@
     "dom": "lottie-player, div[data-animation-type='lottie'], div[data-testid='lottie-player'], clipPath[id*='__lottie_element_']",
     "icon": "LottieFiles.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "scriptSrc": [
       "/dist/lottie-player\\.js",
       "/dist/tgs-player\\.js"
@@ -1259,6 +1327,39 @@
     "scriptSrc": "\\.lytics\\.io/",
     "website": "https://www.lytics.com"
   },
+  "langify": {
+    "cats": [
+      89
+    ],
+    "description": "langify translate your shop into multiple languages. langify comes with a visual configurator that allows you to add language switchers that integrate seamlessly into your existing design.",
+    "icon": "langify.png",
+    "js": {
+      "Langify": "",
+      "langify": "",
+      "langify.settings.switcher.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://langify-app.com"
+  },
+  "libphonenumber": {
+    "cats": [
+      59
+    ],
+    "description": "libphonenumber is a JavaScript library for parsing, formatting, and validating international phone numbers.",
+    "icon": "default.svg",
+    "js": {
+      "libphonenumber.DIGITS": "",
+      "libphonenumber.AsYouType": ""
+    },
+    "scriptSrc": "(?:/([\\d\\.]+))?/libphonenumber(?:-js\\.min)?\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://github.com/google/libphonenumber"
+  },
   "libwww-perl-daemon": {
     "cats": [
       22
@@ -1280,9 +1381,30 @@
     },
     "icon": "lighttpd.svg",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "http://www.lighttpd.net"
+  },
+  "lit-element": {
+    "cats": [
+      59
+    ],
+    "description": "lit-element is a simple base class for creating web components that work in any web page with any framework. lit-element uses lit-html to render into shadow DOM, and adds API to manage properties and attributes.",
+    "icon": "Lit.svg",
+    "js": {
+      "litElementVersions.0": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://lit.dev"
+  },
+  "lit-html": {
+    "cats": [
+      59
+    ],
+    "description": "lit-html is a simple, modern, safe, small and fast HTML templating library for JavaScript.",
+    "icon": "Lit.svg",
+    "js": {
+      "litHtmlVersions.0": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://lit.dev"
   }
 }

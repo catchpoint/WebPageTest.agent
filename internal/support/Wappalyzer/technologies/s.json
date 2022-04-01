@@ -42,13 +42,16 @@
     "icon": "SAP.svg",
     "implies": "Java",
     "js": {
+      "ACC.config.commonResourcePath": "/_ui/responsive/common\\;confidence:25",
+      "ACC.config.rootPath": "/_ui/responsive\\;confidence:25",
+      "ACC.config.themeResourcePath": "/_ui/responsive/theme-\\;confidence:50",
       "smartedit": ""
     },
     "pricing": [
       "poa"
     ],
     "saas": true,
-    "website": "https://www.sap.com/products/crm/e-commerce-platforms.html"
+    "website": "https://www.sap.com/products/commerce-cloud.html"
   },
   "SAP Customer Data Cloud Sign-in": {
     "cats": [
@@ -110,6 +113,22 @@
       "\\bSEUR\\b"
     ],
     "website": "https://www.seur.com"
+  },
+  "SHE Media": {
+    "cats": [
+      36
+    ],
+    "description": "SHE Media is an ad network, which means that they basically serve as a coordinator between advertisers and publishers (bloggers).",
+    "icon": "SHE Media.png",
+    "js": {
+      "SheMedia": "",
+      "blogherads.adq": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.shemedia.com"
   },
   "SIMsite": {
     "cats": [
@@ -208,6 +227,22 @@
     "icon": "SQLite.png",
     "website": "http://www.sqlite.org"
   },
+  "STN Video": {
+    "cats": [
+      36,
+      14
+    ],
+    "description": "STN Video is a online video platform that solves digital video for publishers, content creators, and advertisers.",
+    "icon": "STN Video.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "embed\\.sendtonews\\.com/",
+    "scripts": "embed\\.sendtonews\\.com/",
+    "website": "https://www.stnvideo.com"
+  },
   "STUDIO": {
     "cats": [
       51
@@ -233,6 +268,28 @@
     "saas": true,
     "website": "https://studio.design"
   },
+  "Survicate": {
+    "cats": [
+      73
+    ],
+    "description": "Survicate is an all-in-one customer feedback tool that allows you collect feedback.",
+    "icon": "Survicate.svg",
+    "headers": {
+      "content-security-policy": "api\\.survicate\\.com"
+    },
+    "dom": "link[href*='.survicate.com']",
+    "js": {
+      "survicate": ""
+    },
+    "scriptSrc": "\\.survicate\\.com/",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "recurring",
+      "payg"
+    ],
+    "website": "https://survicate.com"
+  },
   "SUSE": {
     "cats": [
       28
@@ -253,9 +310,6 @@
     "dom": "link[href*='/wp-content/plugins/svg-support/']",
     "icon": "SVG Support.png",
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/svg-support/",
     "website": "https://github.com/wp-plugins/svg-support"
@@ -905,6 +959,25 @@
     "scriptSrc": "cdn\\.searchspring\\.net",
     "website": "https://searchspring.com"
   },
+  "Secomapp": {
+    "cats": [
+      100
+    ],
+    "description": "Secomapp is a trusted Shopify Expert providing services through Shopify Apps.",
+    "icon": "Secomapp.png",
+    "js": {
+      "SECOMAPP": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "cdn\\.secomapp\\.com/",
+    "website": "https://www.secomapp.com"
+  },
   "Sectigo": {
     "cats": [
       70
@@ -1110,8 +1183,8 @@
       6
     ],
     "description": "Sellix is an ecommerce payment processor. It accepts PayPal, PerfectMoney and popular cryptocurrencies.",
-    "icon": "Sellix.svg",
     "dom": "link[href*='.sellix.io']",
+    "icon": "Sellix.svg",
     "pricing": [
       "low",
       "freemium",
@@ -1400,10 +1473,14 @@
     "icon": "Sezzle.svg",
     "js": {
       "AwesomeSezzle": "",
+      "renderSezzleIframe": "",
       "sezzle_footer_images": ""
     },
+    "meta": {
+      "sezzle_cid": ""
+    },
     "saas": true,
-    "scriptSrc": "widget\\.sezzle\\.in",
+    "scriptSrc": "widget\\.sezzle\\.(?:in|com)",
     "website": "https://sezzle.com/"
   },
   "Shanon": {
@@ -1513,22 +1590,6 @@
     },
     "website": "http://shellinabox.com"
   },
-  "SHE Media": {
-    "cats": [
-      36
-    ],
-    "description": "SHE Media is an ad network, which means that they basically serve as a coordinator between advertisers and publishers (bloggers).",
-    "icon": "SHE Media.png",
-    "js": {
-      "SheMedia": "",
-      "blogherads.adq": ""
-    },
-    "saas": true,
-    "pricing": [
-      "payg"
-    ],
-    "website": "https://www.shemedia.com"
-  },
   "Shiny": {
     "cats": [
       18
@@ -1576,14 +1637,29 @@
         "text": "ShopPay"
       }
     },
-    "icon": "Shopify.svg",
+    "icon": "Shop Pay.svg",
     "js": {
       "ShopifyPay.apiHost": ""
     },
+    "requires": "Shopify",
     "scriptSrc": [
       "cdn\\.shopify\\.com/shopifycloud/shopify_pay/"
     ],
     "website": "https://shop.app"
+  },
+  "Shop Pay Installments": {
+    "cats": [
+      91
+    ],
+    "description": "Shop Pay Installments allows customers to pay for orders between 50 USD and 3,000 USD in 4 interest-free installments.",
+    "dom": ".shopify-installments__learn-more, .shopify-installments, #shopify-installments-cta",
+    "icon": "Shop Pay.svg",
+    "implies": [
+      "Affirm",
+      "Shop Pay"
+    ],
+    "requires": "Shopify",
+    "website": "https://shoppay.affirm.com"
   },
   "ShopGold": {
     "cats": [
@@ -1614,6 +1690,25 @@
     "oss": true,
     "requires": "October CMS",
     "website": "https://shopaholic.one"
+  },
+  "Shopapps": {
+    "cats": [
+      100
+    ],
+    "description": "Shopapps is a trusted Shopify Expert providing services through Shopify Apps.",
+    "icon": "Shopapps.png",
+    "js": {
+      "iStockUrl": "iwish\\.myshopapps\\.com/",
+      "iWishUrl": "iwish\\.myshopapps\\.com/"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "cdn\\.myshopapps\\.com/",
+    "website": "http://www.shopapps.in"
   },
   "Shopatron": {
     "cats": [
@@ -2174,7 +2269,7 @@
     ],
     "description": "Simpli.fi is a programmatic advertising and agency management software.",
     "icon": "Simplifi.png",
-    "scriptSrc": "i\\.simpli\\.fi",
+    "scriptSrc": "\\.simpli\\.fi",
     "website": "https://simpli.fi/"
   },
   "Simplo7": {
@@ -2492,20 +2587,20 @@
     "cats": [
       1
     ],
+    "cookies": {
+      "SC_ANALYTICS_GLOBAL_COOKIE": "",
+      "SC_OS_SessionId": "",
+      "sc_expview": ""
+    },
     "description": "Sitecore provides web content management, and multichannel marketing automation software.",
     "html": "<img[^>]+src=\"[^>]*/~/media/[^>]+\\.ashx",
     "icon": "Sitecore.svg",
-    "requires": "Microsoft ASP.NET",
-    "cookies": {
-      "SC_ANALYTICS_GLOBAL_COOKIE": "",
-      "sc_expview": "",
-      "SC_OS_SessionId": ""
-    },
     "pricing": [
       "poa",
       "recurring",
       "high"
     ],
+    "requires": "Microsoft ASP.NET",
     "saas": true,
     "website": "https://www.sitecore.com/"
   },
@@ -2756,6 +2851,21 @@
     "scriptSrc": "/wp-content/plugins/smart-slider-3(?:-pro)?/",
     "website": "https://smartslider3.com"
   },
+  "SmartRecruiters": {
+    "cats": [
+      101
+    ],
+    "description": "SmartRecruiters is a web-based talent acquisition platform.",
+    "dom": "a[href*='careers.smartrecruiters.com/']",
+    "icon": "SmartRecruiters.png",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.smartrecruiters\\.com/",
+    "website": "https://www.smartrecruiters.com"
+  },
   "SmartSite": {
     "cats": [
       1
@@ -2858,6 +2968,22 @@
     "saas": true,
     "scriptSrc": "\\.smartsuppchat\\.com",
     "website": "https://www.smartsupp.com"
+  },
+  "SmartWeb": {
+    "cats": [
+      6
+    ],
+    "description": "SmartWeb is an ecommerce platform from Denmark.",
+    "icon": "SmartWeb.png",
+    "meta": {
+      "generator": "^SmartWeb$"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.smartweb.dk"
   },
   "Smash Balloon Instagram Feed": {
     "cats": [
@@ -3013,6 +3139,27 @@
     "saas": true,
     "scriptSrc": "https://cdn\\.snipcart\\.com/themes/v([\\w.]+)/default/snipcart\\.js\\;version:\\1",
     "website": "https://snipcart.com"
+  },
+  "SniperFast": {
+    "cats": [
+      29
+    ],
+    "description": "SniperFast is instant search system for ecommerce sites.",
+    "icon": "SniperFast.png",
+    "js": {
+      "sniperEnableSearch": "",
+      "sniper_search_key": "",
+      "sniperfast_page_id": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "scriptSrc": "\\.sniperfast\\.com",
+    "website": "https://www.sniperfast.com"
   },
   "Sniply": {
     "cats": [
@@ -3320,6 +3467,7 @@
       "recurring"
     ],
     "saas": true,
+    "scriptSrc": "\\.sndcdn\\.com/",
     "website": "https://developers.soundcloud.com/docs/api/html5-widget"
   },
   "SoundManager": {
@@ -3527,25 +3675,18 @@
     "saas": true,
     "website": "https://www.splittypay.com"
   },
-  "Splunk": {
+  "Splunkd": {
     "cats": [
       19
     ],
-    "html": "<p class=\"footer\">&copy; [-\\d]+ Splunk Inc\\.(?: Splunk ([\\d\\.]+(?: build [\\d\\.]*\\d)?))?[^<]*</p>\\;version:\\1",
-    "icon": "Splunk.png",
-    "meta": {
-      "author": "Splunk Inc\\;confidence:50"
-    },
-    "website": "http://splunk.com"
-  },
-  "Splunkd": {
-    "cats": [
-      22
-    ],
+    "description": "Splunkd is the system process that handles indexing, searching, forwarding.",
     "headers": {
       "Server": "Splunkd"
     },
-    "icon": "Splunk.png",
+    "icon": "Splunk.svg",
+    "pricing": [
+      "poa"
+    ],
     "website": "http://splunk.com"
   },
   "SpotHopper": {
@@ -4131,14 +4272,6 @@
     "oss": true,
     "website": "https://stitches.dev"
   },
-  "Store Systems": {
-    "cats": [
-      6
-    ],
-    "html": "Shopsystem von <a href=[^>]+store-systems\\.de\"",
-    "icon": "Store Systems.png",
-    "website": "http://store-systems.de"
-  },
   "StoreHippo": {
     "cats": [
       6
@@ -4196,10 +4329,16 @@
     "cats": [
       1
     ],
-    "icon": "storyblok.png",
+    "description": "Storyblok is a headless CMS with a visual editor for developers, marketers and content editors. Storyblok helps your team to manage content and digital experiences for every use-case from corporate websites, ecommerce, helpdesks, mobile apps, screen displays, and more.",
+    "icon": "Storyblok.svg",
     "meta": {
       "generator": "storyblok"
     },
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "saas": true,
     "website": "https://www.storyblok.com"
   },
   "Strapdown.js": {
@@ -4439,8 +4578,7 @@
     "icon": "SummerCart.svg",
     "implies": "PHP",
     "js": {
-      "SC": "\\;confidence:10",
-      "SCEvents": "\\;confidence:40"
+      "SCEvents": ""
     },
     "pricing": [
       "mid",
@@ -4478,8 +4616,24 @@
       "Server": "SunOS( [\\d\\.]+)?\\;version:\\1",
       "Servlet-engine": "SunOS( [\\d\\.]+)?\\;version:\\1"
     },
-    "icon": "Oracle.png",
+    "icon": "Oracle.svg",
     "website": "http://oracle.com/solaris"
+  },
+  "Super Builder": {
+    "cats": [
+      51
+    ],
+    "description": "Super Builder is a new tool for creating sleek landing pages right in Notion.",
+    "dom": "link[href*='super-static-assets.'], img[srcset*='super-static-assets.']",
+    "icon": "Super Builder.svg",
+    "implies": "Next.js",
+    "oss": false,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://super.so"
   },
   "Super Socializer": {
     "cats": [
@@ -4492,6 +4646,23 @@
     "requires": "WordPress",
     "scriptSrc": "plugins/super-socializer/.+?ver=([\\d.]+)\\;version:\\1",
     "website": "https://super-socializer-wordpress.heateor.com"
+  },
+  "SuperLemon app": {
+    "cats": [
+      100
+    ],
+    "description": "SuperLemon app is an all-in-one WhatsApp plugin for Shopify stores.",
+    "icon": "SuperLemon.png",
+    "requires": "Shopify",
+    "implies": "WhatsApp Business Chat",
+    "scriptSrc": "/files/superlemon_.+\\.js",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://apps.shopify.com/whatsapp-chat-button"
   },
   "Supersized": {
     "cats": [
@@ -4557,6 +4728,9 @@
     ],
     "description": "SvelteKit is the official Svelte framework for building web applications with a flexible filesystem-based routing.",
     "dom": {
+      "#svelte-announcer": {
+        "exists": ""
+      },
       "a": {
         "attributes": {
           "sveltekit:prefetch": ""
@@ -4564,6 +4738,11 @@
       }
     },
     "icon": "Svelte.svg",
+    "implies": [
+      "Svelte",
+      "Node.js",
+      "Vite"
+    ],
     "oss": true,
     "website": "https://kit.svelte.dev"
   },
