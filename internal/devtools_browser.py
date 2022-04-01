@@ -381,6 +381,8 @@ class DevtoolsBrowser(object):
             if 'noheaders' in self.job and self.job['noheaders']:
                 options['noheaders'] = True
             parser = DevToolsParser(options)
+            if 'metadata' in self.job:
+                parser.metadata = self.job['metadata']
             parser.process()
             # Cleanup intermediate files that are not needed
             if 'debug' not in self.job or not self.job['debug']:
