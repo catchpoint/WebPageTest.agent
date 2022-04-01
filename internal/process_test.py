@@ -54,6 +54,7 @@ class ProcessTest(object):
     def run_processing(self):
         """Run the post-processing for the given test step"""
         self.load_data()
+        page_data = self.data['pageData']
 
         self.merge_user_timing_events()
         self.merge_custom_metrics()
@@ -68,16 +69,20 @@ class ProcessTest(object):
         self.merge_crux_data()
         self.merge_lighthouse_data()
 
-        #self.save_data()
-        logging.debug(json.dumps(self.data['pageData'], indent=4, sort_keys=True))
+        # Mark the data as having been processed so the server can know not to re-process it
+        page_data['edge-processed'] = True
 
-        # Delete any stand-alone files that were post-processed
+        self.save_data()
+
+        # TODO: Delete any stand-alone files that were post-processed (keep them as backup for now)
+        """
         for file in self.delete:
             try:
                 logging.debug('Deleting merged metrics file %s', file)
-                #os.unlink(file)
+                os.unlink(file)
             except Exception:
                 pass
+        """
 
     def load_data(self):
         """Load the main page and requests data file (basis for post-processing)"""
