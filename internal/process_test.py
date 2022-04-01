@@ -174,6 +174,7 @@ class ProcessTest(object):
                 metrics = json.load(f)
                 if metrics:
                     page_data['longTasks'] = metrics
+                    self.delete.append(metrics_file)
 
     def calculate_visual_metrics(self):
         page_data = self.data['pageData']
@@ -664,6 +665,7 @@ class ProcessTest(object):
         metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
         if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
             shutil.copyfile(local_file, metrics_file)
+            self.delete.append(local_file)
         if os.path.isfile(metrics_file):
             with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
                 metrics = json.load(f)
@@ -674,19 +676,17 @@ class ProcessTest(object):
                         page_data['CrUX'] = metrics
 
     def merge_lighthouse_data(self):
-        """Pull in the lighthouse stats if present"""
+        """Pull in the lighthouse audit info if present"""
         page_data = self.data['pageData']
         # Copy the local crux data file to the shared test directory if there is one
-        audits_file_name = 'lighthouse_audits.json.gz'
-        lighthouse_file_name = 'lighthouse.json.gz'
-        for file_name in [audits_file_name, lighthouse_file_name]:
-            local_file = os.path.join(self.task['dir'], file_name)
-            metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
-            if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
-                shutil.copyfile(local_file, metrics_file)
-        audits_file = os.path.join(self.job['test_shared_dir'], audits_file_name)
-        if os.path.isfile(audits_file):
-            with gzip.open(audits_file, GZIP_READ_TEXT) as f:
+        file_name = 'lighthouse_audits.json.gz'
+        local_file = os.path.join(self.task['dir'], file_name)
+        metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
+        if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
+            shutil.copyfile(local_file, metrics_file)
+            self.delete.append(local_file)
+        if os.path.isfile(metrics_file):
+            with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
                 audits = json.load(f)
                 if audits:
                     logging.debug(audits)
