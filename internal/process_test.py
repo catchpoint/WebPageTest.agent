@@ -11,6 +11,7 @@ import gzip
 import logging
 import os
 import re
+import shutil
 import sys
 if (sys.version_info >= (3, 0)):
     from time import monotonic
@@ -45,6 +46,7 @@ class ProcessTest(object):
                 self.prefix = step['prefix']
                 self.video_subdirectory = step['video_subdirectory']
                 self.step_name = step['step_name']
+                self.step_num = step['num']
                 self.data = None
                 self.delete = []
                 self.run_processing()
@@ -52,7 +54,6 @@ class ProcessTest(object):
     def run_processing(self):
         """Run the post-processing for the given test step"""
         self.load_data()
-        page_data = self.data['pageData']
 
         self.merge_user_timing_events()
         self.merge_custom_metrics()
@@ -60,10 +61,12 @@ class ProcessTest(object):
         self.merge_long_tasks()
         self.calculate_visual_metrics()
         self.process_chrome_timings()
-
-        # Patch the loadTime metric
-        if 'loadTime' in page_data and page_data['loadTime'] <= 0 and 'fullyLoaded' in page_data and page_data['fullyLoaded'] > 0:
-            page_data['loadTime'] = page_data['fullyLoaded']
+        self.merge_blink_features()
+        self.merge_priority_streams()
+        self.calculate_TTI()
+        self.add_summary_metrics()
+        self.merge_crux_data()
+        self.merge_lighthouse_data()
 
         #self.save_data()
         logging.debug(json.dumps(self.data['pageData'], indent=4, sort_keys=True))
@@ -72,7 +75,7 @@ class ProcessTest(object):
         for file in self.delete:
             try:
                 logging.debug('Deleting merged metrics file %s', file)
-                os.unlink(file)
+                #os.unlink(file)
             except Exception:
                 pass
 
@@ -426,3 +429,285 @@ class ProcessTest(object):
                                 'cumulative_score': cls,
                                 'fraction_of_total': fraction
                             }
+
+    def merge_blink_features(self):
+        """Merge the blink featured flags that were detected"""
+        page_data = self.data['pageData']
+        metrics_file = os.path.join(self.task['dir'], self.prefix + '_feature_usage.json.gz')
+        if os.path.isfile(metrics_file):
+            with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
+                metrics = json.load(f)
+                if metrics:
+                    page_data['blinkFeatureFirstUsed'] = metrics
+                    self.delete.append(metrics_file)
+
+    def merge_priority_streams(self):
+        """Merge the list of HTTP/2 priority-only stream data"""
+        page_data = self.data['pageData']
+        metrics_file = os.path.join(self.task['dir'], self.prefix + '_priority_streams.json.gz')
+        if os.path.isfile(metrics_file):
+            with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
+                metrics = json.load(f)
+                if metrics:
+                    page_data['priorityStreams'] = metrics
+                    self.delete.append(metrics_file)
+
+    def calculate_TTI(self):
+        """Calculate Time to Interactive if we have First Contentful Paint and interactive Windows"""
+        page_data = self.data['pageData']
+        if 'interactivePeriods' in page_data and page_data['interactivePeriods']:
+            interactive_periods = page_data['interactivePeriods']
+            start_time = 0
+            tti = None
+            last_interactive = 0
+            first_interactive = None
+            measurement_end = 0
+            max_fid = None
+            total_blocking_time = None
+            if 'render' in page_data and page_data['render'] > 0:
+                start_time = page_data['render']
+            elif 'firstContentfulPaint' in page_data and page_data['firstContentfulPaint'] > 0:
+                start_time = page_data['firstContentfulPaint']
+            elif 'firstPaint' in page_data and page_data['firstPaint'] > 0:
+                start_time = page_data['firstPaint']
+            dcl = None
+            if 'domContentLoadedEventEnd' in page_data:
+                dcl = page_data['domContentLoadedEventEnd']
+            long_tasks = None
+            if 'longTasks' in page_data:
+                long_tasks = page_data['longTasks']
+
+            # Run the actual TTI calculation
+            if start_time > 0:
+                # See when the absolute last interaction measurement was
+                for window in interactive_periods:
+                    if window[1] > measurement_end:
+                        measurement_end = max(window[1], start_time)
+                        last_interactive = max(window[0], start_time)
+
+                # Start by filtering the interactive windows to only include 5 second windows that don't
+                # end before the start time.                
+                end = 0
+                iw = []
+                for window in interactive_periods:
+                    end = window[1]
+                    duration = window[1] - window[0]
+                    if end > start_time and duration >= 5000:
+                        iw.append(window)
+                        if first_interactive is None or window[0] < first_interactive:
+                            first_interactive = max(window[0], start_time)
+                
+                # Find all of the request windows with 5 seconds of no more than 2 concurrent document requests
+                rw = []
+                requests = self.data['requests']
+                if iw and requests:
+                    # Build a list of start/end events for document requests
+                    req = []
+                    for request in requests:
+                        if 'contentType' in request and \
+                                'load_start' in request and request['load_start'] >= 0 and \
+                                'load_end' in request and request['load_end'] > start_time:
+                            if 'method' not in request or request['method'] == 'GET':
+                                req.append({'type': 'start', 'time': request['load_start']})
+                                req.append({'type': 'end', 'time': request['load_end']})
+                
+                    # walk the list of events tracking the number of in-flight requests and log any windows > 5 seconds
+                    if req:
+                        req.sort(key=lambda x: x['time'])
+                        window_start = 0
+                        in_flight = 0
+                        for e in req:
+                            if e['type'] == 'start':
+                                in_flight += 1
+                                if window_start is not None and in_flight > 2:
+                                    window_end = e['time']
+                                    if window_end - window_start >= 5000:
+                                        rw.append([window_start, window_end])
+                                    window_start = None
+                            else:
+                                in_flight -= 1
+                                if window_start is not None and in_flight <= 2:
+                                    window_start = e['time']
+                        if window_start is not None and end - window_start >= 5000:
+                            rw.append([window_start, end])
+                
+                # Find the first interactive window that also has at least a 5 second intersection with one of the request windows
+                if rw:
+                    window = None
+                    for i in iw:
+                        if window is None:
+                            for r in rw:
+                                if window is None:
+                                    intersect = [max(i[0], r[0]), min(i[1], r[1])]
+                                    if intersect[1] - intersect[0] >= 5000:
+                                        window = i
+                                        break
+                    if window is not None:
+                        tti = max(start_time, window[0])
+                
+                # Calculate the total blocking time - https://web.dev/tbt/
+                # and the max possible FID (longest task)
+                end_time = tti if tti is not None else last_interactive
+                if long_tasks:
+                    total_blocking_time = 0
+                    max_fid = 0
+                    if end_time > start_time:
+                        for task in long_tasks:
+                            start = max(task[0], start_time) + 50 # "blocking" time excludes the first 50ms
+                            end = min(task[1], end_time)
+                            busy_time = end - start
+                            if busy_time > 0:
+                                total_blocking_time += busy_time
+                                if busy_time > max_fid:
+                                    max_fid = busy_time
+                
+                # DOM Content loaded is the floor for any possible TTI times
+                if dcl is not None:
+                    if tti is not None and tti > 0 and dcl > tti:
+                        tti = dcl
+                    if first_interactive is not None and first_interactive > 0 and dcl > first_interactive:
+                        first_interactive = dcl
+
+            # Merge the metrics into the page data
+            if first_interactive is not None and first_interactive > 0:
+                page_data['FirstInteractive'] = first_interactive
+            if tti is not None and tti > 0:
+                page_data['TimeToInteractive'] = tti
+            if max_fid is not None:
+                page_data['maxFID'] = max_fid
+            if measurement_end > 0:
+                page_data['TTIMeasurementEnd'] = measurement_end
+            if last_interactive > 0:
+                page_data['LastInteractive'] = last_interactive
+            if 'TimeToInteractive' not in page_data and measurement_end > 0 and last_interactive > 0 and measurement_end - last_interactive >= 5000:
+                page_data['TimeToInteractive'] = last_interactive
+                if 'FirstInteractive' not in page_data:
+                    page_data['FirstInteractive'] = last_interactive
+            if 'FirstInteractive' in page_data:
+                page_data['FirstCPUIdle'] = page_data['FirstInteractive']
+            if total_blocking_time is not None:
+                page_data['TotalBlockingTime'] = total_blocking_time
+
+    def add_summary_metrics(self):
+        """Do the metric cleanup and some top-level metrics"""
+        page_data = self.data['pageData']
+
+        # Patch the loadTime metric
+        if 'loadTime' in page_data and page_data['loadTime'] <= 0 and 'fullyLoaded' in page_data and page_data['fullyLoaded'] > 0:
+            page_data['loadTime'] = page_data['fullyLoaded']
+
+        # For visual tests (black-box browser testing) use the visual metrics as the base timings
+        if 'visualTest' in page_data and page_data['visualTest'] and 'visualComplete' in page_data:
+            page_data['loadTime'] = page_data['visualComplete']
+            page_data['docTime'] = page_data['visualComplete']
+            page_data['fullyLoaded'] = page_data['lastVisualChange']
+        
+        # See if we have pcap-based versions of the various metrics
+        if ('bytesIn' not in page_data or page_data['bytesIn'] <= 0) and 'pcapBytesIn' in page_data and page_data['pcapBytesIn'] > 0:
+            page_data['bytesIn'] = page_data['pcapBytesIn']
+        if ('bytesInDoc' not in page_data or page_data['bytesInDoc'] <= 0) and 'pcapBytesIn' in page_data and page_data['pcapBytesIn'] > 0:
+            page_data['bytesInDoc'] = page_data['pcapBytesIn']
+        if ('bytesOut' not in page_data or page_data['bytesOut'] <= 0) and 'pcapBytesOut' in page_data and page_data['pcapBytesOut'] > 0:
+            page_data['bytesOut'] = page_data['pcapBytesOut']
+        if ('bytesOutDoc' not in page_data or page_data['bytesOutDoc'] <= 0) and 'pcapBytesOut' in page_data and page_data['pcapBytesOut'] > 0:
+            page_data['bytesOutDoc'] = page_data['pcapBytesOut']
+        
+        # Basic run information
+        page_data['testID'] = self.task['id']
+        page_data['run'] = self.task['run']
+        page_data['cached'] = 1 if self.task['cached'] else 0
+        page_data['step'] = self.step_num
+        if 'metadata' in self.job:
+            page_data['metadata'] = self.job['metadata']
+
+        # Calculate effective bps
+        if 'fullyLoaded' in page_data and page_data['fullyLoaded'] > 0 and \
+                'TTFB' in page_data and page_data['TTFB'] > 0 and \
+                'bytesIn' in page_data and page_data['bytesIn'] > 0 and \
+                page_data['fullyLoaded'] > page_data['TTFB']:
+            page_data['effectiveBps'] = round(float(page_data['bytesIn']) / (float(page_data['fullyLoaded'] - page_data['TTFB']) / 1000.0))
+        if 'docTime' in page_data and page_data['docTime'] > 0 and \
+                'TTFB' in page_data and page_data['TTFB'] > 0 and \
+                'bytesInDoc' in page_data and page_data['bytesInDoc'] > 0 and \
+                page_data['docTime'] > page_data['TTFB']:
+            page_data['effectiveBps'] = round(float(page_data['bytesInDoc']) / (float(page_data['docTime'] - page_data['TTFB']) / 1000.0))
+
+        # clean up any insane values (from negative numbers as unsigned most likely)
+        if 'firstPaint' in page_data and 'fullyLoaded' in page_data and page_data['firstPaint'] > page_data['fullyLoaded']:
+            page_data['firstPaint'] = 0
+        times = ['loadTime', 'TTFB', 'render', 'fullyLoaded', 'docTime', 'domTime', 'aft', 'titleTime', 'loadEventStart', 'loadEventEnd',
+                 'domContentLoadedEventStart', 'domContentLoadedEventEnd', 'domLoading', 'domInteractive',
+                 'lastVisualChange', 'visualComplete', 'server_rtt', 'firstPaint']
+        for key in times:
+            if key not in page_data or page_data[key] > 3600000 or page_data[key] < 0:
+                page_data[key] = 0
+        if 'fullyLoaded' in page_data:
+            page_data['fullyLoaded'] = round(page_data['fullyLoaded'])
+        if 'firstContentfulPaint' not in page_data:
+            if 'chromeUserTiming.firstContentfulPaint' in page_data:
+                page_data['firstContentfulPaint'] = page_data['chromeUserTiming.firstContentfulPaint']
+            elif 'PerformancePaintTiming.first-contentful-paint' in page_data:
+                page_data['firstContentfulPaint'] = page_data['PerformancePaintTiming.first-contentful-paint']
+
+        # See if there is a test-level error that needs to be exposed
+        if 'error' in self.task and self.task['error']:
+            if 'result' not in page_data or page_data['result'] == 0 or page_data['result'] == 99999:
+                page_data['result'] = 99995
+            page_data['error'] = self.task['error']
+
+    def merge_crux_data(self):
+        """Pull in the crux data if it is present"""
+        page_data = self.data['pageData']
+        # Copy the local crux data file to the shared test directory if there is one
+        file_name = 'crux.json.gz'
+        local_file = os.path.join(self.task['dir'], file_name)
+        metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
+        if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
+            shutil.copyfile(local_file, metrics_file)
+        if os.path.isfile(metrics_file):
+            with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
+                metrics = json.load(f)
+                if metrics:
+                    if 'record' in metrics:
+                        page_data['CrUX'] = metrics['record']
+                    else:
+                        page_data['CrUX'] = metrics
+
+    def merge_lighthouse_data(self):
+        """Pull in the lighthouse stats if present"""
+        page_data = self.data['pageData']
+        # Copy the local crux data file to the shared test directory if there is one
+        audits_file_name = 'lighthouse_audits.json.gx'
+        lighthouse_file_name = 'lighthouse.json.gz'
+        for file_name in [audits_file_name, lighthouse_file_name]:
+            local_file = os.path.join(self.task['dir'], file_name)
+            metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
+            if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
+                shutil.copyfile(local_file, metrics_file)
+        audits_file = os.path.join(self.job['test_shared_dir'], audits_file_name)
+        lighthouse_file = os.path.join(self.job['test_shared_dir'], lighthouse_file_name)
+        if os.path.isfile(audits_file):
+            with gzip.open(audits_file, GZIP_READ_TEXT) as f:
+                audits = json.load(f)
+                if audits:
+                    for name in audits:
+                        page_data['lighthouse.{}'.format(name)] = audits[name]
+        elif os.path.isfile(lighthouse_file):
+            with gzip.open(lighthouse_file, GZIP_READ_TEXT) as f:
+                lighthouse = json.load(f)
+                if lighthouse:
+                    if 'aggregations' in lighthouse:
+                        for lh in lighthouse['aggregations']:
+                            if 'name' in lh and 'total' in lh and 'scored' in lh and lh['scored']:
+                                page_data['lighthouse.{}'.format(lh['name'].replace(' ', ''))] = lh['total']
+                    elif 'reportCategories' in lighthouse:
+                        for lh in lighthouse['reportCategories']:
+                            if 'name' in lh and 'score' in lh:
+                                name = 'lighthouse.{}'.format(lh['name'].replace(' ', ''))
+                                score = float(lh['score']) / 100.0
+                                page_data[name] = score
+                                if lh['name'] == 'Performance' and 'audits' in lh:
+                                    for audit in lh['audits']:
+                                        if 'id' in audit and 'group' in audit and audit['group'] == 'perf-metric' and 'result' in audit and 'rawValue' in audit['result']:
+                                            name = 'lighthouse.{}.{}'.format(lh['name'].replace(' ', ''), audit['id'].replace(' ', ''))
+                                            page_data[name] = audit['result']['rawValue']

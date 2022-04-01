@@ -741,9 +741,10 @@ class Firefox(DesktopBrowser):
         if 'steps' not in task:
             task['steps'] = []
         task['steps'].append({
-            'prefix': task['prefix'],
-            'video_subdirectory': task['video_subdirectory'],
-            'step_name': task['step_name']
+            'prefix': str(task['prefix']),
+            'video_subdirectory': str(task['video_subdirectory']),
+            'step_name': str(task['step_name']),
+            'num': int(task['current_step'])
         })
 
     def on_start_recording(self, task):

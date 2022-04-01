@@ -849,6 +849,8 @@ class WebPageTest(object):
                 task['prefix'] = task['task_prefix']
                 short_id = "{0}.{1}.{2}".format(task['id'], run, task['cached'])
                 task['dir'] = os.path.join(self.workdir, short_id)
+                if 'test_shared_dir' not in job:
+                    job['test_shared_dir'] = os.path.join(self.workdir, task['id'])
                 task['task_video_prefix'] = 'video_{0:d}'.format(run)
                 if task['cached']:
                     task['task_video_prefix'] += "_cached"
@@ -856,6 +858,8 @@ class WebPageTest(object):
                 if os.path.isdir(task['dir']):
                     shutil.rmtree(task['dir'])
                 os.makedirs(task['dir'])
+                if not os.path.isdir(job['test_shared_dir']):
+                    os.makedirs(job['test_shared_dir'])
                 if not os.path.isdir(profile_dir):
                     os.makedirs(profile_dir)
                 if job['current_state']['run'] == job['runs'] or 'run' in job:
