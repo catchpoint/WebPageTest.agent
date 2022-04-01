@@ -1036,6 +1036,8 @@ class Firefox(DesktopBrowser):
         result = {}
         result['requests'] = self.merge_requests(request_timings)
         result['pageData'] = self.calculate_page_stats(result['requests'])
+        if 'metadata' in self.job:
+            result['pageData']['metadata'] = self.job['metadata']
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
         with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:
             json.dump(result, f_out)
