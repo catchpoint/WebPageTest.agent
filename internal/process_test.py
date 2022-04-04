@@ -41,6 +41,7 @@ class ProcessTest(object):
         self.options = options
         self.job = job
         self.task = task
+        self.job['success'] = False
         # Loop through all of the steps from this run
         if 'steps' in self.task:
             for step in self.task['steps']:
@@ -74,9 +75,13 @@ class ProcessTest(object):
         # Mark the data as having been processed so the server can know not to re-process it
         page_data['edge-processed'] = True
 
+        # Mark the job as successful if any of the steps were successful
+        if 'result' in page_data and page_data['result'] in [0, 99999]:
+            self.job['success'] = True
+
         self.save_data()
 
-        if self.options.har:
+        if self.options.har or 'gcs_har_upload' in self.job:
             self.generate_har()
 
         # TODO: Delete any stand-alone files that were post-processed (keep them as backup for now)
@@ -939,6 +944,29 @@ class ProcessTest(object):
             har_file = os.path.join(self.task['dir'], self.prefix + '_har.json.gz')
             with gzip.open(har_file, GZIP_TEXT, 7) as f:
                 json.dump(har, f)
+            
+            # Upload the HAR to GCS for "successful" tests
+            if 'gcs_har_upload' in self.job and \
+                    'bucket' in self.job['gcs_har_upload'] and \
+                    'path' in self.job['gcs_har_upload'] and \
+                    os.path.exists(har_file) and \
+                    self.job['success']:
+                try:
+                    from google.cloud import storage
+                    client = storage.Client()
+                    bucket = client.get_bucket(self.job['gcs_har_upload']['bucket'])
+                    prefix = '' if self.prefix == '1' else '_' + self.prefix
+                    gcs_path = os.path.join(self.job['gcs_har_upload']['path'], self.task['id'] + prefix + '.har.gz')
+                    blob = bucket.blob(gcs_path)
+                    blob.upload_from_filename(filename=har_file)
+                    logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
+                except Exception:
+                    logging.exception('Error uploading HAR to Cloud Storage')
+            
+            # Delete the local HAR file if it was only supposed to be uploaded
+            if not self.options.har:
+                os.unlink(har_file)
+
         except Exception:
             logging.exception('Error generating HAR')
 

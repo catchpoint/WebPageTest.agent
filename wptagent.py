@@ -1029,6 +1029,8 @@ def main():
     parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--polling', type=int, default=5,
                         help='Polling interval for work (defaults to 5 seconds).')
+    parser.add_argument('--pubsub',
+                        help="PubSub subscription path (i.e. projects/xxx/subscriptions/queue-yyy).")
 
     # Traffic-shaping options (defaults to host-based)
     parser.add_argument('--shaper', help='Override default traffic shaper. '
@@ -1180,7 +1182,6 @@ def main():
 
     if options.collectversion and platform.system() == "Windows":
         get_browser_versions(browsers)
-
 
     agent = WPTAgent(options, browsers)
     if agent.startup(browsers):
