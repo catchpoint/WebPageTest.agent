@@ -225,6 +225,7 @@ class Trace():
                 cat.find('devtools.timeline') >= 0 or \
                 cat.find('blink.feature_usage') >= 0 or \
                 cat.find('blink.user_timing') >= 0 or \
+                cat.find('blink.resource') >= 0 or \
                 cat.find('loading') >= 0 or \
                 cat.find('navigation') >= 0 or \
                 cat.find('rail') >= 0 or \
@@ -303,7 +304,7 @@ class Trace():
                 self.cpu['main_threads'].append(thread)
         if cat == 'netlog' or cat.find('netlog') >= 0:
             self.ProcessNetlogEvent(trace_event)
-        elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0:
+        elif cat == 'devtools.timeline' or cat.find('devtools.timeline') >= 0 or cat.find('blink.resource') >= 0:
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
@@ -526,7 +527,10 @@ class Trace():
                     request['frame'] = trace_event['args']['data']['frame']
                 if 'renderBlocking' in trace_event['args']['data']:
                     request['renderBlocking'] = trace_event['args']['data']['renderBlocking']
-
+            if trace_event['name'] == 'ResourceFetcher::WarnUnusedPreloads':
+                request['preloadUnused'] = 'true'
+            if trace_event['name'] == 'ResourceFetcher::PrintPreloadMismatch':
+                request['preloadMismatch'] = 'true'
         # Build timeline events on a stack. 'B' begins an event, 'E' ends an
         # event
         if (thread in self.threads and (

@@ -1117,6 +1117,10 @@ class DevToolsParser(object):
             for request in requests:
                 if 'raw_id' in request and request['raw_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['raw_id']]:
                     request['renderBlocking'] = timeline_requests[request['raw_id']]['renderBlocking']
+                if 'raw_id' in request and request['raw_id'] in timeline_requests and 'preloadUnused' in timeline_requests[request['raw_id']]:
+                    request['preloadUnused'] = timeline_requests[request['raw_id']]['preloadUnused']
+                if 'raw_id' in request and request['raw_id'] in timeline_requests and 'preloadMismatch' in timeline_requests[request['raw_id']]:
+                    request['preloadMismatch'] = timeline_requests[request['raw_id']]['preloadMismatch']
 
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
