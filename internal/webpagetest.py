@@ -826,7 +826,7 @@ class WebPageTest(object):
                         'profile': profile_dir,
                         'error': None,
                         'log_data': True,
-                        'activity_time': 2,
+                        'activity_time': 3,
                         'combine_steps': False,
                         'video_directories': [],
                         'page_data': {'tester': self.pc_name, 'start_epoch': time.time()},
