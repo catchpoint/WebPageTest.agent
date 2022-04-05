@@ -377,6 +377,7 @@ class DevTools(object):
                         "cc",
                         "gpu",
                         "blink.net",
+                        "blink.resource",
                         "disabled-by-default-v8.runtime_stats"
                     ]
             else:
@@ -424,6 +425,8 @@ class DevTools(object):
                 trace_config["includedCategories"].append("blink.user_timing")
             if "netlog" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("netlog")
+            if "blink.resource" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("blink.resource")
             if "disabled-by-default-netlog" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:

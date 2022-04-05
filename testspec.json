@@ -1,3 +1,6 @@
 {
-    "browser": "Canary"
+    "browser": "Canary",
+    "axe": 0,
+    "wappalyzer": 0,
+    "debug": 1
 }
