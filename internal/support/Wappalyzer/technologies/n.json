@@ -87,6 +87,23 @@
     "scriptSrc": "\\.nagich\\.co(?:m|\\.il)/core/([\\d.]+)/accessibility\\.js\\;version:\\1",
     "website": "https://www.nagich.co.il"
   },
+  "NagishLi": {
+    "cats": [
+      68
+    ],
+    "description": "NagishLi is a free accessibility plugin from Localize*, created to provide an equal oppurtunity for webmasters to make their website accessible and make the internet more accessible for people with disability.",
+    "icon": "NagishLi.png",
+    "js": {
+      "$NagishLi": "",
+      "initNagishLi": "",
+      "nagishli_commons.version": "(.+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "website": "https://www.nagish.li"
+  },
   "Najva": {
     "cats": [
       32
@@ -112,6 +129,27 @@
     "icon": "Narrativ.png",
     "scriptSrc": "static\\.narrativ\\.com/",
     "website": "https://narrativ.com/"
+  },
+  "Narvar": {
+    "cats": [
+      102,
+      99
+    ],
+    "description": "Narvar is a customer experience platform that helps retailers inspire long-term customer loyalty, at all steps of the post-purchase journey.",
+    "icon": "Narvar.svg",
+    "dom": "a[href*='.narvar.com/'], img[src*='.narvar.com/']",
+    "headers": {
+      "Content-Security-Policy": "\\.narvar\\.com"
+    },
+    "js": {
+      "NARVARJS_URL": "",
+      "narvar": "\\;confidence:1"
+    },
+    "saas": true,
+    "pricing": [
+      "payg"
+    ],
+    "website": "https://corp.narvar.com"
   },
   "Nativo": {
     "cats": [
@@ -141,18 +179,21 @@
     "scriptSrc": "tag\\.navdmp\\.com",
     "website": "https://www.navegg.com/"
   },
-  "Naver RUA": {
+  "Naver Analytics": {
     "cats": [
-      92,
-      78
+      10
     ],
-    "description": "Naver RUA (Real User Analytics) collects performance data from real users to analyze the speed of your website by country, operating system, and browser.",
+    "description": "Naver Analytics is a Korean based analytics service.",
     "icon": "Naver.svg",
-    "scriptSrc": "rua-api\\.ncloud\\.com/",
-    "saas": true,
+    "meta": {
+      "naver-site-verification": ""
+    },
     "pricing": [
+      "freemium",
       "payg"
     ],
+    "saas": true,
+    "scriptSrc": "wcs\\.naver\\.net/wcslog\\.js",
     "website": "https://analytics.naver.com"
   },
   "Naver Maps": {
@@ -164,26 +205,26 @@
     "js": {
       "naver.maps": ""
     },
-    "scriptSrc": "openapi\\.map\\.naver\\.com/openapi/v([\\d\\.]+)\\;version:\\1",
-    "saas": true,
     "pricing": [
       "freemium",
       "payg"
     ],
+    "saas": true,
+    "scriptSrc": "openapi\\.map\\.naver\\.com/openapi/v([\\d\\.]+)\\;version:\\1",
     "website": "https://www.ncloud.com/product/applicationService/maps"
   },
-  "Naver Analytics": {
+  "Naver RUA": {
     "cats": [
-      10
+      92,
+      78
     ],
-    "description": "Naver Analytics is a Korean based analytics service.",
+    "description": "Naver RUA (Real User Analytics) collects performance data from real users to analyze the speed of your website by country, operating system, and browser.",
     "icon": "Naver.svg",
-    "scriptSrc": "wcs\\.naver\\.net/wcslog\\.js",
-    "saas": true,
     "pricing": [
-      "freemium",
       "payg"
     ],
+    "saas": true,
+    "scriptSrc": "rua-api\\.ncloud\\.com/",
     "website": "https://analytics.naver.com"
   },
   "Neos CMS": {
@@ -460,6 +501,27 @@
     ],
     "website": "https://niagahoster.co.id"
   },
+  "Nicepage": {
+    "cats": [
+      51
+    ],
+    "description": "Nicepage is a free website building tool that requires no coding skills and integrates seamlessly with all leading CMS systems.",
+    "dom": "link[href*='nicepage.css']",
+    "icon": "Nicepage.png",
+    "js": {
+      "_npAccordionInit": "",
+      "_npDialogsInit": ""
+    },
+    "meta": {
+      "generator": "Nicepage\\s([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "saas": true,
+    "website": "https://nicepage.com"
+  },
   "Ninja Forms": {
     "cats": [
       87
@@ -580,6 +642,28 @@
     "scriptSrc": "connect\\.nosto\\.\\w+/",
     "website": "https://www.nosto.com"
   },
+  "Nudgify": {
+    "cats": [
+      32
+    ],
+    "description": "Nudgify is a Social Proof & Fomo App tool that integrates seamlessly with ecommerce platform such as Shopify, WooCommerce and Magento.",
+    "icon": "Nudgify.svg",
+    "requiresCategory": 6,
+    "js": {
+      "nudgify.cart": ""
+    },
+    "scriptSrc": [
+      "\\.nudgify\\.com/",
+      "cdn\\.convertize\\.com/nudgify-shopify\\.js"
+    ],
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.nudgify.com"
+  },
   "Nukeviet CMS": {
     "cats": [
       1
@@ -594,9 +678,6 @@
       "generator": "NukeViet v([\\d.]+)\\;version:\\1"
     },
     "oss": true,
-    "pricing": [
-      "freemium"
-    ],
     "website": "https://nukeviet.vn/en/"
   },
   "Nuqlium": {

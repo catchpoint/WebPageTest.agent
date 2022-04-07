@@ -768,6 +768,24 @@
     "scriptSrc": "(?:shopify-)?cdn\\.flow\\.io/",
     "website": "https://www.flow.io/"
   },
+  "Flowplayer": {
+    "cats": [
+      14
+    ],
+    "description": "Flowplayer is a scalable, performance-first HTML 5 video player and platform hosting solution for publishers, broadcasters and digital media.",
+    "icon": "Flowplayer.svg",
+    "js": {
+      "flowplayer": "",
+      "flowplayer.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://flowplayer.com"
+  },
   "Flutter": {
     "cats": [
       66
@@ -888,6 +906,23 @@
     ],
     "requires": "WordPress",
     "website": "https://fooplugins.com/foogallery-wordpress-gallery-plugin"
+  },
+  "FoodBooking": {
+    "cats": [
+      93
+    ],
+    "description": "FoodBooking is a virtual food court based on a curated list of restaurants that use the GloriaFood ordering system.",
+    "dom": "a[href*='.foodbooking.com/ordering/restaurant/'][target='_blank']",
+    "icon": "FoodBooking.png",
+    "implies": "GloriaFood",
+    "pricing": [
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.(?:fbgcdn|foodbooking)\\.com/",
+    "website": "https://www.foodbooking.com"
   },
   "Fork Awesome": {
     "cats": [
@@ -1103,6 +1138,27 @@
     "scriptSrc": "cdn\\.foxycart\\.com",
     "website": "https://www.foxy.io"
   },
+  "Framer Sites": {
+    "cats": [
+      51
+    ],
+    "description": "Framer is primarily a design and prototyping tool. It allows you to design interactive prototypes of websites and applications using production components and real data.",
+    "icon": "Framer Sites.svg",
+    "implies": "React",
+    "js": {
+      "Framer.version": "([\\d\\.]+)\\;version:\\1\\;confidence:0",
+      "Framer.Animatable": ""
+    },
+    "oss": false,
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "framerusercontent\\.com",
+    "website": "https://framer.com/sites"
+  },
   "France Express": {
     "cats": [
       99
@@ -1231,6 +1287,22 @@
     "saas": true,
     "scriptSrc": "asset(?:cdn)?\\.freshop\\.com/",
     "website": "https://www.freshop.com"
+  },
+  "Freshteam": {
+    "cats": [
+      101
+    ],
+    "description": "Freshteam is a cloud-based HR and applicant tracking solution offered by Freshworks.",
+    "dom": "a[href*='.freshteam.com/jobs']",
+    "icon": "Freshteam.svg",
+    "pricing": [
+      "freemium",
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "assets\\.freshteam\\.com/",
+    "website": "https://www.freshworks.com/hrms/"
   },
   "Freshworks CRM": {
     "cats": [
@@ -1434,5 +1506,19 @@
     ],
     "saas": true,
     "website": "https://platform.fynd.com"
+  },
+  "fullPage.js": {
+    "cats": [
+      59
+    ],
+    "description": "fullPage.js a jQuery and vanilla JavaScript plugin for fullscreen scrolling websites.",
+    "icon": "fullPage.js.png",
+    "implies": "jQuery",
+    "js": {
+      "fullpage_api.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "scriptSrc": "/fullPage\\.js(?:/([\\d\\.]+)/)?\\;version:\\1",
+    "website": "https://github.com/alvarotrigo/fullpage.js"
   }
 }

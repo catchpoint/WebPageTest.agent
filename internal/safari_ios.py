@@ -814,6 +814,15 @@ class iWptBrowser(BaseBrowser):
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
         self.path_base = os.path.join(self.task['dir'], self.task['prefix'])
+        if 'steps' not in task:
+            task['steps'] = []
+        task['steps'].append({
+            'prefix': str(task['prefix']),
+            'video_subdirectory': str(task['video_subdirectory']),
+            'step_name': str(task['step_name']),
+            'start_time': time.time(),
+            'num': int(task['current_step'])
+        })
     
     def enable_target(self, target_id):
         """Enable all of the targe-specific events"""
@@ -1005,6 +1014,8 @@ class iWptBrowser(BaseBrowser):
             self.wpt_result = {}
             self.wpt_result['requests'] = self.process_requests(requests)
             self.wpt_result['pageData'] = self.calculate_page_stats(self.wpt_result['requests'])
+            if 'metadata' in self.job:
+                self.wpt_result['pageData']['metadata'] = self.job['metadata']
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""

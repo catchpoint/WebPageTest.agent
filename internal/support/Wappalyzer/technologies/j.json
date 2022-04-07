@@ -400,10 +400,27 @@
     "scriptSrc": "\\.jivosite\\.com",
     "website": "https://www.jivosite.com"
   },
+  "JobAdder": {
+    "cats": [
+      101
+    ],
+    "description": "JobAdder is a cloud-based recruitment management platform for staffing agencies and in-house corporate hiring teams.",
+    "dom": "a[href*='clientapps.jobadder.com/'], link[href*='jobadder.com']",
+    "icon": "JobAdder.png",
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.jobadder\\.com/",
+    "website": "https://jobadder.com"
+  },
   "JobberBase": {
     "cats": [
-      19
+      19,
+      101
     ],
+    "description": "Jobberbase is an open-source job board platform that enables the creation of job sites.",
     "icon": "JobberBase.png",
     "implies": "PHP",
     "js": {
@@ -412,7 +429,26 @@
     "meta": {
       "generator": "Jobberbase"
     },
+    "oss": true,
     "website": "http://www.jobberbase.com"
+  },
+  "Jobvite": {
+    "cats": [
+      101
+    ],
+    "description": "Jobvite is an applicant tracking software and recruiting platform.",
+    "dom": "a[href*='.jobvite.com/']",
+    "icon": "Jobvite.png",
+    "js": {
+      "Jobvite": ""
+    },
+    "pricing": [
+      "high",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.jobvite.com"
   },
   "JoomShopping": {
     "cats": [
@@ -426,7 +462,6 @@
     },
     "oss": true,
     "pricing": [
-      "freemium",
       "onetime"
     ],
     "scriptSrc": "/components/com_jshopping/",
@@ -534,6 +569,26 @@
       "jumpseller-apps\\.herokuapp\\.\\w+/"
     ],
     "website": "https://jumpseller.com"
+  },
+  "Junip": {
+    "cats": [
+      90
+    ],
+    "description": "Junip provider of a ecommerce brand review platform designed to share customers' story, send review requests and display review content.",
+    "icon": "Junip.svg",
+    "requiresCategory": 6,
+    "js": {
+      "junipLoaded": "\\;confidence:50",
+      "webpackChunkjunip_scripts": "\\;confidence:50"
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.juniphq\\.com/",
+    "website": "https://junip.co"
   },
   "Justo": {
     "cats": [
@@ -674,6 +729,18 @@
     "implies": "jQuery",
     "scriptSrc": "jquery\\.sparkline.*\\.js",
     "website": "http://omnipotent.net/jquery.sparkline/"
+  },
+  "jQuery Modal": {
+    "cats": [
+      59
+    ],
+    "description": "JQuery Modal is an overlay dialog box or in other words, a popup window that is made to display on the top or 'overlayed' on the current page.",
+    "icon": "jQuery Modal.png",
+    "implies": "jQuery",
+    "dom": "link[href*='jquery.modal.min.css']",
+    "scriptSrc": "jquery-modal/([\\d\\.]+)/jquery\\.modal\\.min\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://jquerymodal.com"
   },
   "jQuery UI": {
     "cats": [

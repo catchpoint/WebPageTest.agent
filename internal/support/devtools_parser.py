@@ -51,6 +51,7 @@ class DevToolsParser(object):
         self.result = {'pageData': {}, 'requests': []}
         self.request_ids = {}
         self.script_ids = {}
+        self.metadata = None
         self.PRIORITY_MAP = {
             "VeryHigh": "Highest",
             "HIGHEST": "Highest",
@@ -1138,6 +1139,8 @@ class DevToolsParser(object):
         page_data['responses_other'] = 0
         page_data['renderBlockingCSS'] = 0
         page_data['renderBlockingJS'] = 0
+        if self.metadata is not None:
+            page_data['metadata'] = self.metadata
 
         page_data['fullyLoaded'] = page_data['docTime'] if 'docTime' in page_data else 0
         for request in requests:

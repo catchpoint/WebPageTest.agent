@@ -103,6 +103,21 @@
     "website": "https://www.ipinfodb.com/",
     "xhr": "api\\.ipinfodb\\.com"
   },
+  "IPinfo": {
+    "cats": [
+      79
+    ],
+    "description": "IPinfo is an IP address data provider.",
+    "icon": "IPinfo.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "ipinfo\\.io/",
+    "website": "https://ipinfo.io",
+    "xhr": "ipinfo\\.io/"
+  },
   "Iamport": {
     "cats": [
       41
@@ -311,6 +326,24 @@
     "saas": true,
     "scriptSrc": "vendor-cdn\\.imweb\\.me/",
     "website": "https://imweb.me"
+  },
+  "InMoment": {
+    "cats": [
+      10,
+      73
+    ],
+    "description": "InMoment provides SaaS based customer survey and enterprise feedback management solutions.",
+    "headers": {
+      "Content-Security-Policy": "\\.inmoment\\.com",
+      "Content-Security-Policy-Report-Only": "\\.inmoment\\.com"
+    },
+    "icon": "InMoment.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.inmoment\\.com(?:\\.\\w+)?/",
+    "website": "https://inmoment.com"
   },
   "Incapsula": {
     "cats": [
@@ -713,6 +746,22 @@
     "scriptSrc": "Scripts/_app/Inv(?:\\w+)\\.js\\?v=(.+)$\\;version:\\1",
     "website": "https://www.inveon.com"
   },
+  "Invoca": {
+    "cats": [
+      32
+    ],
+    "description": "Invoca is an AI-powered call tracking and conversational analytics company.",
+    "icon": "Invoca.svg",
+    "js": {
+      "Invoca.PNAPI.version": "([\\d\\.]+)\\;version:\\1",
+      "InvocaTagId": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.invoca.com"
+  },
   "Ionic": {
     "cats": [
       18
@@ -732,6 +781,19 @@
     "html": "<link[^>]* href=[^>]+ionicons(?:\\.min)?\\.css",
     "icon": "Ionicons.png",
     "website": "http://ionicons.com"
+  },
+  "IrisLMS": {
+    "cats": [
+      21
+    ],
+    "description": "IrisLMS comprehensive education management system, in order to support e-learning and provide suitable conditions for holding online and offline classes with all facilities.",
+    "icon": "IrisLMS.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.irislms\\.ir/",
+    "website": "https://irislms.ir"
   },
   "Irroba": {
     "cats": [
