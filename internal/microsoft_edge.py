@@ -797,6 +797,15 @@ class Edge(DesktopBrowser):
             task['step_name'] = self.event_name
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
+        if 'steps' not in task:
+            task['steps'] = []
+        task['steps'].append({
+            'prefix': str(task['prefix']),
+            'video_subdirectory': str(task['video_subdirectory']),
+            'step_name': str(task['step_name']),
+            'start_time': time.time(),
+            'num': int(task['current_step'])
+        })
 
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
@@ -993,6 +1002,8 @@ class Edge(DesktopBrowser):
         self.process_sockets()
         result['requests'] = self.process_raw_requests()
         result['pageData'] = self.calculate_page_stats(result['requests'])
+        if 'metadata' in self.job:
+            result['pageData']['metadata'] = self.job['metadata']
         self.check_optimization(task, result['requests'], result['pageData'])
         devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
         with gzip.open(devtools_file, GZIP_TEXT, 7) as f_out:

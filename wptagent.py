@@ -1009,6 +1009,8 @@ def main():
     parser.add_argument('--collectversion', action='store_true', default=False,
                         help="Collection browser versions and submit to controller.")
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
+    parser.add_argument('--har', action='store_true', default=False,
+                        help="Generate a per-run HAR file as part of the test result (defaults to False).")
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -1027,6 +1029,8 @@ def main():
     parser.add_argument('--key', help="Location key (optional).")
     parser.add_argument('--polling', type=int, default=5,
                         help='Polling interval for work (defaults to 5 seconds).')
+    parser.add_argument('--pubsub',
+                        help="PubSub subscription path (i.e. projects/xxx/subscriptions/queue-yyy).")
 
     # Traffic-shaping options (defaults to host-based)
     parser.add_argument('--shaper', help='Override default traffic shaper. '
@@ -1178,7 +1182,6 @@ def main():
 
     if options.collectversion and platform.system() == "Windows":
         get_browser_versions(browsers)
-
 
     agent = WPTAgent(options, browsers)
     if agent.startup(browsers):

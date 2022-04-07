@@ -1,4 +1,46 @@
 {
+  "Q4": {
+    "cats": [
+      53
+    ],
+    "description": "Q4 is a SaaS platform that provides communication and intelligence solutions to investor relations professionals.",
+    "icon": "Q4.png",
+    "js": {
+      "q4App.a11yAnnouncement": "",
+      "q4Defaults.fancySignup": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.q4inc.com/products/investor-relations-websites/default.aspx"
+  },
+  "Q4 Cookie Monster": {
+    "cats": [
+      5,
+      67
+    ],
+    "description": "Q4 Cookie Monster is an cookie compliance widget built by Q4.",
+    "icon": "Q4.png",
+    "scriptSrc": "widgets\\.q4app\\.com/widgets/q4\\.cookiemonster\\.([\\d\\.]+)\\.min\\.js\\;version:\\1",
+    "website": "https://q4mobile.github.io/q4widgets-jquery-ui/doc_html/q4.cookieMonster.html"
+  },
+  "Qikify": {
+    "cats": [
+      100
+    ],
+    "description": "Qikify is a trusted Shopify Expert providing services for over 35,000 Shopify merchants through Shopify Apps or custom modifications.",
+    "icon": "Qikify.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "sdk\\.qikify\\.com/",
+    "website": "https://qikify.com"
+  },
   "Qualaroo": {
     "cats": [
       73
@@ -160,6 +202,19 @@
     "scriptSrc": "quicklink@([\\d.]+)/dist/quicklink.*\\.js\\;version:\\1",
     "website": "https://getquick.link/"
   },
+  "Quicq": {
+    "cats": [
+      92
+    ],
+    "description": "Quicq is an image optimisation tool by Afosto.",
+    "dom": "img[src*='.qcqcdn.com/'], img[data-src*='.qcqcdn.com/'], img[src*='cdn.quicq.io/'], img[data-src*='cdn.quicq.io/']",
+    "icon": "Quicq.svg",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://afosto.com/apps/quicq"
+  },
   "Quill": {
     "cats": [
       24
@@ -182,5 +237,21 @@
     },
     "scriptSrc": "\\.quora\\.com/",
     "website": "https://quoraadsupport.zendesk.com/hc/en-us/categories/115001573928-Pixels-Tracking"
+  },
+  "Qwik": {
+    "cats": [
+      18
+    ],
+    "description": "Qwik is designed for the fastest possible page load time, by delivering pure HTML with near 0 JavaScript.",
+    "icon": "Qwik.svg",
+    "dom": {
+      "*": {
+        "attributes": {
+          "q:version": "^([\\d\\.]+(?:-\\d+)?)\\;version:\\1"
+        }
+      }
+    },
+    "oss": true,
+    "website": "https://qwik.builder.io"
   }
 }

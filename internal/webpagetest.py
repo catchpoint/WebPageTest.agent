@@ -60,6 +60,7 @@ class WebPageTest(object):
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
         self.raw_job = None
+        self.pubsub_job = None
         self.first_failure = None
         self.is_rebooting = False
         self.is_dead = False
@@ -219,6 +220,11 @@ class WebPageTest(object):
         if os.path.isfile(margins_file):
             with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
+        # pubsub if configured
+        self.subscriber = None
+        if self.options.pubsub:
+            from google.cloud import pubsub_v1
+            self.subscriber = pubsub_v1.SubscriberClient()
         # Load any locally-defined custom metrics from {agent root}/custom/metrics/*.js
         self.custom_metrics = {}
         self.load_local_custom_metrics()
@@ -626,7 +632,7 @@ class WebPageTest(object):
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
             self.benchmark_cpu()
-        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0:
+        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0 and not self.options.pubsub:
             return None
         job = None
         self.raw_job = None
@@ -687,21 +693,37 @@ class WebPageTest(object):
                     url = self.scheduler + 'hawkscheduleserver/wpt-dequeue.ashx?machine={}'.format(quote_plus(self.pc_name))
                     logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
                     response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid(self.scheduler_node)})
+                    response_text = response.text if len(response.text) else None
+                elif self.subscriber:
+                    logging.debug('Polling work from pubsub: %s', self.options.pubsub)
+                    try:
+                        from google.cloud import pubsub_v1
+                        response = self.subscriber.pull(request={
+                            'subscription': self.options.pubsub,
+                            'max_messages': 1,
+                            'return_immediately': True,
+                            }, timeout=10)
+                        if len(response.received_messages) == 1:
+                            self.pubsub_job = response.received_messages[0]
+                            response_text = self.pubsub_job.message.data.decode('utf-8')
+                    except Exception:
+                        logging.exception('Error polling from pubsub')
                 else:
                     logging.info("Checking for work: %s", url)
                     response = self.session.get(url, timeout=10, proxies=proxies)
+                    response_text = response.text if len(response.text) else None
                 if self.options.alive:
                     with open(self.options.alive, 'a'):
                         os.utime(self.options.alive, None)
                 if self.health_check_server is not None:
                     self.health_check_server.healthy()
                 self.first_failure = None
-                if len(response.text):
-                    if response.text == 'Reboot':
+                if response_text is not None:
+                    if response_text == 'Reboot':
                         self.reboot()
                         return None
-                    elif response.text.startswith('Servers:') or response.text.startswith('Scheduler:'):
-                        for line in response.text.splitlines():
+                    elif response_text.startswith('Servers:') or response_text.startswith('Scheduler:'):
+                        for line in response_text.splitlines():
                             line = line.strip()
                             if line.startswith('Servers:'):
                                 servers_str = line[8:]
@@ -718,7 +740,7 @@ class WebPageTest(object):
                                     self.scheduler_nodes = [self.scheduler_node]
                                     retry = True
                                     logging.debug("Scheduler configured: '%s' Salt: '%s' Node: %s", self.scheduler, self.scheduler_salt, self.scheduler_node)
-                    job = self.process_job_json(response.json())
+                    job = self.process_job_json(json.loads(response_text))
                     # Store the raw job info in case we need to re-queue it
                     if job is not None and 'Test ID' in job and 'signature' in job and 'work_server' in job:
                         self.raw_job = {
@@ -849,6 +871,8 @@ class WebPageTest(object):
                 task['prefix'] = task['task_prefix']
                 short_id = "{0}.{1}.{2}".format(task['id'], run, task['cached'])
                 task['dir'] = os.path.join(self.workdir, short_id)
+                if 'test_shared_dir' not in job:
+                    job['test_shared_dir'] = os.path.join(self.workdir, task['id'])
                 task['task_video_prefix'] = 'video_{0:d}'.format(run)
                 if task['cached']:
                     task['task_video_prefix'] += "_cached"
@@ -856,6 +880,8 @@ class WebPageTest(object):
                 if os.path.isdir(task['dir']):
                     shutil.rmtree(task['dir'])
                 os.makedirs(task['dir'])
+                if not os.path.isdir(job['test_shared_dir']):
+                    os.makedirs(job['test_shared_dir'])
                 if not os.path.isdir(profile_dir):
                     os.makedirs(profile_dir)
                 if job['current_state']['run'] == job['runs'] or 'run' in job:
@@ -1387,6 +1413,9 @@ class WebPageTest(object):
         if self.is_dead:
             return
         if self.job is not None and 'run' not in self.job:
+            # If we are writing the test result directly to Google cloud storage, generate the relevant testinfo
+            if 'gcs_test_archive' in self.job:
+                self.generate_test_info()
             # Write out the testinfo ini and json files if they are part of the job
             if 'testinfo_ini' in self.job:
                 from datetime import datetime
@@ -1436,27 +1465,67 @@ class WebPageTest(object):
                             os.remove(zipitem['path'])
                         except Exception:
                             pass
-            data = {'location': self.location,
-                    'pc': self.pc_name,
-                    'testinfo': '1',
-                    'done': '1'}
-            if 'Test ID' in self.job:
-                data['id'] = self.job['Test ID']
-            if self.key is not None:
-                data['key'] = self.key
-            if self.instance_id is not None:
-                data['ec2'] = self.instance_id
-            if self.zone is not None:
-                data['ec2zone'] = self.zone
-            if self.cpu_pct is not None:
-                data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
-            if 'error' in self.job:
-                data['error'] = self.job['error']
-            uploaded = False
-            if 'work_server' in self.job:
-                uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
-            if not uploaded:
-                self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            
+            # If we are writing the results directly to GCS, don't post to workdone
+            if zip_path is not None and 'Test ID' in self.job and \
+                    'gcs_test_archive' in self.job and \
+                    'bucket' in self.job['gcs_test_archive'] and \
+                    'path' in self.job['gcs_test_archive']:
+                try:
+                    from google.cloud import storage
+                    client = storage.Client()
+                    bucket = client.get_bucket(self.job['gcs_test_archive']['bucket'])
+                    gcs_path = os.path.join(self.job['gcs_test_archive']['path'], self.job['Test ID'] + '.zip')
+                    blob = bucket.blob(gcs_path)
+                    blob.upload_from_filename(filename=zip_path)
+                    logging.debug('Uploaded test to gs://%s/%s', self.job['gcs_test_archive']['bucket'], gcs_path)
+                except Exception:
+                    logging.exception('Error uploading result to Cloud Storage')
+            else:
+                # Send the result to WebPageTest
+                data = {'location': self.location,
+                        'pc': self.pc_name,
+                        'testinfo': '1',
+                        'done': '1'}
+                if 'Test ID' in self.job:
+                    data['id'] = self.job['Test ID']
+                if self.key is not None:
+                    data['key'] = self.key
+                if self.instance_id is not None:
+                    data['ec2'] = self.instance_id
+                if self.zone is not None:
+                    data['ec2zone'] = self.zone
+                if self.cpu_pct is not None:
+                    data['cpu'] = '{0:0.2f}'.format(self.cpu_pct)
+                if 'error' in self.job:
+                    data['error'] = self.job['error']
+                uploaded = False
+                if 'work_server' in self.job:
+                    uploaded = self.post_data(self.job['work_server'] + "workdone.php", data, zip_path, 'result.zip')
+                if not uploaded:
+                    self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
+            
+            # See if the job needs to be posted to a retry pubsub queue
+            if self.pubsub_job is not None:
+                from google.cloud import pubsub_v1
+                if 'pubsub_retry_queue' in self.job and 'success' in self.job and not self.job['success'] and self.pubsub_job is not None:
+                    try:
+                        from concurrent import futures
+                        logging.debug('Sending test to retry queue: %s', self.job['pubsub_retry_queue'])
+                        publisher = pubsub_v1.PublisherClient()
+                        publisher_future = publisher.publish(self.job['pubsub_retry_queue'], self.pubsub_job.message.data)
+                        futures.wait([publisher_future], return_when=futures.ALL_COMPLETED)
+                    except Exception:
+                        logging.exception('Error sending job to pubsub retry queue')
+                if self.subscriber is not None:
+                    try:
+                        self.subscriber.acknowledge(request={
+                            'subscription': self.options.pubsub,
+                            'ack_ids': [self.pubsub_job.ack_id]
+                        })
+                    except Exception:
+                        logging.exception('Error acknowledging pubsub job')
+        self.pubsub_job = None
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
@@ -1543,6 +1612,13 @@ class WebPageTest(object):
         if self.job['warmup'] > 0:
             logging.debug('Discarding warmup run')
         else:
+            # Post-process the given test run
+            try:
+                from internal.process_test import ProcessTest
+                ProcessTest(self.options, self.job, task)
+            except Exception:
+                logging.exception('Error post-processing test')
+            # Continue with the upload
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
                 self.cpu_pct = task['page_data']['fullyLoadedCPUpct']
             data = {'id': task['id'],
@@ -1763,6 +1839,45 @@ class WebPageTest(object):
                             pass
             except Exception:
                 logging.exception('Error reporting diagnostics')
+
+    def generate_test_info(self):
+        """Generate the testinfo ini and json files needed for a test"""
+        if 'testinfo' not in self.job:
+            self.job['testinfo'] = dict(self.job)
+        test = self.job['testinfo']
+        test['id'] = self.job['Test ID']
+        test['completed'] = time.time()
+        if 'started' not in test:
+            test['started'] = test['completed']
+        if 'Capture Video' in test and test['Capture Video']:
+            test['video'] = 1
+        if 'pngScreenShot' in test and test['pngScreenShot']:
+            test['pngss'] = 1
+        if 'imageQuality' in test and test['imageQuality']:
+            test['iq'] = test['imageQuality']
+        if 'clearRV' in test and test['clearRV']:
+            test['clear_rv'] = 1
+        test['published'] = 1
+
+        if 'locationText' not in test:
+            test['locationText'] = 'WebPageTest Test Location'
+        if 'location' not in test:
+            test['location'] = 'TestLocation'
+
+        # Generate the ini file string
+        ini = "[test]\r\n"
+        for key in ['fvonly', 'timeout', 'runs', 'id', 'sensitive', 'connections', 'notify',
+                    'disable_video', 'uid', 'owner', 'type', 'connectivity', 'bwIn', 'bwOut',
+                    'latency', 'plr', 'video']:
+            if key in test:
+                ini += "{}={}\r\n".format(key, test[key])
+        ini += "{}={}\r\n".format('location', test['locationText'])
+        ini += "{}={}\r\n".format('loc', test['location'])
+        if 'login' in test and test['login']:
+            ini += "authenticated=1\r\n"
+        if 'script' in test and test['script']:
+            ini += "script=1\r\n"
+        self.job['testinfo_ini'] = ini
 
     def shutdown(self):
         """Agent is dying.  Re-queue the test if possible and if we have one"""

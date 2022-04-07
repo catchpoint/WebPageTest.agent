@@ -332,6 +332,15 @@ class DevtoolsBrowser(object):
             task['step_name'] = self.event_name
         else:
             task['step_name'] = 'Step_{0:d}'.format(task['current_step'])
+        if 'steps' not in task:
+            task['steps'] = []
+        task['steps'].append({
+            'prefix': str(task['prefix']),
+            'video_subdirectory': str(task['video_subdirectory']),
+            'step_name': str(task['step_name']),
+            'start_time': time.time(),
+            'num': int(task['current_step'])
+        })
 
     def process_video(self):
         """Post process the video"""
@@ -372,6 +381,8 @@ class DevtoolsBrowser(object):
             if 'noheaders' in self.job and self.job['noheaders']:
                 options['noheaders'] = True
             parser = DevToolsParser(options)
+            if 'metadata' in self.job:
+                parser.metadata = self.job['metadata']
             parser.process()
             # Cleanup intermediate files that are not needed
             if 'debug' not in self.job or not self.job['debug']:
