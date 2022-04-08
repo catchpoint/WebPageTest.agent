@@ -1122,6 +1122,18 @@ class DevToolsParser(object):
                     request['preloadUnused'] = timeline_requests[request['raw_id']]['preloadUnused']
                 if 'raw_id' in request and request['raw_id'] in timeline_requests and 'preloadMismatch' in timeline_requests[request['raw_id']]:
                     request['preloadMismatch'] = timeline_requests[request['raw_id']]['preloadMismatch']
+            # Loop through the url-keyed timeline requests that don't have a request ID
+            for req_id in timeline_requests:
+                req = timeline_requests[req_id]
+                if 'has_id' in req and not req['has_id'] and 'url' in req:
+                    for request in requests:
+                        if 'full_url' in request and request['full_url'] == req['url']:
+                            if 'renderBlocking' in req:
+                                request['renderBlocking'] = req['renderBlocking']
+                            if 'preloadUnused' in req:
+                                request['preloadUnused'] = req['preloadUnused']
+                            if 'preloadMismatch' in req:
+                                request['preloadMismatch'] = req['preloadMismatch']
 
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
