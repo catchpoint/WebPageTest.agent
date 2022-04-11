@@ -950,8 +950,10 @@ class OptimizationChecks(object):
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
                 check = {'score': -1, 'size': content_length, 'target_size': content_length}
-                if content_length and 'body' in request:
+                if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
+                    if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
+                        check['info'] = {'detected_type': sniff_type}
                     if sniff_type == 'jpeg':
                         if content_length < 1400:
                             check['score'] = 100
@@ -1029,6 +1031,7 @@ class OptimizationChecks(object):
                                     is_animated = False
                                 else:
                                     is_animated = True
+                            check['info']['animated'] = is_animated
                             if is_animated:
                                 check['score'] = 100
                             else:
@@ -1052,6 +1055,8 @@ class OptimizationChecks(object):
                     elif sniff_type == 'webp':
                         check['score'] = 100
                     elif sniff_type == 'avif':
+                        check['score'] = 100
+                    elif sniff_type == 'jxl':
                         check['score'] = 100
                     if check['score'] >= 0:
                         self.image_results[request_id] = check
@@ -1170,8 +1175,10 @@ class OptimizationChecks(object):
             content_type = 'jpeg'
         elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif hex_bytes[0:24] == b'000000206674797061766966':
+        elif hex_bytes[0:22] == b'0000002066747970617669':
             content_type = 'avif'
+        elif hex_bytes[0:14] == b'0000000c4a584c':
+            content_type = 'jxl'
         elif raw_bytes[:6] == b'GIF87a' or raw_bytes[:6] == b'GIF89a':
             content_type = 'gif'
         elif raw_bytes[:4] == b'RIFF' and raw_bytes[8:14] == b'WEBPVP':
