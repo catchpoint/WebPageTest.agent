@@ -1342,6 +1342,8 @@ class DevToolsParser(object):
                             if request['score_compress'] >= 0:
                                 page_data['image_total'] += opt['image']['size']
                                 page_data['image_savings'] += savings
+                            if 'info' in opt['image']:
+                                request['image_details'] = opt['image']['info']
                         if 'progressive' in opt:
                             size = opt['progressive']['size']
                             request['jpeg_scan_count'] = opt['progressive']['scan_count']
