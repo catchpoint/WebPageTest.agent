@@ -470,11 +470,17 @@ class DevToolsParser(object):
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
                 request['full_url'] = url
-                request['proxied_url'] = raw_request['proxiedURL'] if 'proxiedURL' in raw_request else ''      
                 request['is_secure'] = 1 if parts.scheme == 'https' else 0
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
                 request['url'] = parts.path
+                if 'proxiedURL' in raw_request:
+                    request['full_url'] = raw_request['proxiedURL']
+                    request['original_url'] = raw_request['url']
+                    proxiedURL = raw_request['proxiedURL'].split('#', 1)[0]
+                    parts = urlsplit(proxiedURL)
+                    request['host'] = parts.netloc
+                    request['url'] = parts.path
                 if 'raw_id' in raw_request:
                     request['raw_id'] = raw_request['raw_id']
                 if 'frame_id' in raw_request:
@@ -886,8 +892,6 @@ class DevToolsParser(object):
                     for entry in netlog:
                         url_matches = False
                         if 'url' in entry and entry['url'] == request['full_url']:
-                            url_matches = True
-                        elif 'url' in entry and entry['url'] == request['proxied_url']:
                             url_matches = True
                         method_matches = False
                         if 'method' not in entry or 'method' not in request or entry['method'] == request['method']:
