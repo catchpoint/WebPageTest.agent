@@ -518,6 +518,9 @@ class Trace():
             if request_id not in self.timeline_requests:
                 self.timeline_requests[request_id] = {}
             request = self.timeline_requests[request_id]
+            if trace_event['name'] == 'Network.requestIntercepted':
+                if 'proxiedURL' in trace_event['args']['data']:
+                    request['proxiedURL'] = trace_event['args']['data']['proxiedURL']
             if trace_event['name'] == 'ResourceSendRequest':
                 if 'priority' in trace_event['args']['data']:
                     request['priority'] = trace_event['args']['data']['priority']

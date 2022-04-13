@@ -191,6 +191,9 @@ class DevToolsParser(object):
                             request_id is not None and request_id in raw_requests:
                         raw_requests[request_id]['fromNet'] = False
                         raw_requests[request_id]['fromCache'] = True
+                    if method == 'Network.requestIntercepted' and 'requestId' in params and \
+                            request_id is not None and request_id in raw_requests:
+                        raw_requests[request_id]['proxiedURL'] = params['_proxiedURL']
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
@@ -467,6 +470,7 @@ class DevToolsParser(object):
                 request = {'type': 3, 'id': raw_request['id'], 'request_id': raw_request['id']}
                 request['ip_addr'] = ''
                 request['full_url'] = url
+                request['proxied_url'] = raw_request['proxiedURL'] if 'proxiedURL' in raw_request else ''      
                 request['is_secure'] = 1 if parts.scheme == 'https' else 0
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
@@ -882,6 +886,8 @@ class DevToolsParser(object):
                     for entry in netlog:
                         url_matches = False
                         if 'url' in entry and entry['url'] == request['full_url']:
+                            url_matches = True
+                        elif 'url' in entry and entry['url'] == request['proxied_url']:
                             url_matches = True
                         method_matches = False
                         if 'method' not in entry or 'method' not in request or entry['method'] == request['method']:
