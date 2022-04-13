@@ -193,7 +193,7 @@ class DevToolsParser(object):
                         raw_requests[request_id]['fromCache'] = True
                     if method == 'Network.requestIntercepted' and 'requestId' in params and \
                             request_id is not None and request_id in raw_requests:
-                        raw_requests[request_id]['proxiedURL'] = params['_proxiedURL']
+                        raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
@@ -474,11 +474,11 @@ class DevToolsParser(object):
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
                 request['url'] = parts.path
-                if 'proxiedURL' in raw_request:
-                    request['full_url'] = raw_request['proxiedURL']
+                if 'overwrittenURL' in raw_request:
+                    request['full_url'] = raw_request['overwrittenURL']
                     request['original_url'] = raw_request['url']
-                    proxiedURL = raw_request['proxiedURL'].split('#', 1)[0]
-                    parts = urlsplit(proxiedURL)
+                    overwrittenURL = raw_request['overwrittenURL'].split('#', 1)[0]
+                    parts = urlsplit(overwrittenURL)
                     request['host'] = parts.netloc
                     request['url'] = parts.path
                 if 'raw_id' in raw_request:

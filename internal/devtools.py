@@ -1467,7 +1467,7 @@ class DevTools(object):
                                 params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
                                 # We need to add the new URL to our event for parsing later
                                 # let's use an underscore to indicate to ourselves that we're adding this
-                                msg['params']['_proxiedURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
+                                msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
                             break
                 except Exception:
                     logging.exception('Error processing host override')
