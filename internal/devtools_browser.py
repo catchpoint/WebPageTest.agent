@@ -29,13 +29,17 @@ try:
 except BaseException:
     import json
 from .optimization_checks import OptimizationChecks
+from internal.wptutil import LogSingleton as logs
 
+
+from internal.support.devtools_parser import DevToolsParser
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
     CONNECT_TIME_LIMIT = 120
 
     def __init__(self, options, job, use_devtools_video=True, is_webkit=False, is_ios=False):
+        logs.write("INIT Devtools Browser")
         self.options = options
         self.job = job
         self.is_webkit = is_webkit
@@ -217,6 +221,8 @@ class DevtoolsBrowser(object):
 
     def on_start_recording(self, task):
         """Start recording"""
+        logs.write("***Starting Recording***")
+
         if self.must_exit_now:
             return
         if 'page_data' not in task:
@@ -237,11 +243,13 @@ class DevtoolsBrowser(object):
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
         if self.devtools is not None:
+            logs.write("Stopping capture")
             self.devtools.stop_capture()
 
     def on_stop_recording(self, task):
         """Stop recording"""
         if self.devtools is not None and not self.must_exit_now:
+            logs.write("Stop Recording")
             self.devtools.collect_trace()
             if self.devtools_screenshot:
                 if self.job['pngScreenShot']:
@@ -292,15 +300,19 @@ class DevtoolsBrowser(object):
         if self.must_exit_now:
             return
         if task['log_data']:
+            logs.write("Start processing of the captured data")
             # Start the processing that can run in a background thread
             optimization = OptimizationChecks(self.job, task, self.get_requests(True))
             optimization.start()
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
+                logs.write("Start processing of video")
                 self.process_video()
             if self.job.get('wappalyzer'):
+                logs.write("Start processing of wappalyzer")
                 self.wappalyzer_detect(task, self.devtools.main_request_headers)
             if self.job.get('axe'):
+                logs.write("Start processing of Axe")
                 self.run_axe(task)
 
             # wait for the background optimization checks
@@ -319,6 +331,8 @@ class DevtoolsBrowser(object):
 
     def prepare_task(self, task):
         """Format the file prefixes for multi-step testing"""
+        logs.write("Preparing Task")
+
         if task['current_step'] == 1:
             task['prefix'] = task['task_prefix']
             task['video_subdirectory'] = task['task_video_prefix']
@@ -354,13 +368,13 @@ class DevtoolsBrowser(object):
 
     def process_devtools_requests(self, task):
         """Process the devtools log and pull out the requests information"""
+        logs.write("Processing the devtools log and pulling request info")
         if self.must_exit_now:
             return
         self.profile_start('dtbrowser.process_devtools_requests')
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
         if os.path.isfile(devtools_file):
-            from internal.support.devtools_parser import DevToolsParser
             out_file = path_base + '_devtools_requests.json.gz'
             options = {'devtools': devtools_file, 'cached': task['cached'], 'out': out_file}
             netlog = path_base + '_netlog_requests.json.gz'
@@ -385,7 +399,7 @@ class DevtoolsBrowser(object):
                 parser.metadata = self.job['metadata']
             parser.process()
             # Cleanup intermediate files that are not needed
-            if 'debug' not in self.job or not self.job['debug']:
+            if 'debug' not in self.job or not self.job['debug'] or self.options.debug == False:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
                 if os.path.isfile(timeline_requests):
@@ -397,7 +411,7 @@ class DevtoolsBrowser(object):
                 if os.path.isfile(devtools_file):
                     os.remove(devtools_file)
             # remove files that might contain sensitive data
-            if options['noheaders']:
+            if options['noheaders'] or self.options.debug == False:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
                 if os.path.isfile(devtools_file):
@@ -614,6 +628,8 @@ class DevtoolsBrowser(object):
 
     def process_command(self, command):
         """Process an individual script command"""
+        logs.write("Processing individual script command")
+
         logging.debug("Processing script command:")
         logging.debug(command)
         if command['command'] == 'navigate':

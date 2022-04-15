@@ -12,6 +12,9 @@ import os
 import re
 import sys
 import time
+from numpy import sum
+from math import ceil
+from internal.wptutil import LogSingleton as logs
 HAS_FUTURE = False
 try:
     from builtins import str
@@ -37,6 +40,7 @@ except BaseException:
 class DevToolsParser(object):
     """Main class"""
     def __init__(self, options):
+        logs.write("Init DevToolsParser")
         self.devtools_file = options['devtools']
         self.netlog_requests_file = options['netlog'] if 'netlog' in options else None
         self.timeline_requests_file = options['requests'] if 'requests' in options else None
@@ -65,8 +69,12 @@ class DevToolsParser(object):
     def process(self):
         """Main entry point for processing"""
         logging.debug("Processing raw devtools events")
+
         raw_requests, raw_page_data = self.extract_net_requests()
+        #raw_requests, raw_page_data = self.extract_net_requests_new() # In progress
+
         if len(raw_requests) or len(raw_page_data):
+            logs.write("Processing raw devtools events")
             logging.debug("Extracting requests and page data")
             self.process_requests(raw_requests, raw_page_data)
             logging.debug("Adding netlog requests")
@@ -82,8 +90,8 @@ class DevToolsParser(object):
             logging.debug("Adding code coverage results")
             self.process_code_coverage()
             logging.debug("Calculating cpu times")
-            self.process_cpu_times()
-            logging.debug("Processing V8 stats")
+            self.process_cpu_times_new()  # Replacement to self.process_cpu_times()
+
             self.process_v8_stats()
             if self.noheaders:
                 logging.debug('Stripping headers')
@@ -91,9 +99,11 @@ class DevToolsParser(object):
                     for request in self.result['requests']:
                         if 'headers' in request:
                             del request['headers']
-            logging.debug("Writing result")
-            self.make_utf8(self.result)
+            #logs.write("Make utf8")
+            #self.make_utf8(self.result) # Function is not needed
+            #logs.write("Make utf8 end")
             self.write()
+            logs.write("End Processing")
 
     def make_utf8(self, data):
         """Convert the given array to utf8"""
@@ -126,6 +136,7 @@ class DevToolsParser(object):
 
     def write(self):
         """Write out the resulting json data"""
+        logs.write("Writing out the resulting Json data")
         if self.out_file is not None:
             if len(self.result['pageData']) or len(self.result['requests']):
                 try:
@@ -141,6 +152,7 @@ class DevToolsParser(object):
 
     def extract_net_requests(self):
         """Load the events we are interested in"""
+        logs.write("Processing the net requests events we are interested in")
         has_request_headers = False
         net_requests = []
         page_data = {'endTime': 0}
@@ -151,6 +163,7 @@ class DevToolsParser(object):
             f_in = open(self.devtools_file, 'r')
         raw_events = json.load(f_in)
         f_in.close()
+        logs.write("Finished json load")
         if raw_events is not None and len(raw_events):
             first_timestamp = None
             raw_requests = {}
@@ -360,6 +373,7 @@ class DevToolsParser(object):
                         page_data['domContentLoadedEventStart'] = params['timestamp']
                         page_data['domContentLoadedEventEnd'] = params['timestamp']
             # add the extra headers to the events
+            logs.write("Netrequest Finish processing raw_events")
             for request_id in extra_headers:
                 if request_id in raw_requests:
                     request = raw_requests[request_id]
@@ -373,6 +387,7 @@ class DevToolsParser(object):
                         request['response']['headers'] = dict(self.merge_devtools_headers(request['response']['headers'], extra_headers[request_id]['response']))
                     if 'responseText' in extra_headers[request_id] and 'response' in request and 'headersText' not in request['response']:
                         request['response']['headersText'] = extra_headers[request_id]['responseText']
+            logs.write("Netrequest Finish processing extra_headers")
             # go through and error-out any requests that started but never got
             # a response or error
             for request_id in raw_requests:
@@ -404,14 +419,307 @@ class DevToolsParser(object):
                     page_data['endTime'] = request['endTime']
                 if 'fromNet' in request and request['fromNet']:
                     net_requests.append(dict(request))
+        logs.write("Netrequest Finish processing raw_requests")
         # sort the requests by start time
         if len(net_requests):
             net_requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
         return net_requests, page_data
 
+    def extract_net_requests_new(self):
+        """Load the events we are interested in"""
+        logs.write("NEW Processing the net requests events we are interested in")
+        has_request_headers = False
+        net_requests = []
+        page_data = {'endTime': 0}
+
+        _, ext = os.path.splitext(self.devtools_file)
+        if ext.lower() == '.gz':
+            f_in = gzip.open(self.devtools_file, GZIP_READ_TEXT)
+        else:
+            f_in = open(self.devtools_file, 'r')
+        raw_events = json.load(f_in)
+        f_in.close()
+        logs.write("NEW Finished json load")
+        if raw_events is not None and len(raw_events):
+            first_timestamp = None
+            raw_requests = {}
+            extra_headers = {}
+            id_map = {}
+            for raw_event in raw_events:
+                if 'method' in raw_event and 'params' in raw_event:
+                    method = raw_event['method']
+                    params = raw_event['params']
+                    request_id = None
+                    original_id = None
+                    if 'requestId' in params:
+                        request_id = params['requestId']
+                        original_id = request_id
+                        if request_id in id_map:
+                            request_id += '-' + str(id_map[request_id])
+                    # Pull out the script ID's
+                    if method == 'Debugger.scriptParsed' and 'scriptId' in params:
+                        script_id = params['scriptId']
+                        script_url = None
+                        if script_id not in self.script_ids:
+                            if 'stackTrace' in params and 'callFrames' in params['stackTrace']:
+                                for frame in params['stackTrace']['callFrames']:
+                                    if 'url' in frame and frame['url']:
+                                        if script_url is None:
+                                            script_url = frame['url']
+                                        if 'scriptId' in frame and frame['scriptId'] and frame['scriptId'] not in self.script_ids:
+                                            self.script_ids[frame['scriptId']
+                                                            ] = script_url
+                            if script_url is None and 'url' in params and params['url']:
+                                script_url = params['url']
+                            if script_url is not None:
+                                self.script_ids[script_id] = script_url
+                    # Handle the events without timestamps (which will be sorted to the end)
+                    if method == 'Page.frameNavigated' and 'frame' in params and \
+                            'id' in params['frame'] and 'parentId' not in params['frame']:
+                        page_data['main_frame'] = params['frame']['id']
+                    if method == 'Network.requestServedFromCache' and 'requestId' in params and \
+                            request_id is not None and request_id in raw_requests:
+                        raw_requests[request_id]['fromNet'] = False
+                        raw_requests[request_id]['fromCache'] = True
+                    # Adjust all of the timestamps to be relative to the start of navigation
+                    # and in milliseconds
+                    if first_timestamp is None and 'timestamp' in params and \
+                            method.startswith('Network.requestWillBeSent'):
+                        first_timestamp = params['timestamp']
+                    if first_timestamp is not None and 'timestamp' in params:
+                        if params['timestamp'] >= first_timestamp:
+                            params['timestamp'] -= first_timestamp
+                            params['timestamp'] *= 1000.0
+                        else:
+                            continue
+                    if method == 'Page.loadEventFired' and 'timestamp' in params and \
+                            ('onload' not in page_data or
+                             params['timestamp'] > page_data['onload']):
+                        page_data['onload'] = params['timestamp']
+                    # events without a need for timestamps
+                    if request_id is not None and method.find('ExtraInfo') > 0:
+                        if request_id not in extra_headers:
+                            extra_headers[request_id] = {}
+                        headers_entry = extra_headers[request_id]
+                        if method == "Network.requestWillBeSentExtraInfo":
+                            if 'headers' in params:
+                                headers_entry['request'] = params['headers']
+                        if method == 'Network.responseReceivedExtraInfo':
+                            if 'headers' in params:
+                                headers_entry['response'] = params['headers']
+                            if 'headersText' in params:
+                                headers_entry['responseText'] = params['headersText']
+                    # Events with timestamps
+                    if 'timestamp' in params and request_id is not None:
+                        timestamp = params['timestamp']
+                        if method == 'Network.requestWillBeSent' and 'request' in params and \
+                                'url' in params['request'] and \
+                                params['request']['url'][:4] == 'http':
+                            request = params['request']
+                            request['raw_id'] = original_id
+                            request['startTime'] = timestamp
+                            if 'frameId' in params:
+                                request['frame_id'] = params['frameId']
+                            elif 'main_frame' in page_data:
+                                request['frame_id'] = page_data['main_frame']
+                            if 'initiator' in params:
+                                request['initiator'] = params['initiator']
+                            if 'documentURL' in params:
+                                request['documentURL'] = params['documentURL']
+                            # Redirects re-use the same ID so we need to fake a new request
+                            if request_id in raw_requests:
+                                if 'redirectResponse' in params:
+                                    if 'endTime' not in raw_requests[request_id] or \
+                                            timestamp > raw_requests[request_id]['endTime']:
+                                        raw_requests[request_id]['endTime'] = timestamp
+                                    if 'firstByteTime' not in raw_requests[request_id]:
+                                        raw_requests[request_id]['firstByteTime'] = timestamp
+                                    # iOS incorrectly sets the fromNet flag to false for resources
+                                    # from cache but it doesn't have any send headers for those
+                                    # requests so use that as an indicator.
+                                    raw_requests[request_id]['fromNet'] = False
+                                    if 'fromDiskCache' in params['redirectResponse'] and \
+                                            not params['redirectResponse']['fromDiskCache'] and \
+                                            'headers' in raw_requests[request_id] and \
+                                            len(raw_requests[request_id]['headers']):
+                                        raw_requests[request_id]['fromNet'] = True
+                                    raw_requests[request_id]['response'] = \
+                                        params['redirectResponse']
+                                count = 0
+                                if original_id in id_map:
+                                    count = id_map[original_id]
+                                id_map[original_id] = count + 1
+                                new_id = original_id + '-' + \
+                                    str(id_map[original_id])
+                                request_id = new_id
+                            request['id'] = request_id
+                            raw_requests[request_id] = dict(request)
+                        elif request_id in raw_requests:
+                            request = raw_requests[request_id]
+                            if 'endTime' not in request or timestamp > request['endTime']:
+                                request['endTime'] = timestamp
+                            if method == 'Network.dataReceived':
+                                if 'firstByteTime' not in request:
+                                    request['firstByteTime'] = timestamp
+                                if 'bytesInData' not in request:
+                                    request['bytesInData'] = 0
+                                if 'dataLength' in params:
+                                    request['bytesInData'] += params['dataLength']
+                                if 'bytesInEncoded' not in request:
+                                    request['bytesInEncoded'] = 0
+                                if 'encodedDataLength' in params and params['encodedDataLength'] > 0:
+                                    if 'bytesFinished' not in request:
+                                        request['bytesInEncoded'] += params['encodedDataLength']
+                                        if 'chunks' not in request:
+                                            request['chunks'] = []
+                                        request['chunks'].append(
+                                            {'ts': timestamp, 'bytes': params['encodedDataLength']})
+                                elif 'dataLength' in params and params['dataLength'] > 0:
+                                    if 'chunks' not in request:
+                                        request['chunks'] = []
+                                    request['chunks'].append(
+                                        {'ts': timestamp, 'bytes': params['dataLength']})
+                            if method == 'Network.responseReceived' and 'response' in params:
+                                if 'type' in params:
+                                    request['request_type'] = params['type']
+                                if not has_request_headers and 'requestHeaders' in params['response']:
+                                    has_request_headers = True
+                                if 'firstByteTime' not in request:
+                                    request['firstByteTime'] = timestamp
+                                # the timing data for cached resources is completely bogus
+                                if 'fromCache' in request and 'timing' in params['response']:
+                                    del params['response']['timing']
+                                # iOS incorrectly sets the fromNet flag to false for resources
+                                # from cache but it doesn't have any send headers for those
+                                # requests so use that as an indicator.
+                                request['fromNet'] = False
+                                if 'fromDiskCache' in params['response'] and \
+                                        not params['response']['fromDiskCache'] and \
+                                        'headers' in request and len(request['headers']):
+                                    request['fromNet'] = True
+                                if 'source' in params['response'] and params['response']['source'] in ['network', 'unknown']:
+                                    request['fromNet'] = True
+                                # Chrome reports some phantom duplicate requests
+                                '''
+                                if has_request_headers and \
+                                        'requestHeaders' not in params['response']:
+                                    url = request['url']
+                                    if url not in self.request_ids:
+                                        self.request_ids[url] = []
+                                    self.request_ids[url].append(request_id)
+                                    request['fromNet'] = False
+                                '''
+                                request['response'] = params['response']
+                            if method == 'Network.loadingFinished':
+                                if 'metrics' in params:
+                                    request['metrics'] = params['metrics']
+                                    if 'requestHeaders' in params['metrics']:
+                                        if 'response' not in request:
+                                            request['response'] = {}
+                                        request['response']['requestHeaders'] = params['metrics']['requestHeaders']
+                                        has_request_headers = True
+                                if 'firstByteTime' not in request:
+                                    request['firstByteTime'] = timestamp
+                                if 'encodedDataLength' in params:
+                                    request['bytesInEncoded'] = params['encodedDataLength']
+                                    request['bytesFinished'] = True
+                            if method == 'Network.loadingFailed' and 'response' not in request and \
+                                    ('fromCache' not in request or not request['fromCache']):
+                                if 'blockedReason' not in params and \
+                                        ('canceled' not in params or not params['canceled']):
+                                    # Special case ERR_CONNECTION_REFUSED.
+                                    # Request blocking is done by mapping domains to localhost
+                                    # which can cause ERR_CONNECTION_REFUSED errors.
+                                    # Real failures will still be in the netlog.
+                                    if 'errorText' in params and \
+                                            params['errorText'].find('ERR_CONNECTION_REFUSED'):
+                                        request['fromNet'] = False
+                                    else:
+                                        request['fromNet'] = True
+                                        request['errorCode'] = 12999
+                                        if 'firstByteTime' not in request:
+                                            request['firstByteTime'] = timestamp
+                                        if 'errorText' in params:
+                                            request['error'] = params['errorText']
+                                        if 'error' in params:
+                                            request['errorCode'] = params['error']
+                                else:
+                                    request['fromNet'] = False
+                    if method == 'Page.domContentEventFired' and 'timestamp' in params and \
+                            'domContentLoadedEventStart' not in page_data:
+                        page_data['domContentLoadedEventStart'] = params['timestamp']
+                        page_data['domContentLoadedEventEnd'] = params['timestamp']
+        # add the extra headers to the events
+        logs.write("NEW Netrequest Finish processing raw_events")
+
+        net_requests_append = net_requests.append
+        for request_id in raw_requests:
+            if request_id not in extra_headers:
+                request = raw_requests[request_id]
+                # Still check for Timing Calc
+                if 'fromCache' not in request and 'response' in request and 'timing' in request['response'] and 'startTime' in request:
+                    min_time = min(filter(
+                        lambda x: x >= 0, request['response']['timing'].values())) + request['startTime']
+
+                    if min_time is not None and min_time > request['startTime']:
+                        # TODO Not Sure about this
+                        request['startTime'] = min_time
+                    if 'startTime' not in page_data or request['startTime'] < page_data['startTime']:
+                        page_data['startTime'] = request['startTime']
+                if 'endTime' in request:
+                    if request['endTime'] > page_data['endTime']:
+                        page_data['endTime'] = request['endTime']
+                else:
+                    request['fromNet'], request['errorCode'] = True, 12999
+                    net_requests_append(dict(request))
+                    continue
+                if 'fromNet' in request and request['fromNet']:
+                    net_requests_append(dict(request))
+                continue
+            header, request = extra_headers[request_id], raw_requests[request_id]
+
+            if 'request' in header:
+                request['headers'] = header['request'] if 'headers' not in request else {
+                    **request['headers'], **header['request']}
+            if 'response' in request:
+                if 'response' in header:
+                    request['response']['headers'] = header['response'] if 'headers' not in request['response'] else {
+                        **request['headers'], **header['response']}
+                if 'responseText' in header and 'headersText' not in request['response']:
+                    request['response']['headersText'] = header['responseText']
+
+                # Timing Calc
+                if 'fromCache' not in request and 'timing' in request['response'] and 'startTime' in request:
+                    min_time = min(filter(
+                        lambda x: x >= 0, request['response']['timing'].values())) + request['startTime']
+
+                    if min_time is not None and min_time > request['startTime']:
+                        # TODO Not Sure about this
+                        request['startTime'] = min_time
+                    if 'startTime' not in page_data or request['startTime'] < page_data['startTime']:
+                        page_data['startTime'] = request['startTime']
+            if 'endTime' in request:
+                if request['endTime'] > page_data['endTime']:
+                    page_data['endTime'] = request['endTime']
+            else:
+                request['fromNet'], request['errorCode'] = True, 12999
+                net_requests_append(dict(request))
+                continue
+            if 'fromNet' in request and request['fromNet']:
+                net_requests_append(dict(request))
+
+        logs.write("NEW Netrequest Finish processing extra_headers")
+
+        logs.write("NEW Netrequest Finish processing raw_requests")
+        # sort the requests by start time
+        if len(net_requests):
+            net_requests.sort(
+                key=lambda x: x['startTime'] if 'startTime' in x else 0)
+        return net_requests, page_data
 
     def process_requests(self, raw_requests, raw_page_data):
         """Process the raw requests into high-level requests"""
+        logs.write("Processing Raw Requests into high-level Requests")
         self.result = {'pageData': {}, 'requests': []}
         if 'startTime' not in raw_page_data:
             raw_page_data['startTime'] = 0
@@ -805,6 +1113,7 @@ class DevToolsParser(object):
 
     def get_response_header(self, request, header):
         """Pull a specific header value from the response headers"""
+        # logs.write("Pulling a specific header value from the response header") # TODO FIX THIS FUNCTION
         value = ''
         if 'response' in request and 'headers' in request['response']:
             headers = request['response']['headers']
@@ -819,6 +1128,7 @@ class DevToolsParser(object):
 
     def merge_devtools_headers(self, initial, extra):
         """Merge the headers from the initial devtools request and the extra info (preferring values in the extra info events)"""
+        # logs.write("Merging headers from the initial devtools request")# TODO FIX THIS FUNCTION
         headers = dict(extra)
         for key in initial:
             dupe = False
@@ -832,6 +1142,7 @@ class DevToolsParser(object):
 
     def mergeHeaders(self, dest, headers):
         """Merge the headers list into the dest array of existing headers"""
+        # logs.write("Merging the headers list into the dest array of existing headers") # TODO FIX THIS FUNCTION
         for header in headers:
             key_len = header.find(':', 1)
             if key_len >= 0:
@@ -849,6 +1160,7 @@ class DevToolsParser(object):
 
     def process_netlog_requests(self):
         """Merge the data from the netlog requests file"""
+        logs.write("Proccesing netlog requests")
         page_data = self.result['pageData']
         requests = self.result['requests']
         mapping = {'created': 'created',
@@ -884,6 +1196,7 @@ class DevToolsParser(object):
                 f_in = open(self.netlog_requests_file, 'r')
             netlog = json.load(f_in)
             f_in.close()
+            logs.write("Finished Loading ujson from netlog requests")
             keep_requests = []
             for request in requests:
                 if 'request_id' not in request and 'id' in request:
@@ -1116,6 +1429,7 @@ class DevToolsParser(object):
 
     def process_timeline_requests(self):
         """Process the timeline request data for render-blocking indicators"""
+        logs.write("Proccesing timeline requests")
         if self.timeline_requests_file is not None and os.path.isfile(self.timeline_requests_file):
             _, ext = os.path.splitext(self.timeline_requests_file)
             if ext.lower() == '.gz':
@@ -1124,6 +1438,7 @@ class DevToolsParser(object):
                 f_in = open(self.timeline_requests_file, 'r')
             timeline_requests = json.load(f_in)
             f_in.close()
+            logs.write("Finished Loading ujson from timeline requests")
             requests = self.result['requests']
             for request in requests:
                 if 'raw_id' in request and request['raw_id'] in timeline_requests and 'renderBlocking' in timeline_requests[request['raw_id']]:
@@ -1135,6 +1450,7 @@ class DevToolsParser(object):
 
     def process_page_data(self):
         """Walk through the sorted requests and generate the page-level stats"""
+        logs.write("Proccesing page_data")
         page_data = self.result['pageData']
         requests = self.result['requests']
         page_data['bytesOut'] = 0
@@ -1211,6 +1527,7 @@ class DevToolsParser(object):
 
     def process_user_timing(self):
         """Walk through the sorted requests and generate the page-level stats"""
+        logs.write("Processing user timings")
         page_data = self.result['pageData']
         if self.user_timing_file is not None and os.path.isfile(self.user_timing_file):
             _, ext = os.path.splitext(self.user_timing_file)
@@ -1220,6 +1537,7 @@ class DevToolsParser(object):
                 f_in = open(self.user_timing_file, 'r')
             user_timing_events = json.load(f_in)
             f_in.close()
+            logs.write("Finished Loading ujson from user timings")
             if user_timing_events:
                 user_timing_events.sort(key=lambda x: x['ts'] if 'ts' in x else 0)
             main_frames = []
@@ -1272,6 +1590,7 @@ class DevToolsParser(object):
 
     def process_optimization_results(self):
         """Merge the data from the optimization checks file"""
+        logs.write("Processing optimization results")
         page_data = self.result['pageData']
         requests = self.result['requests']
         if self.optimization is not None and os.path.isfile(self.optimization):
@@ -1282,6 +1601,7 @@ class DevToolsParser(object):
                 f_in = open(self.optimization, 'r')
             optimization_results = json.load(f_in)
             f_in.close()
+            logs.write("Finished Loading ujson from optimization results")
             page_data['score_cache'] = -1
             page_data['score_cdn'] = -1
             page_data['score_gzip'] = -1
@@ -1385,6 +1705,7 @@ class DevToolsParser(object):
 
     def process_code_coverage(self):
         """Merge the data from the code coverage file"""
+        logs.write("Processing Code Coverage")
         try:
             page_data = self.result['pageData']
             requests = self.result['requests']
@@ -1396,6 +1717,7 @@ class DevToolsParser(object):
                     f_in = open(self.coverage, 'r')
                 coverage = json.load(f_in)
                 f_in.close()
+                logs.write("Finished Loading ujson from Code Coverage")
                 if coverage:
                     categories = ['JS', 'CSS']
                     page_coverage = {}
@@ -1431,6 +1753,7 @@ class DevToolsParser(object):
 
     def process_cpu_times(self):
         """Calculate the main thread CPU times from the time slices file"""
+        logs.write("Processing Cpu Times")
         try:
             import math
             page_data = self.result['pageData']
@@ -1445,6 +1768,7 @@ class DevToolsParser(object):
                     f_in = open(self.cpu_times, 'r')
                 cpu = json.load(f_in)
                 f_in.close()
+                logs.write("Finished loading ujson from Cpu Times of Function")
                 if cpu and 'main_thread' in cpu and 'slices' in cpu and \
                         cpu['main_thread'] in cpu['slices'] and 'slice_usecs' in cpu:
                     busy = 0
@@ -1479,8 +1803,63 @@ class DevToolsParser(object):
         except Exception:
             logging.exception('Error processing CPU times')
 
+    def process_cpu_times_new(self):
+        """NEW Calculate the main thread CPU times from the time slices file"""
+        try:
+            page_data = self.result['pageData']
+            end, doc = page_data.get(
+                'fullyLoaded', 0), page_data.get('docTime', 0)
+
+            if not (end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times)):
+                return
+
+            logs.write("Processing Cpu Times of New Function")
+            # Loading CPU FILE
+            _, ext = os.path.splitext(self.cpu_times)
+            if ext.lower() == '.gz':
+                f_in = gzip.open(self.cpu_times, GZIP_READ_TEXT)
+            else:
+                f_in = open(self.cpu_times, 'r')
+
+            cpu = json.load(f_in)
+            f_in.close()
+            logs.write("Finished loading ujson from Cpu Times of New Function")
+
+            if not (cpu and 'main_thread' in cpu and 'slices' in cpu and cpu['main_thread'] in cpu['slices'] and 'slice_usecs' in cpu):
+                return
+
+            busy_doc, busy, page_data['cpuTimesDoc'], page_data['cpuTimes'], usecs = 0, 0, {
+            }, {}, cpu['slice_usecs']
+            all_slices = cpu['slices'][cpu['main_thread']]
+
+            for name in all_slices:  # TODO Map Here would be great
+                slices = all_slices[name]
+                last_slice = min(int(ceil((end * 1000) / usecs)), len(slices))
+                page_data['cpuTimesDoc'][name] = sum(slices[:doc-1]) / 1000.0
+                page_data['cpuTimes'][name] = (
+                    sum(slices[doc:last_slice]) / 1000.0) + page_data['cpuTimesDoc'][name]
+
+                busy_doc += page_data['cpuTimesDoc'][name]
+                busy += page_data['cpuTimes'][name]
+
+            page_data['cpuTimes']['Idle'] = max(end - busy, 0)
+            page_data['cpuTimesDoc']['Idle'] = max(doc - busy_doc, 0)
+
+            page_data['cpuTimes'] = {
+                key: int(value + 0.5) for (key, value) in page_data['cpuTimes'].items()}
+            page_data['cpuTimesDoc'] = {key: int(value + 0.5) for (
+                key, value) in page_data['cpuTimesDoc'].items()}
+
+            # Unnecessary, Data is in Two Locations now, Is this needed?
+            page_data.update({"cpu.{0}".format(key): value for (
+                key, value) in page_data['cpuTimes'].items()})
+            return
+        except Exception:
+            logging.exception('Error processing CPU times')
+
     def process_v8_stats(self):
         """Add the v8 stats to the page data"""
+        logs.write("Processing v8 Stats")
         try:
             page_data = self.result['pageData']
             if self.v8_stats is not None and os.path.isfile(self.v8_stats):

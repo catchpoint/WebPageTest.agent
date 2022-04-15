@@ -13,6 +13,7 @@ import shutil
 import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
+from internal.wptutil import LogSingleton as logs
 
 CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-background-networking',
@@ -72,6 +73,7 @@ ENABLE_BLINK_FEATURES = [
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
+        logs.write("INIT browser")
         self.options = options
         DesktopBrowser.__init__(self, path, options, job)
         use_devtools_video = True if self.job['capture_display'] is None else False
@@ -87,6 +89,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def launch(self, job, task):
         """Launch the browser"""
+        logs.write("Launching browser")
         self.install_policy()
         args = list(CHROME_COMMAND_LINE_OPTIONS)
         features = list(ENABLE_CHROME_FEATURES)
@@ -182,6 +185,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
 
     def run_task(self, task):
         """Run an individual test"""
+        logs.write("Running individual test")
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 

@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+from internal.wptutil import LogSingleton as logs
 
 VIDEO_SIZE = 400
 
@@ -18,14 +19,16 @@ VIDEO_SIZE = 400
 class VideoProcessing(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, options, job, task):
+        logs.write("INIT Video Processing")
         self.video_path = os.path.join(task['dir'], task['video_subdirectory'])
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.options = options
         self.job = job
         self.task = task
 
-    def process(self):
+    def process(self): #TODO CHECK THIS FUNCTION
         """Post Process the video"""
+        logs.write("***VIDEO Post Processing***")
         if os.path.isdir(self.video_path):
             self.cap_frame_count(self.video_path, 50)
             # Crop the video frames
@@ -40,6 +43,7 @@ class VideoProcessing(object):
                     logging.debug(command)
                     subprocess.call(command, shell=True)
             # Make the initial screen shot the same size as the video
+            logs.write("***VIDEO Resizing initial video frame***")
             logging.debug("Resizing initial video frame")
             from PIL import Image
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg')))
@@ -59,6 +63,7 @@ class VideoProcessing(object):
             crop = None
             if width > 25 and height > 25:
                 crop = '{0:d}x{1:d}+0+0'.format(width - 25, height - 25)
+            logs.write("***VIDEO Removing duplicate video frames***")
             logging.debug("Removing duplicate video frames")
             files = sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg')))
             count = len(files)
@@ -74,6 +79,7 @@ class VideoProcessing(object):
                     else:
                         baseline = files[index]
             # Compress to the target quality and size
+            logs.write("***VIDEO Compress to the target quality and size***")
             for path in sorted(glob.glob(os.path.join(self.video_path, 'ms_*.jpg'))):
                 thumb_size = VIDEO_SIZE
                 if 'thumbsize' in self.job:
@@ -90,6 +96,7 @@ class VideoProcessing(object):
                 subprocess.call(command, shell=True)
             # Run visualmetrics against them
             logging.debug("Processing video frames")
+            logs.write("***VIDEO Processing frames***")
             if self.task['current_step'] == 1:
                 filename = '{0:d}.{1:d}.histograms.json.gz'.format(self.task['run'],
                                                                    self.task['cached'])

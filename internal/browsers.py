@@ -6,11 +6,14 @@
 """Main entry point for controlling browsers"""
 import logging
 import os
+from internal.wptutil import LogSingleton as logs
+
 
 
 class Browsers(object):
     """Controller for handling several browsers"""
     def __init__(self, options, browsers, adb, ios):
+        logs.write("INIT Browsers")
         try:
             import ujson as json
         except BaseException:
@@ -51,6 +54,7 @@ class Browsers(object):
 
     def get_browser(self, name, job):
         """Return an instance of the browser logic"""
+        logs.write("Returning an instance of browser logic")
         browser = None
         name = name.lower()
         if name.startswith('ie '):

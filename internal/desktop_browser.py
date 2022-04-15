@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from internal.wptutil import LogSingleton as logs
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     GZIP_TEXT = 'wt'
@@ -48,6 +49,7 @@ SET_ORANGE = "(function() {" \
 class DesktopBrowser(BaseBrowser):
     """Desktop Browser base"""
     def __init__(self, path, options, job):
+        logs.write("INIT Desktop Browser")
         BaseBrowser.__init__(self)
         self.path = path
         self.proc = None
@@ -90,6 +92,7 @@ class DesktopBrowser(BaseBrowser):
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
+        logs.write("Preparing profile/os for the browser")
         self.stopping = False
         self.task = task
         self.profile_start('desktop.prepare')
@@ -359,6 +362,8 @@ class DesktopBrowser(BaseBrowser):
 
     def wait_for_idle(self, wait_time = 30):
         """Wait for no more than 50% CPU utilization for 400ms"""
+        if self.options.noidle == True:
+            return
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
@@ -760,7 +765,7 @@ class DesktopBrowser(BaseBrowser):
             self.video_processing.communicate()
             self.video_processing = None
             logging.debug('Video processing complete')
-            if not self.job['keepvideo']:
+            if not self.job['keepvideo'] and self.options.debug == False:
                 try:
                     os.remove(task['video_file'])
                 except Exception:

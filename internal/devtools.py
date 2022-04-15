@@ -33,11 +33,12 @@ try:
 except BaseException:
     import json
 from ws4py.client.threadedclient import WebSocketClient
-
+from internal.wptutil import LogSingleton as logs
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
     def __init__(self, options, job, task, use_devtools_video, is_webkit, is_ios):
+        logs.write("INIT Devtools")
         self.url = "http://localhost:{0:d}/json".format(task['port'])
         self.must_exit = False
         self.websocket = None
@@ -599,6 +600,7 @@ class DevTools(object):
     def start_collecting_trace(self):
         """Kick off the trace processing asynchronously"""
         if self.trace_enabled and not self.must_exit:
+            logs.write("***Collecting Trace asynchronously***")
             keep_timeline = True
             if 'discard_timeline' in self.job and self.job['discard_timeline']:
                 keep_timeline = False
@@ -949,6 +951,8 @@ class DevTools(object):
 
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
+        logs.write("***Waiting for Page to Load***")
+
         self.profile_start('wait_for_page_load')
         if self.websocket:
             start_time = monotonic()
@@ -1014,6 +1018,7 @@ class DevTools(object):
                         done = True
                     elif self.task['error'] is not None:
                         done = True
+        logs.write("***END OF Waiting for Page to Load***")
         self.profile_end('wait_for_page_load')
     
     def grab_screenshot(self, path, png=True, resize=0):

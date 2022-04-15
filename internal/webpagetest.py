@@ -4,6 +4,7 @@
 # Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
 # found in the LICENSE.md file.
 """Main entry point for interfacing with WebPageTest server"""
+import psutil
 import base64
 from datetime import datetime
 import glob
@@ -23,7 +24,9 @@ import sys
 import threading
 import time
 import zipfile
-import psutil
+import requests
+from internal.wptutil import LogSingleton as logs
+
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
@@ -55,7 +58,7 @@ class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
     def __init__(self, options, workdir):
-        import requests
+        logs.write("INIT webpagetest")
         self.fetch_queue = multiprocessing.JoinableQueue()
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
@@ -249,7 +252,6 @@ class WebPageTest(object):
         """Benchmark the CPU for mobile emulation"""
         self.cpu_scale_multiplier = 1.0
         if not self.options.android and not self.options.iOS:
-            import hashlib
             logging.debug('Starting CPU benchmark')
             hash_val = hashlib.sha256()
             with open(__file__, 'rb') as f_in:
@@ -271,7 +273,6 @@ class WebPageTest(object):
 
     def load_from_ec2(self):
         """Load config settings from EC2 user data"""
-        import requests
         session = requests.Session()
         proxies = {"http": None, "https": None}
         # The Windows AMI's use static routes which are not copied across regions.
@@ -329,7 +330,6 @@ class WebPageTest(object):
 
     def load_from_gce(self):
         """Load config settings from GCE user data"""
-        import requests
         session = requests.Session()
         proxies = {"http": None, "https": None}
         ok = False
@@ -384,8 +384,7 @@ class WebPageTest(object):
 
     def block_metadata(self):
         """Block access to the metadata service if we are on EC2 or Azure"""
-        if not self.metadata_blocked:
-            import requests
+        if not self.metadata_blocked and self.options.server != None:
             needs_block = False
             session = requests.Session()
             proxies = {"http": None, "https": None}
@@ -509,6 +508,7 @@ class WebPageTest(object):
 
     def process_job_json(self, test_json):
         """Process the JSON of a test into a job file"""
+        logs.write("Processing Job")
         job = test_json
         if job is not None:
             try:
@@ -607,6 +607,7 @@ class WebPageTest(object):
                     with open(job_path, 'wt') as f_out:
                         json.dump(job, f_out)
                     self.needs_zip.append({'path': job_path, 'name': 'job.json'})
+                    job['testinfo'] = {}
                     job['testinfo']['started'] = job['started']
                 # Add the non-serializable members
                 if self.health_check_server is not None:
@@ -627,7 +628,6 @@ class WebPageTest(object):
         """Get a job from the server"""
         if self.is_rebooting or self.is_dead:
             return
-        import requests
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
         if self.cpu_scale_multiplier is None:
@@ -1240,7 +1240,6 @@ class WebPageTest(object):
 
     def body_fetch_thread(self):
         """background thread to fetch bodies"""
-        import requests
         session = requests.session()
         proxies = {"http": None, "https": None}
         try:
@@ -1455,7 +1454,7 @@ class WebPageTest(object):
 
             # Zip the files
             zip_path = None
-            if len(self.needs_zip):
+            if len(self.needs_zip) and self.options.debug == False:
                 zip_path = os.path.join(self.workdir, "result.zip")
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
                     for zipitem in self.needs_zip:
@@ -1529,7 +1528,7 @@ class WebPageTest(object):
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
-        if os.path.isdir(self.workdir):
+        if os.path.isdir(self.workdir) and self.options.debug == False:
             try:
                 shutil.rmtree(self.workdir)
             except Exception:
@@ -1653,7 +1652,7 @@ class WebPageTest(object):
                     if os.path.isfile(filepath):
                         # Delete any video files that may have squeaked by
                         if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
-                                filename.find('rendered_video') == -1:
+                                filename.find('rendered_video') == -1 and self.options.debug == False:
                             try:
                                 os.remove(filepath)
                             except Exception:
@@ -1710,7 +1709,7 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
-        if self.is_dead:
+        if self.is_dead or self.options.server == None:
             return False
         ret = True
         # pass the data fields as query params and any files as post data

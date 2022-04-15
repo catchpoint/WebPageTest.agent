@@ -28,10 +28,12 @@ try:
 except BaseException:
     import json
 
+from internal.wptutil import LogSingleton as logs
 
 class OptimizationChecks(object):
     """Threaded optimization checks"""
     def __init__(self, job, task, requests):
+        logs.write("INIT OptimizationChecks")
         self.job = job
         self.task = task
         self.running_checks = False
@@ -407,6 +409,7 @@ class OptimizationChecks(object):
         logging.debug('Starting optimization checks...')
         optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
         if self.requests is not None and not optimization_checks_disabled:
+            logs.write("Running optimization checks")
             self.running_checks = True
             # Run the slow checks in background threads
             self.cdn_thread = threading.Thread(target=self.check_cdn)
@@ -430,6 +433,7 @@ class OptimizationChecks(object):
 
     def join(self):
         """Wait for the optimization checks to complete and record the results"""
+        logs.write("Wait for the optimization checks")
         logging.debug('Waiting for optimization checks to complete')
         if self.running_checks:
             logging.debug('Waiting for progressive JPEG check to complete')

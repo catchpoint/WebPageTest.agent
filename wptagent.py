@@ -17,6 +17,8 @@ import subprocess
 import sys
 import time
 import traceback
+from internal.wptutil import LogSingleton as logs
+from internal.wptutil import util_dbg_options
 if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
@@ -29,6 +31,7 @@ except BaseException:
 class WPTAgent(object):
     """Main agent workflow"""
     def __init__(self, options, browsers):
+        logs.write("INIT WPTAgent")
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
         from internal.traffic_shaping import TrafficShaper
@@ -81,8 +84,10 @@ class WPTAgent(object):
                                 self.image_magick['mogrify'] = mogrify
                                 break
 
+        logs.write("INIT END WPTAgent")
     def run_testing(self):
         """Main testing flow"""
+        logs.write("Main testing flow")
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
@@ -108,7 +113,7 @@ class WPTAgent(object):
                 logging.error("Unable to start the health check server")
                 return
             self.wpt.health_check_server = self.health_check_server
-
+        logs.write("***Main Loop***")
         while not self.must_exit and not done:
             try:
                 self.alive()
@@ -234,6 +239,7 @@ class WPTAgent(object):
 
     def run_single_test(self):
         """Run a single test run"""
+        logs.write("Running Single Test")
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
@@ -267,7 +273,10 @@ class WPTAgent(object):
                 traceback.print_exc(file=sys.stdout)
             self.browser.stop(self.job, self.task)
             # Delete the browser profile if needed
-            if self.task['cached'] or self.job['fvonly']:
+            if self.options.debug == True:
+                from internal.wptutil import util_dbg_check_results
+                util_dbg_check_results(self.persistent_work_dir)
+            elif self.task['cached'] or self.job['fvonly']:
                 self.browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
@@ -314,11 +323,13 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
+        if self.options.noidle == True:  # Prevents idling
+            return
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
             from monotonic import monotonic
-        import psutil
+        import psutil  # Shouldn't import every time!!
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
         if cpu_count > 0:
@@ -379,6 +390,7 @@ class WPTAgent(object):
 
     def startup(self, detected_browsers):
         """Validate that all of the external dependencies are installed"""
+        logs.write("STARTUP")
         ret = True
 
         # default /tmp/wptagent as an alive file on Linux
@@ -1116,6 +1128,7 @@ def main():
     parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
     parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
 
+    parser.add_argument('--debug', action='store_true', default=False, help="Debug mode, enables logging, profiling, and data from testruns are kept")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
@@ -1143,6 +1156,9 @@ def main():
     if (sys.version_info >= (3, 0)):
         options.webdriver = True
 
+    # Debug State for Ubuntu Server
+    if options.debug:
+        util_dbg_options(options)
     # Set up logging
     log_level = logging.CRITICAL
     if options.verbose == 1:
@@ -1185,11 +1201,14 @@ def main():
 
     agent = WPTAgent(options, browsers)
     if agent.startup(browsers):
+        logs.write("Starting Agent")
         # Create a work directory relative to where we are running
         logging.critical("Running agent, hit Ctrl+C to exit")
         agent.run_testing()
         logging.critical("Done")
+        logs.write("Finished Agent")
     agent = None
+    logs.done()
 
 
 if __name__ == '__main__':
