@@ -29,22 +29,22 @@ def util_dbg_check_results(dir):
             break
 
     currentFiles = os.listdir(dir)
-    expectedFiles = {"1_progress.csv.gz": 0,
-                     "1_trace.json.gz": 1000,
-                     "1_user_timing.json.gz": 1000,
-                     "1_timeline_cpu.json.gz": 1000,
-                     "1_script_timing.json.gz": 100,
-                     "1_interactive.json.gz": 100,
-                     "1_long_tasks.json.gz": 1,
-                     "1_feature_usage.json.gz": 1,
-                     "1_v8stats.json.gz": 1,
-                     "1_screen.jpg": 20,
-                     "1_console_log.json.gz": 50,
-                     "1_timed_events.json.gz": 1,
-                     "1.0.histograms.json.gz": 1,
-                     "1_visual_progress.json.gz": 10000,
-                     "1_devtools_requests.json.gz": 1000,
-                     "1_page_data.json.gz": 300}
+    expectedFiles = ["1_progress.csv.gz",
+                     "1_trace.json.gz",
+                     "1_user_timing.json.gz",
+                     "1_timeline_cpu.json.gz",
+                     "1_script_timing.json.gz",
+                     "1_interactive.json.gz",
+                     "1_long_tasks.json.gz",
+                     "1_feature_usage.json.gz",
+                     "1_v8stats.json.gz",
+                     "1_screen.jpg",
+                     "1_console_log.json.gz",
+                     "1_timed_events.json.gz",
+                     "1.0.histograms.json.gz",
+                     "1_visual_progress.json.gz",
+                     "1_devtools_requests.json.gz",
+                     "1_page_data.json.gz"]
 
     for file, v in expectedFiles.items():
         if file not in currentFiles:
@@ -53,11 +53,12 @@ def util_dbg_check_results(dir):
 
 
 def util_dbg_options(options):
+    """Default args for single run test"""
     LogSingleton(log=True, profile=True)
     options.verbose = 1
 
-    if platform.system() == "Linux":
-        logging.critical("Setting default arguments")
+    if platform.system() == "Linux" and options.server == None:
+        logging.critical("Setting default arguments for headless server on Linux")
         options.dockerized = True
         options.xvfb = True
         options.noidle = True
@@ -162,7 +163,7 @@ class LogSingleton:
 
     @staticmethod
     def prof(_cn: str = "", _des: str = "", **data):
-        """Profiler for functions, Take _cn (CallerName for specific Function), _des(Description if you want), data which can be compared later or tested
+        """Profiler for functions, Takes _cn (CallerName for specific Function), _des(Description if you want), data which can be compared later or tested
         for similarity, This function should be called once before and once after with same _cn name.\n
         example: \n
         prof("randomFunctionName", randomData=randomData)\n
@@ -196,8 +197,6 @@ class LogSingleton:
                 if key in self.profileData[_cn]['data']['before']:
                     self.profileData[_cn]["Similar"][key] = self.profileData[_cn]['data'][
                         'before'][key] == self.profileData[_cn]['data']['after'][key]
-            #json.dump(self.profileData, self.f_out_profile)
-            #self.profileData = {}
             return
         else:
             print(f"log_profiler: Was called one to many times in {_cn}")
@@ -206,28 +205,32 @@ class LogSingleton:
     def comp(_cn: str = "", _cn1: str = "", _cn2: str = "", _data: list = []):
         """Compare looks at data you gave to the profiler, _cn is a name for this in the json, _cn1 is the first callername passed to the profil function.\n
         _cn2 is the second callername passed to the profil function\n 
-        data is the str = of data fields passed to profiler\n
-        logs.comp("CompareOfRandom","ProfiledFunctionName","ProfiledFunctionName2",["randomData",...etc])"""
+        data is the string name of the data fields passed to the profiler\n
+        logs.comp("CompareOfFunctions","ProfiledFunctionName","ProfiledFunctionName2",["randomData",...etc])"""
         if LogSingleton.__instance == None:
             return
         self = LogSingleton.__instance  # Set self
 
         self.profileData[_cn] = {}
-        for key in _data:
+        for key in _data: # Loop Through all the data
             if key not in self.profileData[_cn1]['data']['after'] and key not in self.profileData[_cn2]['data']['after']:
                 logging.critical("AFTER COMP WAS NOT FOUND")
                 return
-            self.profileData[_cn][key] = {
-                "Not_Found_Keys_From_C1": [], "Differnce": {}}
+
+            self.profileData[_cn][key] = {"Not_Found_Keys_From_C1": [], "Differnce": {}}
             cn1, cn2 = self.profileData[_cn1]['data']['after'][key], self.profileData[_cn2]['data']['after'][key]
-            if isinstance(cn1, dict) and isinstance(cn2, dict):
+            
+            if isinstance(cn1, dict) and isinstance(cn2, dict): # if instance is Dict then compare
                 for cnkey in cn1.keys():
                     if cnkey not in cn2:
-                        self.profileData[_cn][key]["Not_Found_Keys_From_C1"].append(
-                            cnkey)
+                        self.profileData[_cn][key]["Not_Found_Keys_From_C1"].append(cnkey)
                     elif cn1[cnkey] != cn2[cnkey]:
-                        self.profileData[_cn][key]["Differnce"][cnkey] = {
-                            _cn1: cn1[cnkey], _cn2: cn2[cnkey]}
+                        self.profileData[_cn][key]["Differnce"][cnkey] = {_cn1: cn1[cnkey], _cn2: cn2[cnkey]}
+            
+            #elif isinstance(cn1, list) and isinstance(cn2, list): # TODO Needs implementation
+
+            else: # Every instance that is not supported
+                logging.critical(f"Type ({type(cn1)}) Not Supported")
 
     def __del__(self):
         try:

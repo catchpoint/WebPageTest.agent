@@ -1127,7 +1127,7 @@ def main():
     parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
     parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
     parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
-
+    # Debug mode
     parser.add_argument('--debug', action='store_true', default=False, help="Debug mode, enables logging, profiling, and data from testruns are kept")
     options, _ = parser.parse_known_args()
 
@@ -1208,6 +1208,7 @@ def main():
         logging.critical("Done")
         logs.write("Finished Agent")
     agent = None
+
     logs.done()
 
 

@@ -99,9 +99,8 @@ class DevToolsParser(object):
                     for request in self.result['requests']:
                         if 'headers' in request:
                             del request['headers']
-            #logs.write("Make utf8")
-            #self.make_utf8(self.result) # Function is not needed
-            #logs.write("Make utf8 end")
+
+            self.make_utf8(self.result) # Function is not needed 
             self.write()
             logs.write("End Processing")
 
@@ -656,13 +655,11 @@ class DevToolsParser(object):
         for request_id in raw_requests:
             if request_id not in extra_headers:
                 request = raw_requests[request_id]
-                # Still check for Timing Calc
+                # *** Timing Calc *** TODO make this into a function to reuse code
                 if 'fromCache' not in request and 'response' in request and 'timing' in request['response'] and 'startTime' in request:
-                    min_time = min(filter(
-                        lambda x: x >= 0, request['response']['timing'].values())) + request['startTime']
+                    min_time = min(filter(lambda x: x >= 0, request['response']['timing'].values())) + request['startTime']
 
                     if min_time is not None and min_time > request['startTime']:
-                        # TODO Not Sure about this
                         request['startTime'] = min_time
                     if 'startTime' not in page_data or request['startTime'] < page_data['startTime']:
                         page_data['startTime'] = request['startTime']
@@ -675,27 +672,25 @@ class DevToolsParser(object):
                     continue
                 if 'fromNet' in request and request['fromNet']:
                     net_requests_append(dict(request))
+                # *** End Timing Calc ***
                 continue
             header, request = extra_headers[request_id], raw_requests[request_id]
 
             if 'request' in header:
-                request['headers'] = header['request'] if 'headers' not in request else {
-                    **request['headers'], **header['request']}
+                request['headers'] = header['request'] if 'headers' not in request else {**request['headers'], **header['request']}
             if 'response' in request:
                 if 'response' in header:
-                    request['response']['headers'] = header['response'] if 'headers' not in request['response'] else {
-                        **request['headers'], **header['response']}
+                    request['response']['headers'] = header['response'] if 'headers' not in request['response'] else {**request['headers'], **header['response']}
                 if 'responseText' in header and 'headersText' not in request['response']:
                     request['response']['headersText'] = header['responseText']
 
-                # Timing Calc
+            # *** Timing Calc ***
                 if 'fromCache' not in request and 'timing' in request['response'] and 'startTime' in request:
                     min_time = min(filter(
                         lambda x: x >= 0, request['response']['timing'].values())) + request['startTime']
 
                     if min_time is not None and min_time > request['startTime']:
-                        # TODO Not Sure about this
-                        request['startTime'] = min_time
+                        request['startTime'] = min_time # TODO investigate further
                     if 'startTime' not in page_data or request['startTime'] < page_data['startTime']:
                         page_data['startTime'] = request['startTime']
             if 'endTime' in request:
@@ -707,6 +702,7 @@ class DevToolsParser(object):
                 continue
             if 'fromNet' in request and request['fromNet']:
                 net_requests_append(dict(request))
+            # *** End Timing Calc ***
 
         logs.write("NEW Netrequest Finish processing extra_headers")
 
