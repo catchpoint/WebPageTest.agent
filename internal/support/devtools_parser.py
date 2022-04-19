@@ -12,6 +12,8 @@ import os
 import re
 import sys
 import time
+from numpy import sum
+from math import ceil
 HAS_FUTURE = False
 try:
     from builtins import str
@@ -82,7 +84,7 @@ class DevToolsParser(object):
             logging.debug("Adding code coverage results")
             self.process_code_coverage()
             logging.debug("Calculating cpu times")
-            self.process_cpu_times()
+            self.process_cpu_times_new()  # Replacement to self.process_cpu_times()
             logging.debug("Processing V8 stats")
             self.process_v8_stats()
             if self.noheaders:
@@ -1476,6 +1478,52 @@ class DevToolsParser(object):
                         entry = u'cpu.{0}'.format(name)
                         page_data[entry] = page_data['cpuTimes'][name]
                     pass
+        except Exception:
+            logging.exception('Error processing CPU times')
+
+    def process_cpu_times_new(self):
+        """NEW Calculate the main thread CPU times from the time slices file"""
+        try:
+            page_data = self.result['pageData']
+            end, doc = page_data.get(
+                'fullyLoaded', 0), page_data.get('docTime', 0)
+
+            if not (end > 0 and self.cpu_times is not None and os.path.isfile(self.cpu_times)):
+                return
+
+            # Loading CPU FILE timeline_cpu.json
+            _, ext = os.path.splitext(self.cpu_times)
+            if ext.lower() == '.gz':
+                f_in = gzip.open(self.cpu_times, GZIP_READ_TEXT)
+            else:
+                f_in = open(self.cpu_times, 'r')
+
+            cpu = json.load(f_in)
+            f_in.close()
+
+            if not (cpu and 'main_thread' in cpu and 'slices' in cpu and cpu['main_thread'] in cpu['slices'] and 'slice_usecs' in cpu):
+                return
+
+            busy_doc, busy, page_data['cpuTimesDoc'], page_data['cpuTimes'], usecs = 0, 0, {}, {}, cpu['slice_usecs']
+            all_slices = cpu['slices'][cpu['main_thread']]
+
+            for name in all_slices:  # TODO Map Here would be great
+                slices = all_slices[name]
+                last_slice = min(int(ceil((end * 1000) / usecs)), len(slices)) # Finds Last Slice
+                page_data['cpuTimesDoc'][name] = sum(slices[:doc-1]) / 1000.0 # Calc Document Time
+                page_data['cpuTimes'][name] = (sum(slices[doc:last_slice]) / 1000.0) + page_data['cpuTimesDoc'][name] # Calc Total Cpu time
+
+                busy_doc += page_data['cpuTimesDoc'][name] # Add Total for Total Doc Cpu Time
+                busy += page_data['cpuTimes'][name] # Add Total for Total Cpu Time
+
+            page_data['cpuTimes']['Idle'] = max(end - busy, 0)
+            page_data['cpuTimesDoc']['Idle'] = max(doc - busy_doc, 0)
+
+            page_data['cpuTimes'] = {key: int(value + 0.5) for (key, value) in page_data['cpuTimes'].items()} # Rounds and Coverts to int
+            page_data['cpuTimesDoc'] = {key: int(value + 0.5) for (key, value) in page_data['cpuTimesDoc'].items()} # Rounds and Coverts to int
+
+            # Copies cpuTimes to put into page_data as cpu.{name}.
+            page_data.update({"cpu.{0}".format(key): value for (key, value) in page_data['cpuTimes'].items()})
         except Exception:
             logging.exception('Error processing CPU times')
 
