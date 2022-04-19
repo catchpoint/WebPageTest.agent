@@ -384,7 +384,7 @@ class WebPageTest(object):
 
     def block_metadata(self):
         """Block access to the metadata service if we are on EC2 or Azure"""
-        if not self.metadata_blocked:
+        if not self.metadata_blocked and self.options.server != None:
             import requests
             needs_block = False
             session = requests.Session()
@@ -1584,7 +1584,7 @@ class WebPageTest(object):
 
     def upload_task_result(self, task):
         """Upload the result of an individual test run if it is being sharded"""
-        if self.is_dead:
+        if self.is_dead or self.options.server == None:
             return
         logging.info('Uploading result')
         self.profile_start(task, 'wpt.upload')
@@ -1710,7 +1710,7 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
-        if self.is_dead:
+        if self.is_dead or self.options.server == None:
             return False
         ret = True
         # pass the data fields as query params and any files as post data
