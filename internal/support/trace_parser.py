@@ -524,15 +524,12 @@ class Trace():
             if request_id not in self.timeline_requests:
                 self.timeline_requests[request_id] = {}
             request = self.timeline_requests[request_id]
-<<<<<<< HEAD
             request['has_id'] = has_id
             if 'args' in trace_event and 'url' in trace_event['args']:
                 request['url'] = trace_event['args']['url']
-=======
             if trace_event['name'] == 'Network.requestIntercepted':
                 if 'overwrittenURL' in trace_event['args']['data']:
                     request['overwrittenURL'] = trace_event['args']['data']['overwrittenURL']
->>>>>>> 092fc72db64dbe05025bebe5d77c71c6f050a063
             if trace_event['name'] == 'ResourceSendRequest':
                 if 'priority' in trace_event['args']['data']:
                     request['priority'] = trace_event['args']['data']['priority']
