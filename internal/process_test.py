@@ -758,7 +758,6 @@ class ProcessTest(object):
             metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
             if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
                 shutil.copyfile(local_file, metrics_file)
-                self.delete.append(local_file)
             if os.path.isfile(metrics_file):
                 with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
                     metrics = json.load(f)
@@ -780,7 +779,6 @@ class ProcessTest(object):
             metrics_file = os.path.join(self.job['test_shared_dir'], file_name)
             if os.path.isfile(local_file) and not os.path.isfile(metrics_file):
                 shutil.copyfile(local_file, metrics_file)
-                self.delete.append(local_file)
             if os.path.isfile(metrics_file):
                 with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
                     audits = json.load(f)

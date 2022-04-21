@@ -191,6 +191,9 @@ class DevToolsParser(object):
                             request_id is not None and request_id in raw_requests:
                         raw_requests[request_id]['fromNet'] = False
                         raw_requests[request_id]['fromCache'] = True
+                    if method == 'Network.requestIntercepted' and 'requestId' in params and \
+                            request_id is not None and request_id in raw_requests:
+                        raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
@@ -471,6 +474,13 @@ class DevToolsParser(object):
                 request['method'] = raw_request['method'] if 'method' in raw_request else ''
                 request['host'] = parts.netloc
                 request['url'] = parts.path
+                if 'overwrittenURL' in raw_request:
+                    request['full_url'] = raw_request['overwrittenURL']
+                    request['original_url'] = raw_request['url']
+                    overwrittenURL = raw_request['overwrittenURL'].split('#', 1)[0]
+                    parts = urlsplit(overwrittenURL)
+                    request['host'] = parts.netloc
+                    request['url'] = parts.path
                 if 'raw_id' in raw_request:
                     request['raw_id'] = raw_request['raw_id']
                 if 'frame_id' in raw_request:
@@ -1354,6 +1364,8 @@ class DevToolsParser(object):
                             if request['score_compress'] >= 0:
                                 page_data['image_total'] += opt['image']['size']
                                 page_data['image_savings'] += savings
+                            if 'info' in opt['image']:
+                                request['image_details'] = opt['image']['info']
                         if 'progressive' in opt:
                             size = opt['progressive']['size']
                             request['jpeg_scan_count'] = opt['progressive']['scan_count']

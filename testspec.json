@@ -2,5 +2,6 @@
     "browser": "Canary",
     "axe": 0,
     "wappalyzer": 0,
-    "debug": 1
+    "debug": 1,
+    "script": "overrideHost\ttimkadlec.com\trecipes.webpagetest.workers.dev\nnavigate\thttps://timkadlec.com",
 }
