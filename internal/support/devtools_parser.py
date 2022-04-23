@@ -1174,7 +1174,7 @@ class DevToolsParser(object):
                     page_data['bytesIn'] += request['bytesIn']
                 page_data['requests'] += 1
                 page_data['requestsFull'] += 1
-                if 'renderBlocking' in request and request['renderBlocking'] == 'blocking':
+                if 'renderBlocking' in request and request['renderBlocking'] == 'blocking' and 'request_type' in request:
                     if request['request_type'] == 'Script':
                         page_data['renderBlockingJS'] += 1
                     if request['request_type'] == 'Stylesheet':
