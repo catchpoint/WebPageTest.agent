@@ -513,11 +513,20 @@ class Trace():
             self.threads[thread] = {}
         
         # Keep track of request events reported by the timeline
+        request_id = None
+        has_id = False
         if 'args' in trace_event and 'data' in trace_event['args'] and 'requestId' in trace_event['args']['data']:
             request_id = trace_event['args']['data']['requestId']
+            has_id = True
+        elif 'args' in trace_event and 'url' in trace_event['args']:
+            request_id = trace_event['args']['url']
+        if request_id is not None:
             if request_id not in self.timeline_requests:
                 self.timeline_requests[request_id] = {}
             request = self.timeline_requests[request_id]
+            request['has_id'] = has_id
+            if 'args' in trace_event and 'url' in trace_event['args']:
+                request['url'] = trace_event['args']['url']
             if trace_event['name'] == 'Network.requestIntercepted':
                 if 'overwrittenURL' in trace_event['args']['data']:
                     request['overwrittenURL'] = trace_event['args']['data']['overwrittenURL']
