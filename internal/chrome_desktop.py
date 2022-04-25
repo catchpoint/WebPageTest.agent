@@ -159,7 +159,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         while not connected and count < 3:
             count += 1
             DesktopBrowser.launch_browser(self, command_line)
-            DesktopBrowser.wait_for_idle(self)
+            if 'extensions' in job:
+                DesktopBrowser.wait_for_idle(self)
             if DevtoolsBrowser.connect(self, task):
                 connected = True
             elif count < 3:
