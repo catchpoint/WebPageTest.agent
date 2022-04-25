@@ -68,6 +68,8 @@ class WebPageTest(object):
         self.metadata_blocked = False
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': 'wptagent'})
+        self.extension_session = requests.Session()
+        self.extension_session.headers.update({'User-Agent': 'wptagent'})
         self.options = options
         self.last_test_id = None
         self.fps = options.fps
@@ -785,6 +787,7 @@ class WebPageTest(object):
             self.needs_zip = []
         if job is not None and 'work_server' in job and 'jobID' in job:
             self.notify_test_started(job)
+        self.install_extensions()
         self.report_diagnostics()
         return job
 
@@ -1895,3 +1898,63 @@ class WebPageTest(object):
                 proxies = {"http": None, "https": None}
                 self.session.post(url, headers={'Content-Type': 'text/plain'}, data=self.raw_job['payload'], timeout=30, proxies=proxies)
                 self.scheduler_job_done()
+
+    def install_extensions(self):
+        """Download and cache the requested extensions from the Chrome web store"""
+        if self.job is not None and 'extensions' in self.job:
+            now = time.time()
+            cache_time = 604800 # Default to a one-week extension cache
+            if 'extensions_cache_time' in self.job:
+                try:
+                    cache_time = int(self.job['extensions_cache_time'])
+                except Exception:
+                    logging.exception('Error setting extension cache time')
+            expired = now - cache_time
+            extensions_dir = os.path.join(self.persistent_dir, 'extensions')
+            if not os.path.exists(extensions_dir):
+                try:
+                    os.makedirs(extensions_dir, exist_ok=True)
+                except Exception:
+                    pass
+            extensions = self.job['extensions'].split(',')
+            for extension in extensions:
+                extension = extension.strip()
+                if extension.isalnum():
+                    extension_dir = os.path.join(extensions_dir, extension)
+                    needs_update = True
+                    if os.path.exists(extension_dir) and os.path.getmtime(extension_dir) > expired:
+                        needs_update = False
+                    if needs_update:
+                        logging.debug('Updating extension: %s', extension)
+                        self.download_extension(extension, extension_dir)
+
+    def download_extension(self, id, dest_dir):
+        """Download the given extension ID to the dest directory"""
+        try:
+            url = 'https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3'
+            url += '&prod=chromium&prodchannel=unknown&prodversion=100.0.4896.127&lang=en-US'
+            url += '&x=id%3D' + id + '%26installsource%3Dondemand%26uc'
+            if platform.system() == 'Linux':
+                url += '&os=linux&arch=x64&os_arch=x86_64&nacl_arch=x86-64'
+            temp_file = dest_dir + '.zip'
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+            proxies = {"http": None, "https": None}
+            ok = True
+            with open(temp_file, 'wb') as f:
+                try:
+                    response = self.extension_session.get(url, timeout=600, allow_redirects=True, proxies=proxies)
+                    for chunk in response.iter_content(chunk_size=512 * 1024):
+                        if chunk:
+                            f.write(chunk)
+                except Exception:
+                    logging.exception('Error downloading extension from %s', url)
+                    ok = False
+            if ok and os.path.exists(temp_file) and os.path.getsize(temp_file):
+                if os.path.exists(dest_dir):
+                    shutil.rmtree(dest_dir)
+                os.makedirs(dest_dir)
+                with zipfile.ZipFile(temp_file, 'r') as zip_file:
+                    zip_file.extractall(dest_dir)
+        except Exception:
+            logging.exception('Error downloading extension %s', id)
