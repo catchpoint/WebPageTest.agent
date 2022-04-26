@@ -1193,6 +1193,8 @@ class OptimizationChecks(object):
         wasm_stats = None
         if platform.system() == "Linux" and not os.uname()[4].startswith('arm') and platform.architecture()[0] == '64bit':
             wasm_stats = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support', 'wasm-stats', 'linux', 'wasm-stats'))
+        elif platform.system() == 'Darwin':
+            wasm_stats = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support', 'wasm-stats', 'osx', 'wasm-stats'))
         if wasm_stats is not None and os.path.exists(wasm_stats):
             try:
                 for request_id in self.requests:
