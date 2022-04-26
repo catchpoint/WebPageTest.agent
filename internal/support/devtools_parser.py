@@ -879,6 +879,13 @@ class DevToolsParser(object):
                    'tls_cipher_suite': 'tls_cipher_suite',
                    'uncompressed_bytes_in': 'objectSizeUncompressed'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
+            re_http_search = re.compile(r'^HTTP\/1[^\s]+ (\d+)').search
+            re_status_search = re.compile(r'^:status: (\d+)').search
+            re_content_type_search = re.compile(r'^content-type: (.+)', re.IGNORECASE).search
+            re_cache_control_search = re.compile(r'^cache-control: (.+)', re.IGNORECASE).search
+            re_content_encoding_search = re.compile(r'^content-encoding: (.+)', re.IGNORECASE).search
+            re_content_expires_search = re.compile(r'^expires: (.+)', re.IGNORECASE).search
+            
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
                 f_in = gzip.open(self.netlog_requests_file, GZIP_READ_TEXT)
@@ -941,22 +948,22 @@ class DevToolsParser(object):
                                     request['headers'] = {'request': [], 'response': []}
                                 self.mergeHeaders(request['headers']['response'], entry['response_headers'])
                                 for header in entry['response_headers']:
-                                    matches = re.search(r'^HTTP\/1[^\s]+ (\d+)', header)
+                                    matches = re_http_search(header)
                                     if matches:
                                         request['responseCode'] = int(matches.group(1))
-                                    matches = re.search(r'^:status: (\d+)', header)
+                                    matches = re_status_search(header)
                                     if matches:
                                         request['responseCode'] = int(matches.group(1))
-                                    matches = re.search(r'^content-type: (.+)', header, re.IGNORECASE)
+                                    matches = re_content_type_search(header)
                                     if matches:
                                         request['contentType'] = matches.group(1).split(';')[0]
-                                    matches = re.search(r'^cache-control: (.+)', header, re.IGNORECASE)
+                                    matches = re_cache_control_search(header)
                                     if matches:
                                         request['cacheControl'] = matches.group(1)
-                                    matches = re.search(r'^content-encoding: (.+)', header, re.IGNORECASE)
+                                    matches = re_content_encoding_search(header)
                                     if matches:
                                         request['contentEncoding'] = matches.group(1)
-                                    matches = re.search(r'^expires: (.+)', header, re.IGNORECASE)
+                                    matches = re_content_expires_search(header)
                                     if matches:
                                         request['expires'] = matches.group(1)
                             if 'bytes_in' in entry:
@@ -1055,22 +1062,22 @@ class DevToolsParser(object):
                     if 'response_headers' in entry:
                         request['headers']['response'] = list(entry['response_headers'])
                         for header in entry['response_headers']:
-                            matches = re.search(r'^HTTP\/1[^\s]+ (\d+)', header)
+                            matches = re_http_search(header)
                             if matches:
                                 request['responseCode'] = int(matches.group(1))
-                            matches = re.search(r'^:status: (\d+)', header)
+                            matches = re_status_search(header)
                             if matches:
                                 request['responseCode'] = int(matches.group(1))
-                            matches = re.search(r'^content-type: (.+)', header, re.IGNORECASE)
+                            matches = re_content_type_search(header)
                             if matches:
                                 request['contentType'] = matches.group(1).split(';')[0]
-                            matches = re.search(r'^cache-control: (.+)', header, re.IGNORECASE)
+                            matches = re_cache_control_search(header)
                             if matches:
                                 request['cacheControl'] = matches.group(1)
-                            matches = re.search(r'^content-encoding: (.+)', header, re.IGNORECASE)
+                            matches = re_content_encoding_search(header)
                             if matches:
                                 request['contentEncoding'] = matches.group(1)
-                            matches = re.search(r'^expires: (.+)', header, re.IGNORECASE)
+                            matches = re_content_expires_search(header)
                             if matches:
                                 request['expires'] = matches.group(1)
                     if 'bytes_in' in entry:
@@ -1103,9 +1110,9 @@ class DevToolsParser(object):
                         'responseCode' in request and \
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
                     if 'contentType' not in request or \
-                            (request['contentType'].find('ocsp-response') < 0 and \
-                             request['contentType'].find('pkix-crl') < 0 and \
-                             request['contentType'].find('ca-cert') < 0):
+                            ('ocsp-response' not in request['contentType'] and \
+                             'pkix-crl' not in request['contentType'] and \
+                             'ca-cert' not in request['contentType']):
                         main_request = request
                         request['final_base_page'] = True
                         request['is_base_page'] = True
