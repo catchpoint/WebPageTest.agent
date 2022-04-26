@@ -43,6 +43,20 @@
     "scriptSrc": "cc\\.cdn\\.civiccomputing\\.com",
     "website": "https://www.civicuk.com/cookie-control"
   },
+  "CJDropshipping app": {
+    "cats": [
+      100
+    ],
+    "description": "CJDropshipping is a dropshipping supplier and fulfillment service from China.",
+    "icon": "CJDropshipping.svg",
+    "pricing": [
+      "payg"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "app\\.cjdropshipping\\.com/",
+    "website": "https://apps.shopify.com/cucheng"
+  },
   "CKEditor": {
     "cats": [
       24
@@ -495,6 +509,31 @@
     "url": "/(?:cart|order|basket|trolley|bag|shoppingbag|checkout)",
     "website": "https://www.wappalyzer.com/technologies/ecommerce/cart-functionality"
   },
+  "Cart.js": {
+    "cats": [
+      59
+    ],
+    "description": "Cart.js is a very small open-source Javascript library that makes the addition of powerful Ajax cart functionality to your Shopify theme a breeze.",
+    "icon": "Cart.js.png",
+    "oss": true,
+    "requires": "Shopify",
+    "scriptSrc": "(?:shopify-cartjs/([\\d\\.]+)|assets)/rivets-cart\\.min\\.js\\;version:\\1",
+    "website": "https://cartjs.org"
+  },
+  "CartKit": {
+    "cats": [
+      32
+    ],
+    "description": "CartKit build apps from fuss-free multi-channel marketing automation and campaigns to social proof popups and user session recording.",
+    "icon": "CartKit.svg",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.cartkitcdn\\.com/",
+    "website": "https://www.cartkit.com"
+  },
   "CartStack": {
     "cats": [
       98
@@ -532,14 +571,14 @@
       91
     ],
     "description": "Cashew Payments is a buy now, pay later platform that allows its customers to shop now and pay later in equal monthly installments.",
-    "icon": "Cashew Payments.svg",
-    "requiresCategory": 6,
     "headers": {
       "Content-Security-Policy": "\\.cashewpayments\\.com"
     },
+    "icon": "Cashew Payments.svg",
     "pricing": [
       "payg"
     ],
+    "requiresCategory": 6,
     "saas": true,
     "scriptSrc": "\\.cashewpayments\\.com/",
     "website": "https://www.cashewpayments.com"
@@ -769,11 +808,11 @@
     ],
     "description": "ChannelApe is an ecommerce and inventory management solution for the footwear and apparel industry.",
     "icon": "ChannelApe.svg",
-    "requiresCategory": 6,
     "pricing": [
       "mid",
       "recurring"
     ],
+    "requiresCategory": 6,
     "saas": true,
     "website": "https://www.channelape.com",
     "xhr": "\\.channelape\\.com"
@@ -1047,7 +1086,7 @@
   },
   "Choices": {
     "cats": [
-      19
+      59
     ],
     "description": "Choices.js is a lightweight, configurable select box/text input plugin.",
     "icon": "Choices.png",
@@ -1414,7 +1453,7 @@
   },
   "Clipboard.js": {
     "cats": [
-      19
+      59
     ],
     "icon": "Clipboard.js.svg",
     "scriptSrc": "clipboard(?:-([\\d.]+))?(?:\\.min)?\\.js\\;version:\\1",
@@ -1697,6 +1736,21 @@
       "CodeMirror.version": "^(.+)$\\;version:\\1"
     },
     "website": "http://codemirror.net"
+  },
+  "Coin Currency Converter": {
+    "cats": [
+      100
+    ],
+    "description": "Coin Currency Converter is an automatic currency conversion app for Shopify.",
+    "icon": "Coin Currency Converter.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "/apps/coin/coin\\.js.+\\.myshopify\\.com",
+    "website": "https://apps.shopify.com/coin"
   },
   "CoinHive": {
     "cats": [
@@ -2075,6 +2129,20 @@
     ],
     "website": "https://conekta.com"
   },
+  "Confer With": {
+    "cats": [
+      103
+    ],
+    "description": "Confer With triggers live streaming video calls between shoppers and instore experts from a website, or outside a store.",
+    "icon": "Confer With.svg",
+    "pricing": [
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "scriptSrc": "\\.conferwith\\.io/",
+    "website": "https://conferwith.io"
+  },
   "Conjured": {
     "cats": [
       100
@@ -2088,6 +2156,25 @@
     "saas": true,
     "scriptSrc": "app\\.conjured\\.co/",
     "website": "https://conjured.co"
+  },
+  "Connectif": {
+    "cats": [
+      76,
+      32
+    ],
+    "description": "Connectif is a marketing automation and personalisation data-first action platform, powered by AI.",
+    "icon": "Connectif.svg",
+    "js": {
+      "connectif.version": "^([\\d\\.]+)$\\;version:\\1",
+      "connectifInfo.store": ""
+    },
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.connectif\\.cloud/",
+    "website": "https://connectif.ai"
   },
   "Constant Contact": {
     "cats": [
@@ -2389,10 +2476,10 @@
     "meta": {
       "author": "^Convertr Commerce$"
     },
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
     "website": "https://convertr.com.br"
   },
   "ConveyThis": {
@@ -2691,7 +2778,7 @@
   },
   "Covet.pics": {
     "cats": [
-      5,
+      96,
       100
     ],
     "description": "Covet.pics is a customizable Shopify app for Instagram and Lookbook shoppable galleries.",
@@ -3001,20 +3088,6 @@
     "scriptSrc": "/wp-content/themes/parabola/.+frontend\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.cryoutcreations.eu/wordpress-themes/parabola"
   },
-  "crypto-js": {
-    "cats": [
-      59
-    ],
-    "description": "crypto-js is a JavaScript library of crypto standards.",
-    "icon": "default.svg",
-    "js": {
-      "CryptoJS.algo": "",
-      "CryptoJS.Rabbit": ""
-    },
-    "scriptSrc": "(?:/([\\d\\.-]+))?/crypto-js(?:\\.min)?\\.js\\;version:\\1",
-    "oss": true,
-    "website": "https://github.com/brix/crypto-js"
-  },
   "Crypto-Loot": {
     "cats": [
       56
@@ -3212,7 +3285,9 @@
       31
     ],
     "description": "cdnjs is a free distributed JS library delivery service.",
+    "dom": "link[href*='cdnjs.cloudflare.com/']",
     "icon": "cdnjs.svg",
+    "implies": "Cloudflare",
     "oss": true,
     "scriptSrc": "cdnjs\\.cloudflare\\.com",
     "website": "https://cdnjs.com"
@@ -3247,7 +3322,7 @@
       10
     ],
     "description": "comScore is an American media measurement and analytics company providing marketing data and analytics to enterprises; media and advertising agencies; and publishers.",
-    "dom": "iframe[src*='.scorecardresearch.com/beacon'], iframe#comscore, iframe[src*='COMSCORE.beacon]",
+    "dom": "iframe[src*='.scorecardresearch.com/beacon'], iframe#comscore, iframe[src*='COMSCORE.beacon']",
     "icon": "comScore.svg",
     "js": {
       "COMSCORE": "",
@@ -3304,5 +3379,19 @@
     },
     "oss": true,
     "website": "https://github.com/zloirock/core-js"
+  },
+  "crypto-js": {
+    "cats": [
+      59
+    ],
+    "description": "crypto-js is a JavaScript library of crypto standards.",
+    "icon": "default.svg",
+    "js": {
+      "CryptoJS.Rabbit": "",
+      "CryptoJS.algo": ""
+    },
+    "oss": true,
+    "scriptSrc": "(?:/([\\d\\.-]+))?/crypto-js(?:\\.min)?\\.js\\;version:\\1",
+    "website": "https://github.com/brix/crypto-js"
   }
 }

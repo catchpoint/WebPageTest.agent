@@ -89,6 +89,22 @@
     "scriptSrc": "babylist\\.com/",
     "website": "https://www.babylist.com"
   },
+  "Back In Stock": {
+    "cats": [
+      100
+    ],
+    "description": "Back In Stock lets your customers choose restock alerts for specific variant combinations, including size, colour or style.",
+    "icon": "Back In Stock.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "app\\.backinstock\\.org/",
+    "website": "https://backinstock.org"
+  },
   "Backbone.js": {
     "cats": [
       12
@@ -122,22 +138,6 @@
       "generator": "^Backdrop CMS(?:\\s([\\d.]+))?\\;version:\\1"
     },
     "website": "https://backdropcms.org"
-  },
-  "Back In Stock": {
-    "cats": [
-      100
-    ],
-    "description": "Back In Stock lets your customers choose restock alerts for specific variant combinations, including size, colour or style.",
-    "icon": "Back In Stock.png",
-    "pricing": [
-      "freemium",
-      "low",
-      "recurring"
-    ],
-    "requires": "Shopify",
-    "saas": true,
-    "scriptSrc": "app\\.backinstock\\.org/",
-    "website": "https://backinstock.org"
   },
   "Baidu Analytics (百度统计)": {
     "cats": [
@@ -183,20 +183,29 @@
   },
   "Bambuser": {
     "cats": [
-      19
+      103
     ],
     "description": "Bambuser is a SaaS company based in Stockholm that provides live video shopping technology.",
     "icon": "Bambuser.png",
     "js": {
-      "_bambuser": "",
-      "BambuserLiveShopping": ""
+      "BambuserLiveShopping": "",
+      "_bambuser": ""
     },
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
     "scriptSrc": "\\.bambuser\\.com/",
     "website": "https://bambuser.com"
+  },
+  "BandsInTown Events Widget": {
+    "cats": [
+      5
+    ],
+    "description": "Bandsintown Events Widget is a free widget which makes it simple to embed your event listings and allow fans to buy tickets, RSVP, follow you and join your Email & SMS lists.",
+    "icon": "BandsInTown.png",
+    "scriptSrc": "widget\\.bandsintown\\.com/",
+    "website": "https://artists.bandsintown.com/support/events-widget"
   },
   "Banshee": {
     "cats": [
@@ -221,10 +230,12 @@
     "description": "Base is a hosted ecommerce platform that allows business owners to set up an online store and sell their products online.",
     "icon": "Base.svg",
     "js": {
-      "Base.App.open_nav": ""
+      "Base.App.open_nav": "",
+      "BASE_API.shop_id": ""
     },
     "meta": {
-      "base-theme-name": "\\d+"
+      "base-theme-name": "\\;confidence:50",
+      "base-theme-version": "\\d+\\;confidence:50"
     },
     "scriptSrc": "thebase\\.in/js",
     "website": "https://thebase.in"
@@ -393,6 +404,7 @@
     ],
     "saas": true,
     "scriptSrc": "(?:\\.|plugins/)?bigcommerce(?:\\.com)?/(?:assets)?",
+    "scripts": "bigcommerceProductId",
     "url": "mybigcommerce\\.com",
     "website": "http://www.bigcommerce.com"
   },
@@ -792,6 +804,9 @@
       "NS": "\\.bluehost\\.com",
       "SOA": "\\.bluehost\\.com"
     },
+    "headers": {
+      "host-header": "c2hhcmVkLmJsdWVob3N0LmNvbQ=="
+    },
     "icon": "Bluehost.svg",
     "pricing": [
       "payg",
@@ -957,6 +972,24 @@
     "implies": "CodeIgniter",
     "website": "http://cibonfire.com"
   },
+  "BON Loyalty": {
+    "cats": [
+      84,
+      100
+    ],
+    "description": "BON Loyalty is a free rewards and referrals app that helps merchants increase customer engagement with captivating points, rewards & referral program.",
+    "icon": "BON Loyalty.svg",
+    "requires": "Shopify",
+    "js": {
+      "bonShopInfo.appearance": ""
+    },
+    "saas": true,
+    "scriptSrc": "app\\.bonloyalty\\.com/",
+    "pricing": [
+      "freemium"
+    ],
+    "website": "https://bonloyalty.com"
+  },
   "BookDinners": {
     "cats": [
       93
@@ -1046,6 +1079,24 @@
     "scriptSrc": "booksy\\.com/widget/code\\.js",
     "website": "https://booksy.com/"
   },
+  "BookThatApp": {
+    "cats": [
+      100,
+      72
+    ],
+    "description": "BookThatApp is a Shopify appointment booking, product rental and class booking app.",
+    "icon": "BookThatApp.png",
+    "implies": "Shopify",
+    "js": {
+      "BookThatApp": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "scriptSrc": "\\.bookthatapp\\.com/",
+    "website": "https://www.bookthatapp.com"
+  },
   "Boomerang": {
     "cats": [
       59,
@@ -1079,6 +1130,20 @@
     "requires": "Shopify",
     "saas": true,
     "website": "https://boostcommerce.net"
+  },
+  "Booster Page Speed Optimizer": {
+    "cats": [
+      100,
+      92
+    ],
+    "description": "The Page Speed Optimizer is a Shopify app built by BoosterApps.",
+    "icon": "BoosterApps.png",
+    "pricing": [
+      "freemium"
+    ],
+    "scriptSrc": "/assets/booster-page-speed-optimizer\\.js",
+    "requires": "Shopify",
+    "website": "https://apps.shopify.com/page-speed-optimizer"
   },
   "Bootstrap": {
     "cats": [
@@ -1150,7 +1215,7 @@
   },
   "Borderfree": {
     "cats": [
-      6
+      106
     ],
     "cookies": {
       "bfx.apiKey:": "^[\\w\\d-]+$\\;confidence:25",
@@ -1721,8 +1786,16 @@
     "cats": [
       66
     ],
-    "html": "<link[^>]+?href=\"[^\"]+bulma(?:\\.min)?\\.css",
+    "description": "Bulma is a free class-based framework for CSS.",
     "icon": "Bulma.svg",
+    "dom": {
+      "link[href*='bulma.min.css']": {
+        "attributes": {
+          "href": "(?:([\\d\\.]+)/css/)?bulma\\.min\\.css\\;version:\\1"
+        }
+      }
+    },
+    "oss": true,
     "website": "http://bulma.io"
   },
   "Bump": {

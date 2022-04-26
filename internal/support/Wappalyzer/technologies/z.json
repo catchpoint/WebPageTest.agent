@@ -294,20 +294,20 @@
     "cats": [
       6
     ],
-    "description": "Zid is an ecommerce SaaS that allows merchants to build and manage their online stores.",
-    "icon": "Zid.png",
     "cookies": {
       "zid_catalog_session": ""
     },
+    "description": "Zid is an ecommerce SaaS that allows merchants to build and manage their online stores.",
+    "icon": "Zid.png",
     "js": {
       "zid.store": "",
       "zidTracking.sendGaProductRemoveFromCartEvent": ""
     },
-    "saas": true,
     "pricing": [
       "mid",
       "recurring"
-    ],  
+    ],
+    "saas": true,
     "website": "https://zid.sa"
   },
   "Zimbra": {
@@ -537,7 +537,7 @@
   },
   "Zonos": {
     "cats": [
-      6
+      106
     ],
     "description": "Zonos is a cross-border ecommerce software and app solution for companies with international business.",
     "icon": "Zonos.svg",
@@ -620,6 +620,19 @@
       "zozo-main\\.min\\.js"
     ],
     "website": "https://zozo.vn"
+  },
+  "Zuppler": {
+    "cats": [
+      93
+    ],
+    "description": "Zuppler is a complete and branded online ordering solution for restaurants and caterers with multi-locations.",
+    "icon": "Zuppler.png",
+    "dom":"link[href*='.zuppler.com/']",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.zuppler.com"
   },
   "Zyro": {
     "cats": [

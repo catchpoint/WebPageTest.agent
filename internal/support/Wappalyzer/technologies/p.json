@@ -159,6 +159,21 @@
     "scriptSrc": "pay\\.pacenow\\.co",
     "website": "https://pacenow.co/"
   },
+  "Packlink PRO": {
+    "cats": [
+      100,
+      99
+    ],
+    "description": "Packlink PRO is a multicarrier shipping solutions for ecommerce and marketplaces.",
+    "icon": "Packlink.png",
+    "implies": "Shopify",
+    "saas": true,
+    "pricing": [
+      "payg"
+    ],
+    "scriptSrc": "packlink-spf-pro\\.appspot\\.com/.+myshopify\\.com",
+    "website": "https://apps.shopify.com/packlink-pro"
+  },
   "Paddle": {
     "cats": [
       41
@@ -805,6 +820,26 @@
     },
     "website": "http://percussion.com"
   },
+  "PerfectApps Swift": {
+    "cats": [
+      100,
+      92
+    ],
+    "description": "Swift is a page speed solution for ecommerce store owners built by PerfectApps.",
+    "icon": "PerfectApps Swift.png",
+    "requires": "Shopify",
+    "js": {
+      "ps_apiURI": "swift-api\\.perfectapps\\.io/",
+      "ps_storeUrl": "swift\\.perfectapps\\.io"
+    },
+    "scriptSrc": "swift\\.perfectapps\\.io/",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://apps.shopify.com/swift"
+  },
   "Perfex CRM": {
     "cats": [
       53
@@ -918,6 +953,23 @@
     "saas": true,
     "scriptSrc": "\\.cdn\\.personio\\.",
     "website": "https://www.personio.com"
+  },
+  "Personizely": {
+    "cats": [
+      76
+    ],
+    "description": "Personizely is a conversion marketing toolkit which helps websites and ecommerce stores better engage with visitors using website widgets and personalisation.",
+    "icon": "Personizely.svg",
+    "js": {
+      "Personizely": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "static\\.personizely\\.net/",
+    "website": "https://www.personizely.net"
   },
   "Perzonalization": {
     "cats": [
@@ -1073,7 +1125,7 @@
     "description": "Phusion Passenger is a free web server and application server with support for Ruby, Python and Node.js.",
     "headers": {
       "Server": "Phusion Passenger ([\\d.]+)\\;version:\\1",
-      "X-Powered-By": "Phusion Passenger ?([\\d.]+)?\\;version:\\1"
+      "X-Powered-By": "Phusion Passenger(?:\\(R\\))? ?([\\d.]+)?\\;version:\\1"
     },
     "icon": "Phusion Passenger.png",
     "website": "https://phusionpassenger.com"
@@ -1392,6 +1444,21 @@
     "implies": "Scala",
     "website": "https://www.playframework.com"
   },
+  "Plaza": {
+    "cats": [
+      103
+    ],
+    "description": "Plaza is a ecommerce platform that allows brands and retailers to communicate with customers via live video.",
+    "dom": "iframe[src*='stream.useplaza.com/']",
+    "icon": "Plaza.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.useplaza.com"
+  },
   "Pleroma": {
     "cats": [
       2
@@ -1540,6 +1607,21 @@
       "PojoA11yOptions": ""
     },
     "website": "https://pojo.me/plugins/accessibility/"
+  },
+  "Poloriz": {
+    "cats": [
+      76
+    ],
+    "description": "Poloriz's technology automatically creates a personalised, full-screen, mobile-first, cross-selling user experience for shoppers.",
+    "icon": "Poloriz.svg",
+    "pricing": [
+      "payg",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "widget\\.poloriz\\.com/",
+    "website": "https://www.poloriz.com"
   },
   "Polyfill": {
     "cats": [
@@ -1921,6 +2003,7 @@
     },
     "cpe": "cpe:/a:prestashop:prestashop",
     "description": "PrestaShop is a freemium, open-source ecommerce solution, written in the PHP programming language with support for the MySQL database management system.",
+    "dom": "img[src*='/modules/prestablog/themes/'], img[data-src*='/modules/prestablog/themes/']",
     "headers": {
       "Powered-By": "^Prestashop$"
     },
@@ -2019,6 +2102,15 @@
     "scriptSrc": "static\\.cdn\\.printful\\.com",
     "website": "https://www.printful.com/"
   },
+  "Priority Hints": {
+    "cats": [
+      92
+    ],
+    "description": "Priority Hints exposes a mechanism for developers to signal a relative priority for browsers to consider when fetching resources.",
+    "dom": "iframe[fetchpriority], img[fetchpriority], script[fetchpriority], link[fetchpriority]",
+    "icon": "default.svg",
+    "website": "https://wicg.github.io/priority-hints/"
+  },
   "Prism": {
     "cats": [
       19
@@ -2067,6 +2159,22 @@
     "saas": true,
     "scriptSrc": "\\.privy\\.com/",
     "website": "https://www.privy.com"
+  },
+  "Product Personalizer": {
+    "cats": [
+      100,
+      76
+    ],
+    "description": "Product Personalizer apps can help you to customise your products and offer a more personalised experience for your customers.",
+    "icon": "Product Personalizer.png",
+    "scriptSrc": "/product-personalizer/pplr_common\\.js",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "implies": "Shopify",
+    "website": "https://productpersonalizer.com"
   },
   "ProfilePress": {
     "cats": [
@@ -2122,22 +2230,22 @@
     "cats": [
       51
     ],
-    "description": "PromoBuilding is a subscription-based website builder for optimising budgets for creating promotional campaigns.",
-    "icon": "PromoBuilding.svg",
     "cookies": {
       "promobuilding_session": ""
     },
+    "description": "PromoBuilding is a subscription-based website builder for optimising budgets for creating promotional campaigns.",
+    "icon": "PromoBuilding.svg",
     "js": {
       "promoApi": "\\;confidence:25",
       "promoDomain": "\\;confidence:25",
       "promoIsOver": "\\;confidence:25",
       "promoStart": "\\;confidence:25"
     },
-    "saas": true,
     "pricing": [
       "recurring",
       "payg"
     ],
+    "saas": true,
     "website": "https://promobuilding.ru"
   },
   "Prototype": {
@@ -2253,6 +2361,19 @@
     "website": "http://www.pubmatic.com/",
     "xhr": "\\.pubmatic\\.com"
   },
+  "PubSubJS": {
+    "cats": [
+      59
+    ],
+    "description": "PubSubJS is a topic-based publish/subscribe library written in JavaScript.",
+    "icon": "pubsub-js.png",
+    "js": {
+      "PubSub": "",
+      "PubSub.version": "^(.+)$\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/mroderick/PubSubJS"
+  },
   "Public CMS": {
     "cats": [
       1
@@ -2325,6 +2446,26 @@
     "saas": true,
     "website": "https://www.purecars.com"
   },
+  "PushDaddy Whatsapp Chat": {
+    "cats": [
+      100,
+      98
+    ],
+    "description": "Whatsapp Chat is an live chat and abondoned cart solution built by PushDaddy.",
+    "icon": "PushDaddy.png",
+    "implies": [
+      "WhatsApp Business Chat",
+      "Shopify"
+    ],
+    "scriptSrc": "cdn\\.shopify\\.com/.+/pushdaddy_v([\\d\\.]+).*\\.js\\;version:\\1",
+    "dom": "div.pushdaddy-chats",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://apps.shopify.com/whatsapp-chat-for-support"
+  },
   "PushEngage": {
     "cats": [
       32
@@ -2344,7 +2485,7 @@
     "cats": [
       32
     ],
-    "description": " PushOwl is a push notification platform for ecommerce stores.",
+    "description": "PushOwl is a push notification platform for ecommerce stores.",
     "icon": "PushOwl.svg",
     "pricing": [
       "low",

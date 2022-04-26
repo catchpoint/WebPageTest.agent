@@ -307,6 +307,24 @@
     "saas": true,
     "website": "https://abicart.com/"
   },
+  "Absorb": {
+    "cats": [
+      21
+    ],
+    "cookies": {
+      "_absorb_ui_session": ""
+    },
+    "description": "Absorb is a cloud-based learning management system.",
+    "icon": "Absorb.svg",
+    "js": {
+      "AbsorbLMS": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.absorblms.com"
+  },
   "Accentuate Custom Fields": {
     "cats": [
       100
@@ -451,6 +469,23 @@
     "oss": true,
     "website": "https://ackee.electerious.com"
   },
+  "Acoustic Experience Analytics": {
+    "cats": [
+      10
+    ],
+    "description": "Acoustic Experience Analytics (Tealeaf), formerly known as IBM Tealeaf Customer Experience on Cloud, is a SaaS-based analytics solution that delivers Tealeaf core capabilities in an managed cloud environment. Tealeaf captures and manages each visitor interaction on your website and mobile applications.",
+    "icon": "Acoustic.svg",
+    "js": {
+      "TLT.config.core.modules.TLCookie": "",
+      "TLT_VERSION": "",
+      "TeaLeaf": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://acoustic.com/tealeaf"
+  },
   "Acquia Campaign Factory": {
     "cats": [
       32
@@ -499,6 +534,17 @@
     ],
     "saas": true,
     "website": "https://www.acquia.com/"
+  },
+  "Acquia Cloud Platform CDN": {
+    "cats": [
+      31
+    ],
+    "headers": {
+      "via": "Acquia Platform CDN (.+)\\;version:\\1"
+    },
+    "icon": "acquia-cloud-platform.svg",
+    "saas": true,
+    "website": "https://docs.acquia.com/cloud-platform/platformcdn/"
   },
   "Acquia Cloud Site Factory": {
     "cats": [
@@ -695,6 +741,25 @@
     "saas": true,
     "scriptSrc": "\\.acuityscheduling\\.com",
     "website": "https://acuityscheduling.com"
+  },
+  "AcuityAds": {
+    "cats": [
+      36
+    ],
+    "description": "AcuityAds offers automatic solutions to marketers willing to connect through clients across mobile, social, and online display advertising campaigns.",
+    "headers": {
+      "Content-Security-Policy": "\\.acuityplatform\\.com"
+    },
+    "icon": "AcuityAds.svg",
+    "js": {
+      "acuityAdsEventQueue": "",
+      "acuityAdsPixelKey": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.acuityads.com"
   },
   "Ad Lightning": {
     "cats": [
@@ -1219,19 +1284,6 @@
     "url": "\\.cfm(?:$|\\?)",
     "website": "http://adobe.com/products/coldfusion-family.html"
   },
-  "Adobe Dynamic Media Classic": {
-    "cats": [
-      95
-    ],
-    "description": "Adobe Dynamic Media Classic is a platform that enables customers to manage, enhance, publish, and deliver dynamic rich media content and personal experiences to consumers across all channels and devices, including web, print material, email campaigns, desktops, social, and mobile.",
-    "icon": "Adobe Experience Platform.svg",
-    "headers": {
-      "Content-Security-Policy": "\\.scene7\\.com"
-    },
-    "dom": "source[srcset*='.scene7.com/'], link[href*='.scene7.com']",
-    "saas": true,
-    "website": "https://business.adobe.com/uk/products/experience-manager/scene7-login.html"
-  },
   "Adobe DTM": {
     "cats": [
       42
@@ -1243,6 +1295,19 @@
     },
     "saas": true,
     "website": "https://marketing.adobe.com/resources/help/en_US/dtm/c_overview.html"
+  },
+  "Adobe Dynamic Media Classic": {
+    "cats": [
+      95
+    ],
+    "description": "Adobe Dynamic Media Classic is a platform that enables customers to manage, enhance, publish, and deliver dynamic rich media content and personal experiences to consumers across all channels and devices, including web, print material, email campaigns, desktops, social, and mobile.",
+    "dom": "source[srcset*='.scene7.com/'], link[href*='.scene7.com']",
+    "headers": {
+      "Content-Security-Policy": "\\.scene7\\.com"
+    },
+    "icon": "Adobe Experience Platform.svg",
+    "saas": true,
+    "website": "https://business.adobe.com/uk/products/experience-manager/scene7-login.html"
   },
   "Adobe Experience Manager": {
     "cats": [
@@ -1520,6 +1585,21 @@
     "scriptSrc": "static\\.affiliatly\\.com/",
     "website": "https://www.affiliatly.com"
   },
+  "Affilo": {
+    "cats": [
+      71,
+      100
+    ],
+    "description": "Affilo is an all-in-one solution for referrals and affiliate marketing.",
+    "icon": "Affilo.png",
+    "pricing": [
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "//affilo\\.io/",
+    "website": "https://affilo.io"
+  },
   "Affirm": {
     "cats": [
       41,
@@ -1576,6 +1656,7 @@
     "icon": "afterpay.png",
     "js": {
       "Afterpay": "",
+      "Afterpay.version": "([\\d\\.]+)\\;version:\\1",
       "AfterpayAttractWidget": "",
       "AfterpayGenericErrorHtml": "",
       "AfterpayWidgetHtml": "",
@@ -1592,6 +1673,38 @@
       "js\\.stripe\\.com/v3/fingerprinted/js/elements-afterpay-clearpay-message-.+\\.js"
     ],
     "website": "https://www.afterpay.com/"
+  },
+
+  "AfterShip Returns Center": {
+    "cats": [
+      102
+    ],
+    "description": "AfterShip Returns Center is an interactive self-service return solution.",
+    "icon": "AfterShip Returns Center.svg",
+    "dom": "a[href*='.returnscenter.com']",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "url": "https.+\\.returnscenter\\.com",
+    "website": "https://www.aftership.com/returns"
+  },
+  "AfterShip": {
+    "cats": [
+      19
+    ],
+    "description": "AfterShip provides automated shipment tracking as a service.",
+    "icon": "AfterShip.svg",
+    "js": {
+      "aftership.__VERSION__": "([\\d\\.]+)\\;version:\\1"
+    },
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://www.aftership.com"
   },
   "Ahoy": {
     "cats": [
@@ -1909,7 +2022,8 @@
     "js": {
       "AlgoliaSearch": "",
       "__algolia": "",
-      "algoliasearch.version": "^(.+)$\\;version:\\1"
+      "algoliasearch.version": "^(.+)$\\;version:\\1",
+      "__GLOBAL__.algolia": ""
     },
     "pricing": [
       "freemium",
@@ -2192,11 +2306,13 @@
     ],
     "description": "Amazon S3 or Amazon Simple Storage Service is a service offered by Amazon Web Services (AWS) that provides object storage through a web service interface.",
     "headers": {
+      "Content-Security-Policy": "s3\\.[^ ]*amazonaws\\.com",
       "server": "^AmazonS3$"
     },
     "icon": "aws-s3.svg",
     "implies": "Amazon Web Services",
     "saas": true,
+    "scriptSrc": "s3\\.[^ ]*amazonaws\\.com",
     "website": "http://aws.amazon.com/s3/"
   },
   "Amazon SES": {
@@ -2545,6 +2661,23 @@
     ],
     "website": "https://angularjs.org"
   },
+  "AnswerDash": {
+    "cats": [
+      5
+    ],
+    "description": "AnswerDash is a question and answer platform that serves business customers thereby reducing support costs and revealing customer needs.",
+    "icon": "AnswerDash.png",
+    "js": {
+      "AnswerDash": "",
+      "AnswerDash.__plugin": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.answerdash\\.com/",
+    "website": "https://www.answerdash.com"
+  },
   "Ant Design": {
     "cats": [
       66
@@ -2886,11 +3019,14 @@
     "description": "Apple Pay is a mobile payment and digital wallet service by Apple that allows users to make payments in person, in iOS apps, and on the web.",
     "dom": [
       "[aria-labelledby='pi-apple_pay']",
-      "script#apple-pay"
+      "script#apple-pay",
+      "script#apple-pay-shop-capabilities",
+      "input#applePayMerchantId"
     ],
     "icon": "Apple.svg",
     "js": {
       "ApplePay": "",
+      "applePayButtonClicked": "",
       "braintree.applePay": "",
       "checkout.enabledpayments.applepay": "^true$",
       "dw.applepay": "",
@@ -3180,10 +3316,10 @@
     ],
     "description": "Asciidoctor is an open-source text processor and publishing toolchain, written in Ruby, for converting AsciiDoc content to HTML 5, DocBook 5, and other formats.",
     "icon": "Asciidoctor.png",
+    "implies": "Ruby",
     "meta": {
       "generator": "^Asciidoctor\\s([\\d\\.]+)$\\;version:\\1"
     },
-    "implies": "Ruby",
     "oss": true,
     "website": "https://github.com/asciidoctor/asciidoctor"
   },
@@ -3267,6 +3403,11 @@
       "[class^='astro-']": {
         "attributes": {
           "class": "astro-[\\d\\w]{8,}"
+        }
+      },
+      "astro-root": {
+        "attributes": {
+          "uid": ""
         }
       },
       "link[href*='/_astro/']": {
@@ -3519,7 +3660,7 @@
   },
   "Auth0": {
     "cats": [
-      19
+      69
     ],
     "description": "Auth0 provides authentication and authorisation as a service.",
     "icon": "Auth0.png",
@@ -3531,7 +3672,7 @@
   },
   "Auth0 Lock": {
     "cats": [
-      19
+      69
     ],
     "description": "Auth0's signin solution",
     "icon": "Auth0.png",
@@ -3544,8 +3685,14 @@
     ],
     "description": "Automizely creates and manages enterprise-level marketing automation systems including contact and CRM mappings, lead funnels, email nurture, lead-generating pages, and blog posts, and website integrations.",
     "icon": "Automizely.svg",
+    "js": {
+      "automizelyConversions": "",
+      "amStorefrontKit.hRequestEventTarget": "",
+      "AM_CONSENT_SDK.product": "automizely"
+    },
     "pricing": [
-      "freemium"
+      "freemium",
+      "payg"
     ],
     "scriptSrc": "\\.automizely\\.com/",
     "website": "https://www.automizely.com/marketing"
@@ -3584,6 +3731,72 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/autoptimize/.+\\.js(?:\\?ao_version=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://autoptimize.com"
+  },
+  "Avada AVASHIP": {
+    "cats": [
+      100
+    ],
+    "description": "Avada AVASHIP is an order tracking Shopify app.",
+    "icon": "Avada.svg",
+    "js": {
+      "AVADA_FSB.bars": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "freeshippingbar\\.apps\\.avada\\.io/",
+    "website": "https://apps.shopify.com/avaship"
+  },
+  "Avada Boost Sales": {
+    "cats": [
+      100,
+      5
+    ],
+    "description": "AVADA Boost Sales is a one-stop solution that is specially designed to increase your sales with countdown timer, trust badges, sales pop, sales boost and many more.",
+    "icon": "Avada.svg",
+    "js": {
+      "AVADA_BS_LAST_UPDATE": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "boostsales\\.apps\\.avada\\.io/",
+    "website": "https://apps.shopify.com/avada-boost-sales"
+  },
+  "Avada SEO": {
+    "cats": [
+      100,
+      54
+    ],
+    "description": "Avada SEO is a Shopify app built and designed following strict SEO practices.",
+    "icon": "Avada.svg",
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "seo\\.apps\\.avada\\.io/",
+    "website": "https://apps.shopify.com/avada-seo-suite"
+  },
+  "Avada Size Chart": {
+    "cats": [
+      100
+    ],
+    "description": "Avada Size Chart is a thoughtful app that helps online stores reduce return rates with useful size guides.",
+    "icon": "Avada.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "sizechart\\.apps\\.avada\\.io/",
+    "website": "https://apps.shopify.com/avada-size-chart"
   },
   "Avangate": {
     "cats": [

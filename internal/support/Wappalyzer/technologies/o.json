@@ -17,7 +17,7 @@
   },
   "OWL Carousel": {
     "cats": [
-      5
+      59
     ],
     "description": "OWL Carousel is an enabled jQuery plugin that lets you create responsive carousel sliders.",
     "html": "<link [^>]*href=\"[^\"]+owl\\.carousel(?:\\.min)?\\.css",
@@ -76,7 +76,6 @@
     ],
     "description": "Obviyo is an ecommerce intelligence platform helping merchants personalise and optimise shopping experience.",
     "icon": "Obviyo.png",
-    "requires": "Shopify",
     "js": {
       "__hic.version": "([\\d.]+)\\;version:\\1"
     },
@@ -85,6 +84,7 @@
       "mid",
       "recurring"
     ],
+    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "deploy\\.hiconversion\\.com",
     "website": "https://www.obviyo.com"
@@ -202,6 +202,21 @@
     "scriptSrc": "/octopress\\.js",
     "website": "http://octopress.org"
   },
+  "Ocuco FitMix": {
+    "cats": [
+      105
+    ],
+    "description": "Ocuco is now offering its customers FittingBox's FitMix, a virtual frame try-on tool.",
+    "icon": "Ocuco.png",
+    "js": {
+      "FitMix.WIDGET_BASE_URL": "static\\.fittingbox\\.com"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.ocuco.com/fitmix"
+  },
   "Odoo": {
     "cats": [
       1,
@@ -226,7 +241,8 @@
   },
   "Okendo": {
     "cats": [
-      90
+      90,
+      100
     ],
     "description": "Okendo is a customer marketing platform with product ratings and reviews, customer photos and videos to help personalise experiences.",
     "dom": {
@@ -237,6 +253,7 @@
       }
     },
     "icon": "Okendo.svg",
+    "implies": "Shopify",
     "js": {
       "okeReviewsWidgetOnInit": "",
       "okeWidgetControlInit": "",
@@ -251,7 +268,7 @@
   },
   "Okta": {
     "cats": [
-      19
+      69
     ],
     "description": "Okta is a platform in the Identity-as-a-Service (IDaaS) category. Okta features include Provisioning, Single Sign-On (SSO), Active Directory (AD) and LDAP integration, the centralized de-provisioning of users, multi-factor authentication (MFA), mobile identity management.",
     "icon": "Okta.svg",
@@ -291,11 +308,15 @@
     ],
     "description": "Olark is a cloud-based live chat solution.",
     "icon": "Olark.png",
+    "js": {
+      "olark": "",
+      "olarkUserData": ""
+    },
     "pricing": [
       "payg"
     ],
     "saas": true,
-    "scriptSrc": "\\.olark\\.com",
+    "scriptSrc": "\\.olark\\.com/",
     "website": "https://www.olark.com/"
   },
   "Ometria": {
@@ -378,6 +399,24 @@
     "saas": true,
     "scriptSrc": "omnisrc\\.com",
     "website": "https://www.omnisend.com"
+  },
+  "OnShop": {
+    "cats": [
+      6
+    ],
+    "description": "OnShop is an ecommerce platform for online merchants.",
+    "dom": "link[href*='cdn.onshop.asia/']",
+    "excludes": "OpenCart",
+    "icon": "Onshop.svg",
+    "implies": "PHP",
+    "meta": {
+      "generator": "Onshop Ecommerce"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://onshop.asia"
   },
   "OnUniverse": {
     "cats": [
@@ -522,6 +561,24 @@
     ],
     "website": "http://www.onetrust.com"
   },
+  "Oney": {
+    "cats": [
+      91
+    ],
+    "description": "Oney is an app that gives consumers back the power over their spending and makes split payments universal.",
+    "icon": "Oney.svg",
+    "js": {
+      "OneyMarketplace": "",
+      "isOneyActive": "",
+      "openOneyLayer": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "requiresCategory": 6,
+    "scriptSrc": "/modules/oney(?:/)?/views/js/front\\.js",
+    "website": "https://www.oney.com"
+  },
   "Onfido": {
     "cats": [
       16,
@@ -540,20 +597,6 @@
     ],
     "saas": true,
     "website": "https://onfido.com"
-  },
-  "Onshop": {
-    "cats": [
-      6
-    ],
-    "description": "OpenCartfree open-source ecommerce platform for online merchants.",
-    "excludes": "OpenCart",
-    "icon": "Onshop.svg",
-    "implies": "PHP",
-    "meta": {
-      "generator": "Onshop Ecommerce"
-    },
-    "scriptSrc": "/opencart_custom\\.js",
-    "website": "https://onshop.asia"
   },
   "Ookla Speedtest Custom": {
     "cats": [
@@ -864,7 +907,6 @@
   },
   "OpinionLab": {
     "cats": [
-      5,
       73
     ],
     "description": "OpinionLab is a omnichannel customer feedback solution provider.",
@@ -1169,6 +1211,44 @@
     ],
     "saas": true,
     "website": "https://www.orckestra.com"
+  },
+  "OrderLogic app": {
+    "cats": [
+      100
+    ],
+    "description": "OrderLogic app allows you to define minimum and maximum product quantities for all products in your Shopify store.",
+    "icon": "OrderLogic app.png",
+    "js": {
+      "OrderLogic.ALERTS_KEY": "",
+      "OrderLogic.DEFAULT_MONEY_FORMAT": "",
+      "OrderLogic.cartData": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "website": "https://apps.shopify.com/orderlogic"
+  },
+  "Ordersify Product Alerts": {
+    "cats": [
+      100
+    ],
+    "description": "Ordersify Product Alerts is a Shopify app which detects automatically product stock and send email alerts to contact immediately after your products are restocked.",
+    "icon": "Ordersify.svg",
+    "implies": "Shopify",
+    "js": {
+      "ORDERSIFY_BIS.stockRemainingSetting": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.ordersify\\.com/sdk/productalerts-shopify\\.js",
+    "website": "https://ordersify.com/products/product-alerts"
   },
   "OrderYOYO": {
     "cats": [

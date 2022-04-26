@@ -136,20 +136,38 @@
       99
     ],
     "description": "Narvar is a customer experience platform that helps retailers inspire long-term customer loyalty, at all steps of the post-purchase journey.",
-    "icon": "Narvar.svg",
     "dom": "a[href*='.narvar.com/'], img[src*='.narvar.com/']",
     "headers": {
       "Content-Security-Policy": "\\.narvar\\.com"
     },
+    "icon": "Narvar.svg",
     "js": {
       "NARVARJS_URL": "",
       "narvar": "\\;confidence:1"
     },
-    "saas": true,
     "pricing": [
       "payg"
     ],
+    "saas": true,
     "website": "https://corp.narvar.com"
+  },
+  "NationBuilder": {
+    "cats": [
+      1,
+      53
+    ],
+    "description": "NationBuilder is a Los Angeles based technology start-up that develops content management and customer relationship management (CRM) software.",
+    "icon": "NationBuilder.svg",
+    "js": {
+      "NB.Liquid": "",
+      "NB.FBAppId": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://nationbuilder.com"
   },
   "Nativo": {
     "cats": [
@@ -359,7 +377,7 @@
   },
   "New Relic": {
     "cats": [
-      10
+      78
     ],
     "description": "New Relic is a SaaS offering that focuses on performance and availability monitoring.",
     "dom": "link[href*='.newrelic.com']",
@@ -377,6 +395,22 @@
     ],
     "saas": true,
     "website": "https://newrelic.com"
+  },
+  "NewStore": {
+    "cats": [
+      19
+    ],
+    "description": "NewStore is the only integrated platform offering omnichannel solutions for stores and consumers.",
+    "icon": "NewStore.png",
+    "js": {
+      "highstreetBanner.config": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.api\\.highstreetapp\\.com/",
+    "website": "https://www.newstore.com"
   },
   "Newspack": {
     "cats": [
@@ -543,7 +577,8 @@
   },
   "NitroPack": {
     "cats": [
-      23
+      23,
+      92
     ],
     "description": "NitroPack creates optimised HTML cache for fast page loading experience.",
     "icon": "NitroPack.svg",
@@ -642,25 +677,42 @@
     "scriptSrc": "connect\\.nosto\\.\\w+/",
     "website": "https://www.nosto.com"
   },
+  "novomind iSHOP": {
+    "cats": [
+      6
+    ],
+    "description": "novomind iSHOP can be introduced rapidly, is highly scalable, has open APIs headless ecommerce and GDPR-compliant in the novomind Cloud.",
+    "icon": "novomind.svg",
+    "js": {
+      "_ishopevents_url": "/ishop-api/events/",
+      "_ishopevents": "",
+      "iShop.config.baseUrl": ""
+    },
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.novomind.com/en/shopsystem/novomind-ishop-software"
+  },
   "Nudgify": {
     "cats": [
       32
     ],
     "description": "Nudgify is a Social Proof & Fomo App tool that integrates seamlessly with ecommerce platform such as Shopify, WooCommerce and Magento.",
     "icon": "Nudgify.svg",
-    "requiresCategory": 6,
     "js": {
       "nudgify.cart": ""
     },
-    "scriptSrc": [
-      "\\.nudgify\\.com/",
-      "cdn\\.convertize\\.com/nudgify-shopify\\.js"
-    ],
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "scriptSrc": [
+      "\\.nudgify\\.com/",
+      "cdn\\.convertize\\.com/nudgify-shopify\\.js"
     ],
     "website": "https://www.nudgify.com"
   },

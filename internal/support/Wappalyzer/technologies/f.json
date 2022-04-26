@@ -59,15 +59,6 @@
     "saas": true,
     "website": "https://fabric.inc"
   },
-  "Facebook": {
-    "cats": [
-      5
-    ],
-    "description": "Facebook is an online social media and social networking service.",
-    "icon": "Facebook.svg",
-    "scriptSrc": "//connect\\.facebook\\.([a-z]+)/[^/]*/[a-z]*\\.js",
-    "website": "http://facebook.com"
-  },
   "Facebook Ads": {
     "cats": [
       36
@@ -324,6 +315,7 @@
       "Vary": "Fastly-SSL",
       "X-Fastly-Request-ID": "",
       "x-fastly-origin": "",
+      "x-served-by": "^cache-",
       "x-via-fastly:": ""
     },
     "icon": "Fastly.svg",
@@ -395,6 +387,21 @@
     },
     "website": "https://www.traycorp.com.br"
   },
+  "FeatherX": {
+    "cats": [
+      90
+    ],
+    "description": "FeatherX captures content from all major reviews and social media channels.",
+    "icon": "FeatherX.svg",
+    "js": {
+      "featherx.clientId": ""
+    },
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://featherx.ai"
+  },
   "FedEx": {
     "cats": [
       99
@@ -446,6 +453,24 @@
     "saas": true,
     "scriptSrc": "\\.feefo\\.com/",
     "website": "https://www.feefo.com"
+  },
+  "Fenicio": {
+    "cats": [
+      6
+    ],
+    "description": "Fenicio is a cloud platform that handles all aspects of ecommerce sales channel operation and management.",
+    "icon": "Fenicio.svg",
+    "js": {
+      "_FN.validadorTelefono": "",
+      "fnWishlist.cargarInfoArticulos": "",
+      "fneCommerce.miCompraVisto": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://fenicio.io"
   },
   "Fera": {
     "cats": [
@@ -548,6 +573,24 @@
     ],
     "website": "https://fingerprintjs.com"
   },
+  "FintechOS": {
+    "cats": [
+      58
+    ],
+    "description": "FintechOS is a low-code platform for banking and insurance.",
+    "icon": "FintechOS.svg",
+    "js": {
+      "FtosChat": "",
+      "ftos.core.getB2CCulture": ""
+    },
+    "meta": {
+      "ftos-app-version": "\\sv([\\d\\.]+)\\s\\;version:\\1"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://fintechos.com"
+  },
   "Firebase": {
     "cats": [
       34
@@ -575,18 +618,23 @@
   },
   "Firepush": {
     "cats": [
-      32
+      32,
+      100
     ],
     "description": "Firepush is an omnichannel marketing app that helps Shopify stores to drive sales with automated web push, email and SMS campaigns.",
     "dom": "link[href*='cdn.firepush.net']",
     "icon": "Firepush.svg",
+    "implies": "Shopify",
     "pricing": [
       "low",
       "freemium",
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "cdn\\.firepush\\.\\w+",
+    "scriptSrc": [
+      "cdn\\.firepush\\.\\w+",
+      "fpcdn\\.me/.+shopify"
+    ],
     "website": "https://getfirepush.com"
   },
   "FirstHive": {
@@ -619,7 +667,6 @@
   },
   "Fit Analytics": {
     "cats": [
-      5,
       76
     ],
     "description": "Fit Analytics is a platform that provides clothing size recommendations for online customers by measuring individual dimensions via webcams.",
@@ -752,7 +799,7 @@
   },
   "Flow": {
     "cats": [
-      6
+      106
     ],
     "description": "Flow is an ecommerce platform that enables brands and retailers to sell their merchandise to customers internationally by creating localized shopping experiences.",
     "icon": "Flow.png",
@@ -881,6 +928,21 @@
       "\\.fontawesome\\.com/([0-9a-z]+).js"
     ],
     "website": "https://fontawesome.com/"
+  },
+  "Fontify": {
+    "cats": [
+      100
+    ],
+    "description": "Fontify allows you to utilise any font without having to alter code.",
+    "icon": "Fontify.png",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "fontify\\.nitroapps\\.co/",
+    "website": "https://apps.shopify.com/fontify-change-customize-font-for-your-store"
   },
   "FooPlugins FooGallery": {
     "cats": [
@@ -1146,8 +1208,8 @@
     "icon": "Framer Sites.svg",
     "implies": "React",
     "js": {
-      "Framer.version": "([\\d\\.]+)\\;version:\\1\\;confidence:0",
-      "Framer.Animatable": ""
+      "Framer.Animatable": "",
+      "Framer.version": "([\\d\\.]+)\\;version:\\1\\;confidence:0"
     },
     "oss": false,
     "pricing": [
@@ -1235,6 +1297,22 @@
       "\\bFrequenceo\\b"
     ],
     "website": "https://www.laposte.fr/entreprise/produit-entreprise/frequenceo"
+  },
+  "Frequently Bought Together": {
+    "cats": [
+      100
+    ],
+    "description": "Frequently Bought Together is a Shopify app which add Amazon-like 'Customers Who Bought This Item Also Bought' product recommendations to your store.",
+    "icon": "Frequently Bought Together.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "\\.codeblackbelt\\.com/js/modules/frequently-bought-together/",
+    "website": "https://www.codeblackbelt.com"
   },
   "Fresco": {
     "cats": [
@@ -1354,12 +1432,15 @@
       24
     ],
     "description": "Froala Editor is a WYSIWYG HTML Editor written in Javascript that enables rich text editing capabilities for applications.",
-    "html": "<[^>]+class=\"[^\"]*(?:fr-view|fr-box)",
+    "dom": ".fr-view, .fr-box, .fr-popup, .froala-box",
     "icon": "Froala.svg",
     "implies": [
       "jQuery",
       "Font Awesome"
     ],
+    "js": {
+      "FroalaEditor.VERSION": "([\\d\\.]+)\\;version:\\1"
+    },
     "website": "http://froala.com/wysiwyg-editor"
   },
   "FrontPage": {
