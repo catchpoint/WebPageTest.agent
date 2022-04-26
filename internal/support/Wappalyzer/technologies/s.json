@@ -268,28 +268,6 @@
     "saas": true,
     "website": "https://studio.design"
   },
-  "Survicate": {
-    "cats": [
-      73
-    ],
-    "description": "Survicate is an all-in-one customer feedback tool that allows you collect feedback.",
-    "icon": "Survicate.svg",
-    "headers": {
-      "content-security-policy": "api\\.survicate\\.com"
-    },
-    "dom": "link[href*='.survicate.com']",
-    "js": {
-      "survicate": ""
-    },
-    "scriptSrc": "\\.survicate\\.com/",
-    "saas": true,
-    "pricing": [
-      "freemium",
-      "recurring",
-      "payg"
-    ],
-    "website": "https://survicate.com"
-  },
   "SUSE": {
     "cats": [
       28
@@ -346,6 +324,20 @@
     "saas": true,
     "scriptSrc": "(?:\\.cloudfront\\.net/assets/javascripts/(?:v2/)?|/sas)squatch\\.min\\.js",
     "website": "https://www.saasquatch.com"
+  },
+  "Saba.Host": {
+    "cats": [
+      88
+    ],
+    "description": "Saba.Host is a total web-hosting solutions. It provides shared hosting, WordPress hosting, dedicated server, virtual private server (VPS), SSL and more.",
+    "dns": {
+      "SOA": "\\.saba\\.host"
+    },
+    "icon": "Saba.Host.png",
+    "pricing": [
+      "recurring"
+    ],
+    "website": "https://saba.host"
   },
   "Saber": {
     "cats": [
@@ -617,6 +609,18 @@
     "scriptSrc": "service\\.force\\.com",
     "website": "https://www.salesforce.com/au/products/service-cloud/"
   },
+  "Salla": {
+    "cats": [
+      6
+    ],
+    "description": "Salla is an ecommerce platform.",
+    "headers": {
+      "x-powered-by": "^Salla$"
+    },
+    "icon": "Salla.svg",
+    "scriptSrc": "cdn\\.salla\\.sa/",
+    "website": "https://salla.sa"
+  },
   "Salonist": {
     "cats": [
       72
@@ -695,7 +699,8 @@
       }
     },
     "headers": {
-      "x-sanity-shard": ""
+      "x-sanity-shard": "",
+      "content-security-policy": "cdn\\.sanity\\.io"
     },
     "icon": "Sanity.svg",
     "pricing": [
@@ -893,6 +898,22 @@
     },
     "scriptSrc": "cdn.cxc.scorpion.direct",
     "website": "https://www.scorpion.co/"
+  },
+  "SEOmatic": {
+    "cats": [
+      54
+    ],
+    "description": "SEOmatic facilitates modern SEO best practices & implementation for Craft CMS 3.",
+    "icon": "SEOmatic.svg",
+    "implies": "Craft CMS",
+    "meta": {
+      "generator": "^SEOmatic$"
+    },
+    "saas": true,
+    "pricing": [
+      "onetime"
+    ],
+    "website": "https://plugins.craftcms.com/seomatic"
   },
   "SeQura": {
     "cats": [
@@ -1252,6 +1273,20 @@
     "scriptSrc": "/semantic(?:-([\\d.]+))?(?:\\.min)?\\.js\\;version:\\1",
     "website": "https://semantic-ui.com/"
   },
+  "Sematext Experience": {
+    "cats": [
+      78
+    ],
+    "description": "Sematext Experience for Real User Monitoring Analyze data collected from real-user sessions, detect anomalies, send alerts in real-time, and enhance overall customer digital experience.",
+    "icon": "Sematext.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.sematext\\.com/experience\\.js",
+    "website": "https://sematext.com/experience"
+  },
   "Sencha Touch": {
     "cats": [
       12,
@@ -1483,6 +1518,18 @@
     "scriptSrc": "widget\\.sezzle\\.(?:in|com)",
     "website": "https://sezzle.com/"
   },
+  "Shaka Player": {
+    "cats": [
+      14
+    ],
+    "description": "Shaka Player is an open-source JavaScript library for adaptive media.",
+    "icon": "Shaka Player.png",
+    "js": {
+      "shaka.Player.version": "v([\\d\\.-\\w]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/shaka-project/shaka-player"
+  },
   "Shanon": {
     "cats": [
       32
@@ -1541,6 +1588,21 @@
     ],
     "scriptSrc": "\\.sharethrough\\.com/",
     "website": "https://www.sharethrough.com"
+  },
+  "Sharetribe": {
+    "cats": [
+      6
+    ],
+    "description": "Sharetribe is cloud-based platform for small to medium businesses, which helps businesses to create and manage custom online marketplaces.",
+    "dom": "img[srcset*='sharetribe.imgix.net/'], img[src*='user-assets.sharetribe.com/']",
+    "icon": "Sharetribe.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.sharetribe\\.com/",
+    "website": "https://www.sharetribe.com"
   },
   "SharpSpring": {
     "cats": [
@@ -1826,7 +1888,8 @@
   },
   "Shopify Chat": {
     "cats": [
-      52
+      52,
+      100
     ],
     "description": "Shopify Chat is Shopify's native live chat function that allows you to have real-time conversations with customers visiting your Shopify store.",
     "icon": "Shopify.svg",
@@ -1837,24 +1900,39 @@
   },
   "Shopify Consent Management": {
     "cats": [
-      67
+      67,
+      100
     ],
     "description": "Shopify Consent Management let's you create a tracking consent banner for EU customers.",
     "icon": "Shopify.svg",
+    "requires": "Shopify",
     "scriptSrc": [
       "cookie_consent_shopify\\.js"
     ],
     "website": "https://apps.shopify.com/customer-privacy-banner"
   },
+  "Shopify Geolocation App": {
+    "cats": [
+      100,
+      79
+    ],
+    "description": "Shopify Geolocation App makes language and country recommendations to your customers based on their geographic location and browser or device language.",
+    "icon": "Shopify Geolocation App.png",
+    "requires": "Shopify",
+    "scriptSrc": "geolocation-recommendations\\.shopifycloud\\.com/",
+    "website": "https://apps.shopify.com/geolocation"
+  },
   "Shopify Product Reviews": {
     "cats": [
-      90
+      90,
+      100
     ],
     "description": "Shopify Product reviews allows you to add a customer review feature to your products.",
     "icon": "Shopify.svg",
     "js": {
       "SPR": ""
     },
+    "requires": "Shopify",
     "scriptSrc": [
       "productreviews\\.shopifycdn\\.com"
     ],
@@ -1922,6 +2000,22 @@
     ],
     "robots": "# Powered by Shoporama",
     "website": "https://www.shoporama.dk"
+  },
+  "ShopPad Infinite Options": {
+    "cats": [
+      100
+    ],
+    "description": "ShopPad Infinite Options allows you to create as many custom option fields for your product pages as you need.",
+    "icon": "ShopPad.svg",
+    "requires": "Shopify",
+    "js": {
+      "Shoppad.apps.infiniteoptions": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://apps.shopify.com/custom-options"
   },
   "Shoppiko": {
     "cats": [
@@ -2087,6 +2181,21 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/shortcodes-ultimate/.+index\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://getshortcodes.com"
+  },
+  "ShoutOut": {
+    "cats": [
+      71
+    ],
+    "description": "ShoutOut is a multi-level marketing SaaS solution that allows tracking of affiliates.",
+    "icon": "ShoutOut.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requiresCategory": 6,
+    "scriptSrc": "\\.shoutout\\.global/",
+    "website": "https://www.shoutout.global"
   },
   "Shuttle": {
     "cats": [
@@ -2877,6 +2986,22 @@
     },
     "website": "http://www.seneca.nl/pub/Smartsite/Smartsite-Smartsite-iXperion"
   },
+  "SmartWeb": {
+    "cats": [
+      6
+    ],
+    "description": "SmartWeb is an ecommerce platform from Denmark.",
+    "icon": "SmartWeb.png",
+    "meta": {
+      "generator": "^SmartWeb$"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.smartweb.dk"
+  },
   "Smarter Click": {
     "cats": [
       77
@@ -2968,22 +3093,6 @@
     "saas": true,
     "scriptSrc": "\\.smartsuppchat\\.com",
     "website": "https://www.smartsupp.com"
-  },
-  "SmartWeb": {
-    "cats": [
-      6
-    ],
-    "description": "SmartWeb is an ecommerce platform from Denmark.",
-    "icon": "SmartWeb.png",
-    "meta": {
-      "generator": "^SmartWeb$"
-    },
-    "pricing": [
-      "mid",
-      "recurring"
-    ],
-    "saas": true,
-    "website": "https://www.smartweb.dk"
   },
   "Smash Balloon Instagram Feed": {
     "cats": [
@@ -3243,6 +3352,19 @@
     "saas": true,
     "scriptSrc": "social9\\.com/.+\\.js(?:\\?ver=([\\d.]+))?\\;version:\\1",
     "website": "https://social9.com"
+  },
+  "SocialLadder": {
+    "cats": [
+      32
+    ],
+    "description": "SocialLadder is a complete end-to-end creator management solution for brands looking to maximize and scale their brand ambassador, influencer, and affiliate marketing efforts.",
+    "icon": "SocialLadder.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "socialladder\\.rkiapps\\.com/",
+    "website": "https://socialladderapp.com"
   },
   "Socket.io": {
     "cats": [
@@ -3598,6 +3720,22 @@
     "scriptSrc": "/wp-content/themes/spicepress(?:-pro)?/",
     "website": "https://spicethemes.com/spicepress-wordpress-theme"
   },
+  "Spin-a-Sale": {
+    "cats": [
+      100,
+      5
+    ],
+    "description": "Spin-a-Sale adds the intensity of gamification to your site. Spin-a-Sale overlay displays a special prize wheel for visitors that you can fully configure.",
+    "icon": "Spin-a-Sale.png",
+    "scriptSrc": "client\\.spinasale\\.com/",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "website": "https://spinasale.com"
+  },
   "Spinnakr": {
     "cats": [
       10
@@ -3674,6 +3812,22 @@
     ],
     "saas": true,
     "website": "https://www.splittypay.com"
+  },
+  "Splunk RUM": {
+    "cats": [
+      78
+    ],
+    "description": "Splunk RUM is a real-time, front-end user monitoring and troubleshooting.",
+    "icon": "Splunk.svg",
+    "js": {
+      "PLUMBR._core.selfURL": "browser\\.plumbr\\.io/pa(?:-early)?\\.js",
+      "PLUMBR._core.version": "^([\\d\\.]+).+$\\;version:\\1"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "scriptSrc": "browser\\.plumbr\\.io/pa(?:-early)?\\.js",
+    "website": "https://www.splunk.com/en_us/observability/real-user-monitoring.html"
   },
   "Splunkd": {
     "cats": [
@@ -3861,14 +4015,15 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
+    "implies": "Shopify",
     "saas": true,
     "scriptSrc": "cdn-spurit\\.com/shopify-apps/",
     "website": "https://spur-i-t.com"
   },
   "SpurIT Abandoned Cart Reminder": {
     "cats": [
-      98
+      98,
+      100
     ],
     "description": "SpurIT Abandoned Cart Reminder bring back your Shopify store visitors who moved to another tab by blinking your store tab.",
     "icon": "SpurIT.svg",
@@ -3879,7 +4034,7 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
+    "implies": "Shopify",
     "saas": true,
     "scriptSrc": "cdn-spurit\\.com/shopify-apps/abandoned-cart-reminder/",
     "website": "https://spur-i-t.com/shopify-apps/abandoned-cart-reminder/"
@@ -3887,7 +4042,8 @@
   "SpurIT Loyalty App": {
     "cats": [
       84,
-      94
+      94,
+      100
     ],
     "description": "SpurIT Loyalty App is a turnkey solution allowing you to reward existing customers in a number of ways.",
     "icon": "SpurIT.svg",
@@ -3898,14 +4054,15 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
+    "implies": "Shopify",
     "saas": true,
     "scriptSrc": "cdn-spurit\\.com/shopify-apps/loyaltypoints/",
     "website": "https://spur-i-t.com/shopify-apps/loyalty-points-manager"
   },
   "SpurIT Partial Payments App": {
     "cats": [
-      41
+      41,
+      100
     ],
     "description": "SpurIT Partial Payments App allow your customers to pay for the order in several ways or to share a payment with other people.",
     "icon": "SpurIT.svg",
@@ -3913,14 +4070,15 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
+    "implies": "Shopify",
     "saas": true,
     "scriptSrc": "cdn-spurit\\.com/shopify-apps/split-payments/",
     "website": "https://spur-i-t.com/shopify-apps/split-partial-payments/"
   },
   "SpurIT Recurring Payments App": {
     "cats": [
-      41
+      41,
+      100
     ],
     "description": "SpurIT Recurring Payments App is a simple way to create a system of bill payment,subscriptions and invoicing.",
     "icon": "SpurIT.svg",
@@ -3931,7 +4089,7 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
+    "implies": "Shopify",
     "saas": true,
     "scriptSrc": "cdn-spurit\\.com/shopify-apps/recurring-invoices/",
     "website": "https://spur-i-t.com/shopify-apps/recurring-order-subscription"
@@ -4360,7 +4518,9 @@
     "headers": {
       "X-Powered-By": "^Strapi"
     },
-    "icon": "Strapi.png",
+    "description": "Strapi is an open-source headless CMS used for building fast and easily manageable APIs written in JavaScript.",
+    "icon": "Strapi.svg",
+    "oss": true,
     "website": "https://strapi.io"
   },
   "Strato": {
@@ -4430,7 +4590,6 @@
   },
   "Stylitics": {
     "cats": [
-      5,
       32
     ],
     "description": "Stylitics is a cloud-based SaaS platform for retailers to automate and distribute visual content at scale.",
@@ -4653,15 +4812,15 @@
     ],
     "description": "SuperLemon app is an all-in-one WhatsApp plugin for Shopify stores.",
     "icon": "SuperLemon.png",
-    "requires": "Shopify",
     "implies": "WhatsApp Business Chat",
-    "scriptSrc": "/files/superlemon_.+\\.js",
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
     "saas": true,
+    "scriptSrc": "/files/superlemon_.+\\.js",
     "website": "https://apps.shopify.com/whatsapp-chat-button"
   },
   "Supersized": {
@@ -4700,6 +4859,28 @@
     ],
     "saas": true,
     "website": "https://www.supporthero.com/"
+  },
+  "Survicate": {
+    "cats": [
+      73
+    ],
+    "description": "Survicate is an all-in-one customer feedback tool that allows you collect feedback.",
+    "dom": "link[href*='.survicate.com']",
+    "headers": {
+      "content-security-policy": "api\\.survicate\\.com"
+    },
+    "icon": "Survicate.svg",
+    "js": {
+      "survicate": ""
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.survicate\\.com/",
+    "website": "https://survicate.com"
   },
   "Svbtle": {
     "cats": [
@@ -4882,14 +5063,13 @@
       "sf_redirect": ""
     },
     "description": "Symfony is a PHP web application framework and a set of reusable PHP components/libraries.",
-    "html": [
-      "<div id=\"sfwdt[^\"]+\" class=\"[^\"]*sf-toolbar"
-    ],
     "icon": "Symfony.svg",
+    "dom":"div.sf-toolbar-block, div.sf-toolbar",
     "implies": "PHP",
     "js": {
       "Sfjs": ""
     },
+    "oss": true,
     "website": "https://symfony.com"
   },
   "Sympa": {
@@ -5004,6 +5184,23 @@
     },
     "scriptSrc": "/(?:scriptaculous|protoaculous)(?:\\.js|/)",
     "website": "https://script.aculo.us"
+  },
+  "ScrollMagic": {
+    "cats": [
+      59
+    ],
+    "description": "ScrollMagic is a jQuery plugin which essentially lets you use the scrollbar like a playback scrub control.",
+    "icon": "ScrollMagic.png",
+    "implies": [
+      "jQuery",
+      "GSAP"
+    ],
+    "js": {
+      "ScrollMagic.version": "^([\\d\\.]+)$\\;version:\\1",
+      "ScrollMagic": ""
+    },
+    "oss": true,
+    "website": "https://scrollmagic.io"
   },
   "scrollreveal": {
     "cats": [

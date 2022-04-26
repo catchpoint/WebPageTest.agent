@@ -483,6 +483,18 @@
     "scriptSrc": "tag.demandbase.com",
     "website": "https://www.demandbase.com"
   },
+  "Deta": {
+    "cats": [
+      62
+    ],
+    "description": "Deta is a cloud platform for building and deploying apps.",
+    "headers": {
+      "Server": "^Deta$"
+    },
+    "icon": "deta.svg",
+    "url": "^https?://[^/]+\\.deta\\.(?:app|dev)",
+    "website": "https://deta.sh"
+  },
   "Detectify": {
     "cats": [
       16
@@ -1019,6 +1031,22 @@
     "scriptSrc": "js/_dmptv([\\d.]+)\\.js\\;version:\\1",
     "website": "https://dotdigital.com"
   },
+  "Dotdigital Chat": {
+    "cats": [
+      52
+    ],
+    "description": "Dotdigital Chat is a smart, customisable widget that makes it easy for shoppers to communicate in real-time with members of your team.",
+    "icon": "Dotdigital.svg",
+    "implies": "Dotdigital",
+    "js": {
+      "_ddgChatConfig.urlBase": "\\.dotdigital\\.com"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://dotdigital.com"
+  },
   "DoubleClick Ad Exchange (AdX)": {
     "cats": [
       36
@@ -1282,6 +1310,33 @@
     "saas": true,
     "website": "https://www.duda.co/website-builder"
   },
+  "Duel": {
+    "cats": [
+      71
+    ],
+    "cookies": {
+      "_duelcsrf": ""
+    },
+    "description": "Duel is a customer advocacy marketing platform.",
+    "icon": "Duel.svg",
+    "implies": [
+      "Node.js",
+      "Angular",
+      "MongoDB"
+    ],
+    "js": {
+      "DUEL.apiURL": "api\\.duel\\.me"
+    },
+    "pricing": [
+      "poa",
+      "high",
+      "recurring",
+      "onetime"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.duel\\.me/",
+    "website": "https://www.duel.tech"
+  },
   "Dukaan": {
     "cats": [
       6
@@ -1355,8 +1410,7 @@
   },
   "Dynatrace": {
     "cats": [
-      10,
-      92
+      10
     ],
     "cookies": {
       "dtCookie1": ""

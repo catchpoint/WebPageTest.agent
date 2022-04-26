@@ -356,6 +356,21 @@
     "icon": "Incapsula.png",
     "website": "http://www.incapsula.com"
   },
+  "In Cart Upsell & Cross-Sell": {
+    "cats": [
+      100
+    ],
+    "description": "In Cart Upsell & Cross-Sell is a Shopify app built by InCart Upsell, provides targeted upsells and cross-sells directly in your cart and product page.",
+    "icon": "In Cart Upsell & Cross-Sell.png",
+    "requires": "Shopify",
+    "scriptSrc": "\\.incartupsell\\.com/",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://incartupsell.com"
+  },
   "Includable": {
     "cats": [
       18
@@ -390,6 +405,19 @@
       "generator": "Indexhibit"
     },
     "website": "http://www.indexhibit.org"
+  },
+  "Indi": {
+    "cats": [
+      94
+    ],
+    "description": "Indi is a video social network where everyone - artists, brands, retailers, nonprofits, celebrities and individuals - can connect with fans and supporters to interact directly with your brand utilising exclusive Video Challenges and Video Threads tailor made by you.",
+    "icon": "Indi.png",
+    "js": {
+      "indi.formatStats": "",
+      "indiCountly.check_any_consent": "",
+      "indi_carousel.productCta": ""
+    },
+    "website": "https://indi.com"
   },
   "Indico": {
     "cats": [
@@ -523,6 +551,22 @@
     "scriptSrc": "/rokoInstabot\\.js",
     "website": "https://instabot.io/"
   },
+  "Instafeed": {
+    "cats": [
+      100
+    ],
+    "description": "Instafeed is an official Instagram app.",
+    "icon": "Instafeed.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "instafeed\\.nfcube\\.com/",
+    "website": "https://apps.shopify.com/instafeed"
+  },
   "Instana": {
     "cats": [
       10,
@@ -644,6 +688,25 @@
     "icon": "IntenseDebate.png",
     "scriptSrc": "intensedebate\\.com",
     "website": "http://intensedebate.com"
+  },
+  "Interact": {
+    "cats": [
+      5
+    ],
+    "description": "Interact is a tool for creating online quizzes.",
+    "icon": "Interact.svg",
+    "js": {
+      "InteractApp.name": "InteractApp",
+      "InteractPromotionObject": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.tryinteract\\.com/",
+    "website": "https://www.tryinteract.com"
   },
   "Intercom": {
     "cats": [
@@ -1136,10 +1199,19 @@
     "cats": [
       67
     ],
-    "icon": "iubenda.png",
-    "scriptSrc": [
-      "iubenda\\.com/cookie-solution/confs/js/"
+    "description": "iubenda is a compliance software used by businesses for their websites and apps.",
+    "icon": "iubenda.svg",
+    "js": {
+      "_iub": "",
+      "addIubendaCs": ""
+    },
+    "scriptSrc": "iubenda\\.com/",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring",
+      "freemium"
     ],
-    "website": "https://www.iubenda.com/"
+    "website": "https://www.iubenda.com"
   }
 }
