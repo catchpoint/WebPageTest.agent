@@ -247,6 +247,23 @@
     "scriptSrc": "/yett@([\\d\\.]+)/dist/yett\\.min\\.js\\;version:\\1",
     "website": "https://github.com/elbywan/yett"
   },
+  "Yext": {
+    "cats": [
+      29
+    ],
+    "description": "Yext is a hosted search-as-a-service platform.",
+    "icon": "Yext.svg",
+    "js": {
+      "ANSWERS._analyticsReporterService._baseUrl": "\\.yext-pixel\\.com"
+    },
+    "dom": "form.yxt-SearchBar-form",
+    "saas": true,
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "website": "https://www.yext.com"
+  },
   "Yieldify": {
     "cats": [
       76
@@ -352,21 +369,36 @@
     ],
     "website": "https://www.yodel.co.uk/"
   },
+  "Yola": {
+    "cats": [
+      51
+    ],
+    "description": "Yola is a website builder and website hosting company headquartered in San Francisco.",
+    "icon": "Yola.png",
+    "scriptSrc": "\\.yola(?:cdn)?\\.(?:net|com)/",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.yola.com"
+  },
   "YooMoney": {
     "cats": [
       41
     ],
     "description": "YooMoney is an IT company working with electronic payments on the Internet, creating and supporting financial services for individuals and businesses.",
-    "icon":"YooMoney.svg",
+    "dom": "a[href*='yoomoney.ru'][target='_blank'], iframe[src*='yoomoney.ru'], img[src*='yoomoney.ru']",
     "headers": {
       "Content-Security-Policy": "\\.yoomoney\\.ru"
     },
-    "dom":"a[href*='yoomoney.ru'][target='_blank'], iframe[src*='yoomoney.ru'], img[src*='yoomoney.ru']",
-    "scriptSrc": "\\.yoomoney\\.ru/",
-    "saas": true,
+    "icon": "YooMoney.svg",
     "pricing": [
       "payg"
     ],
+    "saas": true,
+    "scriptSrc": "\\.yoomoney\\.ru/",
     "website": "https://yoomoney.ru"
   },
   "Yotpo": {
@@ -407,6 +439,24 @@
     },
     "scriptSrc": "cdn\\.yottaa\\.\\w+/",
     "website": "https://www.yottaa.com"
+  },
+  "YouCam Makeup": {
+    "cats": [
+      105
+    ],
+    "description": "YouCam Makeup is a cross-platform virtual makeup solution for omnichannel ecommerce.",
+    "icon": "YouCam Makeup.png",
+    "js": {
+      "YMK.applyMakeupByLook": "",
+      "YMK.calDeltaE": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "plugins-media\\.(?:perfectcorp|makeupar)\\.com/",
+    "website": "https://www.perfectcorp.com/business/products/virtual-makeup"
   },
   "YouCan": {
     "cats": [

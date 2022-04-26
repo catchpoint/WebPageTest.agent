@@ -331,6 +331,23 @@
     "saas": true,
     "website": "https://verloop.io/"
   },
+  "ViaBill": {
+    "cats": [
+      91
+    ],
+    "description": "ViaBill is a cloud-based payment management solution designed to help small to midsize retailers and webshops.",
+    "icon": "ViaBill.png",
+    "js": {
+      "viabillOptions.state.subscriptions": "",
+      "viabillPricetagInternal.conf.productsByLocale": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.viabill\\.com/",
+    "website": "https://viabill.com"
+  },
   "Vidazoo": {
     "cats": [
       36
@@ -490,6 +507,19 @@
     "url": "/sparql",
     "website": "https://virtuoso.openlinksw.com/"
   },
+  "Virtusize": {
+    "cats": [
+      76
+    ],
+    "description": "Virtusize is a personalisation service that provides size and product recommendations specific to a user's size and trend preferences.",
+    "icon": "Virtusize.svg",
+    "scriptSrc": "\\.virtusize\\.jp/",
+    "saas": true,
+    "pricing": [
+      "recurring"
+    ],
+    "website": "https://www.virtusize.com"
+  },
   "Visa": {
     "cats": [
       41
@@ -551,6 +581,21 @@
     ],
     "website": "https://visualcomposer.com"
   },
+  "Visual Quiz Builder": {
+    "cats": [
+      100
+    ],
+    "description": "Visual Quiz Builder is a Shopify app built by AskWhai.",
+    "icon": "Visual Quiz Builder.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "//whai-cdn\\.nyc\\d\\.cdn\\.digitaloceanspaces\\.com/",
+    "website": "https://apps.shopify.com/product-recommendation-quiz"
+  },
   "Visualsoft": {
     "cats": [
       6
@@ -570,6 +615,28 @@
     ],
     "saas": true,
     "website": "https://www.visualsoft.co.uk/"
+  },
+  "Vitals": {
+    "cats": [
+      100,
+      32
+    ],
+    "description": "Vitals is an all-in-one Shopify marketing software.",
+    "icon": "Vitals.svg",
+    "js": {
+      "VITALS": "",
+      "vitals_app_cache_keys_v1": "",
+      "vitals_country_code": "",
+      "vitals_product_data": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "//appsolve\\.io/",
+    "website": "https://vitals.co"
   },
   "Vite": {
     "cats": [
@@ -616,6 +683,20 @@
     "saas": true,
     "scriptSrc": "/volusion\\.js(?:\\?([\\d.]*))?\\;version:\\1",
     "website": "https://www.volusion.com"
+  },
+  "Vonage Video API": {
+    "cats": [
+      103
+    ],
+    "description": "Vonage Video API platform makes it easy to embed real-time, high-quality interactive video, messaging, screen-sharing, and more into web and mobile apps.",
+    "icon": "Vonage.svg",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.opentok\\.com/",
+    "website": "https://www.vonage.com/communications-apis/video/"
   },
   "Voog.com Website Builder": {
     "cats": [
@@ -718,6 +799,21 @@
     "implies": "Vue.js",
     "oss": true,
     "website": "https://vuetifyjs.com"
+  },
+  "VuFind": {
+    "cats": [
+      29
+    ],
+    "description": "VuFind is a library resource portal designed and developed by Villanova University library.",
+    "icon": "VuFind.png",
+    "meta": {
+      "generator": "^VuFind\\s([\\d\\.]+)$\\;version:\\1"
+    },
+    "js": {
+      "VuFind.defaultSearchBackend": ""
+    },
+    "oss": true,
+    "website": "https://vufind.org"
   },
   "vBulletin": {
     "cats": [

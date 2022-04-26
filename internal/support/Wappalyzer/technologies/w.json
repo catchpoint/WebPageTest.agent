@@ -480,6 +480,33 @@
     "saas": true,
     "website": "https://webshopmanager.com"
   },
+  "Web Stories": {
+    "cats": [
+      5
+    ],
+    "description": "Web Stories is a format for visual storytelling for the open web.",
+    "dom": "amp-story",
+    "icon": "Web-Stories.svg",
+    "implies": "AMP",
+    "oss": true,
+    "website": "https://amp.dev/about/stories/"
+  },
+  "Web Stories for WordPress": {
+    "cats": [
+      20,
+      87
+    ],
+    "description": "Web Stories for WordPress is a visual editor for creating Web Stories.",
+    "icon": "Web-Stories.svg",
+    "implies": "Web Stories",
+    "meta": {
+      "amp-story-generator-name": "^Web Stories for WordPress$",
+      "amp-story-generator-version": "^(.+)$\\;version:\\1"
+    },
+    "oss": true,
+    "requires": "WordPress",
+    "website": "https://wp.stories.google"
+  },
   "Web2py": {
     "cats": [
       18
@@ -497,16 +524,6 @@
     },
     "scriptSrc": "web2py\\.js",
     "website": "http://web2py.com"
-  },
-  "WebAR": {
-    "cats": [
-      19
-    ],
-    "html": [
-      "<model-viewer"
-    ],
-    "icon": "webAR.svg",
-    "website": "https://modelviewer.dev/"
   },
   "WebAssembly": {
     "cats": [
@@ -1124,7 +1141,6 @@
     ],
     "description": "Wishlist King is a Shopify app which helps you to add your favorite products or share the wishlist with your friends built by Appmate.",
     "icon": "Wishlist King.png",
-    "requires": "Shopify",
     "js": {
       "Appmate.version": "([\\d\\.]+)\\;version:\\1\\;confidence:1",
       "Appmate.wk": ""
@@ -1134,6 +1150,7 @@
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
     "saas": true,
     "website": "https://appmate.io"
   },
@@ -1156,6 +1173,19 @@
     "saas": true,
     "scriptSrc": "\\.wistia\\.com",
     "website": "https://wistia.com"
+  },
+  "With Reach": {
+    "cats": [
+      106
+    ],
+    "description": "With Reach is a fintech/payments service provider that helps retailers connect with customers around the world.",
+    "icon": "With Reach.svg",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.rch\\.io/",
+    "website": "https://www.withreach.com"
   },
   "Wix": {
     "cats": [
@@ -1220,6 +1250,27 @@
     ],
     "saas": true,
     "website": "https://www.wix.com/freesitebuilder/tae-store"
+  },
+  "WiziShop": {
+    "cats": [
+      6
+    ],
+    "description": "WiziShop is an ecommerce solution provider.",
+    "icon": "WiziShop.png",
+    "headers": {
+      "Server": "^WiziServer$"
+    },
+    "js": {
+      "wsCfg.bNavAjust": "",
+      "wiziblocks_list": "",
+      "WIZIBLOCK_ARRAY": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://wizishop.com"
   },
   "Wizpay": {
     "cats": [
@@ -1599,7 +1650,7 @@
   },
   "WorldShopping": {
     "cats": [
-      6
+      106
     ],
     "description": "WorldShopping makes online purchases in Japan easier for international visitors.",
     "icon": "worldshopping.png",
@@ -1641,6 +1692,10 @@
       32
     ],
     "description": "Wunderkind (Formerly BounceX) is a software for behavioural marketing technologies, created to de-anonymise site visitors, analyse their digital behaviour and create relevant digital experiences regardless of channel or device.",
+    "dom": "link[href*='.smarterhq.io']",
+    "headers": {
+      "Content-Security-Policy": "\\.smarterhq\\.io"
+    },
     "icon": "Wunderkind.svg",
     "js": {
       "bouncex": ""
@@ -1649,7 +1704,10 @@
       "poa"
     ],
     "saas": true,
-    "scriptSrc": "\\.bounceexchange\\.com",
+    "scriptSrc": [
+      "\\.bounceexchange\\.com",
+      "\\.smarterhq\\.io/"
+    ],
     "website": "https://www.wunderkind.co"
   },
   "Wurfl": {

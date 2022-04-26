@@ -305,6 +305,7 @@
     "cats": [
       66
     ],
+    "css": "--tw-(?:rotate|translate|space-x|text-opacity|border-opacity)",
     "description": "Tailwind is a utility-first CSS framework.",
     "dom": {
       "link[rel='stylesheet'][href*='tailwind']": {
@@ -313,7 +314,6 @@
         }
       }
     },
-    "css": "\\--tw*\\;confidence:75",
     "icon": "tailwindcss.svg",
     "website": "https://tailwindcss.com/"
   },
@@ -463,16 +463,6 @@
     "scriptSrc": "teads\\.tv",
     "website": "https://www.teads.com",
     "xhr": "\\.teads\\.tv"
-  },
-  "Tealeaf": {
-    "cats": [
-      10
-    ],
-    "icon": "Tealeaf.png",
-    "js": {
-      "TeaLeaf": ""
-    },
-    "website": "http://www.tealeaf.com"
   },
   "Tealium": {
     "cats": [
@@ -681,26 +671,6 @@
     },
     "website": "http://textpattern.com"
   },
-  "The.com": {
-    "cats": [
-      18,
-      51
-    ],
-    "description": "The.com is a low-code website building platform with community-created components that you can share and own.",
-    "icon": "The.com.svg",
-    "implies": [
-      "React",
-      "Amazon S3"
-    ],
-    "scriptSrc": "the-dotcom-public-cdn\\.s3\\.amazonaws\\.com/",
-    "saas": true,
-    "pricing": [
-      "payg",
-      "mid",
-      "recurring"
-    ],
-    "website": "https://www.the.com"
-  },
   "The Arena Group": {
     "cats": [
       36
@@ -758,6 +728,26 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/themes/make(?:-child)?/.+frontend\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://thethemefoundry.com/wordpress-themes/make"
+  },
+  "The.com": {
+    "cats": [
+      18,
+      51
+    ],
+    "description": "The.com is a low-code website building platform with community-created components that you can share and own.",
+    "icon": "The.com.svg",
+    "implies": [
+      "React",
+      "Amazon S3"
+    ],
+    "pricing": [
+      "payg",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "the-dotcom-public-cdn\\.s3\\.amazonaws\\.com/",
+    "website": "https://www.the.com"
   },
   "Thefork": {
     "cats": [
@@ -1350,7 +1340,7 @@
   },
   "Threekit": {
     "cats": [
-      76,
+      105,
       95
     ],
     "description": "Threekit is a visual customer experience solution that enables brands to create, manage and scale photorealistic images and 3D product visuals, all from a single design file.",
@@ -1424,7 +1414,6 @@
   },
   "Tidio": {
     "cats": [
-      5,
       52
     ],
     "description": "Tidio is a customer communication product. It provides multi-channel support so users can communicate with customers on the go. Live chat, messenger, or email are all supported.",
@@ -1737,6 +1726,26 @@
     "saas": true,
     "scriptSrc": "\\.tsyndicate\\.com/",
     "website": "https://trafficstars.com"
+  },
+  "Transcy": {
+    "cats": [
+      89
+    ],
+    "description": "Transcy allows you to translate your whole store content into target languages to reach different nation shoppers.",
+    "icon": "Transcy.png",
+    "js": {
+      "_transcy": "",
+      "transcy_apiURI": "",
+      "transcy_shopifyLocales": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "website": "https://transcy.io"
   },
   "Transifex": {
     "cats": [
@@ -2583,8 +2592,10 @@
     "description": "Three.js is a cross-browser JavaScript library and application programming interface used to create and display animated 3D computer graphics in a web browser using WebGL.",
     "icon": "three.js.png",
     "js": {
-      "THREE.REVISION": "^(.+)$\\;version:\\1"
+      "THREE.REVISION": "^(.+)$\\;version:\\1",
+      "__THREE__": "^(.+)$\\;version:\\1"
     },
+    "oss": true,
     "scriptSrc": "three(?:\\.min)?\\.js",
     "website": "https://threejs.org"
   },

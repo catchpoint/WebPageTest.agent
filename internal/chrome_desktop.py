@@ -117,6 +117,23 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         if task['running_lighthouse']:
             args.append('--headless')
+        
+        if 'extensions' in job:
+            extensions = job['extensions'].split(',')
+            extensions_dir = os.path.join(job['persistent_dir'], 'extensions')
+            paths = ''
+            for extension in extensions:
+                extension = extension.strip()
+                if extension.isalnum():
+                    extension_dir = os.path.join(extensions_dir, extension)
+                    if os.path.exists(extension_dir):
+                        if paths:
+                            paths += ','
+                        paths += extension_dir
+                    else:
+                        self.task['error'] = 'Missing extension: ' + extension
+            if paths:
+                args.append('--load-extension="{}"'.format(paths))
 
         # Disable site isolation if emulating mobile. It is disabled on
         # actual mobile Chrome (and breaks Chrome's CPU throttling)
@@ -142,6 +159,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         while not connected and count < 3:
             count += 1
             DesktopBrowser.launch_browser(self, command_line)
+            if 'extensions' in job:
+                DesktopBrowser.wait_for_idle(self)
             if DevtoolsBrowser.connect(self, task):
                 connected = True
             elif count < 3:

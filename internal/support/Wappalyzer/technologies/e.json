@@ -14,6 +14,21 @@
     ],
     "website": "http://www.ec-cube.net"
   },
+  "ECharts": {
+    "cats": [
+      25
+    ],
+    "description": "ECharts is an open-source JavaScript visualisation library.",
+    "dom": "div[_echarts_instance_]",
+    "icon": "echarts.png",
+    "oss": true,
+    "scriptSrc": [
+      "/echarts\\.min\\.[a-zA-Z0-9]*\\.js",
+      "/echarts(?:\\.simple)?(?:\\.esm)?(?:\\.common)?(?:\\.min)?\\.js",
+      "cdn\\.jsdelivr\\.net/(?:npm|gh/apache)/echarts@([\\d.]+(?:-[^/]+)?|latest)/dist/echarts.*\\.js\\;version:\\1"
+    ],
+    "website": "https://echarts.apache.org/"
+  },
   "EKM": {
     "cats": [
       6
@@ -119,6 +134,22 @@
     "website": "https://ex.co",
     "xhr": "prd-collector-anon\\.ex\\.co"
   },
+  "Easy Redirects": {
+    "cats": [
+      100
+    ],
+    "description": "Easy Redirects is a Shopify app built by Eastside, and part of the best Shopify Apps collection.",
+    "icon": "Easy Redirects.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "easy-redirects\\..+/redirect-app\\.js",
+    "website": "https://apps.shopify.com/easyredirects"
+  },
   "EasyDigitalDownloads": {
     "cats": [
       6,
@@ -150,22 +181,6 @@
     "implies": "Docker",
     "website": "https://easyengine.io"
   },
-  "Easy Redirects": {
-    "cats": [
-      100
-    ],
-    "description": "Easy Redirects is a Shopify app built by Eastside, and part of the best Shopify Apps collection.",
-    "icon": "Easy Redirects.png",
-    "requires": "Shopify",
-    "scriptSrc": "easy-redirects\\..+/redirect-app\\.js",
-    "saas": true,
-    "pricing": [
-      "freemium",
-      "low",
-      "recurring"
-    ],
-    "website": "https://apps.shopify.com/easyredirects"
-  },
   "EasyStore": {
     "cats": [
       6
@@ -194,21 +209,6 @@
       "\\bEasylog\\b"
     ],
     "website": "http://www.easylog.com.br"
-  },
-  "ECharts": {
-    "cats": [
-      25
-    ],
-    "oss": true,
-    "description": "ECharts is an open-source JavaScript visualisation library.",
-    "dom": "div[_echarts_instance_]",
-    "scriptSrc": [
-      "/echarts\\.min\\.[a-zA-Z0-9]*\\.js",
-      "/echarts(?:\\.simple)?(?:\\.esm)?(?:\\.common)?(?:\\.min)?\\.js",
-      "cdn\\.jsdelivr\\.net/(?:npm|gh/apache)/echarts@([\\d.]+(?:-[^/]+)?|latest)/dist/echarts.*\\.js\\;version:\\1"
-    ],
-    "icon": "echarts.png",
-    "website": "https://echarts.apache.org/"
   },
   "Ecovium": {
     "cats": [
@@ -590,6 +590,20 @@
     "scriptSrc": "cdn\\.enable\\.co\\.il/",
     "website": "https://www.enable.co.il"
   },
+  "Endurance Page Cache": {
+    "cats": [
+      87,
+      23
+    ],
+    "description": "Endurance Page Cache adds basic file-based caching to WordPress.",
+    "headers": {
+      "x-endurance-cache-level": ""
+    },
+    "icon": "endurance-cache.png",
+    "oss": true,
+    "requires": "WordPress",
+    "website": "https://github.com/bluehost/endurance-page-cache"
+  },
   "Engagio": {
     "cats": [
       10
@@ -632,6 +646,16 @@
     "saas": true,
     "scriptSrc": "\\.enjin\\.com/",
     "website": "https://www.enjin.com"
+  },
+  "Engintron": {
+   "cats":[33],
+    "description": "Engintron is a plugin that integrates Nginx to cPanel/WHM server.",
+    "icon": "engintron.png",
+    "requires": "Nginx",
+     "headers": {
+      "X-Server-Powered-By": "^Engintron$"
+    },
+    "website": "https://github.com/engintron/engintron"
   },
   "Ensi": {
     "cats": [
@@ -916,6 +940,22 @@
     ],
     "website": "https://www.ethicalads.io/"
   },
+  "Etix": {
+    "cats": [
+      104
+    ],
+    "description": "Etix is an international web-based ticketing service provider for the entertainment, travel, and sports industries.",
+    "dom": "a[href*='.etix.com/ticket/'][target='_blank']",
+    "icon": "Etix.svg",
+    "js": {
+      "Etix.javaContext": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://hello.etix.com"
+  },
   "Etracker": {
     "cats": [
       10,
@@ -987,6 +1027,26 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/google-analytics-dashboard-for-wp/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.exactmetrics.com"
+  },
+  "Exemptify": {
+    "cats": [
+      106,
+      100
+    ],
+    "description": "Exemptify allows you to conduct proper EU B2B transactions by validating EU VAT IDs.",
+    "icon": "Exemptify.png",
+    "js": {
+      "ExemptifyTriggerUpdate": "",
+      "m4u_ex_vat_postfix_txt": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "\\.modules4u\\.biz/shopify/exemptify",
+    "website": "http://modules4u.biz/exemptify"
   },
   "Exhibit": {
     "cats": [
@@ -1077,7 +1137,7 @@
     "cpe": "cpe:/a:expressjs:express",
     "description": "Express is a web application framework for Node.js, released as free and open-source software under the MIT License. It is designed for building web applications and APIs.",
     "headers": {
-      "X-Powered-By": "^Express$"
+      "X-Powered-By": "^Express(?:$|,)"
     },
     "icon": "Express.png",
     "implies": "Node.js",
@@ -1310,6 +1370,28 @@
     "implies": "PHP",
     "scriptSrc": "[^a-z\\d]e107\\.js",
     "website": "http://e107.org"
+  },
+  "Ebasnet": {
+    "cats": [
+      1
+    ],
+    "description": "Ebasnet is a web project creation and management platform in the cloud. It allows anyone to set up an online store or corporate website without prior IT knowledge.",
+    "icon": "Ebasnet.svg",
+    "meta": {
+      "author": "^Ebasnet Web Solutions$"
+    },
+    "implies": [
+      "PHP",
+      "MySQL",
+      "Varnish",
+      "Symfony"
+    ],
+    "scriptSrc": "cdnebasnet\\.com/",
+    "saas": true,
+    "pricing": [
+      "recurring"
+    ],
+    "website": "https://ebasnet.com"
   },
   "eBay Partner Network": {
     "cats": [

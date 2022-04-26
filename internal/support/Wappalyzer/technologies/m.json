@@ -142,7 +142,8 @@
     ],
     "css": "\\.MuiPaper-root",
     "description": "MUI(formerly Material UI) is a simple and customisable component library to build faster, beautiful, and more accessible React applications.",
-    "dom": "style[data-meta='MuiPaper']",
+    "dom": "style[data-meta='MuiPaper'], div.MuiBox-root, div.MuiPaper-root",
+    "implies": "React",
     "icon": "MUI.svg",
     "oss": true,
     "pricing": [
@@ -193,7 +194,8 @@
       6
     ],
     "cookies": {
-      "frontend": "\\;confidence:50"
+      "frontend": "\\;confidence:50",
+      "X-Magento-Vary": ""
     },
     "cpe": "cpe:/a:magento:magento",
     "description": "Magento is an open-source ecommerce platform written in PHP.",
@@ -222,6 +224,23 @@
       "static/_requirejs\\;confidence:50\\;version:2"
     ],
     "website": "https://magento.com"
+  },
+  "Magisto": {
+    "cats": [
+      14
+    ],
+    "description": "Magisto is a video management solution designed to help marketing professionals, agencies, and businesses of all sizes.",
+    "icon": "Magisto.png",
+    "js": {
+      "MagistoPlayerFrame": "",
+      "magisto_server": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "scriptSrc": "\\.magisto\\.com/",
+    "website": "https://www.magisto.com"
   },
   "MailChimp": {
     "cats": [
@@ -750,7 +769,8 @@
     "saas": true,
     "scriptSrc": [
       "(?:device|js)\\.maxmind\\.com/",
-      "geoip\\.maxmind\\.min\\.js"
+      "geoip\\.maxmind\\.min\\.js",
+      "geoip-js\\.com/.+/v([\\d\\.]+)/\\;version:\\1"
     ],
     "website": "https://www.maxmind.com",
     "xhr": "\\.maxmind\\.com"
@@ -1481,6 +1501,22 @@
     ],
     "website": "https://mixpanel.com"
   },
+  "MIYN Online Appointment": {
+    "cats": [
+      72
+    ],
+    "description": "MIYN Online Appointment is an advanced cloud-based online appointment scheduling software.",
+    "icon": "MIYN.svg",
+    "js": {
+      "MIYNLive.settings": ""
+    },
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://miyn.app/online-appointment"
+  },
   "MizbanCloud": {
     "cats": [
       31
@@ -1618,6 +1654,27 @@
       "([\\d.]+)?/modernizr(?:\\.([\\d.]+))?.*\\.js\\;version:\\1?\\1:\\2"
     ],
     "website": "https://modernizr.com"
+  },
+  "ModiFace": {
+    "cats": [
+      105
+    ],
+    "description": "ModiFace is a provider of Augmented Reality technology for the beauty industry.",
+    "dom": "iframe[src*='.modiface.com/']",
+    "headers": {
+      "content-security-policy": "\\.modiface\\.com"
+    },
+    "icon": "ModiFace.svg",
+    "js": {
+      "initModiface": ""
+    },
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.modiface\\.com/",
+    "website": "https://modiface.com"
   },
   "Modified": {
     "cats": [

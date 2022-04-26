@@ -493,7 +493,8 @@
   },
   "Rebuy": {
     "cats": [
-      76
+      76,
+      100
     ],
     "description": "Rebuy offers personlisation solutions for ecommerce sites.",
     "icon": "Rebuy.png",
@@ -749,6 +750,22 @@
     ],
     "website": "https://redux.js.org/"
   },
+  "RedwoodJS": {
+    "cats": [
+      12,
+      18
+    ],
+    "description": "RedwoodJS is a full-stack serverless web application framework built by Tom Preston Werner (co-founder of Github) et al.",
+    "icon": "RedwoodJS.svg",
+    "implies": [
+      "React",
+      "GraphQL",
+      "TypeScript"
+    ],
+    "dom": "div#redwood-app",
+    "oss": true,
+    "website": "https://redwoodjs.com"
+  },
   "Reevoo": {
     "cats": [
       90
@@ -756,11 +773,17 @@
     "description": "Reevoo is a provider of UGC solutions like reviews.",
     "icon": "Reevoo.svg",
     "js": {
-      "ReevooApi": ""
+      "ReevooApi": "",
+      "reevooUrl": "\\.reevoo\\.com/",
+      "reevooAccessCode": "",
+      "reevooLoader.tracking": ""
     },
     "saas": true,
-    "scriptSrc": "mark\\.reevoo\\.com",
-    "website": "https://www.reevoo.com/"
+    "scriptSrc": "\\.reevoo\\.com/",
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.reevoo.com"
   },
   "ReferralCandy": {
     "cats": [
@@ -874,6 +897,23 @@
     },
     "oss": true,
     "website": "https://remix.run/"
+  },
+  "Reputon": {
+    "cats": [
+      90,
+      100
+    ],
+    "description": "Reputon is an customer reviews Shopify app.",
+    "icon": "Reputon.svg",
+    "requires": "Shopify",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "scriptSrc": "\\.reputon\\.com/",
+    "website": "https://reputon.com"
   },
   "RequireJS": {
     "cats": [
@@ -1057,6 +1097,24 @@
     "scriptSrc": "cdn\\.retailrocket\\.net",
     "website": "https://retailrocket.net"
   },
+  "ReturnGO": {
+    "cats": [
+      102
+    ],
+    "description": "ReturnGO's AI-driven returns management platform significantly improves customer lifetime value and post-purchase experience.",
+    "icon": "ReturnGO.png",
+    "js": {
+      "returnGoIntegrationData": "",
+      "returnGoCanBeRun": ""
+    },
+    "scriptSrc": "\\.returngo\\.ai/",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://returngo.ai"
+  },
   "RevJet": {
     "cats": [
       36
@@ -1161,6 +1219,27 @@
     "requires": "WordPress",
     "scriptSrc": "/revslider/[/\\w-]+/js",
     "website": "https://revolution.themepunch.com/"
+  },
+  "Revy": {
+    "cats": [
+      100
+    ],
+    "description": "Revy is dedicated to build Shopify Apps to generate more sales for merchants.",
+    "icon": "Revy.png",
+    "requires": "Shopify",
+    "js": {
+      "RevyApp": "",
+      "RevyBundle": "",
+      "RevyUpsell": ""
+    },
+    "scriptSrc": "api\\.revy\\.io/",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://revy.io"
   },
   "Rewardful": {
     "cats": [
@@ -1588,11 +1667,13 @@
     "cats": [
       12
     ],
+    "description": "RxJS is a reactive library used to implement reactive programming to deal with async implementation, callbacks, and event-based programs.",
     "icon": "RxJS.png",
     "js": {
       "Rx.CompositeDisposable": "",
       "Rx.Symbol": ""
     },
+    "oss": true,
     "scriptSrc": "rx(?:\\.\\w+)?(?:\\.compat|\\.global)?(?:\\.min)?\\.js",
     "website": "http://reactivex.io"
   },
