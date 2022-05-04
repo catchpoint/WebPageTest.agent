@@ -1,0 +1,16 @@
+pylint
+pytest
+numpy
+selenium
+psutil
+pillow
+requests
+nested_diff
+dnspython
+monotonic
+tornado
+fonttools
+wsaccel
+xvfbwrapper
+ujson
+selenium
