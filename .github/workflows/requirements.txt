@@ -14,3 +14,5 @@ wsaccel
 xvfbwrapper
 ujson
 selenium
+google-cloud-storage
+google-cloud-pubsub
