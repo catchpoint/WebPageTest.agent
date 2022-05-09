@@ -563,7 +563,6 @@ class Firefox(DesktopBrowser):
                         custom_script = custom_script.replace('$WPT_URL', wpt_url)
                     except Exception:
                         logging.exception('Error substituting URL data into custom script')
-                    logging.debug(custom_script)
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
