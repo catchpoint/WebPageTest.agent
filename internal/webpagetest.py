@@ -519,7 +519,7 @@ class WebPageTest(object):
                 if 'pngScreenShot' not in job:
                     job['pngScreenShot'] = 0
                 if 'fvonly' not in job:
-                    job['fvonly'] = 1
+                    job['fvonly'] = not self.options.testrv
                 if 'width' not in job:
                     job['width'] = 1366
                 if 'height' not in job:
