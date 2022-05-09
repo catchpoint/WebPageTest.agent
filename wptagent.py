@@ -119,7 +119,7 @@ class WPTAgent(object):
                 subscriber = pubsub_v1.SubscriberClient()
                 subscription_path = self.options.pubsub
                 flow_control = pubsub_v1.types.FlowControl(max_messages=1)
-                streaming_pull_future = subscriber.subscribe(subscription_path, callback=self.pubsub_callback, flow_control=flow_control)
+                streaming_pull_future = subscriber.subscribe(subscription_path, callback=self.pubsub_callback, flow_control=flow_control, await_callbacks_on_shutdown=True)
                 logging.debug("Listening for messages on %s..", subscription_path)                
             except Exception:
                 logging.exception('Error starting pubsub subscription')
