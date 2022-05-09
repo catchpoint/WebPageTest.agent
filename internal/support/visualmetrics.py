@@ -901,9 +901,7 @@ def frames_match(image1, image2, fuzz_percent,
         if different_pixels <= max_differences:
             match = True
     else:
-        logging.debug(
-            'Unexpected compare result: out: "{0}", err: "{1}"'.format(
-                out, err))
+        logging.debug('Unexpected compare result: err: "{1}"'.format(err))
 
     return match
 
