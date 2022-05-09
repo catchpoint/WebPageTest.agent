@@ -989,6 +989,20 @@ class OptimizationChecks(object):
                                 check['info']['metadata'] = metadata
                         except Exception:
                             pass
+                        # Use imagemagick to convert metadata to json
+                        try:
+                            command = '{0} -verbose "{1}" json:-'.format(self.job['image_magick']['convert'], request['body'])
+                            subprocess.call(command, shell=True)
+                            magick = json.loads(subprocess.check_output(command, shell=True, encoding='UTF-8'))
+                            if magick is not None:
+                                if 'image' in magick:
+                                    remove = ['name', 'artifacts', 'colormap', 'proprties', 'version']
+                                    for key in remove:
+                                        if key in magick['image']:
+                                            del magick['image'][key]
+                                    check['info']['magick'] = magick['image']
+                        except Exception:
+                            logging.exception('Error extracting image magick')
                         # Extract format-specific data
                         if sniff_type == 'jpeg':
                             if content_length < 1400:
