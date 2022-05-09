@@ -996,7 +996,7 @@ class OptimizationChecks(object):
                             magick = json.loads(subprocess.check_output(command, shell=True, encoding='UTF-8'))
                             if magick is not None:
                                 if 'image' in magick:
-                                    remove = ['name', 'artifacts', 'colormap', 'proprties', 'version']
+                                    remove = ['name', 'artifacts', 'colormap', 'version']
                                     for key in remove:
                                         if key in magick['image']:
                                             del magick['image'][key]
