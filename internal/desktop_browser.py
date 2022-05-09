@@ -656,7 +656,7 @@ class DesktopBrowser(BaseBrowser):
                             break
                         gzfile.write('{0:d},{1:d},{2:0.2f},-1\n'.format(
                             snapshot['time'], snapshot['bw'], snapshot['cpu']))
-                except:
+                except Exception:
                     logging.exception("Error processing usage queue")
                 gzfile.close()
         if self.tcpdump is not None:
