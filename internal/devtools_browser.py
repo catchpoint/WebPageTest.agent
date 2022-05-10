@@ -571,14 +571,14 @@ class DevtoolsBrowser(object):
             accessibility_tree = None
             for name in self.job['customMetrics']:
                 custom_script = unicode(self.job['customMetrics'][name])
-                if custom_script.find('$WPT_URL') >= 0:
+                if custom_script.find('$WPT_TEST_URL') >= 0:
                     wpt_url = 'window.location.href'
                     if 'page_data' in self.task and 'URL' in self.task['page_data']:
                         wpt_url = '{}'.format(json.dumps(self.task['page_data']['URL']))
                     elif 'url' in self.job:
                         wpt_url = '{}'.format(json.dumps(self.job['URL']))
                     try:
-                        custom_script = custom_script.replace('$WPT_URL', wpt_url)
+                        custom_script = custom_script.replace('$WPT_TEST_URL', wpt_url)
                     except Exception:
                         logging.exception('Error substituting URL data into custom script')
                 if custom_script.find('$WPT_REQUESTS') >= 0:
