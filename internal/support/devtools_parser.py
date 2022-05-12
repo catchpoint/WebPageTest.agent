@@ -1379,6 +1379,8 @@ class DevToolsParser(object):
                                 request['score_progressive_jpeg'] = 0
                         if 'font' in opt:
                             request['font_details'] = opt['font']
+                        if 'wasm' in opt:
+                            request['wasm_stats'] = opt['wasm']
             if cache_count > 0:
                 page_data['score_cache'] = int(round(cache_total / cache_count))
             if cdn_count > 0:

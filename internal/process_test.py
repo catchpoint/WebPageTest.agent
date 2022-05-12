@@ -102,17 +102,29 @@ class ProcessTest(object):
                 self.data = json.load(f)
 
                 # Merge the task-level page data
-                if self.data and 'pageData' in self.data:
-                    if 'page_data' in self.task:
-                        for key in self.task['page_data']:
-                            if key not in self.data['pageData']:
+                try:
+                    if self.data and 'pageData' in self.data:
+                        page_data = None
+                        pd_file = os.path.join(self.task['dir'], self.prefix + '_page_data.json.gz')
+                        if os.path.isfile(pd_file):
+                            with gzip.open(pd_file, GZIP_READ_TEXT) as f:
+                                page_data = json.load(f)
+                        if page_data is None and 'page_data' in self.task:
+                            page_data = self.task['page_data']
+                        if page_data is not None:
+                            for key in page_data:
                                 self.data['pageData'][key] = self.task['page_data'][key]
-                    self.task['page_data']['date'] = self.step_start
-                
-                if self.data and 'requests' in self.data:
-                    self.fix_up_request_times()
-                    self.add_response_body_flags()
-                    self.add_script_timings()
+                        self.task['page_data']['date'] = self.step_start
+
+                    if self.data and 'requests' in self.data:
+                        self.fix_up_request_times()
+                        self.add_response_body_flags()
+                        self.add_script_timings()
+
+                    if 'url' in self.job and self.job['url'] is not None:
+                        self.data['pageData']['testUrl'] = self.job['url']
+                except Exception:
+                    logging.exception('Error merging page data')
 
         if not self.data or 'pageData' not in self.data:
             raise Exception("Devtools file not present")

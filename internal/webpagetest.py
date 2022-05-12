@@ -60,7 +60,6 @@ class WebPageTest(object):
         self.fetch_result_queue = multiprocessing.JoinableQueue()
         self.job = None
         self.raw_job = None
-        self.pubsub_job = None
         self.first_failure = None
         self.is_rebooting = False
         self.is_dead = False
@@ -222,11 +221,6 @@ class WebPageTest(object):
         if os.path.isfile(margins_file):
             with open(margins_file, 'r') as f_in:
                 self.margins = json.load(f_in)
-        # pubsub if configured
-        self.subscriber = None
-        if self.options.pubsub:
-            from google.cloud import pubsub_v1
-            self.subscriber = pubsub_v1.SubscriberClient()
         # Load any locally-defined custom metrics from {agent root}/custom/metrics/*.js
         self.custom_metrics = {}
         self.load_local_custom_metrics()
@@ -511,7 +505,10 @@ class WebPageTest(object):
 
     def process_job_json(self, test_json):
         """Process the JSON of a test into a job file"""
+        if self.cpu_scale_multiplier is None:
+            self.benchmark_cpu()
         job = test_json
+        self.raw_job = dict(test_json)
         if job is not None:
             try:
                 logging.debug("Job: %s", json.dumps(job))
@@ -522,7 +519,7 @@ class WebPageTest(object):
                 if 'pngScreenShot' not in job:
                     job['pngScreenShot'] = 0
                 if 'fvonly' not in job:
-                    job['fvonly'] = 1
+                    job['fvonly'] = not self.options.testrv
                 if 'width' not in job:
                     job['width'] = 1366
                 if 'height' not in job:
@@ -627,14 +624,12 @@ class WebPageTest(object):
 
     def get_test(self, browsers):
         """Get a job from the server"""
-        if self.is_rebooting or self.is_dead:
+        if self.is_rebooting or self.is_dead or self.options.pubsub:
             return
         import requests
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
-        if self.cpu_scale_multiplier is None:
-            self.benchmark_cpu()
-        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0 and not self.options.pubsub:
+        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0:
             return None
         job = None
         self.raw_job = None
@@ -696,20 +691,6 @@ class WebPageTest(object):
                     logging.info("Checking for work for node %s: %s", self.scheduler_node, url)
                     response = self.session.get(url, timeout=10, proxies=proxies, headers={'CPID': self.get_cpid(self.scheduler_node)})
                     response_text = response.text if len(response.text) else None
-                elif self.subscriber:
-                    logging.debug('Polling work from pubsub: %s', self.options.pubsub)
-                    try:
-                        from google.cloud import pubsub_v1
-                        response = self.subscriber.pull(request={
-                            'subscription': self.options.pubsub,
-                            'max_messages': 1,
-                            'return_immediately': True,
-                            }, timeout=10)
-                        if len(response.received_messages) == 1:
-                            self.pubsub_job = response.received_messages[0]
-                            response_text = self.pubsub_job.message.data.decode('utf-8')
-                    except Exception:
-                        logging.exception('Error polling from pubsub')
                 else:
                     logging.info("Checking for work: %s", url)
                     response = self.session.get(url, timeout=10, proxies=proxies)
@@ -783,12 +764,6 @@ class WebPageTest(object):
                 location = str(locations.pop(0))
                 count -= 1
                 retry = True
-        if not self.needs_zip:
-            self.needs_zip = []
-        if job is not None and 'work_server' in job and 'jobID' in job:
-            self.notify_test_started(job)
-        self.install_extensions()
-        self.report_diagnostics()
         return job
 
     def notify_test_started(self, job):
@@ -805,6 +780,13 @@ class WebPageTest(object):
         """Create a task object for the next test run or return None if the job is done"""
         if self.is_dead:
             return None
+        # Do the one-time setup at the beginning of a job
+        if 'current_state' not in job:
+            if not self.needs_zip:
+                self.needs_zip = []
+            if 'work_server' in job and 'jobID' in job:
+                self.notify_test_started(job)
+            self.install_extensions()
         self.report_diagnostics()
         task = None
         if self.log_handler is not None:
@@ -1509,26 +1491,18 @@ class WebPageTest(object):
                     self.post_data(self.url + "workdone.php", data, zip_path, 'result.zip')
             
             # See if the job needs to be posted to a retry pubsub queue
-            if self.pubsub_job is not None:
+            if self.options.pubsub:
                 from google.cloud import pubsub_v1
-                if 'pubsub_retry_queue' in self.job and 'success' in self.job and not self.job['success'] and self.pubsub_job is not None:
+                if 'pubsub_retry_queue' in self.job and 'success' in self.job and not self.job['success']:
                     try:
                         from concurrent import futures
                         logging.debug('Sending test to retry queue: %s', self.job['pubsub_retry_queue'])
                         publisher = pubsub_v1.PublisherClient()
-                        publisher_future = publisher.publish(self.job['pubsub_retry_queue'], self.pubsub_job.message.data)
+                        job_str = json.dumps(self.raw_job)
+                        publisher_future = publisher.publish(self.job['pubsub_retry_queue'], job_str.encode())
                         futures.wait([publisher_future], return_when=futures.ALL_COMPLETED)
                     except Exception:
                         logging.exception('Error sending job to pubsub retry queue')
-                if self.subscriber is not None:
-                    try:
-                        self.subscriber.acknowledge(request={
-                            'subscription': self.options.pubsub,
-                            'ack_ids': [self.pubsub_job.ack_id]
-                        })
-                    except Exception:
-                        logging.exception('Error acknowledging pubsub job')
-        self.pubsub_job = None
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
@@ -1887,7 +1861,7 @@ class WebPageTest(object):
         if not self.is_dead:
             self.is_dead = True
             # requeue the raw test through the original server
-            if self.raw_job is not None:
+            if self.raw_job is not None and 'work_server' in self.raw_job:
                 url = self.raw_job['work_server'] + 'requeue.php?id=' + quote_plus(self.raw_job['id'])
                 url += '&sig=' + quote_plus(self.raw_job['signature'])
                 url += '&location=' + quote_plus(self.raw_job['location'])
