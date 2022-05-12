@@ -1268,7 +1268,7 @@ class OptimizationChecks(object):
             content_type = 'webp'
         elif raw_bytes[:4] == b'OTTO':
             content_type = 'OTF'
-        elif raw_bytes[:4] == b'ttcf':
+        elif raw_bytes[:4] == b'ttcf' or hex_bytes[0:8] == b'00010000':
             content_type = 'TTF'
         elif raw_bytes[:4] == b'wOFF':
             content_type = 'WOFF'
