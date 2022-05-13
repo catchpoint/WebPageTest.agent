@@ -216,6 +216,16 @@ class WPTAgent(object):
         logging.debug('Received pubsub job')
         try:
             test_json = json.loads(message.data.decode('utf-8'))
+            try:
+                if 'metadata' in test_json and 'page_id' in test_json['metadata'] and \
+                        'root_page_id' in test_json['metadata'] and \
+                        'crawl_depth' in test_json['metadata'] and \
+                        'link_depth' in test_json['metadata'] and \
+                        test_json['metadata']['crawl_depth'] > 0 and \
+                        test_json['metadata']['page_id'] > (1 << 32):
+                    test_json['metadata']['page_id'] = (test_json['metadata']['crawl_depth'] << 30) + (test_json['metadata']['link_depth'] << 26) + test_json['metadata']['root_page_id']
+            except Exception:
+                pass
             self.job = self.wpt.process_job_json(test_json)
             self.run_job()
         except Exception:
