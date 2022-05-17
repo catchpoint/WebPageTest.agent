@@ -69,7 +69,7 @@ function addHeaders(details) {
           }
         }
         details.requestHeaders.push({'name': 'Host', 'value': overrideHosts[host]})
-        details.requestHeaders.push({'name': 'x-Host', 'value': host})
+        details.requestHeaders.push({'name': 'x-host', 'value': host})
       }
     }
   }
