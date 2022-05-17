@@ -606,7 +606,9 @@ class WebPageTest(object):
                     with open(job_path, 'wt') as f_out:
                         json.dump(job, f_out)
                     self.needs_zip.append({'path': job_path, 'name': 'job.json'})
-                    job['testinfo']['started'] = job['started']
+                    if 'testinfo' in job:
+                        job['testinfo']['started'] = job['started']
+
                 # Add the non-serializable members
                 if self.health_check_server is not None:
                     job['health_check_server'] = self.health_check_server

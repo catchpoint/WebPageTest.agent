@@ -1299,6 +1299,9 @@ class DevTools(object):
                     else:
                         patterns.append({'urlPattern': 'http://{0}*'.format(host)})
                         patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+                        # to handle redirects, let's intercept the host match as well
+                        patterns.append({'urlPattern': 'http://{0}*'.format(self.task['overrideHosts'][host])})
+                        patterns.append({'urlPattern': 'https://{0}*'.format(self.task['overrideHosts'][host])})
                 self.send_command('Network.setRequestInterception', {'patterns': patterns}, target_id=target_id)
         except Exception:
             logging.exception("Error enabling target")
@@ -1458,16 +1461,24 @@ class DevTools(object):
                 try:
                     from fnmatch import fnmatch
                     for host_match in self.task['overrideHosts']:
-                        if fnmatch(host, host_match):
-                            # Overriding to * is just a passthrough, don't actually modify anything
-                            if self.task['overrideHosts'][host_match] != '*':
+                        headers = msg['params']['request']['headers']
+                        if 'x-host' not in headers:
+                            if fnmatch(host, host_match):
+                                # Overriding to * is just a passthrough, don't actually modify anything
+                                if self.task['overrideHosts'][host_match] != '*':
+                                    headers['x-host'] = host
+                                    params['headers'] = headers
+                                    params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
+                                    # We need to add the new URL to our event for parsing later
+                                    # let's use an underscore to indicate to ourselves that we're adding this
+                                    msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
+                                break
+                            # check the new host to handle redirects
+                            if fnmatch(self.task['overrideHosts'][host_match], host):
+                                # in this case, we simply want to modify the header, everything else is fine
                                 headers = msg['params']['request']['headers']
-                                headers['x-Host'] = host
+                                headers['x-host'] = host_match
                                 params['headers'] = headers
-                                params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
-                                # We need to add the new URL to our event for parsing later
-                                # let's use an underscore to indicate to ourselves that we're adding this
-                                msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
                             break
                 except Exception:
                     logging.exception('Error processing host override')
