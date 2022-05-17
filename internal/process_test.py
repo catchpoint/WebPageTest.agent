@@ -76,8 +76,31 @@ class ProcessTest(object):
         page_data['edge-processed'] = True
 
         # Mark the job as successful if any of the steps were successful
-        if 'result' in page_data and page_data['result'] in [0, 99999]:
+        if 'result' in page_data and page_data['result'] in [0, 99997, 99998, 99999]:
             self.job['success'] = True
+        
+        # Extract any metrics requested for "successful" pubsub messages
+        try:
+            if 'pubsub_completed_metrics' in self.job and len(self.job['pubsub_completed_metrics']):
+                import copy
+                if 'results' not in self.job:
+                    self.job['results'] = {}
+                run = self.task.get('run', 1)
+                step = self.step_num
+                cached = 'RepeatView' if self.task.get('cached') else 'FirstView'
+                if run not in self.job['results']:
+                    self.job['results'][run] = {}
+                if cached not in self.job['results'][run]:
+                    self.job['results'][run][cached] = {}
+                if step not in self.job['results'][run][cached]:
+                    self.job['results'][run][cached][step] = {}
+                pubsub_result = self.job['results'][run][cached][step]
+                metrics = ['result'] + self.job['pubsub_completed_metrics']
+                for metric in metrics:
+                    if metric in page_data:
+                        pubsub_result[metric] = copy.deepcopy(page_data[metric])
+        except Exception:
+            logging.exception('Error extracting metrics for pubsub result')
 
         self.save_data()
 
@@ -1037,7 +1060,7 @@ class ProcessTest(object):
             
             # Request data
             req = {
-                'method': request['method'],
+                'method': request['method'] if 'method' in request else 'GET',
                 'url': request['full_url'],
                 'headersSize': -1,
                 'bodySize': -1,
@@ -1086,7 +1109,7 @@ class ProcessTest(object):
                     for val in qs[name]:
                         req['queryString'].append({'name': name, 'value': val})
             
-            if request['method'].lower().strip() == 'post':
+            if 'method' in request and request['method'].lower().strip() == 'post':
                 req['postData'] = {'mimeType': '', 'text': ''}
 
             entry['request'] = req

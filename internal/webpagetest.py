@@ -606,7 +606,9 @@ class WebPageTest(object):
                     with open(job_path, 'wt') as f_out:
                         json.dump(job, f_out)
                     self.needs_zip.append({'path': job_path, 'name': 'job.json'})
-                    job['testinfo']['started'] = job['started']
+                    if 'testinfo' in job:
+                        job['testinfo']['started'] = job['started']
+
                 # Add the non-serializable members
                 if self.health_check_server is not None:
                     job['health_check_server'] = self.health_check_server
@@ -1503,6 +1505,18 @@ class WebPageTest(object):
                         futures.wait([publisher_future], return_when=futures.ALL_COMPLETED)
                     except Exception:
                         logging.exception('Error sending job to pubsub retry queue')
+                elif 'pubsub_completed_queue' in self.job and self.job.get('success'):
+                    try:
+                        from concurrent import futures
+                        logging.debug('Sending test to completed queue: %s', self.job['pubsub_completed_queue'])
+                        publisher = pubsub_v1.PublisherClient()
+                        if 'results' in self.job:
+                            self.raw_job['results'] = self.job['results']
+                        job_str = json.dumps(self.raw_job)
+                        publisher_future = publisher.publish(self.job['pubsub_completed_queue'], job_str.encode())
+                        futures.wait([publisher_future], return_when=futures.ALL_COMPLETED)
+                    except Exception:
+                        logging.exception('Error sending job to pubsub completed queue')
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory

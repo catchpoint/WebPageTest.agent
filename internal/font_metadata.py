@@ -99,7 +99,7 @@ def _read_codepoint_glyph_counts(ttf):
 
 
 def read_metadata(font):
-    ttf = TTFont(font, lazy=True)
+    ttf = TTFont(font, fontNumber=0, lazy=True)
     try:
         ttf.getGlyphNames()
     except Exception:
