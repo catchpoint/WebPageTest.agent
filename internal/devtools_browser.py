@@ -129,6 +129,21 @@ class DevtoolsBrowser(object):
                 disable_images.append('jxl')
             if len(disable_images):
                 self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
+            
+            # Global script injection (server-provided as well as any locally-defined scripts)
+            if 'injectScript' in self.job and self.job.get('injectScriptAllFrames'):
+                self.devtools.send_command("Page.addScriptToEvaluateOnNewDocument", {"source": self.job['injectScript']}, wait=True)
+            inject_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'custom', 'inject')
+            if (os.path.isdir(inject_dir)):
+                files = glob.glob(inject_dir + '/*.js')
+                for file in files:
+                    try:
+                        with open(file, 'rt') as f:
+                            inject_script = f.read()
+                            if inject_script:
+                                self.devtools.send_command("Page.addScriptToEvaluateOnNewDocument", {"source": inject_script}, wait=True)
+                    except Exception:
+                        pass
 
             # Mobile Emulation
             if not self.options.android and not self.is_webkit and \
