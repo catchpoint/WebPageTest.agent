@@ -77,6 +77,7 @@ class Firefox(DesktopBrowser):
             "snippets.cdn.mozilla.net",
             "content-signature-2.cdn.mozilla.net",
             "aus5.mozilla.org"]
+        self.duplicates = []
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -609,6 +610,14 @@ class Firefox(DesktopBrowser):
                             self.long_tasks.append([int(start_time * 1000), int(end_time * 1000)])
                         else:
                             logging.debug("Long task outside of the test time")
+                elif message['path'] == 'wptagent.overrideHost':
+                    requestId = message['body']['requestId']
+                    logging.debug('adding to override duplicate list %s', requestId)
+                    self.duplicates.append(requestId)
+                    if requestId in self.requests:
+                        logging.debug('deleting duplicate request %s', requestId)
+                        del self.requests[requestId]
+
 
         elif self.recording:
             self.last_activity = monotonic()
@@ -670,8 +679,8 @@ class Firefox(DesktopBrowser):
                     }
 
     def process_web_request(self, message, evt):
-        """Handle webNavigation.*"""
-        if evt is not None and 'requestId' in evt and 'timeStamp' in evt:
+        """Handle webRequest.*"""
+        if evt is not None and 'requestId' in evt and 'timeStamp' in evt and evt['requestId'] not in self.duplicates:
             if evt['requestId'] not in self.requests:
                 self.requests[evt['requestId']] = {'id': evt['requestId'],
                                                    'from_net': True}
