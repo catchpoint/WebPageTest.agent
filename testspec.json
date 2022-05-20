@@ -6,6 +6,5 @@
     "bwIn": 1600,
     "bwOut": 768,
     "latency": 170,
-    "label": "3G Fast",
-    "script": "overrideHost\ttimkadlec.com\texperiments.webpagetest.org\nnavigate\thttps://timkadlec.com/"
+    "label": "3G Fast"
 }
