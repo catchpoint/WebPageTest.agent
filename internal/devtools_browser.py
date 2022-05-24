@@ -1075,6 +1075,10 @@ class DevtoolsBrowser(object):
                             task['page_data']['detected'] = dict(detected['categories'])
                         if 'apps' in detected:
                             task['page_data']['detected_apps'] = dict(detected['apps'])
+                        if 'technologies' in detected:
+                            task['page_data']['detected_technologies'] = dict(detected['technologies'])
+                        if 'resolved' in detected:
+                            task['page_data']['detected_raw'] = list(detected['resolved'])
             except Exception as err:
                 logging.exception("Exception running Wappalyzer: %s", err.__str__())
         if not completed:
