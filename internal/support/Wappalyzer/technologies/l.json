@@ -204,6 +204,38 @@
     "scriptSrc": "/__layer0__/cache-manifest\\.js",
     "website": "https://www.layer0.co"
   },
+  "LayoutHub": {
+    "cats": [
+      100,
+      51
+    ],
+    "description": "LayoutHub is an easy page builder that helps merchants quickly set up an online store with any kind of page type by using our library of pre-designed layouts and blocks.",
+    "icon": "LayoutHub.png",
+    "requires": "Shopify",
+    "scriptSrc": "app\\.layouthub\\.com/shopify/layouthub\\.js",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://layouthub.com"
+  },
+  "Lazada": {
+    "cats": [
+      6
+    ],
+    "description": "Lazada is a B2B2C marketplace model in which so-called merchants sell goods on their platform.",
+    "icon": "Lazada.svg",
+    "meta": {
+      "aplus-auto-exp": "lzdhome\\.desktop\\."
+    },
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.lazada.com"
+  },
   "LazySizes": {
     "cats": [
       59
@@ -256,12 +288,12 @@
     ],
     "description": "Leaflet is the price testing platform for Shopify.",
     "icon": "Leaflet platform.png",
-    "requires": "Shopify",
-    "scriptSrc": "scripts\\.leaflet\\.co/",
-    "saas": true,
     "pricing": [
       "payg"
     ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "scripts\\.leaflet\\.co/",
     "website": "https://join.leaflet.co"
   },
   "Leanplum": {
@@ -288,8 +320,8 @@
     "description": "LearnWorlds is a powerful yet lightweight, user-friendly, white-labeled cloud-based LMS ideal for versatile employee training.",
     "icon": "LearnWorlds.svg",
     "js": {
-      "LWSettings.deactive_components": "",
-      "LWClient.ebooks": ""
+      "LWClient.ebooks": "",
+      "LWSettings.deactive_components": ""
     },
     "pricing": [
       "mid",
@@ -363,6 +395,24 @@
     "html": "<link[^>]+ rel=\"stylesheet/less\"",
     "icon": "Less.png",
     "website": "http://lesscss.org"
+  },
+  "Letro": {
+    "cats": [
+      90,
+      96
+    ],
+    "description": "Letro is a UGC and review tool for ecommerce platforms.",
+    "icon": "Letro.svg",
+    "js": {
+      "__letroUgcGadget": "",
+      "letroUgcSet": ""
+    },
+    "scriptSrc": "letro\\.jp/tags",
+    "saas": true,
+    "pricing": [
+      "recurring"
+    ],
+    "website": "https://service.aainc.co.jp/product/letro/"
   },
   "Let's Encrypt": {
     "cats": [
@@ -613,10 +663,10 @@
     "js": {
       "linxImpulse.config.integrationFlags.platformProvider": "linxCommerce"
     },
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
     "website": "https://www.linx.com.br/linx-commerce"
   },
   "Linx Impulse": {
@@ -625,17 +675,17 @@
       76
     ],
     "description": "Linx Impulse is a personalisation, media and retargeting solutions built by Linx.",
-    "icon": "Linx.png",
     "dom": "link[href*='.linximpulse.net']",
+    "icon": "Linx.png",
     "js": {
       "linx.banner": "",
       "linxImpulse.config": "",
       "linxImpulseInitialized": ""
     },
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
     "website": "https://www.linx.com.br/linx-impulse"
   },
   "Liquid Web": {
@@ -1353,8 +1403,8 @@
     "js": {
       "lozad": ""
     },
-    "scripts": "/lozad\\.min\\.js",
     "oss": true,
+    "scripts": "/lozad\\.min\\.js",
     "website": "https://apoorv.pro/lozad.js/"
   },
   "Lua": {
@@ -1546,5 +1596,15 @@
     },
     "oss": true,
     "website": "https://lit.dev"
+  },
+  "lite-youtube-embed": {
+    "cats": [
+      59
+    ],
+    "description": "The lite-youtube-embed technique renders the YouTube video inside the IFRAME tag only when the play button in clicked thus improving the core web vitals score of your website.",
+    "dom": "lite-youtube",
+    "website": "https://github.com/paulirish/lite-youtube-embed",
+    "oss": true, 
+    "implies": "YouTube"
   }
 }

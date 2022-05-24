@@ -167,10 +167,10 @@
     "description": "Packlink PRO is a multicarrier shipping solutions for ecommerce and marketplaces.",
     "icon": "Packlink.png",
     "implies": "Shopify",
-    "saas": true,
     "pricing": [
       "payg"
     ],
+    "saas": true,
     "scriptSrc": "packlink-spf-pro\\.appspot\\.com/.+myshopify\\.com",
     "website": "https://apps.shopify.com/packlink-pro"
   },
@@ -725,6 +725,21 @@
     "scriptSrc": "js\\.peek\\.\\w+",
     "website": "https://www.peek.com/"
   },
+  "PeerBoard": {
+    "cats": [
+      2
+    ],
+    "description": "PeerBoard is a plug-and-play community solution, which helps groups, clubs, startups, marketplaces and businesses create discussion forums.",
+    "icon": "PeerBoard.png",
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "scriptSrc": "\\.peerboard\\.com/",
+    "website": "https://peerboard.com"
+  },
   "PeerTube": {
     "cats": [
       2
@@ -827,17 +842,17 @@
     ],
     "description": "Swift is a page speed solution for ecommerce store owners built by PerfectApps.",
     "icon": "PerfectApps Swift.png",
-    "requires": "Shopify",
     "js": {
       "ps_apiURI": "swift-api\\.perfectapps\\.io/",
       "ps_storeUrl": "swift\\.perfectapps\\.io"
     },
-    "scriptSrc": "swift\\.perfectapps\\.io/",
-    "saas": true,
     "pricing": [
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "swift\\.perfectapps\\.io/",
     "website": "https://apps.shopify.com/swift"
   },
   "Perfex CRM": {
@@ -853,6 +868,18 @@
     "saas": true,
     "scriptSrc": "/assets/themes/perfex/js/global\\.min\\.js(?:\\?v=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.perfexcrm.com"
+  },
+  "Performance Lab": {
+    "cats": [
+      87
+    ],
+    "description": "Performance plugin from the WordPress Performance Group, which is a collection of standalone performance modules.",
+    "icon": "Performance Lab.svg",
+    "meta": {
+      "generator": "^Performance Lab ?([\\d.]+)?\\;version:\\1"
+    },
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/performance-lab/"
   },
   "PerimeterX": {
     "cats": [
@@ -1150,6 +1177,24 @@
     ],
     "website": "https://piano.io"
   },
+  "PickyStory": {
+    "cats": [
+      100
+    ],
+    "description": "PickyStory is the ecommerce conversion platform.",
+    "icon": "PickyStory.png",
+    "implies": "Shopify",
+    "js": {
+      "pickystory.overrideStore": ""
+    },
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.pickystory\\.com/",
+    "website": "https://pickystory.com"
+  },
   "Pico": {
     "cats": [
       53
@@ -1301,6 +1346,21 @@
     ],
     "saas": true,
     "website": "https://www.pipedrive.com/"
+  },
+  "Piwik PRO Core": {
+    "cats": [
+      10
+    ],
+    "description": "Piwik PRO Core is a free alternative to Google Analytics that is privacy & compliance focused.",
+    "icon": "Piwik PRO Core.svg",
+    "excludes": "Matomo Analytics",
+    "pricing": [
+      "freemium",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.piwik\\.pro/",
+    "website": "https://piwik.pro"
   },
   "PixelFed": {
     "cats": [
@@ -2160,6 +2220,22 @@
     "scriptSrc": "\\.privy\\.com/",
     "website": "https://www.privy.com"
   },
+  "ProcessWire": {
+    "cats": [
+      1
+    ],
+    "description": "ProcessWire is an open source content management system (CMS) and framework (CMF).",
+    "icon": "ProcessWire.svg",
+    "implies": "PHP",
+    "headers": {
+      "X-Powered-By": "ProcessWire CMS"
+    },
+    "js": {
+      "ProcessWire": ""
+    },
+    "oss": true,
+    "website": "https://processwire.com"
+  },
   "Product Personalizer": {
     "cats": [
       100,
@@ -2167,13 +2243,13 @@
     ],
     "description": "Product Personalizer apps can help you to customise your products and offer a more personalised experience for your customers.",
     "icon": "Product Personalizer.png",
-    "scriptSrc": "/product-personalizer/pplr_common\\.js",
-    "saas": true,
+    "implies": "Shopify",
     "pricing": [
       "low",
       "recurring"
     ],
-    "implies": "Shopify",
+    "saas": true,
+    "scriptSrc": "/product-personalizer/pplr_common\\.js",
     "website": "https://productpersonalizer.com"
   },
   "ProfilePress": {
@@ -2182,6 +2258,9 @@
     ],
     "description": "ProfilePress is a WordPress registration plugin that lets you create login forms, registration forms, user profiles, and more.",
     "dom": "link[href*='/wp-content/plugins/wp-user-avatar/']",
+    "cookies": {
+      "ppwp_wp_session": ""
+    },
     "icon": "ProfilePress.svg",
     "pricing": [
       "low",
@@ -2446,24 +2525,40 @@
     "saas": true,
     "website": "https://www.purecars.com"
   },
+  "PurpleAds": {
+    "cats": [
+      36
+    ],
+    "description": "PurpleAds is an online advertising solution that businesses use to promote their products and services on Google Search, YouTube and other sites across the web.",
+    "icon": "PurpleAds.svg",
+    "meta": {
+      "purpleads-verification": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.purpleads\\.io/",
+    "website": "https://purpleads.io"
+  },
   "PushDaddy Whatsapp Chat": {
     "cats": [
       100,
       98
     ],
     "description": "Whatsapp Chat is an live chat and abondoned cart solution built by PushDaddy.",
+    "dom": "div.pushdaddy-chats",
     "icon": "PushDaddy.png",
     "implies": [
       "WhatsApp Business Chat",
       "Shopify"
     ],
-    "scriptSrc": "cdn\\.shopify\\.com/.+/pushdaddy_v([\\d\\.]+).*\\.js\\;version:\\1",
-    "dom": "div.pushdaddy-chats",
     "pricing": [
       "freemium",
       "payg"
     ],
     "saas": true,
+    "scriptSrc": "cdn\\.shopify\\.com/.+/pushdaddy_v([\\d\\.]+).*\\.js\\;version:\\1",
     "website": "https://apps.shopify.com/whatsapp-chat-for-support"
   },
   "PushEngage": {

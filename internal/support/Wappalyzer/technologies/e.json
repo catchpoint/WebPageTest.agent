@@ -98,6 +98,19 @@
     },
     "website": "http://www.eprints.org"
   },
+  "ESW": {
+    "cats": [
+      106
+    ],
+    "description": "eShopWorld is a company providing payments, shipping, and delivery services focusing on cross-border commerce.",
+    "icon": "ESW.png",
+    "js": {
+      "eshopworld": "",
+      "eswRetailerDisplayConfiguration": ""
+    },
+    "scriptSrc": "Eswhooks\\.js",
+    "website": "http://esw.com/"
+  },
   "EWWW Image Optimizer": {
     "cats": [
       87,
@@ -140,12 +153,12 @@
     ],
     "description": "Easy Redirects is a Shopify app built by Eastside, and part of the best Shopify Apps collection.",
     "icon": "Easy Redirects.png",
+    "implies": "Shopify",
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "easy-redirects\\..+/redirect-app\\.js",
     "website": "https://apps.shopify.com/easyredirects"
@@ -209,6 +222,28 @@
       "\\bEasylog\\b"
     ],
     "website": "http://www.easylog.com.br"
+  },
+  "Ebasnet": {
+    "cats": [
+      1
+    ],
+    "description": "Ebasnet is a web project creation and management platform in the cloud. It allows anyone to set up an online store or corporate website without prior IT knowledge.",
+    "icon": "Ebasnet.svg",
+    "implies": [
+      "PHP",
+      "MySQL",
+      "Varnish",
+      "Symfony"
+    ],
+    "meta": {
+      "author": "^Ebasnet Web Solutions$"
+    },
+    "pricing": [
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdnebasnet\\.com/",
+    "website": "https://ebasnet.com"
   },
   "Ecovium": {
     "cats": [
@@ -615,6 +650,18 @@
     ],
     "website": "https://www.engagio.com/"
   },
+  "Engintron": {
+    "cats": [
+      33
+    ],
+    "description": "Engintron is a plugin that integrates Nginx to cPanel/WHM server.",
+    "headers": {
+      "X-Server-Powered-By": "^Engintron$"
+    },
+    "icon": "engintron.png",
+    "requires": "Nginx",
+    "website": "https://github.com/engintron/engintron"
+  },
   "Enigma": {
     "cats": [
       80
@@ -646,16 +693,6 @@
     "saas": true,
     "scriptSrc": "\\.enjin\\.com/",
     "website": "https://www.enjin.com"
-  },
-  "Engintron": {
-   "cats":[33],
-    "description": "Engintron is a plugin that integrates Nginx to cPanel/WHM server.",
-    "icon": "engintron.png",
-    "requires": "Nginx",
-     "headers": {
-      "X-Server-Powered-By": "^Engintron$"
-    },
-    "website": "https://github.com/engintron/engintron"
   },
   "Ensi": {
     "cats": [
@@ -974,6 +1011,20 @@
     "scriptSrc": "\\.etracker\\.com",
     "website": "https://www.etracker.com"
   },
+  "Everflow": {
+    "cats": [
+      10
+    ],
+    "description": "Everflow is a partner marketing analytics platform.",
+    "icon": "Everflow.png",
+    "scriptSrc": "everflow\\.js",
+    "saas": true,
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "website": "https://www.everflow.io"
+  },
   "Eveve": {
     "cats": [
       5,
@@ -1035,6 +1086,7 @@
     ],
     "description": "Exemptify allows you to conduct proper EU B2B transactions by validating EU VAT IDs.",
     "icon": "Exemptify.png",
+    "implies": "Shopify",
     "js": {
       "ExemptifyTriggerUpdate": "",
       "m4u_ex_vat_postfix_txt": ""
@@ -1043,7 +1095,6 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "\\.modules4u\\.biz/shopify/exemptify",
     "website": "http://modules4u.biz/exemptify"
@@ -1370,28 +1421,6 @@
     "implies": "PHP",
     "scriptSrc": "[^a-z\\d]e107\\.js",
     "website": "http://e107.org"
-  },
-  "Ebasnet": {
-    "cats": [
-      1
-    ],
-    "description": "Ebasnet is a web project creation and management platform in the cloud. It allows anyone to set up an online store or corporate website without prior IT knowledge.",
-    "icon": "Ebasnet.svg",
-    "meta": {
-      "author": "^Ebasnet Web Solutions$"
-    },
-    "implies": [
-      "PHP",
-      "MySQL",
-      "Varnish",
-      "Symfony"
-    ],
-    "scriptSrc": "cdnebasnet\\.com/",
-    "saas": true,
-    "pricing": [
-      "recurring"
-    ],
-    "website": "https://ebasnet.com"
   },
   "eBay Partner Network": {
     "cats": [

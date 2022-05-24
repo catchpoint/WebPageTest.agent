@@ -407,6 +407,9 @@
     },
     "html": "<[^>]+data-react",
     "icon": "React.svg",
+    "meta": {
+      "description": "^Web site created using create-react-app$"
+    },
     "js": {
       "React.version": "^(.+)$\\;version:\\1",
       "ReactOnRails": "",
@@ -467,6 +470,27 @@
       "/react-router(@|/)([\\d.]+)(?:/[a-z]+)?/react-router(?:.min)?\\.js\\;version:\\2"
     ],
     "website": "https://reactrouter.com/"
+  },
+  "Reactive": {
+    "cats": [
+      1,
+      6
+    ],
+    "description": "Reactive is a subscription-based software that allows you to set up an online store and website. It has a CMS and has been created to support retail, coffee bars, restaurants owners and accomodation properties such as hotels or villas. With Reactive one can sell products or accept reservations and online orders.",
+    "icon": "Reactive.svg",
+    "implies": [
+      "Ruby on Rails"
+    ],
+    "meta": {
+      "generator": "Reactive"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "url": "^https?//.+\\.reactiveonline\\.io",
+    "website": "https://reactiveonline.io"
   },
   "Really Simple CAPTCHA": {
     "cats": [
@@ -576,9 +600,10 @@
     ],
     "saas": true,
     "scriptSrc": [
-      "rechargeassets-bootstrapheroes-rechargeapps\\.netdna-ssl\\.com"
+      "rechargeassets-bootstrapheroes-rechargeapps\\.netdna-ssl\\.com",
+      "\\.rechargecdn\\.com/"
     ],
-    "website": "https://rechargepayments.com/"
+    "website": "https://rechargepayments.com"
   },
   "Recite Me": {
     "cats": [
@@ -589,13 +614,31 @@
     "scriptSrc": "api\\.reciteme\\.com/asset/js",
     "website": "https://reciteme.com/"
   },
+  "ReConvert": {
+    "cats": [
+      100
+    ],
+    "description": "ReConvert is a post-purchase upsell & thank you page.",
+    "icon": "ReConvert.svg",
+    "implies": "Shopify",
+    "pricing": [
+      "low",
+      "payg",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.stilyoapps\\.com/reconvert/assets/js/store_reconvert_node\\.js",
+    "website": "https://www.reconvert.io"
+  },
   "RecoverMyCart": {
     "cats": [
       76,
       100
     ],
-    "description": "RecoverMyCart is a shopify app for abandoned basket recovery.",
+    "description": "RecoverMyCart is a Shopify app for abandoned basket recovery.",
     "icon": "RecoverMyCart.png",
+    "implies": "Shopify",
     "pricing": [
       "low",
       "freemium",
@@ -756,13 +799,13 @@
       18
     ],
     "description": "RedwoodJS is a full-stack serverless web application framework built by Tom Preston Werner (co-founder of Github) et al.",
+    "dom": "div#redwood-app",
     "icon": "RedwoodJS.svg",
     "implies": [
       "React",
       "GraphQL",
       "TypeScript"
     ],
-    "dom": "div#redwood-app",
     "oss": true,
     "website": "https://redwoodjs.com"
   },
@@ -774,15 +817,15 @@
     "icon": "Reevoo.svg",
     "js": {
       "ReevooApi": "",
-      "reevooUrl": "\\.reevoo\\.com/",
       "reevooAccessCode": "",
-      "reevooLoader.tracking": ""
+      "reevooLoader.tracking": "",
+      "reevooUrl": "\\.reevoo\\.com/"
     },
-    "saas": true,
-    "scriptSrc": "\\.reevoo\\.com/",
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "\\.reevoo\\.com/",
     "website": "https://www.reevoo.com"
   },
   "ReferralCandy": {
@@ -882,6 +925,21 @@
     ],
     "website": "https://www.relaiscolis.com"
   },
+  "Remarkable Commerce": {
+    "cats": [
+      6
+    ],
+    "description": "Remarkable Commerce is a technology and services company which provides a ecommerce platform for mid-sized retailers.",
+    "icon": "Remarkable.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "js": {
+      "Remarkable": ""
+    },
+    "website": "https://remarkable.net/"
+  },
   "Remix": {
     "cats": [
       18,
@@ -905,13 +963,13 @@
     ],
     "description": "Reputon is an customer reviews Shopify app.",
     "icon": "Reputon.svg",
-    "requires": "Shopify",
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
+    "saas": true,
     "scriptSrc": "\\.reputon\\.com/",
     "website": "https://reputon.com"
   },
@@ -1104,15 +1162,15 @@
     "description": "ReturnGO's AI-driven returns management platform significantly improves customer lifetime value and post-purchase experience.",
     "icon": "ReturnGO.png",
     "js": {
-      "returnGoIntegrationData": "",
-      "returnGoCanBeRun": ""
+      "returnGoCanBeRun": "",
+      "returnGoIntegrationData": ""
     },
-    "scriptSrc": "\\.returngo\\.ai/",
     "pricing": [
       "low",
       "recurring"
     ],
     "saas": true,
+    "scriptSrc": "\\.returngo\\.ai/",
     "website": "https://returngo.ai"
   },
   "RevJet": {
@@ -1226,19 +1284,19 @@
     ],
     "description": "Revy is dedicated to build Shopify Apps to generate more sales for merchants.",
     "icon": "Revy.png",
-    "requires": "Shopify",
     "js": {
       "RevyApp": "",
       "RevyBundle": "",
       "RevyUpsell": ""
     },
-    "scriptSrc": "api\\.revy\\.io/",
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "requires": "Shopify",
+    "saas": true,
+    "scriptSrc": "api\\.revy\\.io/",
     "website": "https://revy.io"
   },
   "Rewardful": {
