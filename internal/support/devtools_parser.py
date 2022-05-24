@@ -193,7 +193,8 @@ class DevToolsParser(object):
                         raw_requests[request_id]['fromCache'] = True
                     if method == 'Network.requestIntercepted' and 'requestId' in params and \
                             request_id is not None and request_id in raw_requests:
-                        raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
+                        if '__overwrittenURL' in params:
+                            raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \

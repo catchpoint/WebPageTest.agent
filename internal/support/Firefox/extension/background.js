@@ -68,6 +68,7 @@ function get_domain(url) {
 }
 
 function blockRequest(details) {
+  send_message('wptagent.blockRequest', details);
   var ret = {cancel: false}
   if (!details.url.startsWith(SERVER)) {
     var domain = get_domain(details.url);
@@ -91,10 +92,29 @@ function blockRequest(details) {
       }
     }
   }
+  
   return ret;
 }
 
+function redirectRequest(details) {
+  if (!details.url.startsWith(SERVER)) {
+    if (Object.keys(overrideHosts).length > 0) {
+      
+      var url = new URL(details.url);
+      for (host in overrideHosts) {
+        if (host == url.hostname) {
+          url.hostname = overrideHosts[host];
+          send_message('wptagent.overrideHost', details);
+        }
+        return {redirectUrl: url.toString()};
+      }
+    }
+  }
+  
+  return;
+}
 function addHeaders(details) {
+  send_message('wptagent.addHeaders', 'called')
   if (!details.url.startsWith(SERVER)) {
     for (name in headers) {
       for (var i = 0; i < details.requestHeaders.length; ++i) {
@@ -107,15 +127,16 @@ function addHeaders(details) {
     }
     var url = new URL(details.url);
     for (host in overrideHosts) {
-      if (host == url.hostname) {
+      if (overrideHosts[host] == url.hostname) {
         for (var i = 0; i < details.requestHeaders.length; ++i) {
-          if (details.requestHeaders[i].name === 'Host') {
+          if (details.requestHeaders[i].name.toLowerCase === 'host') {
             details.requestHeaders.splice(i, 1);
             break;
           }
         }
         details.requestHeaders.push({'name': 'Host', 'value': overrideHosts[host]})
-        details.requestHeaders.push({'name': 'x-Host', 'value': host})
+        details.requestHeaders.push({'name': 'x-host', 'value': host})
+        break;
       }
     }
   }
@@ -123,10 +144,19 @@ function addHeaders(details) {
 }
 
 var installBlockingHandler = function() {
+  send_message('wptagent.installBlockingHandler','readytoinstall')
   if (!blockingWebRequest) {
     blockingWebRequest = true;
     browser.webRequest.onBeforeRequest.addListener(blockRequest, {urls: ["<all_urls>"]}, ["blocking"]);
+
     browser.webRequest.onBeforeSendHeaders.addListener(addHeaders, {urls: ["<all_urls>"]}, ["blocking", "requestHeaders"]);
+    //make our overrideList
+    var overrideList = [];
+    for (host in overrideHosts) {
+      overrideList.push('*://' + host + '/*');
+    }
+    browser.webRequest.onBeforeRequest.addListener(redirectRequest, {urls: overrideList}, ["blocking"]);
+
   }
 };
 
