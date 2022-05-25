@@ -385,7 +385,7 @@ class iWptBrowser(BaseBrowser):
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 if name == 'jsLibsVulns':
                     continue
                 logging.debug("Collecting custom metric %s", name)

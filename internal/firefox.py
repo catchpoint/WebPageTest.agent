@@ -551,7 +551,7 @@ class Firefox(DesktopBrowser):
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_TEST_URL') >= 0:
