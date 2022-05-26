@@ -1,6 +1,9 @@
 var WptAgentFlatten = function(object) {
     let contents = {}
     for (const key in object) {
+        if (key == 'children') {
+            continue;
+        }
         if (typeof(object[key]) === 'object') {
             if (Array.isArray(object[key])) {
                 let values = [];
