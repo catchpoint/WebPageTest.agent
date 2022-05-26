@@ -41,7 +41,7 @@ else
     done
     sudo pip3 install 'fonttools>=3.44.0,<4.0.0'
 fi
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 until sudo apt-get install -y nodejs
 do
     sleep 1
