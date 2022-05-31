@@ -199,7 +199,7 @@ def _read_features(ttf):
 
         return result
     except Exception:
-        loggin.exception('Error reading OpenType feature data')
+        logging.exception('Error reading OpenType feature data')
     return None
 
 def read_metadata(font):
