@@ -959,15 +959,19 @@ class OptimizationChecks(object):
             try:
                 request = self.requests[request_id]
                 content_length = None
+                content_type = None
                 if 'response_headers' in request:
                     content_length = self.get_header_value(request['response_headers'], 'Content-Length')
+                    content_type = self.get_header_value(request['response_headers'], 'Content-Type')
                 if content_length is not None:
                     content_length = int(re.search(r'\d+', str(content_length)).group())
                 elif 'transfer_size' in request:
                     content_length = request['transfer_size']
+                if content_type is None:
+                    content_type = ''
                 if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
-                    if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
+                    if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl'] or content_type.startswith('image/'):
                         check = {'score': -1,
                                  'size': content_length,
                                  'target_size': content_length,
