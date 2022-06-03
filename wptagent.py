@@ -1162,9 +1162,25 @@ def main():
     parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
     parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
     parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
-
+    parser.add_argument('--debug', action='store_true', default=False, help="Debugging mode keeps all files from runs and enables logging")
     options, _ = parser.parse_known_args()
 
+    if options.debug: # Added for Github Actions
+        if platform.system() == 'Linux':
+            options.dockerized = False
+            options.xvfb = True
+            options.noidle = True
+            options.location = 'Test'
+            options.testout = 'id'
+            options.browser = 'Chrome'
+        if options.testurl == None or "google" in options.testurl:
+            options.testurl = r"https://www.google.com/"
+        elif "light" in options.testurl:
+            options.testurl = r"https://sqa.3genlabs.net/hawksyntheticpageserver/Main.ashx?type=html&details=%22image%22:%7b%22count%22:10,%22height%22:300,%22width%22:500,%22delay%22:0,%22redirect%22:0%7d,%22css%22:%7b%22count%22:10,%22size%22:8000,%22delay%22:0,%22redirect%22:0%7d"
+        elif "medium" in options.testurl:
+            options.testurl = r"https://sqa.3genlabs.net/hawksyntheticpageserver/Main.ashx?type=html&details=%22image%22:%7B%22count%22:20,%22height%22:1024,%22width%22:1080,%22delay%22:0,%22redirect%22:10%7D,%22css%22:%7B%22count%22:20,%22size%22:2700,%22delay%22:0,%22redirect%22:10%7D,%22iframe%22:%7B%22count%22:20,%22rawtext%22:%7B%22linebreak%22:100,%22asciistart%22:33,%22asciiend%22:126,%22random%22:true,%22bytecount%22:100000%7D,%22delay%22:0,%22redirect%22:5%7D,%22iframe%22:%7B%22count%22:10,%22size%22:5000,%22delay%22:0,%22redirect%22:10%7D"
+        elif "heavy" in options.testurl:
+            options.testurl = r"https://sqa.3genlabs.net/hawksyntheticpageserver/Main.ashx?type=html&details=%22image%22:{%22count%22:100,%22height%22:1024,%22width%22:1080,%22delay%22:0,%22redirect%22:5},%22css%22:{%22count%22:100,%22size%22:2700,%22delay%22:0,%22redirect%22:5},%22iframe%22:{%22count%22:50,%22rawtext%22:{%22linebreak%22:100,%22asciistart%22:33,%22asciiend%22:126,%22random%22:true,%22bytecount%22:900000},%22delay%22:0,%22redirect%22:5},%22iframe%22:{%22count%22:10,%22size%22:800000,%22delay%22:0,%22redirect%22:10}"
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
     if sys.version_info[0] < 3:
         if platform.system() == "Windows":
@@ -1192,16 +1208,23 @@ def main():
 
     # Set up logging
     log_level = logging.CRITICAL
-    if options.verbose == 1:
+    if options.verbose == None or options.verbose == 1:
         log_level = logging.ERROR
     elif options.verbose == 2:
         log_level = logging.WARNING
     elif options.verbose == 3:
         log_level = logging.INFO
-    elif options.verbose >= 4:
+    elif options.verbose == 4:
         log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
+    elif options.verbose >= 5:
+        log_level = 8
+    
+    if log_level >= logging.DEBUG:
+        logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
                         datefmt="%H:%M:%S")
+    elif log_level < logging.DEBUG:
+        from internal.wptutil import wptutil_setup_logging
+        wptutil_setup_logging()
 
     if options.log:
         err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
