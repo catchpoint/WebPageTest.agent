@@ -955,7 +955,7 @@ class DevTools(object):
 
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
-        logging.log(8,"***Waiting for page to load***")
+        logging.log(6,"***Waiting for page to load***")
         self.profile_start('wait_for_page_load')
         if self.websocket:
             start_time = monotonic()
@@ -1021,7 +1021,7 @@ class DevTools(object):
                         done = True
                     elif self.task['error'] is not None:
                         done = True
-        logging.log(8,"***End of Wait for Page to Load***")
+        logging.log(6,"***End of Wait for Page to Load***")
         self.profile_end('wait_for_page_load')
     
     def grab_screenshot(self, path, png=True, resize=0):

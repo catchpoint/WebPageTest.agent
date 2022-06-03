@@ -94,7 +94,7 @@ class DevToolsParser(object):
             logging.debug("Writing result")
             self.make_utf8(self.result)
             self.write()
-            logging.log(8,"***END OF Processing Devtools***")
+            logging.log(6,"***END OF Processing Devtools***")
 
     def make_utf8(self, data):
         """Convert the given array to utf8"""

@@ -85,7 +85,7 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
-        logging.log(8,"***Main Testing Flow***")
+        logging.log(6,"***Main Testing Flow***")
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
@@ -127,7 +127,7 @@ class WPTAgent(object):
                 logging.exception('Error starting pubsub subscription')
 
         while not self.must_exit and not done:
-            logging.log(8,"***Entering Main Server Loop***")
+            logging.log(6,"***Entering Main Server Loop***")
             try:
                 self.alive()
                 if os.path.isfile(exit_file):
@@ -288,7 +288,7 @@ class WPTAgent(object):
 
     def run_single_test(self):
         """Run a single test run"""
-        logging.log(8,"***Running Single Test***")
+        logging.log(6,"***Running Single Test***")
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
@@ -329,7 +329,7 @@ class WPTAgent(object):
             logging.critical(err)
             self.task['error'] = err
         self.browser = None
-        logging.log(8,"***End of Single Test***")
+        logging.log(6,"***End of Single Test***")
 
     def signal_handler(self, signum, frame):
         """Ctrl+C handler"""

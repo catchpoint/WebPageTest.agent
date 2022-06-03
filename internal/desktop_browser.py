@@ -157,7 +157,7 @@ class DesktopBrowser(BaseBrowser):
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])
                     subprocess.call(['sudo', 'cp', hosts_tmp, hosts_file])
                     os.unlink(hosts_tmp)
-                    logging.debug(hosts_text)
+                    logging.log(9,hosts_text)
             except Exception as err:
                 logging.exception("Exception modifying hosts file: %s", err.__str__())
 
@@ -797,7 +797,7 @@ class DesktopBrowser(BaseBrowser):
                     int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
-            logging.debug('Page Data: %s', json_page_data)
+            logging.log(9,'Page Data: %s', json_page_data)
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 

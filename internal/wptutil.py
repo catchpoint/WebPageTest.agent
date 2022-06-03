@@ -43,7 +43,7 @@ def util_dbg_check_results(dir):
 
     for file in expectedFiles:
         if file not in currentFiles:
-            logging.log(8,f"{file}: WAS NOT FOUND BUT IT WAS EXPECTED")
+            logging.log(7,f"{file}: WAS NOT FOUND BUT IT WAS EXPECTED")
             logging.critical(f"{file}: WAS NOT FOUND BUT IT WAS EXPECTED")
 
 class MyFilter(object):
@@ -56,12 +56,14 @@ class MyFilter(object):
 class LogFormatter(logging.Formatter):
     __instance = None
     COLOR_CODES = {
-        logging.CRITICAL: "\033[1;35m", # bright/bold magenta
-        logging.ERROR:    "\033[1;31m", # bright/bold red
-        logging.WARNING:  "\033[1;33m", # bright/bold yellow
-        logging.INFO:     "\033[0;37m", # white / light gray
-        logging.DEBUG:    "\033[1;30m", # bright/bold black / dark gray
-        8:                "\033[1;36m", # blue   
+        logging.CRITICAL: "\033[1;35m", # purple
+        logging.ERROR:    "\033[1;31m", # red
+        logging.WARNING:  "\033[1;33m", # yellow
+        logging.INFO:     "\033[0;32m", # green
+        logging.DEBUG:    "\033[1;37m", # gray
+        8:                "\033[1;37m", # white
+        7:                "\033[1;31m", # red
+        6:                "\033[1;32m", # green     
     }
 
     RESET_CODE = "\033[0m"
@@ -111,14 +113,16 @@ def wptutil_setup_logging(
         logfile = True,
         logfile_path = "logging",
         logfile_file = "main.log", 
-        logfile_log_level = [8], 
+        logfile_log_level = 8, 
         logfile_log_color = False,
-        logfile_lambda = lambda a, b : a in b,
+        logfile_lambda = lambda a, b : a <= b,
         datefmt = '%Y-%m-%d %H:%M:%S',
         log_format ="%(color_on)s%(asctime)s.%(msecs)03d|%(threadName)10s|%(startTime)5d|%(time)5d|%(levelname)-8s | %(message)-30s|%(filename)s|%(funcName)s|%(lineno)s%(color_off)s"):
 
     # Custom Logging Level
-    logging.addLevelName(8,"PERF")
+    logging.addLevelName(8,"PERFDEB")
+    logging.addLevelName(7,"PERFERR")
+    logging.addLevelName(6,"PERFINFO")
     # Custom Logging Formater
     LogFormatter(fmt=log_format, color=console_log_color, datefmt=datefmt)
     # Global Logger Setup
@@ -187,3 +191,168 @@ def main():
     logging.log(8,"here")
     
     logging.critical("Critical message")
+
+### LOCAL TESTING ###
+
+def grab_working_dir():
+    try:
+        dirpath = "./work/{}".format(os.listdir("work")[0])
+    except:
+        logging.warning(UserWarning("No WorkPath Was Found")) 
+        exit(1)
+    
+    for dir in os.listdir(dirpath): # Finding the folder with browser data in it
+        if ".1.0" in dir:
+            dirpath = os.path.join(os.getcwd(),dirpath,dir) # work/workID.1.0/
+            break
+    return dirpath
+
+def setup_devtools_opt():
+    """Finds the name of the work dir and sets everything up for devtools parser"""
+    ### SETUP FOR FINDING WORKING PATH ###
+    if not os.path.isdir("work"): # Check to See if the Work Dir is present
+        logging.warning(UserWarning("No Work Dir Was Found")) 
+
+    devtools_opt = {'devtools': "1_devtools.json.gz",
+                    'netlog': "1_netlog_requests.json.gz",
+                    'requests': "1_timeline_requests.json.gz",
+                    'optimization': "1_optimization.json.gz",
+                    'user': "1_user_timing.json.gz",
+                    'coverage': None,
+                    'cpu': "1_timeline_cpu.json.gz",
+                    'v8stats': "1_v8stats.json.gz",
+                    'cached': None,
+                    'out': None,
+                    'noheaders': None,
+                    'new_func': None}
+                    
+    dirpath = grab_working_dir()
+
+    for key,file in devtools_opt.items(): # For each item in devtools_opt we want to check if its a file
+        if file == None:
+            continue
+        devopt = os.path.join(dirpath,file)
+        devtools_opt[key] = devopt # work/workID.1.0/1_filename.json.gz
+        if not os.path.isfile(devtools_opt[key]): # If not a file set None
+            devtools_opt[key] = None
+
+    return devtools_opt, dirpath
+    ### END OF SETUP FOR FINDING WORKING PATH ###
+
+
+def devtools_parser(): 
+    """Runs the Devtool processs tools, with new and old functions"""
+    from support import devtools_parser as dp
+    # Init devtools_opt and dirpath
+    devtools_opt, dirpath = setup_devtools_opt() 
+    
+    # Set up config
+    devtools_opt["out"] = f"{dirpath}/oldData.json" # Set the out file
+    devtools_opt["cached"] = 0
+    devtools_opt["noheaders"] = False 
+
+    logging.log(6,"*** (OLD) Running Devtools ***")
+    # Init DevtoolsParser
+    devtools = dp.DevToolsParser(devtools_opt)
+    devtools.process()
+
+    LogFormatter.set_time_now()
+    # Init devtools_opt and dirpath
+    devtools_opt, dirpath = setup_devtools_opt() 
+    # Set up config to run new functions
+    devtools_opt["new_func"] = True
+    devtools_opt["cached"] = 0
+    devtools_opt["noheaders"] = False 
+    devtools_opt["out"] = f"{dirpath}/newData.json" # Set the out file
+
+    logging.log(6,"*** (NEW) Running Devtools ***")
+
+    # Init DevtoolsParser
+    devtools = dp.DevToolsParser(devtools_opt)
+    devtools.process()
+    
+
+def devtools_parser_compare_data():
+    oldData = {}
+    newData = {}
+    dirpath = grab_working_dir()
+    
+    # Import the nested_diff for comparing profil data
+    try: 
+        from nested_diff import diff
+    except:
+        logging.exception("Please install nested_diff: pip3 install nested_diff")
+        return
+    import ujson as json
+    
+    # Read Pagedata in from Files
+    with open("{}/{}".format(dirpath,"oldData.json")) as f_in:
+        oldData = json.load(f_in)
+    with open("{}/{}".format(dirpath,"newData.json")) as f_in:
+        newData = json.load(f_in)
+    # Put Info in about what each letter stands for.    
+    diffC = {"info":{
+                "A": "stands for 'added', it's value - added item.",
+                "C": "is for comments; optional, value - arbitrary string.",
+                "D": "means 'different' and contains subdiff.",
+                "E": "diffed entity (optional), value - empty instance of entity's class.",
+                "I": "index for sequence item, used only when prior item was omitted.",
+                "N": "is a new value for changed item.",
+                "O": "is a changed item's old value.",
+                "R": "key used for removed item.",
+                "U": "represent unchanged item.",
+            },
+            "diff": {}
+        }
+    diffC['diff'].update(diff(oldData,newData,U=False))
+    with open(f"{dirpath}/pageDataComp.json", "w") as f_out:
+        json.dump(diffC,f_out)
+
+    print("** Checking For Differences **")
+    if any(diffC['diff']): # If not empty {} then print diff and fail
+        print("Keys:\n{}\nDifferences:\n{}".format(diffC['info'],diffC['diff']))
+        assert False
+    else: # Else No Differences
+        print("    No Differences Found\n")
+
+def devtools_parser_log_print():
+    orginal = ""
+    with open("./logging/main.log") as f_in:
+        orginal = f_in.read()
+
+    print(orginal)
+
+import argparse
+parser = argparse.ArgumentParser(description='WebPageTest Agent.', prog='wpt-agent')
+
+parser.add_argument('-v', '--verbose', action='count',help="Increase verbosity (specify multiple times for more)."
+                    " -vvvv for full debug output.")
+
+parser.add_argument('-d', action='store_true', default=False, help="Runs Metrics Devtools on the local store files")
+
+#parser.add_argument('-r', type=int, default=1, help="Prints the avg of running the new and old functions")
+parser.add_argument('-c', action='store_true', default=False, help="Prints the Compared Data from new and old functions")
+parser.add_argument('-l', action='store_true', default=False, help="Prints the default logs")
+
+
+if __name__ == "__main__":
+    import warnings
+    options, _ = parser.parse_known_args()
+
+    FunctionStack = []
+
+    if options.d:
+        wptutil_setup_logging(console_lambda=lambda a, b : a <= b, console_log_level=8, logfile=False)
+        FunctionStack.append(devtools_parser)
+        logging.shutdown()
+    if options.c:
+        FunctionStack.append(devtools_parser_compare_data)
+    if options.l:
+        FunctionStack.append(devtools_parser_log_print)
+    #for i in range(options.r): # Run count
+    if len(FunctionStack) == 0:
+        main()
+    else:
+        for f in FunctionStack: # Call the function Stack
+            f()
+

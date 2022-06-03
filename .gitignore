@@ -12,6 +12,7 @@
 /*.cmd
 /alive.txt
 /10fps.sh
+/logging
 error.log
 loop.sh
 agent.sh

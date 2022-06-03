@@ -301,7 +301,7 @@ class DevtoolsBrowser(object):
             optimization.start()
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
-                logging.log(8,"***Processing Video***")
+                logging.log(6,"***Processing Video***")
                 self.process_video()
             if self.job.get('wappalyzer'):
                 self.wappalyzer_detect(task, self.devtools.main_request_headers)
@@ -362,7 +362,7 @@ class DevtoolsBrowser(object):
         """Process the devtools log and pull out the requests information"""
         if self.must_exit_now:
             return
-        logging.log(8,"***Processing Devtools Requests***")
+        logging.log(6,"***Processing Devtools Requests***")
         self.profile_start('dtbrowser.process_devtools_requests')
         path_base = os.path.join(self.task['dir'], self.task['prefix'])
         devtools_file = path_base + '_devtools.json.gz'
@@ -971,7 +971,7 @@ class DevtoolsBrowser(object):
     def run_axe(self, task):
         """Build the axe script to run in-browser"""
         self.profile_start('dtbrowser.axe_run')
-        logging.log(8,"***Running Axe***")
+        logging.log(6,"***Running Axe***")
         start = monotonic()
         script = None
         try:
@@ -1027,7 +1027,7 @@ class DevtoolsBrowser(object):
         if self.must_exit_now:
             return
             
-        logging.log(8,"***Running Wappalyzer***")
+        logging.log(6,"***Running Wappalyzer***")
         self.profile_start('dtbrowser.wappalyzer_detect')
         # Run the Wappalyzer detection (give it 30 seconds at most)
         completed = False
