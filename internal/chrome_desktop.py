@@ -72,6 +72,7 @@ ENABLE_BLINK_FEATURES = [
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
+        logging.log(8,"Init ChromeDesktop")
         self.options = options
         DesktopBrowser.__init__(self, path, options, job)
         use_devtools_video = True if self.job['capture_display'] is None else False

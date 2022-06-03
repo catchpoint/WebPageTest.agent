@@ -55,6 +55,7 @@ class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
     def __init__(self, options, workdir):
+        logging.log(8,"Init WebPageTest")
         import requests
         self.fetch_queue = multiprocessing.JoinableQueue()
         self.fetch_result_queue = multiprocessing.JoinableQueue()
@@ -381,6 +382,7 @@ class WebPageTest(object):
     def block_metadata(self):
         """Block access to the metadata service if we are on EC2 or Azure"""
         if not self.metadata_blocked:
+            logging.log(8,"Checking Metadata Server")
             import requests
             needs_block = False
             session = requests.Session()
@@ -398,6 +400,7 @@ class WebPageTest(object):
             if needs_block:
                 subprocess.call(['sudo', 'route', 'add', '169.254.169.254', 'gw', '127.0.0.1', 'lo'])
                 self.metadata_blocked = True
+            logging.log(8,"End of Metadata Server")
 
     def parse_user_data(self, user_data):
         """Parse the provided user data and extract the config info"""
@@ -505,7 +508,7 @@ class WebPageTest(object):
 
     def process_job_json(self, test_json):
         """Process the JSON of a test into a job file"""
-        if self.cpu_scale_multiplier is None:
+        logging.log(8,"Processing_Job_Json")
             self.benchmark_cpu()
         job = test_json
         self.raw_job = dict(test_json)
@@ -780,6 +783,7 @@ class WebPageTest(object):
         """Create a task object for the next test run or return None if the job is done"""
         if self.is_dead:
             return None
+        logging.log(8,"Getting Task")
         # Do the one-time setup at the beginning of a job
         if 'current_state' not in job:
             if not self.needs_zip:
@@ -1269,6 +1273,7 @@ class WebPageTest(object):
 
     def get_bodies(self, task):
         """Fetch any bodies that are missing if response bodies were requested"""
+        logging.log(8,"Checking for missing bodies")
         if self.is_dead:
             return
         self.profile_start(task, 'wpt.get_bodies')

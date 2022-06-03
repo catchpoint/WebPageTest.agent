@@ -48,6 +48,7 @@ SET_ORANGE = "(function() {" \
 class DesktopBrowser(BaseBrowser):
     """Desktop Browser base"""
     def __init__(self, path, options, job):
+        logging.log(8,"Init DesktopBrowser")
         BaseBrowser.__init__(self)
         self.path = path
         self.proc = None
@@ -90,6 +91,7 @@ class DesktopBrowser(BaseBrowser):
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
+        logging.log(8,"Preparing the Browser")
         self.stopping = False
         self.task = task
         self.profile_start('desktop.prepare')
@@ -132,6 +134,7 @@ class DesktopBrowser(BaseBrowser):
 
     def modify_hosts(self, task, hosts):
         """Add entries to the system's hosts file (non-Windows currently)"""
+        logging.log(8,"Modifying host files")
         hosts_backup = os.path.join(os.path.abspath(os.path.dirname(__file__)), "hosts.backup")
         hosts_tmp = os.path.join(task['dir'], "hosts.wpt")
         hosts_file = '/etc/hosts'
@@ -311,6 +314,7 @@ class DesktopBrowser(BaseBrowser):
 
     def close_browser(self, job, _task):
         """Terminate the browser but don't do all of the cleanup that stop does"""
+        logging.log(8,"Closing the Browser")
         self.profile_start('desktop.close_browser')
         if self.proc:
             logging.debug("Closing browser")
@@ -385,6 +389,7 @@ class DesktopBrowser(BaseBrowser):
 
     def clear_profile(self, task):
         """Delete the browser profile directory"""
+        logging.log(8,"Clearing Profile")
         if os.path.isdir(task['profile']):
             end_time = monotonic() + 30
             while monotonic() < end_time and not self.must_exit:
@@ -427,6 +432,7 @@ class DesktopBrowser(BaseBrowser):
         """Notification that we are about to start an operation that needs to be recorded"""
         if self.must_exit:
             return
+        logging.log(8,"Starting Video Recording")
         import psutil
         if task['log_data']:
             if not self.job['dtShaper']:
@@ -596,6 +602,7 @@ class DesktopBrowser(BaseBrowser):
 
     def on_stop_capture(self, task):
         """Do any quick work to stop things that are capturing data"""
+        logging.log(8,"On Stop Capture")
         if self.tcpdump is not None:
             self.profile_start('desktop.stop_pcap')
             logging.debug('Stopping tcpdump')
@@ -629,6 +636,7 @@ class DesktopBrowser(BaseBrowser):
 
     def on_stop_recording(self, task):
         """Notification that we are done with recording"""
+        logging.log(8,'Stopping Recording')
         import psutil
         if self.cpu_start is not None:
             cpu_end = psutil.cpu_times()
@@ -695,6 +703,7 @@ class DesktopBrowser(BaseBrowser):
         """Start any processing of the captured data"""
         if self.must_exit:
             return
+        logging.log(8,'Starting Processing')
         # kick off the video processing (async)
         if 'video_file' in task and os.path.isfile(task['video_file']):
             self.profile_start('desktop.video_processing')
@@ -755,6 +764,7 @@ class DesktopBrowser(BaseBrowser):
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
+        logging.log(8,'Waiting for background threads to finish processing')
         if self.video_processing is not None:
             logging.debug('Waiting for video processing to finish')
             self.video_processing.communicate()
