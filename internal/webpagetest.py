@@ -1693,7 +1693,7 @@ class WebPageTest(object):
 
     def post_data(self, url, data, file_path=None, filename=None):
         """Send a multi-part post"""
-        if self.is_dead:
+        if self.is_dead or self.options.server == None:
             return False
         ret = True
         # pass the data fields as query params and any files as post data
