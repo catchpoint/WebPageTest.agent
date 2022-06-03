@@ -363,6 +363,8 @@ class DesktopBrowser(BaseBrowser):
 
     def wait_for_idle(self, wait_time = 30):
         """Wait for no more than 50% CPU utilization for 400ms"""
+        if self.options.debug:
+            return
         import psutil
         logging.debug("Waiting for Idle...")
         cpu_count = psutil.cpu_count()
@@ -770,7 +772,7 @@ class DesktopBrowser(BaseBrowser):
             self.video_processing.communicate()
             self.video_processing = None
             logging.debug('Video processing complete')
-            if not self.job['keepvideo']:
+            if not self.job['keepvideo'] and not self.options.debug:
                 try:
                     os.remove(task['video_file'])
                 except Exception:

@@ -392,7 +392,7 @@ class DevtoolsBrowser(object):
                 parser.metadata = self.job['metadata']
             parser.process()
             # Cleanup intermediate files that are not needed
-            if 'debug' not in self.job or not self.job['debug']:
+            if ('debug' not in self.job or not self.job['debug']) and not self.options.debug:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
                 if os.path.isfile(timeline_requests):
@@ -404,7 +404,7 @@ class DevtoolsBrowser(object):
                 if os.path.isfile(devtools_file):
                     os.remove(devtools_file)
             # remove files that might contain sensitive data
-            if options['noheaders']:
+            if options['noheaders'] and not self.options.debug:
                 if os.path.isfile(netlog):
                     os.remove(netlog)
                 if os.path.isfile(devtools_file):

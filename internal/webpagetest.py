@@ -245,7 +245,7 @@ class WebPageTest(object):
     def benchmark_cpu(self):
         """Benchmark the CPU for mobile emulation"""
         self.cpu_scale_multiplier = 1.0
-        if not self.options.android and not self.options.iOS:
+        if not self.options.android and not self.options.iOS and not self.options.debug:
             import hashlib
             logging.debug('Starting CPU benchmark')
             hash_val = hashlib.sha256()
@@ -509,6 +509,7 @@ class WebPageTest(object):
     def process_job_json(self, test_json):
         """Process the JSON of a test into a job file"""
         logging.log(8,"Processing_Job_Json")
+        if self.cpu_scale_multiplier is None and self.options.debug != True:
             self.benchmark_cpu()
         job = test_json
         self.raw_job = dict(test_json)
@@ -1445,7 +1446,7 @@ class WebPageTest(object):
 
             # Zip the files
             zip_path = None
-            if len(self.needs_zip):
+            if len(self.needs_zip) and not self.options.debug:
                 zip_path = os.path.join(self.workdir, "result.zip")
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
                     for zipitem in self.needs_zip:
@@ -1511,7 +1512,7 @@ class WebPageTest(object):
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
-        if os.path.isdir(self.workdir):
+        if os.path.isdir(self.workdir) and not self.options.debug:
             try:
                 shutil.rmtree(self.workdir)
             except Exception:
@@ -1635,7 +1636,7 @@ class WebPageTest(object):
                     if os.path.isfile(filepath):
                         # Delete any video files that may have squeaked by
                         if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
-                                filename.find('rendered_video') == -1:
+                                filename.find('rendered_video') == -1 and not self.options.debug:
                             try:
                                 os.remove(filepath)
                             except Exception:
@@ -1643,7 +1644,7 @@ class WebPageTest(object):
                         else:
                             self.needs_zip.append({'path': filepath, 'name': filename})
                 # Zip the files
-                if len(self.needs_zip) and 'run' in self.job:
+                if (len(self.needs_zip) and 'run' in self.job) and not self.options.debug:
                     zip_path = os.path.join(task['dir'], "result.zip")
                     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_STORED) as zip_file:
                         for zipitem in self.needs_zip:
@@ -1672,7 +1673,7 @@ class WebPageTest(object):
                 if task['error'] is not None:
                     self.job['error'] = task['error']
         # Clean up so we don't leave directories lying around
-        if os.path.isdir(task['dir']) and 'run' in self.job:
+        if (os.path.isdir(task['dir']) and 'run' in self.job) and not self.options.debug:
             try:
                 shutil.rmtree(task['dir'])
             except Exception:
@@ -1744,7 +1745,7 @@ class WebPageTest(object):
 
     def report_diagnostics(self):
         """Send a periodic diagnostics report"""
-        if self.is_dead:
+        if self.is_dead or self.options.debug == True:
             return
         # Don't report more often than once per minute
         now = monotonic()

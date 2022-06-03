@@ -267,6 +267,9 @@ class WPTAgent(object):
                             '{0}'.format(msg)
                         logging.exception("Unhandled exception running test: %s", msg)
                         traceback.print_exc(file=sys.stdout)
+                    if self.options.debug:
+                        from internal.wptutil import util_dbg_check_results
+                        util_dbg_check_results(self.task['dir'])
                     self.wpt.upload_task_result(self.task)
                     # Set up for the next run
                     self.task = self.wpt.get_task(self.job)
@@ -319,7 +322,7 @@ class WPTAgent(object):
                 traceback.print_exc(file=sys.stdout)
             self.browser.stop(self.job, self.task)
             # Delete the browser profile if needed
-            if self.task['cached'] or self.job['fvonly']:
+            if self.task['cached'] or self.job['fvonly'] and not self.options.debug:
                 self.browser.clear_profile(self.task)
         else:
             err = "Invalid browser - {0}".format(self.job['browser'])
@@ -367,6 +370,8 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
+        if self.options.debug:
+            return
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
