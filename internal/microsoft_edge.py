@@ -724,17 +724,6 @@ class Edge(DesktopBrowser):
         # Trigger a message to start writing the interactive periods asynchronously
         if self.supports_interactive:
             self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
-        # Collect teh regular browser metrics
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             self.driver.set_script_timeout(30)
             custom_metrics = {}
@@ -777,6 +766,17 @@ class Edge(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        # Collect the regular browser metrics
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
         # Wait for the interactive periods to be written
         if self.supports_interactive:
             end_time = monotonic() + 10
