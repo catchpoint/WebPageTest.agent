@@ -1473,14 +1473,14 @@ class DevTools(object):
                                     # We need to add the new URL to our event for parsing later
                                     # let's use an underscore to indicate to ourselves that we're adding this
                                     msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
-                                break
+                                    break
                             # check the new host to handle redirects
                             if fnmatch(self.task['overrideHosts'][host_match], host):
                                 # in this case, we simply want to modify the header, everything else is fine
                                 headers = msg['params']['request']['headers']
                                 headers['x-host'] = host_match
                                 params['headers'] = headers
-                            break
+                                break
                 except Exception:
                     logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)
