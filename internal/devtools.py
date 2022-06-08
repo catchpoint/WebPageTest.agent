@@ -423,12 +423,12 @@ class DevTools(object):
                 trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("blink.user_timing")
-            if "netlog" not in trace_config["includedCategories"]:
+            if "netlog" not in trace_config["includedCategories"] and not self.job.get('streaming_netlog'):
                 trace_config["includedCategories"].append("netlog")
+            if "disabled-by-default-netlog" not in trace_config["includedCategories"] and not self.job.get('streaming_netlog'):
+                trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "blink.resource" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("blink.resource")
-            if "disabled-by-default-netlog" not in trace_config["includedCategories"]:
-                trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
             if not self.is_webkit:
@@ -1837,7 +1837,8 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
                 self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
-            self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
+            if not self.job.get('streaming_netlog'):
+                self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
             elapsed = monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
