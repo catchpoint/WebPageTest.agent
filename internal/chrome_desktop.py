@@ -10,6 +10,7 @@ import os
 import platform
 import subprocess
 import shutil
+import threading
 import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
@@ -79,6 +80,12 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         self.start_page = 'http://127.0.0.1:8888/orange.html'
         self.connected = False
         self.is_chrome = True
+        self.netlog_fifo = None
+        self.netlog_fp = None
+        self.netlog_lock = threading.Lock()
+        self.netlog_header = None
+        self.netlog_events = None
+        self.netlog_thread = None
 
     def shutdown(self):
         """Shutdown the agent cleanly but mid-test"""
@@ -100,7 +107,19 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         args.append('--remote-debugging-port={0:d}'.format(task['port']))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
-        if 'netlog' in job and job['netlog']:
+        using_fifo = False
+        if platform.system() == "Linux":
+            # Stream the netlog to a pipe that we can read in realtime on Linux
+            self.netlog_fifo = os.path.join(task['dir'], task['prefix']) + '_netlog.fifo'
+            try:            
+                os.mkfifo(self.netlog_fifo, mode=0o777)
+                self.netlog_thread = threading.Thread(target=self.stream_netlog)
+                self.netlog_thread.start()
+                args.append('--log-net-log="{0}"'.format(self.netlog_fifo))
+                using_fifo = True
+            except Exception:
+                logging.exception('Error creating netlog fifo')
+        if not using_fifo and 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
             args.append('--log-net-log="{0}"'.format(netlog_file))
         if 'profile' in task:
@@ -199,6 +218,30 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             self.profile_end('chrome.idle2')
             self.profile_end('chrome.post_launch')
 
+    def stream_netlog(self):
+        """Read the netlog fifo in a background thread"""
+        with self.netlog_lock:
+            self.netlog_fp = open(self.netlog_fifo, 'rt', encoding='utf8')
+        if self.netlog_fp:
+            logging.debug('Netlog fifo connected...')
+            with self.netlog_lock:
+                self.netlog_header = []
+                self.netlog_events = None
+            for line in self.netlog_fp:
+                try:
+                    with self.netlog_lock:
+                        if self.netlog_events is not None:
+                            if self.recording and line.startswith('{'):
+                                self.netlog_events.append(line)
+                        elif line.startswith('{"constants":'):
+                            self.netlog_header.append(line)
+                        elif line.startswith('"events": ['):
+                            self.netlog_header.append(line)
+                            self.netlog_events = []
+                except Exception:
+                    logging.exception('Error processing netlog event')
+            logging.debug('Netlog streaming thread terminating')
+
     def run_task(self, task):
         """Run an individual test"""
         if self.connected:
@@ -215,6 +258,23 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         # Make SURE the chrome processes are gone
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'chrome'])
+        with self.netlog_lock:
+            if self.netlog_fp is not None:
+                self.netlog_fp.close()
+                self.netlog_fp = None
+        if self.netlog_thread is not None:
+            try:
+                self.netlog_thread.join(30)
+            except Exception:
+                logging.exception('Error terminating netlog thread')
+        self.netlog_thread = None
+        if self.netlog_fifo is not None:
+            try:
+                os.unlink(self.netlog_fifo)
+            except Exception:
+                logging.debug('Error closing netlog fifo')
+            self.netlog_fifo = None
+        # Legacy netlog
         netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
         if os.path.isfile(netlog_file):
             netlog_gzip = netlog_file + '.gz'
@@ -259,6 +319,8 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     def on_start_recording(self, task):
         """Notification that we are about to start an operation that needs to be recorded"""
         DesktopBrowser.on_start_recording(self, task)
+        with self.netlog_lock:
+            self.recording = True
         DevtoolsBrowser.on_start_recording(self, task)
 
     def on_stop_capture(self, task):
@@ -267,8 +329,23 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         DevtoolsBrowser.on_stop_capture(self, task)
 
     def on_stop_recording(self, task):
-        """Notification that we are about to start an operation that needs to be recorded"""
+        """Notification that we are about to stop an operation that needs to be recorded"""
         DesktopBrowser.on_stop_recording(self, task)
+        with self.netlog_lock:
+            self.recording = False
+            if self.netlog_events:
+                # Write out the netlog for the current step
+                netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt.gz'
+                with gzip.open(netlog_file, 'wt', 7) as outfile:
+                    if self.netlog_header:
+                        for line in self.netlog_header:
+                            outfile.write(line)
+                    for line in self.netlog_events:
+                        outfile.write(line)
+                    # terminate the list of events
+                    outfile.write('{}]}')
+                # Reset the events
+                self.netlog_events = []
         DevtoolsBrowser.on_stop_recording(self, task)
 
     def on_start_processing(self, task):
