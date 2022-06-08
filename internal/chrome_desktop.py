@@ -228,11 +228,12 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 self.netlog_header = []
                 self.netlog_events = None
             for line in self.netlog_fp:
+                line = line.strip()
                 try:
                     with self.netlog_lock:
                         if self.netlog_events is not None:
                             if self.recording and line.startswith('{'):
-                                self.netlog_events.append(line)
+                                self.netlog_events.append(line.strip(', '))
                         elif line.startswith('{"constants":'):
                             self.netlog_header.append(line)
                         elif line.startswith('"events": ['):
@@ -240,7 +241,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                             self.netlog_events = []
                 except Exception:
                     logging.exception('Error processing netlog event')
-            logging.debug('Netlog streaming thread terminating')
+            logging.debug('Netlog streaming thread exiting')
 
     def run_task(self, task):
         """Run an individual test"""
@@ -340,10 +341,17 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                     if self.netlog_header:
                         for line in self.netlog_header:
                             outfile.write(line)
+                            outfile.write("\n")
+                    last = len(self.netlog_events)
+                    current = 0
                     for line in self.netlog_events:
                         outfile.write(line)
+                        current += 1
+                        if current < last:
+                            outfile.write(",")
+                        outfile.write("\n")
                     # terminate the list of events
-                    outfile.write('{}]}')
+                    outfile.write(']}')
                 # Reset the events
                 self.netlog_events = []
         DevtoolsBrowser.on_stop_recording(self, task)
