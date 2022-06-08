@@ -993,7 +993,7 @@ class OptimizationChecks(object):
                             pass
                         # Use imagemagick to convert metadata to json
                         try:
-                            command = '{0} "{1}" json:-'.format(self.job['image_magick']['convert'], request['body'])
+                            command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
                             subprocess.call(command, shell=True)
                             magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
                             try:
