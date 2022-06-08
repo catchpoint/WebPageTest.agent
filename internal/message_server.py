@@ -72,9 +72,9 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
             response += "</style>\n"
             response += "</head><body><div id='wptorange'></div>\n"
             if MESSAGE_SERVER.config is not None:
-                import cgi
+                import html
                 response += '<div id="wptagentConfig" style="display: none;">'
-                response += cgi.escape(json.dumps(MESSAGE_SERVER.config))
+                response += html.escape(json.dumps(MESSAGE_SERVER.config))
                 response += '</div>'
             response += "</body></html>"
         elif self.request.uri == '/wpt-start-recording':
