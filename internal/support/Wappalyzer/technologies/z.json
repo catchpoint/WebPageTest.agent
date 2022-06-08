@@ -615,10 +615,7 @@
     "meta": {
       "generator": "Zozo Ecommerce"
     },
-    "scriptSrc": [
-      "catalog/view/theme/[^\"]+/javascript/common\\.js",
-      "zozo-main\\.min\\.js"
-    ],
+    "scriptSrc": "zozo-main\\.min\\.js",
     "website": "https://zozo.vn"
   },
   "Zuppler": {
@@ -626,8 +623,8 @@
       93
     ],
     "description": "Zuppler is a complete and branded online ordering solution for restaurants and caterers with multi-locations.",
+    "dom": "link[href*='.zuppler.com/']",
     "icon": "Zuppler.png",
-    "dom":"link[href*='.zuppler.com/']",
     "pricing": [
       "payg"
     ],

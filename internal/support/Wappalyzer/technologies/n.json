@@ -71,6 +71,22 @@
     },
     "website": "https://nacelle.com/"
   },
+  "NagaCommerce": {
+    "cats": [
+      6
+    ],
+    "description": "NagaCommerce is an ecommerce platform provided as a service.",
+    "icon": "NagaCommerce.svg",
+    "meta": {
+      "generator": "^NagaCommerce$"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.nagacommerce.com"
+  },
   "Nagich": {
     "cats": [
       68
@@ -159,8 +175,8 @@
     "description": "NationBuilder is a Los Angeles based technology start-up that develops content management and customer relationship management (CRM) software.",
     "icon": "NationBuilder.svg",
     "js": {
-      "NB.Liquid": "",
-      "NB.FBAppId": ""
+      "NB.FBAppId": "",
+      "NB.Liquid": ""
     },
     "pricing": [
       "mid",
@@ -438,6 +454,18 @@
     ],
     "website": "https://newspack.pub/"
   },
+  "Nexcess": {
+    "cats": [
+      62,
+      88
+    ],
+    "description": "Nexcess is a web hosting service.",
+    "headers": {
+      "x-hostname": "nxcli\\.net$"
+    },
+    "icon": "nexcess.png",
+    "website": "https://www.nexcess.net"
+  },
   "Nexive": {
     "cats": [
       99
@@ -677,23 +705,6 @@
     "scriptSrc": "connect\\.nosto\\.\\w+/",
     "website": "https://www.nosto.com"
   },
-  "novomind iSHOP": {
-    "cats": [
-      6
-    ],
-    "description": "novomind iSHOP can be introduced rapidly, is highly scalable, has open APIs headless ecommerce and GDPR-compliant in the novomind Cloud.",
-    "icon": "novomind.svg",
-    "js": {
-      "_ishopevents_url": "/ishop-api/events/",
-      "_ishopevents": "",
-      "iShop.config.baseUrl": ""
-    },
-    "saas": true,
-    "pricing": [
-      "poa"
-    ],
-    "website": "https://www.novomind.com/en/shopsystem/novomind-ishop-software"
-  },
   "Nudgify": {
     "cats": [
       32
@@ -817,5 +828,22 @@
     },
     "oss": true,
     "website": "http://www.nopcommerce.com"
+  },
+  "novomind iSHOP": {
+    "cats": [
+      6
+    ],
+    "description": "novomind iSHOP can be introduced rapidly, is highly scalable, has open APIs headless ecommerce and GDPR-compliant in the novomind Cloud.",
+    "icon": "novomind.svg",
+    "js": {
+      "_ishopevents": "",
+      "_ishopevents_url": "/ishop-api/events/",
+      "iShop.config.baseUrl": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.novomind.com/en/shopsystem/novomind-ishop-software"
   }
 }

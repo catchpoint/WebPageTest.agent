@@ -1407,7 +1407,8 @@ class DevTools(object):
                 'frame' in msg['params'] and 'id' in msg['params']['frame']:
             if self.main_frame is not None and \
                     self.main_frame == msg['params']['frame']['id'] and\
-                    'injectScript' in self.job:
+                    'injectScript' in self.job and \
+                    not self.job.get('injectScriptAllFrames'):
                 self.execute_js(self.job['injectScript'])
         elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.main_frame is not None and \
@@ -1472,14 +1473,14 @@ class DevTools(object):
                                     # We need to add the new URL to our event for parsing later
                                     # let's use an underscore to indicate to ourselves that we're adding this
                                     msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
-                                break
+                                    break
                             # check the new host to handle redirects
                             if fnmatch(self.task['overrideHosts'][host_match], host):
                                 # in this case, we simply want to modify the header, everything else is fine
                                 headers = msg['params']['request']['headers']
                                 headers['x-host'] = host_match
                                 params['headers'] = headers
-                            break
+                                break
                 except Exception:
                     logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)

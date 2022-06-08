@@ -991,8 +991,9 @@ class ProcessTest(object):
                     prefix = '' if self.prefix == '1' else '_' + self.prefix
                     gcs_path = os.path.join(self.job['gcs_har_upload']['path'], self.task['id'] + prefix + '.har.gz')
                     blob = bucket.blob(gcs_path)
-                    blob.upload_from_filename(filename=har_file)
-                    logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
+                    if not blob.exists():
+                        blob.upload_from_filename(filename=har_file)
+                        logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
             

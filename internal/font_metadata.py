@@ -6,6 +6,7 @@
 """Extract metadata from OpenType fonts."""
 
 from fontTools.ttLib import TTFont
+from fontTools.ttLib.tables import otTables
 import functools
 import logging
 
@@ -97,6 +98,109 @@ def _read_codepoint_glyph_counts(ttf):
         logging.exception('Error reading codepoint and glyph count')
     return None
 
+def _read_cmap(ttf):
+    try:
+        encodings = [{ 'platform': t.platformID, 'encoding': t.platEncID } for t in ttf['cmap'].tables]
+        codepoints = []
+
+        cmap = ttf.getBestCmap()
+
+        if cmap is not None:
+            codepoints = [codepoint for codepoint in ttf.getBestCmap()]
+
+        return {
+            'encodings': encodings,
+            'codepoints': codepoints,
+        }
+    except Exception:
+        logging.exception('Error reading cmap data')
+    return None
+
+def _read_color(ttf):
+    try:
+        t = []
+
+        # It is possible a single font uses multiple color
+        # formats for wider OS and browser support.
+        if 'COLR' in ttf and ttf['COLR'].version == 0:
+            t.append('COLRv0')
+
+        if 'COLR' in ttf and ttf['COLR'].version == 1:
+            t.append('COLRv1')
+
+        if 'SVG ' in ttf:
+            t.append('SVG')
+
+        if 'CBDT' in ttf:
+            t.append('CBDT')
+
+        if 'sbix' in ttf:
+            t.append('sbix')
+
+        numPalettes = 0
+        numPaletteEntries = 0
+
+        if 'CPAL' in ttf:
+            numPaletteEntries = ttf['CPAL'].numPaletteEntries
+            numPalettes = len(ttf['CPAL'].palettes)
+
+        return {
+            'formats': t,
+            'numPalettes': numPalettes,
+            'numPaletteEntries': numPaletteEntries
+        }
+    except Exception:
+        logging.exception('Error reading color font data')
+    return None
+
+def _read_features(ttf):
+    try:
+        result = {}
+
+        # This is loosely based on: https://github.com/fonttools/fonttools/blob/main/Snippets/layout-features.py
+        for tag in ('GSUB', 'GPOS'):
+            if not tag in ttf: continue
+            table = ttf[tag].table
+
+            if not tag in result:
+                result[tag] = {}
+
+            if not table.ScriptList or not table.FeatureList: continue
+            featureRecords = table.FeatureList.FeatureRecord
+            for script in table.ScriptList.ScriptRecord:
+                if not script.Script: continue
+                if not script.ScriptTag in result[tag]:
+                    result[tag][script.ScriptTag] = {}
+
+                languages = list(script.Script.LangSysRecord)
+
+                if script.Script.DefaultLangSys:
+                    defaultlangsys = otTables.LangSysRecord()
+                    defaultlangsys.LangSysTag = "default"
+                    defaultlangsys.LangSys = script.Script.DefaultLangSys
+                    languages.insert(0, defaultlangsys)
+
+                for langsys in languages:
+                    if not langsys.LangSys: continue
+
+                    if not langsys.LangSysTag in result[tag][script.ScriptTag]:
+                        result[tag][script.ScriptTag][langsys.LangSysTag] = []
+
+                    features = [featureRecords[index] for index in langsys.LangSys.FeatureIndex]
+
+                    if langsys.LangSys.ReqFeatureIndex != 0xFFFF:
+                        record = featureRecords[langsys.LangSys.ReqFeatureIndex]
+                        requiredfeature = otTables.FeatureRecord()
+                        requiredfeature.FeatureTag = 'required(%s)' % record.FeatureTag
+                        requiredfeature.Feature = record.Feature
+                        features.insert(0, requiredfeature)
+                    for feature in features:
+                        result[tag][script.ScriptTag][langsys.LangSysTag].append(feature.FeatureTag)
+
+        return result
+    except Exception:
+        logging.exception('Error reading OpenType feature data')
+    return None
 
 def read_metadata(font):
     ttf = TTFont(font, fontNumber=0, lazy=True)
@@ -114,6 +218,9 @@ def read_metadata(font):
         'OS2': _read_os2(ttf),
         'post': _read_post(ttf),
         'fvar': _read_fvar(ttf),
+        'cmap': _read_cmap(ttf),
+        'color': _read_color(ttf),
+        'features': _read_features(ttf),
         'counts': _read_codepoint_glyph_counts(ttf),
     }
     ttf.close()
