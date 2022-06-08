@@ -218,16 +218,6 @@ class WPTAgent(object):
         self.pubsub_message = message
         try:
             test_json = json.loads(message.data.decode('utf-8'))
-            try:
-                if 'metadata' in test_json and 'page_id' in test_json['metadata'] and \
-                        'root_page_id' in test_json['metadata'] and \
-                        'crawl_depth' in test_json['metadata'] and \
-                        'link_depth' in test_json['metadata'] and \
-                        test_json['metadata']['crawl_depth'] > 0 and \
-                        test_json['metadata']['page_id'] > (1 << 32):
-                    test_json['metadata']['page_id'] = (test_json['metadata']['crawl_depth'] << 30) + (test_json['metadata']['link_depth'] << 26) + test_json['metadata']['root_page_id']
-            except Exception:
-                pass
             # Don't re-run the same test if it already exists in gcs
             exists = False
             if 'gcs_har_upload' in test_json and \
