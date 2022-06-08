@@ -489,7 +489,7 @@
       "a[href*='/order']",
       "a[href*='/basket']",
       "a[href*='/trolley']",
-      "a[href*='/bag']",
+      "a[href*='/bag/']",
       "a[href*='/shoppingbag']",
       "a[href*='/checkout']",
       "a[href*='/winkelwagen']",
@@ -598,6 +598,17 @@
       "catberry.version": "^(.+)$\\;version:\\1"
     },
     "website": "https://catberry.github.io/"
+  },
+  "Catch": {
+    "cats": [
+      41
+    ],
+    "description": "Catch is a payment solution which allows merchants to use payments via bank payments instead of credit/debit cards.",
+    "icon": "Catch.svg",
+    "js": {
+      "Catch": ""
+    },
+    "website": "https://www.getcatch.com/"
   },
   "Catch Themes Catch Box": {
     "cats": [

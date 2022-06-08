@@ -1407,7 +1407,8 @@ class DevTools(object):
                 'frame' in msg['params'] and 'id' in msg['params']['frame']:
             if self.main_frame is not None and \
                     self.main_frame == msg['params']['frame']['id'] and\
-                    'injectScript' in self.job:
+                    'injectScript' in self.job and \
+                    not self.job.get('injectScriptAllFrames'):
                 self.execute_js(self.job['injectScript'])
         elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.main_frame is not None and \
