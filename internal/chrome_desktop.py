@@ -221,7 +221,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     def stream_netlog(self):
         """Read the netlog fifo in a background thread"""
         with self.netlog_lock:
-            self.netlog_fp = open(self.netlog_fifo, 'rt', encoding='utf8')
+            self.netlog_fp = open(self.netlog_fifo, 'rt', encoding='utf-8')
         if self.netlog_fp:
             logging.debug('Netlog fifo connected...')
             with self.netlog_lock:

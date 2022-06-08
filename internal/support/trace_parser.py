@@ -1062,6 +1062,8 @@ class Trace():
                                 request['request_headers'] = stream['request_headers']
                             if 'response_headers' in stream:
                                 request['response_headers'] = stream['response_headers']
+                            if 'early_hint_headers' in stream:
+                                request['early_hint_headers'] = stream['early_hint_headers']
                             if 'exclusive' in stream:
                                 request['exclusive'] = 1 if stream['exclusive'] else 0
                             if 'parent_stream_id' in stream:
@@ -1474,6 +1476,8 @@ class Trace():
             entry['connect_start'] = trace_event['ts']
         if name == 'QUIC_SESSION_VERSION_NEGOTIATED' and 'connect_end' not in entry:
             entry['connect_end'] = trace_event['ts']
+            if 'version' in params:
+                entry['version'] = params['version']
         if name == 'CERT_VERIFIER_REQUEST' and 'connect_end' in entry:
             if 'tls_start' not in entry:
                 entry['tls_start'] = entry['connect_end']
@@ -1659,6 +1663,9 @@ class Trace():
             if 'first_byte' not in entry:
                 entry['first_byte'] = trace_event['ts']
             entry['end'] = trace_event['ts']
+        if 'headers' in params and name == 'HTTP_TRANSACTION_READ_EARLY_HINTS_RESPONSE_HEADERS':
+            entry['early_hint_headers'] = params['headers']
+            entry['end'] = trace_event['time']
         if 'byte_count' in params and name == 'URL_REQUEST_JOB_BYTES_READ':
             entry['has_raw_bytes'] = True
             entry['end'] = trace_event['ts']
@@ -1684,6 +1691,9 @@ class Trace():
         """Disk cache events"""
         if 'args' in trace_event and 'params' in trace_event['args'] and 'key' in trace_event['args']['params']:
             url = trace_event['args']['params']['key']
+            space_index = url.rfind(' ')
+            if space_index >= 0:
+                url = url[space_index + 1:]
             if 'urls' not in self.netlog:
                 self.netlog['urls'] = {}
             if url not in self.netlog['urls']:
