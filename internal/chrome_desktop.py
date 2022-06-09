@@ -115,7 +115,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
         using_fifo = False
-        if platform.system() == "Linux":
+        if platform.system() in ["Linux", "Darwin"]:
             # Stream the netlog to a pipe that we can read in realtime on Linux
             self.netlog_fifo = os.path.join(job['test_shared_dir'], 'netlog.fifo')
             try:            
