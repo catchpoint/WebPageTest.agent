@@ -2,55 +2,45 @@
 
 set -eu
 
-: ${UBUNTU_VERSION:=`(lsb_release -rs | cut -b 1,2)`}
+echo "If you are creating a dedicated agent, it is highly recommended to use the wptagent-install script"
+echo "https://github.com/WPO-Foundation/wptagent-install"
+echo
+read -p "Press enter to continue (or ctrl-c to exit)"
 
 until sudo apt-get update
 do
     sleep 1
 done
-if [ "$UBUNTU_VERSION" \< "20" ]; then
-    until sudo apt-get install -y python2.7 python-pip python-ujson python-xlib
-    do
-        sleep 1
-    done
-else
-    until sudo apt-get install -y python python3 python3-pip python3-ujson python3-xlib
-    do
-        sleep 1
-    done
-fi
-until sudo apt-get install -y imagemagick ffmpeg xvfb dbus-x11 cgroup-tools traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools git curl
-do
-    sleep 1
-done
-# Unavailable on Ubuntu 18.04 but needed on earlier releases
-if [ "$UBUNTU_VERSION" \< "18" ]; then
-    sudo apt-get install -y python-software-properties || :
-fi
-sudo dbus-uuidgen --ensure
-if [ "$UBUNTU_VERSION" \< "20" ]; then
-    until sudo pip install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper marionette_driver selenium future usbmuxwrapper
-    do
-        sleep 1
-    done
-    sudo pip install 'fonttools>=3.44.0,<4.0.0'
-else
-    until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel xvfbwrapper selenium future usbmuxwrapper
-    do
-        sleep 1
-    done
-    sudo pip3 install 'fonttools>=3.44.0,<4.0.0'
-fi
+
+# Prepare Node for install
 curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-until sudo apt-get install -y nodejs
+
+# Install all of the binary dependencies
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+until sudo apt -y install git curl wget apt-transport-https gnupg2 python python3 python3-pip python3-ujson \
+        imagemagick dbus-x11 traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools openvpn \
+        libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk \
+        python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev \
+        libtool libvorbis-dev pkg-config texi2html libtext-unidecode-perl python3-numpy python3-scipy \
+        adb ethtool nodejs cmake git-core libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget \
+        ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans
+
+sudo dbus-uuidgen --ensure
+sudo fc-cache -f -v
+
+# Install the python modules
+until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel brotli fonttools selenium future usbmuxwrapper
 do
     sleep 1
 done
+
+# Lighthouse
 until sudo npm install -g lighthouse
 do
     sleep 1
 done
 sudo npm update -g
+
 wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | sudo apt-key add -
 sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
 sudo add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa
