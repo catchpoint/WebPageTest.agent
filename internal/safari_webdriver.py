@@ -427,21 +427,11 @@ class SafariWebDriver(DesktopBrowser):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit:
             return
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_TEST_URL') >= 0:
@@ -478,6 +468,16 @@ class SafariWebDriver(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
 
     def process_message(self, message):
         """Process a message from the extension"""

@@ -451,7 +451,9 @@ class ProcessTest(object):
                                                 if 'region_rects' in event['args']['data']:
                                                     shift['rects'] = event['args']['data']['region_rects']
                                                 if 'sources' in event['args']['data']:
-                                                    shift['sources'] = event['args']['data']['sources']
+                                                    sources_str = json.dumps(event['args']['data']['sources'])
+                                                    if len(sources_str) < 1000000:
+                                                        shift['sources'] = event['args']['data']['sources']
                                                 layout_shifts.append(shift)
 
                                         if name is not None and time is not None and name not in largest:

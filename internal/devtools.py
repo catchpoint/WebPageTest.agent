@@ -1358,10 +1358,12 @@ class DevTools(object):
         if message is not None:
             if 'text' in message and message['text'].startswith('wptagent_message:'):
                 try:
-                    wpt_message = json.loads(message['text'][17:])
-                    if 'name' in wpt_message:
-                        if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
-                            self.performance_timing.append(wpt_message['data'])
+                    # Throw away messages over 1MB to prevent things from spiraling too badly
+                    if len(message['text']) < 1000000:
+                        wpt_message = json.loads(message['text'][17:])
+                        if 'name' in wpt_message:
+                            if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
+                                self.performance_timing.append(wpt_message['data'])
                 except Exception:
                     logging.exception('Error decoding console log message')
             else:

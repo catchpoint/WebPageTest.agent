@@ -369,23 +369,11 @@ class iWptBrowser(BaseBrowser):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit:
             return
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        logging.debug(user_timing)
-        if user_timing is not None and self.path_base is not None:
-            path = self.path_base + '_timed_events.json.gz'
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        logging.debug(page_data)
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 if name == 'jsLibsVulns':
                     continue
                 logging.debug("Collecting custom metric %s", name)
@@ -425,6 +413,18 @@ class iWptBrowser(BaseBrowser):
                 path = self.path_base + '_metrics.json.gz'
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        logging.debug(user_timing)
+        if user_timing is not None and self.path_base is not None:
+            path = self.path_base + '_timed_events.json.gz'
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        logging.debug(page_data)
+        if page_data is not None:
+            task['page_data'].update(page_data)
 
     def process_message(self, msg):
         """Process a message from the browser
