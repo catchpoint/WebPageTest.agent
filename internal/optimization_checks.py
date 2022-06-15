@@ -968,6 +968,8 @@ class OptimizationChecks(object):
                 if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
+                        if sniff_type is None:
+                            sniff_type = 'Unknown'
                         check = {'score': -1,
                                  'size': content_length,
                                  'target_size': content_length,
@@ -991,14 +993,17 @@ class OptimizationChecks(object):
                             pass
                         # Use imagemagick to convert metadata to json
                         try:
-                            command = '{0} -verbose "{1}" json:-'.format(self.job['image_magick']['convert'], request['body'])
+                            command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
                             subprocess.call(command, shell=True)
                             magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
-                            # Fix issues with imagemagick's json output
-                            magick_str = magick_str.replace('}\n{', '},\n{')
-                            magick_str = re.sub(r"([\"\w])(\n\s+\")", r"\1,\2", magick_str)
-                            magick_str = '[' + magick_str + ']'
-                            magick = json.loads(magick_str)
+                            try:
+                                magick = json.loads(magick_str)
+                            except Exception:
+                                # Fix issues with imagemagick's json output
+                                magick_str = magick_str.replace('}\n{', '},\n{')
+                                magick_str = re.sub(r"([\"\w])(\n\s+\")", r"\1,\2", magick_str)
+                                magick_str = '[' + magick_str + ']'
+                                magick = json.loads(magick_str)
                             if magick and 'image' in magick[0]:
                                 image = magick[0]['image']
                                 if len(magick) > 1:
@@ -1258,7 +1263,7 @@ class OptimizationChecks(object):
             content_type = 'jpeg'
         elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif hex_bytes[0:22] == b'0000002066747970617669':
+        elif hex_bytes[0:22] == b'0000002066747970617669' or raw_bytes[4:12] == b'ftypavif':
             content_type = 'avif'
         elif hex_bytes[0:14] == b'0000000c4a584c':
             content_type = 'jxl'
