@@ -51,6 +51,7 @@ class WPTAgent(object):
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
         self.browser = None
         self.shaper = TrafficShaper(options, self.root_path)
+        self.pubsub_message = None
         # Install the signal handlers
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -214,12 +215,29 @@ class WPTAgent(object):
     def pubsub_callback(self, message):
         """Pubsub callback for jobs"""
         logging.debug('Received pubsub job')
+        self.pubsub_message = message
         try:
             test_json = json.loads(message.data.decode('utf-8'))
-            self.job = self.wpt.process_job_json(test_json)
-            self.run_job()
+            # Don't re-run the same test if it already exists in gcs
+            exists = False
+            if 'gcs_har_upload' in test_json and \
+                    'bucket' in test_json['gcs_har_upload'] and \
+                    'path' in test_json['gcs_har_upload']:
+                try:
+                    from google.cloud import storage
+                    client = storage.Client()
+                    bucket = client.get_bucket(test_json['gcs_har_upload']['bucket'])
+                    gcs_path = os.path.join(test_json['gcs_har_upload']['path'], test_json['Test ID'] + '.har.gz')
+                    blob = bucket.blob(gcs_path)
+                    exists = blob.exists()
+                except Exception:
+                    logging.exception('Error checking for HAR in Cloud Storage')
+            if not exists:
+                self.job = self.wpt.process_job_json(test_json)
+                self.run_job()
         except Exception:
             logging.exception('Error processing pubsub job')
+        self.pubsub_message = None
         message.ack()
 
     def run_job(self):
@@ -283,6 +301,11 @@ class WPTAgent(object):
         """Run a single test run"""
         if self.health_check_server is not None:
             self.health_check_server.healthy()
+        try:
+            if self.pubsub_message is not None:
+                self.pubsub_message.modify_ack_deadline(600)
+        except Exception:
+            logging.exception('Error extending pubsub ack deadline')
         self.alive()
         self.browser = self.browsers.get_browser(self.job['browser'], self.job)
         if self.browser is not None:

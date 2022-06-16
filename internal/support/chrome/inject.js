@@ -1,7 +1,9 @@
 var WptAgentFlatten = function(object) {
     let contents = {}
-    const ignore = ['innerText', 'outerText', 'innerHTML','textContent', 'baseURI', 'namespaceURI'];
     for (const key in object) {
+        if (key == 'children') {
+            continue;
+        }
         if (typeof(object[key]) === 'object') {
             if (Array.isArray(object[key])) {
                 let values = [];
@@ -13,7 +15,7 @@ var WptAgentFlatten = function(object) {
                     }
                 }
                 contents[key] = values;
-            } else if (['element', 'node', 'currentRect', 'previousRect'].indexOf(key) >= 0) {
+            } else if (key == 'element' || key == 'node' || key == 'currentRect' || key == 'previousRect') {
                 contents[key] = WptAgentFlatten(object[key]);
                 if (typeof object[key]['getBoundingClientRect'] === 'function') {
                     contents[key]['boundingRect'] =  object[key].getBoundingClientRect();
@@ -29,15 +31,17 @@ var WptAgentFlatten = function(object) {
                 }
             }
         } else if (typeof(object[key]) === 'string') {
-            if (object[key].length > 0 && ignore.indexOf(key) === -1) {
-                if (object[key].substring(0,4) == 'http') {
-                    contents[key] = object[key];
-                } else {
-                    contents[key] = object[key].substring(0,200);
-                }
+            if (object[key].length > 0 &&
+                    key != 'innerText' &&
+                    key != 'outerText' &&
+                    key != 'innerHTML' &&
+                    key != 'textContent' &&
+                    key != 'baseURI' &&
+                    key != 'namespaceURI') {
+                contents[key] = object[key];
             }
         } else if (typeof(object[key]) !== 'function') {
-            if (!key.match(/^[A-Z_]+$/)) {
+            if (!/^[A-Z_]+$/.test(key)) {
                 contents[key] = object[key];
             }
         }
