@@ -87,6 +87,40 @@
     "scriptSrc": "^(?:https):?//load\\.jsecoin\\.com/load/",
     "website": "https://jsecoin.com/"
   },
+  "JsRender": {
+    "cats": [
+      59
+    ],
+    "description": "JsRender is the template library. The library is developed and maintained by Microsoft employee Boris Moore and is used in projects such as Outlook.com and Windows Azure.",
+    "icon": "JsRender.svg",
+    "implies": "JsViews",
+    "scriptSrc": "([\\d\\.]+)?/jsrender(?:\\.min)?\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://www.jsviews.com/#jsrender"
+  },
+  "JsViews": {
+    "cats": [
+      59
+    ],
+    "description": "JsViews is the MVVM library which provides two-way data binding for the template. The library is developed and maintained by Microsoft employee Boris Moore and is used in projects such as Outlook.com and Windows Azure.",
+    "icon": "JsViews.svg",
+    "implies": [
+      "JsObservable",
+      "JsRender"
+    ],
+    "scriptSrc": "([\\d\\.]+)?/jsviews(?:\\.min)?\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://www.jsviews.com/#jsviews"
+  },
+  "JsObservable": {
+    "cats": [
+      59
+    ],
+    "description": "JsObservable is integrated with JsViews and facilitates observable data manipulations that are immediately reflected in the data-bound templates. The library is developed and maintained by Microsoft employee Boris Moore and is used in projects such as Outlook.com and Windows Azure.",
+    "icon": "JsObservable.svg",
+    "oss": true,
+    "website": "https://www.jsviews.com/#jsobservable"
+  },
   "JSS": {
     "cats": [
       12,
@@ -333,11 +367,11 @@
       1
     ],
     "description": "Jimdo is a website-builder and all-in-one hosting solution, designed to enable users to build their own websites.",
-    "icon": "Jimdo.svg",
     "headers": {
       "X-Jimdo-Instance": "",
       "X-Jimdo-Wid": ""
     },
+    "icon": "Jimdo.svg",
     "js": {
       "jimdoDolphinData": ""
     },
@@ -403,6 +437,20 @@
     "saas": true,
     "scriptSrc": "\\.jivosite\\.com",
     "website": "https://www.jivosite.com"
+  },
+  "Jivox": {
+    "cats": [
+      76
+    ],
+    "description": "Jivox is a cloud-based, data-driven platform for delivering personalised digital advertising and marketing experiences at scale.",
+    "dom": "link[href*='.jivox.com']",
+    "icon": "Jivox.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.jivox\\.com/",
+    "website": "https://jivox.com"
   },
   "JobAdder": {
     "cats": [
@@ -471,24 +519,6 @@
     "scriptSrc": "/components/com_jshopping/",
     "website": "https://www.webdesigner-profi.de/joomla-webdesign/joomla-shop"
   },
-  "JouwWeb": {
-    "cats": [
-      51
-    ],
-    "description": "JouwWeb is an online website builder that allows internet users to create own website.",
-    "icon": "JouwWeb.svg",
-    "js": {
-      "JOUWWEB": ""
-    },
-    "scriptSrc": "(?:cdn)?\\.(?:jwwb|jouwweb)\\.nl/",
-    "pricing": [
-      "freemium",
-      "low",
-      "recurring"
-    ],
-    "saas": true,
-    "website": "https://www.jouwweb.nl"
-  },
   "Joomla": {
     "cats": [
       1
@@ -511,6 +541,24 @@
     "oss": true,
     "url": "option=com_",
     "website": "https://www.joomla.org"
+  },
+  "JouwWeb": {
+    "cats": [
+      51
+    ],
+    "description": "JouwWeb is an online website builder that allows internet users to create own website.",
+    "icon": "JouwWeb.svg",
+    "js": {
+      "JOUWWEB": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "(?:cdn)?\\.(?:jwwb|jouwweb)\\.nl/",
+    "website": "https://www.jouwweb.nl"
   },
   "Judge.me": {
     "cats": [

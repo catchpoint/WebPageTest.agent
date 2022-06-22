@@ -476,11 +476,11 @@
     "js": {
       "deliverrScript": ""
     },
-    "scriptSrc": "fast-tags\\.deliverr\\.com",
     "pricing": [
       "payg",
       "recurring"
     ],
+    "scriptSrc": "fast-tags\\.deliverr\\.com",
     "website": "https://deliverr.com"
   },
   "Demandbase": {
@@ -1274,6 +1274,50 @@
     "icon": "Dropbox.svg",
     "website": "https://www.dropbox.com"
   },
+  "Dropzone": {
+    "cats": [
+      59
+    ],
+    "description": "Dropzone is a JavaScript library that turns any HTML element into a dropzone.",
+    "icon": "Dropzone.svg",
+    "js": {
+      "Dropzone.version": "([\\d\\.]+)\\;version:\\1",
+      "Dropzone": ""
+    },
+    "oss": true,
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.dropzone.dev"
+  },
+  "Droxit": {
+    "cats": [
+      68
+    ],
+    "cookies": {
+      "droxit_a11y_state": ""
+    },
+    "description": "Droxit is an automated web accessibility solution.",
+    "icon": "Droxit.png",
+    "scriptSrc": "/droxit-a11y/js/activator\\.js",
+    "website": "https://www.droxit.com"
+  },
+  "Droz Bot": {
+    "cats": [
+      52
+    ],
+    "description": "Droz Bot is a multi-channel, customisable chatbot designed to help brands provide customer service across commonly used social apps.",
+    "icon": "Droz.svg",
+    "scriptSrc": "chat-app\\.meudroz\\.com/",
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://meudroz.com/droz-bot/"
+  },
   "Drupal": {
     "cats": [
       1
@@ -1481,10 +1525,10 @@
     "cats": [
       103
     ],
+    "css": "\\.dyte-client-selfVideo",
     "description": "Dyte is a developer-friendly, real-time audio and video communication software development kit (SDK).",
     "icon": "Dyte.svg",
     "implies": "WebRTC",
-    "css": "\\.dyte-client-selfVideo",
     "js": {
       "triggerDyteRecording": ""
     },
@@ -1492,8 +1536,8 @@
       "payg"
     ],
     "saas": true,
-    "xhr": "cdn\\.dyte\\.in/",
-    "website": "https://dyte.io"
+    "website": "https://dyte.io",
+    "xhr": "cdn\\.dyte\\.in/"
   },
   "db-ip": {
     "cats": [

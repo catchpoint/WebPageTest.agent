@@ -196,10 +196,7 @@
       12
     ],
     "description": "Gatsby is a React-based open-source framework with performance, scalability and security built-in.",
-    "html": [
-      "<div id=\"___gatsby\">",
-      "<style id=\"gatsby-inlined-css\">"
-    ],
+    "dom": "div#___gatsby, style#gatsby-inlined-css",
     "icon": "Gatsby.svg",
     "implies": [
       "React",
@@ -209,6 +206,21 @@
       "generator": "^Gatsby(?: ([0-9.]+))?$\\;version:\\1"
     },
     "website": "https://www.gatsbyjs.org/"
+  },
+  "Gatsby Cloud Image CDN": {
+    "cats": [
+      31
+    ],
+    "description": "Image CDN is a new feature of hosting on Gatsby Cloud. Instead of processing images at build time, Image CDN defers and offloads image processing to the edge.",
+    "dom": "img[srcset*='/_gatsby/image/'], source[srcset*='/_gatsby/image/']",
+    "icon": "Gatsby.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.gatsbyjs.com/products/cloud/image-cdn"
   },
   "Gauges": {
     "cats": [
@@ -960,6 +972,24 @@
     "icon": "GoCache.png",
     "website": "https://www.gocache.com.br/"
   },
+  "GoCertify": {
+    "cats": [
+      5
+    ],
+    "cookies": {
+      "_gocertify_session": ""
+    },
+    "description": "GoCertify is a conversion-focused and cost-effective way to verify students, key workers, under-26s, over-60s, military and more for exclusive discounts.",
+    "dom": "a[href*='secure.gocertify.me']",
+    "icon": "GoCertify.png",
+    "pricing": [
+      "poa",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "assets\\.gocertify\\.me/",
+    "website": "https://www.gocertify.me"
+  },
   "GoDaddy": {
     "cats": [
       88
@@ -1099,6 +1129,23 @@
     },
     "website": "http://gostats.com/"
   },
+  "GotiPath": {
+    "cats": [
+      31
+    ],
+    "description": "GotiPath is a content delivery network (CDN) provider that is associated with telecom giant Telekom Malaysia Berhad.",
+    "icon": "GotiPath.png",
+    "headers": {
+      "X-Cache": "\\.swiftserve\\.com"
+    },
+    "dom":"img[src*='.gotipath.com/'], link[href*='.gpcdn.net/']",
+    "pricing": [
+      "recurring",
+      "poa",
+      "payg"
+    ],
+    "website": "https://gotipath.com"
+  },
   "GoatCounter": {
     "cats": [
       10
@@ -1165,7 +1212,8 @@
       "Goog_AdSense_": "",
       "Goog_AdSense_OsdAdapter": "",
       "__google_ad_urls": "",
-      "google_ad_": ""
+      "google_ad_": "",
+      "adsbygoogle": ""
     },
     "saas": true,
     "scriptSrc": [
@@ -1174,7 +1222,7 @@
       "2mdn\\.net",
       "ad\\.ca\\.doubleclick\\.net"
     ],
-    "website": "https://www.google.fr/adsense/start/"
+    "website": "https://www.google.com/adsense/start/"
   },
   "Google Ads": {
     "cats": [
@@ -1930,11 +1978,11 @@
       "GumroadOverlay": "",
       "createGumroadOverlay": ""
     },
-    "saas": true,
-    "scriptSrc": "gumroad\\.com/js/gumroad\\.js",
     "pricing": [
       "payg"
     ],
+    "saas": true,
+    "scriptSrc": "gumroad\\.com/js/gumroad\\.js",
     "website": "https://gumroad.com"
   },
   "Gumstack": {
