@@ -39,6 +39,7 @@ class WPTAgent(object):
         self.options = options
         self.capture_display = None
         self.health_check_server = None
+        self.message_server = None
         self.job = None
         self.task = None
         self.xvfb = None
@@ -50,6 +51,7 @@ class WPTAgent(object):
         self.browsers = Browsers(options, browsers, self.adb, self.ios)
         self.browser = None
         self.shaper = TrafficShaper(options, self.root_path)
+        self.pubsub_message = None
         # Install the signal handlers
         signal.signal(signal.SIGTERM, self.signal_handler)
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -92,12 +94,12 @@ class WPTAgent(object):
         done = False
         exit_file = os.path.join(self.root_path, 'exit')
         shutdown_file = os.path.join(self.root_path, 'shutdown')
-        message_server = None
+        self.message_server = None
         if not self.options.android and not self.options.iOS:
             from internal.message_server import MessageServer
-            message_server = MessageServer()
-            message_server.start()
-            if not message_server.is_ok():
+            self.message_server = MessageServer()
+            self.message_server.start()
+            if not self.message_server.is_ok():
                 logging.error("Unable to start the local message server")
                 return
         if self.options.healthcheckport:
@@ -108,6 +110,20 @@ class WPTAgent(object):
                 logging.error("Unable to start the health check server")
                 return
             self.wpt.health_check_server = self.health_check_server
+    
+        # If we are using a pubsub scription, start the listening thread
+        subscriber = None
+        streaming_pull_future = None
+        if self.options.pubsub:
+            try:
+                from google.cloud import pubsub_v1
+                subscriber = pubsub_v1.SubscriberClient()
+                subscription_path = self.options.pubsub
+                flow_control = pubsub_v1.types.FlowControl(max_messages=1)
+                streaming_pull_future = subscriber.subscribe(subscription_path, callback=self.pubsub_callback, flow_control=flow_control, await_callbacks_on_shutdown=True)
+                logging.debug("Listening for messages on %s..", subscription_path)                
+            except Exception:
+                logging.exception('Error starting pubsub subscription')
 
         while not self.must_exit and not done:
             try:
@@ -127,77 +143,43 @@ class WPTAgent(object):
                     self.must_exit = True
                     self.needs_shutdown = True
                     break
-                if message_server is not None and self.options.exit > 0 and not message_server.is_ok():
+                if self.message_server is not None and self.options.exit > 0 and not self.message_server.is_ok():
                     logging.error("Message server not responding, exiting")
                     break
                 if self.health_check_server is not None and self.options.exit > 0 and not self.health_check_server.is_ok():
                     logging.error("Health check server not responding, exiting")
                     break
-                if self.browsers.is_ready():
-                    if self.options.testurl or self.options.testspec:
-                        done = True
-                        try:
-                            test_json = {}
-                            if self.options.testspec:
-                                with open(self.options.testspec, 'rt') as f_in:
-                                    test_json = json.load(f_in)
-                            if self.options.testurl:
-                                test_json['url'] = self.options.testurl
-                            if self.options.browser:
-                                test_json['browser'] = self.options.browser
-                            if 'runs' not in test_json:
-                                test_json['runs'] = self.options.testruns
-                            if 'fvonly' not in test_json:
-                                test_json['fvonly'] = not self.options.testrv
-                            self.job = self.wpt.process_job_json(test_json)
-                        except Exception:
-                            logging.exception('Error processing test options')
-                    else:
-                        self.job = self.wpt.get_test(self.browsers.browsers)
-                    if self.job is not None:
-                        self.job['image_magick'] = self.image_magick
-                        self.job['message_server'] = message_server
-                        self.job['capture_display'] = self.capture_display
-                        self.job['shaper'] = self.shaper
-                        self.task = self.wpt.get_task(self.job)
-                        while self.task is not None:
-                            start = monotonic()
-                            try:
-                                self.task['running_lighthouse'] = False
-                                if self.job['type'] != 'lighthouse':
-                                    self.run_single_test()
-                                    self.wpt.get_bodies(self.task)
-                                if self.task['run'] == 1 and not self.task['cached'] and \
-                                        self.job['warmup'] <= 0 and \
-                                        self.task['error'] is None and \
-                                        'lighthouse' in self.job and self.job['lighthouse']:
-                                    if 'page_result' not in self.task or \
-                                            self.task['page_result'] is None or \
-                                            self.task['page_result'] == 0 or \
-                                            self.task['page_result'] == 99999:
-                                        self.task['running_lighthouse'] = True
-                                        self.wpt.running_another_test(self.task)
-                                        self.run_single_test()
-                                elapsed = monotonic() - start
-                                logging.debug('Test run time: %0.3f sec', elapsed)
-                            except Exception as err:
-                                msg = ''
-                                if err is not None and err.__str__() is not None:
-                                    msg = err.__str__()
-                                self.task['error'] = 'Unhandled exception running test: '\
-                                    '{0}'.format(msg)
-                                logging.exception("Unhandled exception running test: %s", msg)
-                                traceback.print_exc(file=sys.stdout)
-                            self.wpt.upload_task_result(self.task)
-                            # Set up for the next run
-                            self.task = self.wpt.get_task(self.job)
-                        self.output_test_result()
-                elif self.options.exit > 0 and self.browsers.should_exit():
-                    self.must_exit = True
-                if self.job is not None:
-                    self.job = None
-                elif not done and not self.must_exit:
+                if self.options.pubsub:
                     self.sleep(self.options.polling)
+                else:
+                    if self.browsers.is_ready():
+                        if self.options.testurl or self.options.testspec:
+                            done = True
+                            try:
+                                test_json = {}
+                                if self.options.testspec:
+                                    with open(self.options.testspec, 'rt') as f_in:
+                                        test_json = json.load(f_in)
+                                if self.options.testurl:
+                                    test_json['url'] = self.options.testurl
+                                if self.options.browser:
+                                    test_json['browser'] = self.options.browser
+                                if 'runs' not in test_json:
+                                    test_json['runs'] = self.options.testruns
+                                if 'fvonly' not in test_json:
+                                    test_json['fvonly'] = not self.options.testrv
+                                self.job = self.wpt.process_job_json(test_json)
+                            except Exception:
+                                logging.exception('Error processing test options')
+                        else:
+                            self.job = self.wpt.get_test(self.browsers.browsers)
+                        self.run_job()
+                    elif self.options.exit > 0 and self.browsers.should_exit():
+                        self.must_exit = True
+                    if self.job is not None:
+                        self.job = None
+                    elif not done and not self.must_exit:
+                        self.sleep(self.options.polling)
             except Exception as err:
                 msg = ''
                 if err is not None and err.__str__() is not None:
@@ -218,10 +200,93 @@ class WPTAgent(object):
             # Exit if adb is having issues (will cause a reboot after several tries)
             if self.adb is not None and self.adb.needs_exit:
                 done = True
+        # Shut down pubsub
+        if streaming_pull_future:
+            try:
+                streaming_pull_future.cancel()
+                streaming_pull_future.result(timeout=300)
+            except:
+                pass
         self.cleanup()
         if self.needs_shutdown:
             if platform.system() == "Linux":
                 subprocess.call(['sudo', 'poweroff'])
+
+    def pubsub_callback(self, message):
+        """Pubsub callback for jobs"""
+        logging.debug('Received pubsub job')
+        self.pubsub_message = message
+        try:
+            test_json = json.loads(message.data.decode('utf-8'))
+            # Don't re-run the same test if it already exists in gcs
+            exists = False
+            if 'gcs_har_upload' in test_json and \
+                    'bucket' in test_json['gcs_har_upload'] and \
+                    'path' in test_json['gcs_har_upload']:
+                try:
+                    from google.cloud import storage
+                    client = storage.Client()
+                    bucket = client.get_bucket(test_json['gcs_har_upload']['bucket'])
+                    gcs_path = os.path.join(test_json['gcs_har_upload']['path'], test_json['Test ID'] + '.har.gz')
+                    blob = bucket.blob(gcs_path)
+                    exists = blob.exists()
+                except Exception:
+                    logging.exception('Error checking for HAR in Cloud Storage')
+            if not exists:
+                self.job = self.wpt.process_job_json(test_json)
+                self.run_job()
+        except Exception:
+            logging.exception('Error processing pubsub job')
+        self.pubsub_message = None
+        message.ack()
+
+    def run_job(self):
+        """Run a single job from start to end"""
+        try:
+            if (sys.version_info >= (3, 0)):
+                from time import monotonic
+            else:
+                from monotonic import monotonic
+            if self.job is not None:
+                self.job['image_magick'] = self.image_magick
+                self.job['message_server'] = self.message_server
+                self.job['capture_display'] = self.capture_display
+                self.job['shaper'] = self.shaper
+                self.task = self.wpt.get_task(self.job)
+                while self.task is not None:
+                    start = monotonic()
+                    try:
+                        self.task['running_lighthouse'] = False
+                        if self.job['type'] != 'lighthouse':
+                            self.run_single_test()
+                            self.wpt.get_bodies(self.task)
+                        if self.task['run'] == 1 and not self.task['cached'] and \
+                                self.job['warmup'] <= 0 and \
+                                self.task['error'] is None and \
+                                'lighthouse' in self.job and self.job['lighthouse']:
+                            if 'page_result' not in self.task or \
+                                    self.task['page_result'] is None or \
+                                    self.task['page_result'] == 0 or \
+                                    self.task['page_result'] == 99999:
+                                self.task['running_lighthouse'] = True
+                                self.wpt.running_another_test(self.task)
+                                self.run_single_test()
+                        elapsed = monotonic() - start
+                        logging.debug('Test run time: %0.3f sec', elapsed)
+                    except Exception as err:
+                        msg = ''
+                        if err is not None and err.__str__() is not None:
+                            msg = err.__str__()
+                        self.task['error'] = 'Unhandled exception running test: '\
+                            '{0}'.format(msg)
+                        logging.exception("Unhandled exception running test: %s", msg)
+                        traceback.print_exc(file=sys.stdout)
+                    self.wpt.upload_task_result(self.task)
+                    # Set up for the next run
+                    self.task = self.wpt.get_task(self.job)
+                self.output_test_result()
+        except Exception:
+            logging.exception('Error running job')
 
     def output_test_result(self):
         """Dump the result of a CLI test to stdout"""
@@ -236,6 +301,11 @@ class WPTAgent(object):
         """Run a single test run"""
         if self.health_check_server is not None:
             self.health_check_server.healthy()
+        try:
+            if self.pubsub_message is not None:
+                self.pubsub_message.modify_ack_deadline(600)
+        except Exception:
+            logging.exception('Error extending pubsub ack deadline')
         self.alive()
         self.browser = self.browsers.get_browser(self.job['browser'], self.job)
         if self.browser is not None:

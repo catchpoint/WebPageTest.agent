@@ -129,7 +129,7 @@ class DevtoolsBrowser(object):
                 disable_images.append('jxl')
             if len(disable_images):
                 self.devtools.send_command("Emulation.setDisabledImageTypes", {"imageTypes": disable_images}, wait=True)
-
+            
             # Mobile Emulation
             if not self.options.android and not self.is_webkit and \
                     'mobile' in self.job and self.job['mobile'] and \
@@ -209,6 +209,22 @@ class DevtoolsBrowser(object):
                 ua_string += ' ' + task['AppendUA']
             if ua_string is not None:
                 self.job['user_agent_string'] = ua_string
+
+            # Global script injection (server-provided as well as any locally-defined scripts)
+            if 'injectScript' in self.job and self.job.get('injectScriptAllFrames'):
+                self.devtools.send_command("Page.addScriptToEvaluateOnNewDocument", {"source": self.job['injectScript']}, wait=True)
+            inject_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'custom', 'inject')
+            if (os.path.isdir(inject_dir)):
+                files = glob.glob(inject_dir + '/*.js')
+                for file in files:
+                    try:
+                        with open(file, 'rt') as f:
+                            inject_script = f.read()
+                            if inject_script:
+                                self.devtools.send_command("Page.addScriptToEvaluateOnNewDocument", {"source": inject_script}, wait=True)
+                    except Exception:
+                        pass
+
             # Disable js
             if self.job['noscript'] and not self.is_webkit:
                 self.devtools.send_command("Emulation.setScriptExecutionDisabled",
@@ -556,21 +572,24 @@ class DevtoolsBrowser(object):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit_now:
             return
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        page_data = self.run_js_file('page_data.js')
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
             bodies = None
             accessibility_tree = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
+                logging.debug('Collecting custom metric %s', name)
                 custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_TEST_URL') >= 0:
+                    wpt_url = 'window.location.href'
+                    if 'page_data' in self.task and 'URL' in self.task['page_data']:
+                        wpt_url = '{}'.format(json.dumps(self.task['page_data']['URL']))
+                    elif 'url' in self.job:
+                        wpt_url = '{}'.format(json.dumps(self.job['URL']))
+                    try:
+                        custom_script = custom_script.replace('$WPT_TEST_URL', wpt_url)
+                    except Exception:
+                        logging.exception('Error substituting URL data into custom script')
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
@@ -611,6 +630,14 @@ class DevtoolsBrowser(object):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
 
     def process_command(self, command):
         """Process an individual script command"""
@@ -1050,6 +1077,10 @@ class DevtoolsBrowser(object):
                             task['page_data']['detected'] = dict(detected['categories'])
                         if 'apps' in detected:
                             task['page_data']['detected_apps'] = dict(detected['apps'])
+                        if 'technologies' in detected:
+                            task['page_data']['detected_technologies'] = dict(detected['technologies'])
+                        if 'resolved' in detected:
+                            task['page_data']['detected_raw'] = list(detected['resolved'])
             except Exception as err:
                 logging.exception("Exception running Wappalyzer: %s", err.__str__())
         if not completed:

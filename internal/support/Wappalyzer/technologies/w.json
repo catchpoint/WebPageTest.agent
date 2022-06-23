@@ -733,6 +733,15 @@
     "scriptSrc": "/wp-content/themes/busiprof(?:-pro)?/",
     "website": "https://webriti.com/busiprof-premium-wordpress-theme-1"
   },
+  "WebRTC": {
+    "cats": [
+      19
+    ],
+    "description": "WebRTC is an open-source project that enables real-time voice, text and video communications capabilities between web browsers and devices.",
+    "icon": "WebRTC.svg",
+    "oss": true,
+    "website": "https://webrtc.org"
+  },
   "WebsPlanet": {
     "cats": [
       1
@@ -793,24 +802,6 @@
     ],
     "icon": "websocket.png",
     "website": "https://en.wikipedia.org/wiki/WebSocket"
-  },
-  "Webtrekk": {
-    "cats": [
-      10
-    ],
-    "icon": "Webtrekk.png",
-    "js": {
-      "WebtrekkV3": "",
-      "webtrekk": "",
-      "webtrekkConfig": "",
-      "webtrekkHeatmapObjects": "",
-      "webtrekkLinktrackObjects": "",
-      "webtrekkUnloadObjects": "",
-      "webtrekkV3": "",
-      "wt_tt": "",
-      "wt_ttv2": ""
-    },
-    "website": "http://www.webtrekk.com"
   },
   "Webtrends": {
     "cats": [
@@ -1256,14 +1247,14 @@
       6
     ],
     "description": "WiziShop is an ecommerce solution provider.",
-    "icon": "WiziShop.png",
     "headers": {
       "Server": "^WiziServer$"
     },
+    "icon": "WiziShop.png",
     "js": {
-      "wsCfg.bNavAjust": "",
+      "WIZIBLOCK_ARRAY": "",
       "wiziblocks_list": "",
-      "WIZIBLOCK_ARRAY": ""
+      "wsCfg.bNavAjust": ""
     },
     "pricing": [
       "mid",
@@ -1709,6 +1700,17 @@
       "\\.smarterhq\\.io/"
     ],
     "website": "https://www.wunderkind.co"
+  },
+  "WysiBB": {
+    "cats": [
+      24
+    ],
+    "description": "WysiBB very simple and functional open-source WYSIWYG BBCode editor based on jQuery.",
+    "icon": "WysiBB.svg",
+    "implies": "jQuery",
+    "scriptSrc": "/jquery\\.wysibb\\.min\\.js",
+    "oss": true,
+    "website": "http://wysibb.com"
   },
   "Wurfl": {
     "cats": [

@@ -369,27 +369,25 @@ class iWptBrowser(BaseBrowser):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit:
             return
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        logging.debug(user_timing)
-        if user_timing is not None and self.path_base is not None:
-            path = self.path_base + '_timed_events.json.gz'
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        logging.debug(page_data)
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 if name == 'jsLibsVulns':
                     continue
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_TEST_URL') >= 0:
+                    wpt_url = 'window.location.href'
+                    if 'page_data' in self.task and 'URL' in self.task['page_data']:
+                        wpt_url = '{}'.format(json.dumps(self.task['page_data']['URL']))
+                    elif 'url' in self.job:
+                        wpt_url = '{}'.format(json.dumps(self.job['URL']))
+                    try:
+                        custom_script = custom_script.replace('$WPT_TEST_URL', wpt_url)
+                    except Exception:
+                        logging.exception('Error substituting URL data into custom script')
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
@@ -415,6 +413,18 @@ class iWptBrowser(BaseBrowser):
                 path = self.path_base + '_metrics.json.gz'
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        logging.debug(user_timing)
+        if user_timing is not None and self.path_base is not None:
+            path = self.path_base + '_timed_events.json.gz'
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        logging.debug(page_data)
+        if page_data is not None:
+            task['page_data'].update(page_data)
 
     def process_message(self, msg):
         """Process a message from the browser

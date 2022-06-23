@@ -193,7 +193,8 @@ class DevToolsParser(object):
                         raw_requests[request_id]['fromCache'] = True
                     if method == 'Network.requestIntercepted' and 'requestId' in params and \
                             request_id is not None and request_id in raw_requests:
-                        raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
+                        if '__overwrittenURL' in params:
+                            raw_requests[request_id]['overwrittenURL'] = params['_overwrittenURL']
                     # Adjust all of the timestamps to be relative to the start of navigation
                     # and in milliseconds
                     if first_timestamp is None and 'timestamp' in params and \
@@ -875,7 +876,8 @@ class DevToolsParser(object):
                    'tls_resumed': 'tls_resumed',
                    'tls_next_proto': 'tls_next_proto',
                    'tls_cipher_suite': 'tls_cipher_suite',
-                   'uncompressed_bytes_in': 'objectSizeUncompressed'}
+                   'uncompressed_bytes_in': 'objectSizeUncompressed',
+                   'early_hint_headers': 'early_hint_headers'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
@@ -1379,6 +1381,8 @@ class DevToolsParser(object):
                                 request['score_progressive_jpeg'] = 0
                         if 'font' in opt:
                             request['font_details'] = opt['font']
+                        if 'wasm' in opt:
+                            request['wasm_stats'] = opt['wasm']
             if cache_count > 0:
                 page_data['score_cache'] = int(round(cache_total / cache_count))
             if cdn_count > 0:

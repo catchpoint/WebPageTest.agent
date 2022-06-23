@@ -9,6 +9,7 @@ import gzip
 import logging
 import multiprocessing
 import os
+import platform
 import re
 import shutil
 import struct
@@ -42,18 +43,21 @@ class OptimizationChecks(object):
         self.image_thread = None
         self.progressive_thread = None
         self.font_thread = None
+        self.wasm_thread = None
         self.cdn_time = None
         self.hosting_time = None
         self.gzip_time = None
         self.image_time = None
         self.progressive_time = None
         self.font_time = None
+        self.wasm_time = None
         self.cdn_results = {}
         self.hosting_results = {}
         self.gzip_results = {}
         self.image_results = {}
         self.progressive_results = {}
         self.font_results = {}
+        self.wasm_results = {}
         self.results = {}
         self.dns_lookup_queue = multiprocessing.JoinableQueue()
         self.dns_result_queue = multiprocessing.JoinableQueue()
@@ -415,12 +419,14 @@ class OptimizationChecks(object):
             self.image_thread = threading.Thread(target=self.check_images)
             self.progressive_thread = threading.Thread(target=self.check_progressive)
             self.font_thread = threading.Thread(target=self.check_fonts)
+            self.wasm_thread = threading.Thread(target=self.check_wasm)
             self.cdn_thread.start()
             self.hosting_thread.start()
             self.gzip_thread.start()
             self.image_thread.start()
             self.progressive_thread.start()
             self.font_thread.start()
+            self.wasm_thread.start()
             # collect the miscellaneous results directly
             logging.debug('Checking keep-alive.')
             self.check_keep_alive()
@@ -450,6 +456,12 @@ class OptimizationChecks(object):
                 self.font_thread = None
             if self.font_time is not None:
                 logging.debug("font check took %0.3f seconds", self.font_time)
+            logging.debug('Waiting for wasm check to complete')
+            if self.wasm_thread is not None:
+                self.wasm_thread.join()
+                self.wasm_thread = None
+            if self.wasm_time is not None:
+                logging.debug("wasm check took %0.3f seconds", self.wasm_time)
             logging.debug('Waiting for image check to complete')
             if self.image_thread is not None:
                 self.image_thread.join()
@@ -489,6 +501,10 @@ class OptimizationChecks(object):
                 if request_id not in self.results:
                     self.results[request_id] = {}
                 self.results[request_id]['font'] = self.font_results[request_id]
+            for request_id in self.wasm_results:
+                if request_id not in self.results:
+                    self.results[request_id] = {}
+                self.results[request_id]['wasm'] = self.wasm_results[request_id]
             if self.task is not None and 'page_data' in self.task:
                 for name in self.hosting_results:
                     self.task['page_data'][name] = self.hosting_results[name]
@@ -952,6 +968,8 @@ class OptimizationChecks(object):
                 if 'body' in request:
                     sniff_type = self.sniff_file_content(request['body'])
                     if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
+                        if sniff_type is None:
+                            sniff_type = 'Unknown'
                         check = {'score': -1,
                                  'size': content_length,
                                  'target_size': content_length,
@@ -973,6 +991,30 @@ class OptimizationChecks(object):
                                 check['info']['metadata'] = metadata
                         except Exception:
                             pass
+                        # Use imagemagick to convert metadata to json
+                        try:
+                            command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
+                            subprocess.call(command, shell=True)
+                            magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
+                            try:
+                                magick = json.loads(magick_str)
+                            except Exception:
+                                # Fix issues with imagemagick's json output
+                                magick_str = magick_str.replace('}\n{', '},\n{')
+                                magick_str = re.sub(r"([\"\w])(\n\s+\")", r"\1,\2", magick_str)
+                                magick_str = '[' + magick_str + ']'
+                                magick = json.loads(magick_str)
+                            if magick and 'image' in magick[0]:
+                                image = magick[0]['image']
+                                if len(magick) > 1:
+                                    image['FrameCount'] = len(magick)
+                                remove = ['name', 'artifacts', 'colormap', 'version']
+                                for key in remove:
+                                    if key in image:
+                                        del image[key]
+                                check['info']['magick'] = image
+                        except Exception:
+                            logging.exception('Error extracting image magick')
                         # Extract format-specific data
                         if sniff_type == 'jpeg':
                             if content_length < 1400:
@@ -1170,6 +1212,33 @@ class OptimizationChecks(object):
         self.font_time = monotonic() - start
         self.profile_end('fonts')
 
+    def check_wasm(self):
+        """Check each request to extract wasm stats (if wasm-stats is available for the current platform)"""
+        self.profile_start('wasm')
+        start = monotonic()
+        wasm_stats = None
+        if platform.system() == "Linux" and not os.uname()[4].startswith('arm') and platform.architecture()[0] == '64bit':
+            wasm_stats = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support', 'wasm-stats', 'linux', 'wasm-stats'))
+        elif platform.system() == 'Darwin':
+            wasm_stats = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support', 'wasm-stats', 'osx', 'wasm-stats'))
+        if wasm_stats is not None and os.path.exists(wasm_stats):
+            try:
+                for request_id in self.requests:
+                    try:
+                        request = self.requests[request_id]
+                        if 'body' in request and 'response_headers' in request:
+                            content_type = self.get_header_value(request['response_headers'], 'Content-Type')
+                            if content_type == 'application/wasm':
+                                stats = json.loads(subprocess.check_output([wasm_stats, request['body']], encoding='UTF-8'))
+                                if stats is not None:
+                                    self.wasm_results[request_id] = stats
+                    except Exception:
+                        pass
+            except Exception:
+                logging.exception('Error checking wasm')
+        self.wasm_time = monotonic() - start
+        self.profile_end('wasm')
+
     def get_header_value(self, headers, name):
         """Get the value for the requested header"""
         value = None
@@ -1194,7 +1263,7 @@ class OptimizationChecks(object):
             content_type = 'jpeg'
         elif hex_bytes[0:16] == b'89504e470d0a1a0a':
             content_type = 'png'
-        elif hex_bytes[0:22] == b'0000002066747970617669':
+        elif hex_bytes[0:22] == b'0000002066747970617669' or raw_bytes[4:12] == b'ftypavif':
             content_type = 'avif'
         elif hex_bytes[0:14] == b'0000000c4a584c':
             content_type = 'jxl'
@@ -1204,7 +1273,7 @@ class OptimizationChecks(object):
             content_type = 'webp'
         elif raw_bytes[:4] == b'OTTO':
             content_type = 'OTF'
-        elif raw_bytes[:4] == b'ttcf':
+        elif raw_bytes[:4] == b'ttcf' or hex_bytes[0:8] == b'00010000':
             content_type = 'TTF'
         elif raw_bytes[:4] == b'wOFF':
             content_type = 'WOFF'

@@ -76,8 +76,31 @@ class ProcessTest(object):
         page_data['edge-processed'] = True
 
         # Mark the job as successful if any of the steps were successful
-        if 'result' in page_data and page_data['result'] in [0, 99999]:
+        if 'result' in page_data and page_data['result'] in [0, 99997, 99998, 99999]:
             self.job['success'] = True
+        
+        # Extract any metrics requested for "successful" pubsub messages
+        try:
+            if 'pubsub_completed_metrics' in self.job and len(self.job['pubsub_completed_metrics']):
+                import copy
+                if 'results' not in self.job:
+                    self.job['results'] = {}
+                run = self.task.get('run', 1)
+                step = self.step_num
+                cached = 'RepeatView' if self.task.get('cached') else 'FirstView'
+                if run not in self.job['results']:
+                    self.job['results'][run] = {}
+                if cached not in self.job['results'][run]:
+                    self.job['results'][run][cached] = {}
+                if step not in self.job['results'][run][cached]:
+                    self.job['results'][run][cached][step] = {}
+                pubsub_result = self.job['results'][run][cached][step]
+                metrics = ['result'] + self.job['pubsub_completed_metrics']
+                for metric in metrics:
+                    if metric in page_data:
+                        pubsub_result[metric] = copy.deepcopy(page_data[metric])
+        except Exception:
+            logging.exception('Error extracting metrics for pubsub result')
 
         self.save_data()
 
@@ -102,17 +125,29 @@ class ProcessTest(object):
                 self.data = json.load(f)
 
                 # Merge the task-level page data
-                if self.data and 'pageData' in self.data:
-                    if 'page_data' in self.task:
-                        for key in self.task['page_data']:
-                            if key not in self.data['pageData']:
+                try:
+                    if self.data and 'pageData' in self.data:
+                        page_data = None
+                        pd_file = os.path.join(self.task['dir'], self.prefix + '_page_data.json.gz')
+                        if os.path.isfile(pd_file):
+                            with gzip.open(pd_file, GZIP_READ_TEXT) as f:
+                                page_data = json.load(f)
+                        if page_data is None and 'page_data' in self.task:
+                            page_data = self.task['page_data']
+                        if page_data is not None:
+                            for key in page_data:
                                 self.data['pageData'][key] = self.task['page_data'][key]
-                    self.task['page_data']['date'] = self.step_start
-                
-                if self.data and 'requests' in self.data:
-                    self.fix_up_request_times()
-                    self.add_response_body_flags()
-                    self.add_script_timings()
+                        self.task['page_data']['date'] = self.step_start
+
+                    if self.data and 'requests' in self.data:
+                        self.fix_up_request_times()
+                        self.add_response_body_flags()
+                        self.add_script_timings()
+
+                    if 'url' in self.job and self.job['url'] is not None:
+                        self.data['pageData']['testUrl'] = self.job['url']
+                except Exception:
+                    logging.exception('Error merging page data')
 
         if not self.data or 'pageData' not in self.data:
             raise Exception("Devtools file not present")
@@ -416,7 +451,9 @@ class ProcessTest(object):
                                                 if 'region_rects' in event['args']['data']:
                                                     shift['rects'] = event['args']['data']['region_rects']
                                                 if 'sources' in event['args']['data']:
-                                                    shift['sources'] = event['args']['data']['sources']
+                                                    sources_str = json.dumps(event['args']['data']['sources'])
+                                                    if len(sources_str) < 1000000:
+                                                        shift['sources'] = event['args']['data']['sources']
                                                 layout_shifts.append(shift)
 
                                         if name is not None and time is not None and name not in largest:
@@ -956,8 +993,9 @@ class ProcessTest(object):
                     prefix = '' if self.prefix == '1' else '_' + self.prefix
                     gcs_path = os.path.join(self.job['gcs_har_upload']['path'], self.task['id'] + prefix + '.har.gz')
                     blob = bucket.blob(gcs_path)
-                    blob.upload_from_filename(filename=har_file)
-                    logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
+                    if not blob.exists():
+                        blob.upload_from_filename(filename=har_file)
+                        logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
             
@@ -1025,7 +1063,7 @@ class ProcessTest(object):
             
             # Request data
             req = {
-                'method': request['method'],
+                'method': request['method'] if 'method' in request else 'GET',
                 'url': request['full_url'],
                 'headersSize': -1,
                 'bodySize': -1,
@@ -1074,7 +1112,7 @@ class ProcessTest(object):
                     for val in qs[name]:
                         req['queryString'].append({'name': name, 'value': val})
             
-            if request['method'].lower().strip() == 'post':
+            if 'method' in request and request['method'].lower().strip() == 'post':
                 req['postData'] = {'mimeType': '', 'text': ''}
 
             entry['request'] = req

@@ -423,12 +423,12 @@ class DevTools(object):
                 trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("blink.user_timing")
-            if "netlog" not in trace_config["includedCategories"]:
+            if "netlog" not in trace_config["includedCategories"] and not self.job.get('streaming_netlog'):
                 trace_config["includedCategories"].append("netlog")
+            if "disabled-by-default-netlog" not in trace_config["includedCategories"] and not self.job.get('streaming_netlog'):
+                trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "blink.resource" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("blink.resource")
-            if "disabled-by-default-netlog" not in trace_config["includedCategories"]:
-                trace_config["includedCategories"].append("disabled-by-default-netlog")
             if "disabled-by-default-blink.feature_usage" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("disabled-by-default-blink.feature_usage")
             if not self.is_webkit:
@@ -1299,6 +1299,9 @@ class DevTools(object):
                     else:
                         patterns.append({'urlPattern': 'http://{0}*'.format(host)})
                         patterns.append({'urlPattern': 'https://{0}*'.format(host)})
+                        # to handle redirects, let's intercept the host match as well
+                        patterns.append({'urlPattern': 'http://{0}*'.format(self.task['overrideHosts'][host])})
+                        patterns.append({'urlPattern': 'https://{0}*'.format(self.task['overrideHosts'][host])})
                 self.send_command('Network.setRequestInterception', {'patterns': patterns}, target_id=target_id)
         except Exception:
             logging.exception("Error enabling target")
@@ -1355,10 +1358,12 @@ class DevTools(object):
         if message is not None:
             if 'text' in message and message['text'].startswith('wptagent_message:'):
                 try:
-                    wpt_message = json.loads(message['text'][17:])
-                    if 'name' in wpt_message:
-                        if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
-                            self.performance_timing.append(wpt_message['data'])
+                    # Throw away messages over 1MB to prevent things from spiraling too badly
+                    if len(message['text']) < 1000000:
+                        wpt_message = json.loads(message['text'][17:])
+                        if 'name' in wpt_message:
+                            if wpt_message['name'] == 'perfentry' and 'data' in wpt_message:
+                                self.performance_timing.append(wpt_message['data'])
                 except Exception:
                     logging.exception('Error decoding console log message')
             else:
@@ -1404,7 +1409,8 @@ class DevTools(object):
                 'frame' in msg['params'] and 'id' in msg['params']['frame']:
             if self.main_frame is not None and \
                     self.main_frame == msg['params']['frame']['id'] and\
-                    'injectScript' in self.job:
+                    'injectScript' in self.job and \
+                    not self.job.get('injectScriptAllFrames'):
                 self.execute_js(self.job['injectScript'])
         elif event == 'frameStoppedLoading' and 'params' in msg and 'frameId' in msg['params']:
             if self.main_frame is not None and \
@@ -1458,17 +1464,25 @@ class DevTools(object):
                 try:
                     from fnmatch import fnmatch
                     for host_match in self.task['overrideHosts']:
-                        if fnmatch(host, host_match):
-                            # Overriding to * is just a passthrough, don't actually modify anything
-                            if self.task['overrideHosts'][host_match] != '*':
+                        headers = msg['params']['request']['headers']
+                        if 'x-host' not in headers:
+                            if fnmatch(host, host_match):
+                                # Overriding to * is just a passthrough, don't actually modify anything
+                                if self.task['overrideHosts'][host_match] != '*':
+                                    headers['x-host'] = host
+                                    params['headers'] = headers
+                                    params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
+                                    # We need to add the new URL to our event for parsing later
+                                    # let's use an underscore to indicate to ourselves that we're adding this
+                                    msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
+                                    break
+                            # check the new host to handle redirects
+                            if fnmatch(self.task['overrideHosts'][host_match], host):
+                                # in this case, we simply want to modify the header, everything else is fine
                                 headers = msg['params']['request']['headers']
-                                headers['x-Host'] = host
+                                headers['x-host'] = host_match
                                 params['headers'] = headers
-                                params['url'] = url.replace(host, self.task['overrideHosts'][host_match], 1)
-                                # We need to add the new URL to our event for parsing later
-                                # let's use an underscore to indicate to ourselves that we're adding this
-                                msg['params']['_overwrittenURL'] =  url.replace(host, self.task['overrideHosts'][host_match], 1)
-                            break
+                                break
                 except Exception:
                     logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)
@@ -1825,7 +1839,8 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
                 self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
-            self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
+            if not job.get('streaming_netlog'):
+                self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
             elapsed = monotonic() - start
             logging.debug("Done processing the trace events: %0.3fs", elapsed)

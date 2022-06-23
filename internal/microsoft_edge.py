@@ -724,25 +724,24 @@ class Edge(DesktopBrowser):
         # Trigger a message to start writing the interactive periods asynchronously
         if self.supports_interactive:
             self.execute_js('window.postMessage({ wptagent: "GetInteractivePeriods"}, "*");')
-        # Collect teh regular browser metrics
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             self.driver.set_script_timeout(30)
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_TEST_URL') >= 0:
+                    wpt_url = 'window.location.href'
+                    if 'page_data' in self.task and 'URL' in self.task['page_data']:
+                        wpt_url = '{}'.format(json.dumps(self.task['page_data']['URL']))
+                    elif 'url' in self.job:
+                        wpt_url = '{}'.format(json.dumps(self.job['URL']))
+                    try:
+                        custom_script = custom_script.replace('$WPT_TEST_URL', wpt_url)
+                    except Exception:
+                        logging.exception('Error substituting URL data into custom script')
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
@@ -767,6 +766,17 @@ class Edge(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        # Collect the regular browser metrics
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
         # Wait for the interactive periods to be written
         if self.supports_interactive:
             end_time = monotonic() + 10

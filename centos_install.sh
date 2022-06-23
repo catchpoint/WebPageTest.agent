@@ -17,17 +17,17 @@ until sudo yum groupinstall -y development
 do
     sleep 1
 done
-until sudo yum install -y python27 python-pip ImageMagick ffmpeg Xvfb dbus-x11 libcgroup libcgroup-tools traceroute tcpdump psmisc python-devel google-noto*
+until sudo yum install -y gcc-c++ python3 python3-devel ImageMagick ffmpeg Xvfb dbus-x11 libcgroup libcgroup-tools traceroute tcpdump psmisc python-devel
 do
     sleep 1
 done
 sudo dbus-uuidgen --ensure
-sudo pip install --upgrade pip
-until sudo pip install dnspython monotonic pillow psutil requests ujson tornado xvfbwrapper marionette_driver future
+python3 -m pip install --upgrade --user pip
+until python3 -m pip install --user -r .github/workflows/requirements.txt 
 do
     sleep 1
 done
-curl --silent --location https://rpm.nodesource.com/setup_9.x | sudo bash -
+curl --silent --location https://rpm.nodesource.com/setup_16.x | sudo bash -
 until sudo yum -y install nodejs
 do
     sleep 1
@@ -52,3 +52,7 @@ echo 'net.ipv4.tcp_syn_retries = 4' | sudo tee -a /etc/sysctl.d/50-wptagent.conf
 sudo fc-cache -f -v
 sudo sysctl -p
 echo 'Reboot is recommended before starting testing'
+
+# Running command used to test
+# python3 wptagent.py -vvvv --xvfb --dockerized --testurl www.google.com
+

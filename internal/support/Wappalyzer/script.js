@@ -89,12 +89,14 @@
     let categories = {};
     let apps = {};
     let dedupe = {};
+    let detected = {};
 
     for (let entry of resolved) {
       try {
         if (entry) {
           const app = entry.name;
           const version = entry.version;
+          detected[app] = entry;
           for (let catEntry of entry.categories) {
             let category = catEntry.name;
             if (!category.length) {
@@ -134,7 +136,9 @@
 
     let wptResult = JSON.stringify({
       categories: categories,
-      apps: apps
+      apps: apps,
+      technologies: detected,
+      resolved: resolved
     });
     return wptResult;
   }

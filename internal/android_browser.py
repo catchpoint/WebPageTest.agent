@@ -252,7 +252,7 @@ class AndroidBrowser(BaseBrowser):
                         logging.debug(logline)
                         gzfile.write(logline)
                 except Exception:
-                    logging.Exception("Error processing usage queue")
+                    logging.exception("Error processing usage queue")
                 gzfile.close()
         if self.tcpdump_enabled:
             tcpdump = os.path.join(task['dir'], task['prefix']) + '.cap'

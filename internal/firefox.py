@@ -77,6 +77,7 @@ class Firefox(DesktopBrowser):
             "snippets.cdn.mozilla.net",
             "content-signature-2.cdn.mozilla.net",
             "aus5.mozilla.org"]
+        self.duplicates = []
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
@@ -536,23 +537,23 @@ class Firefox(DesktopBrowser):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit:
             return
-        logging.debug("Collecting user timing metrics")
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        logging.debug("Collecting page-level metrics")
-        page_data = self.run_js_file('page_data.js')
-        if page_data is not None:
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
             bodies = None
-            for name in self.job['customMetrics']:
+            for name in sorted(self.job['customMetrics']):
                 logging.debug("Collecting custom metric %s", name)
                 custom_script = unicode(self.job['customMetrics'][name])
+                if custom_script.find('$WPT_TEST_URL') >= 0:
+                    wpt_url = 'window.location.href'
+                    if 'page_data' in self.task and 'URL' in self.task['page_data']:
+                        wpt_url = '{}'.format(json.dumps(self.task['page_data']['URL']))
+                    elif 'url' in self.job:
+                        wpt_url = '{}'.format(json.dumps(self.job['URL']))
+                    try:
+                        custom_script = custom_script.replace('$WPT_TEST_URL', wpt_url)
+                    except Exception:
+                        logging.exception('Error substituting URL data into custom script')
                 if custom_script.find('$WPT_REQUESTS') >= 0:
                     if requests is None:
                         requests = self.get_sorted_requests_json(False)
@@ -577,6 +578,16 @@ class Firefox(DesktopBrowser):
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
+        logging.debug("Collecting user timing metrics")
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        logging.debug("Collecting page-level metrics")
+        page_data = self.run_js_file('page_data.js')
+        if page_data is not None:
+            task['page_data'].update(page_data)
 
     def process_message(self, message):
         """Process a message from the extension"""
@@ -599,6 +610,14 @@ class Firefox(DesktopBrowser):
                             self.long_tasks.append([int(start_time * 1000), int(end_time * 1000)])
                         else:
                             logging.debug("Long task outside of the test time")
+                elif message['path'] == 'wptagent.overrideHost':
+                    requestId = message['body']['requestId']
+                    logging.debug('adding to override duplicate list %s', requestId)
+                    self.duplicates.append(requestId)
+                    if requestId in self.requests:
+                        logging.debug('deleting duplicate request %s', requestId)
+                        del self.requests[requestId]
+
 
         elif self.recording:
             self.last_activity = monotonic()
@@ -660,8 +679,8 @@ class Firefox(DesktopBrowser):
                     }
 
     def process_web_request(self, message, evt):
-        """Handle webNavigation.*"""
-        if evt is not None and 'requestId' in evt and 'timeStamp' in evt:
+        """Handle webRequest.*"""
+        if evt is not None and 'requestId' in evt and 'timeStamp' in evt and evt['requestId'] not in self.duplicates:
             if evt['requestId'] not in self.requests:
                 self.requests[evt['requestId']] = {'id': evt['requestId'],
                                                    'from_net': True}
