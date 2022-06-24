@@ -891,7 +891,7 @@ class DevToolsParser(object):
                 if 'request_id' not in request and 'id' in request:
                     request['request_id'] = request['id']
                 if 'full_url' in request:
-                    for entry in netlog:
+                    for entry in netlog or []:
                         url_matches = False
                         if 'url' in entry and entry['url'] == request['full_url']:
                             url_matches = True
@@ -979,7 +979,7 @@ class DevToolsParser(object):
 
             # Add any requests we didn't know about
             index = 0
-            for entry in netlog:
+            for entry in netlog or []:
                 if 'claimed' not in entry and 'url' in entry and 'start' in entry:
                     index += 1
                     request = {'type': 3, 'full_url': entry['url']}
