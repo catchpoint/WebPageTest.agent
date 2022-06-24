@@ -1825,7 +1825,7 @@ def main():
 
 
 ##########################################################################
-#   Blink feature names from https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/public/mojom/web_feature/web_feature.mojom
+#   Blink feature names from https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom
 ##########################################################################
 BLINK_FEATURES = {
     "0": "PageDestruction",
@@ -5675,11 +5675,73 @@ BLINK_FEATURES = {
     "4220": "GestureScrollStart",
     "4221": "GestureScrollUpdate",
     "4222": "GestureScrollEnd",
-    "4223": "ArrayBufferTooBigForWebAPI"
+    "4223": "ArrayBufferTooBigForWebAPI",
+    "4224": "FedCmRevoke",
+    "4225": "FedCmLogout",
+    "4226": "FedCmLogoutRps",
+    "4227": "V8Navigator_DeprecatedReplaceInURN_Method",
+    "4228": "WebAppBorderless",
+    "4229": "PaymentInstruments",
+    "4230": "V8PaymentInstruments_Clear_Method",
+    "4231": "V8PaymentInstruments_Delete_Method",
+    "4232": "V8PaymentInstruments_Get_Method",
+    "4233": "V8PaymentInstruments_Has_Method",
+    "4234": "V8PaymentInstruments_Keys_Method",
+    "4235": "V8PaymentInstruments_Set_Method",
+    "4236": "PerformanceMeasureFindExistingName",
+    "4237": "FlexboxNewAbsPos",
+    "4238": "ScriptSchedulingType_Defer",
+    "4239": "ScriptSchedulingType_ParserBlocking",
+    "4240": "ScriptSchedulingType_ParserBlockingInline",
+    "4241": "ScriptSchedulingType_InOrder",
+    "4242": "ScriptSchedulingType_Async",
+    "4243": "Focusgroup",
+    "4244": "V8HTMLElement_Focusgroup_AttributeGetter",
+    "4245": "V8HTMLElement_Focusgroup_AttributeSetter",
+    "4246": "V8MathMLElement_Focusgroup_AttributeGetter",
+    "4247": "V8MathMLElement_Focusgroup_AttributeSetter",
+    "4248": "V8SVGElement_Focusgroup_AttributeGetter",
+    "4249": "V8SVGElement_Focusgroup_AttributeSetter",
+    "4250": "CSSLegacyPerspectiveOrigin",
+    "4251": "CSSLegacyTransformOrigin",
+    "4252": "CSSLegacyBorderImage",
+    "4253": "CSSLegacyBorderImageWidth",
+    "4254": "CrossOriginOpenerPolicyRestrictProperties",
+    "4255": "CrossOriginOpenerPolicyRestrictPropertiesReportOnly",
+    "4256": "EventTimingInteractionId",
+    "4257": "SecurePaymentConfirmationOptOut",
+    "4258": "AnyPopupAttribute",
+    "4259": "DeferredShapingWorked",
+    "4260": "DeferredShapingReshapedByForceLayout",
+    "4261": "MediaSourceGetHandle",
+    "4262": "IdentityInCanMakePaymentEvent",
+    "4263": "SharedStorageAPI_SharedStorage_DOMReference",
+    "4264": "SharedStorageAPI_AddModule_Method",
+    "4265": "SharedStorageAPI_Set_Method",
+    "4266": "SharedStorageAPI_Append_Method",
+    "4267": "SharedStorageAPI_Delete_Method",
+    "4268": "SharedStorageAPI_Clear_Method",
+    "4269": "SharedStorageAPI_SelectURL_Method",
+    "4270": "SharedStorageAPI_Run_Method",
+    "4271": "ViewTimelineConstructor",
+    "4272": "H1UserAgentFontSizeInSectionApplied",
+    "4273": "V8PendingBeacon_Constructor",
+    "4274": "V8PendingBeacon_Url_AttributeGetter",
+    "4275": "V8PendingBeacon_Url_AttributeSetter",
+    "4276": "V8PendingBeacon_Method_AttributeGetter",
+    "4277": "V8PendingBeacon_Method_AttributeSetter",
+    "4278": "V8PendingBeacon_PageHideTimeout_AttributeGetter",
+    "4279": "V8PendingBeacon_PageHideTimeout_AttributeSetter",
+    "4280": "V8PendingBeacon_State_AttributeGetter",
+    "4281": "V8PendingBeacon_Deactivate_Method",
+    "4282": "V8PendingBeacon_SetData_Method",
+    "4283": "V8PendingBeacon_SendNow_Method",
+    "4284": "TabSharingBarSwitchToCapturer",
+    "4285": "TabSharingBarSwitchToCapturee"
 }
 
 ##########################################################################
-#   CSS feature names from https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/public/mojom/use_counter/css_property_id.mojom
+#   CSS feature names from https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 ##########################################################################
 CSS_FEATURES = {
     "2": "CSSPropertyColor",
@@ -6337,20 +6399,22 @@ CSS_FEATURES = {
     "702": "CSSPropertyAppRegion",
     "703": "CSSPropertyFontSynthesisSmallCaps",
     "704": "CSSPropertyFontSynthesis",
-    "705": "TextEmphasis",
-    "706": "TextEmphasisColor",
-    "707": "TextEmphasisPosition",
-    "708": "TextEmphasisStyle",
-    "709": "FontPalette",
-    "710": "BasePalette",
-    "711": "OverrideColors",
-    "712": "PageTransitionTag",
-    "713": "ObjectViewBox",
-    "714": "ObjectOverflow",
-    "715": "ToggleGroup",
-    "716": "ToggleRoot",
-    "717": "ToggleTrigger",
-    "718": "Toggle"
+    "705": "CSSPropertyTextEmphasis",
+    "706": "CSSPropertyTextEmphasisColor",
+    "707": "CSSPropertyTextEmphasisPosition",
+    "708": "CSSPropertyTextEmphasisStyle",
+    "709": "CSSPropertyFontPalette",
+    "710": "CSSPropertyBasePalette",
+    "711": "CSSPropertyOverrideColors",
+    "712": "CSSPropertyPageTransitionTag",
+    "713": "CSSPropertyObjectViewBox",
+    "714": "CSSPropertyObjectOverflow",
+    "715": "CSSPropertyToggleGroup",
+    "716": "CSSPropertyToggleRoot",
+    "717": "CSSPropertyToggleTrigger",
+    "718": "CSSPropertyToggle",
+    "719": "CSSPropertyAnchorName",
+    "720": "CSSPropertyPositionFallback"
 }
 
 if '__main__' == __name__:

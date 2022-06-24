@@ -20,6 +20,21 @@
     "icon": "F5.png",
     "website": "https://www.f5.com/products/big-ip-services"
   },
+  "FARFETCH Black & White": {
+    "cats": [
+      6
+    ],
+    "description": "Farfetch Platform Solutions is a full service platform and agency providing end-to-end, multichannel e-commerce solutions for luxury fashion brands under the name Farfetch Black & White.",
+    "icon": "Farfetch.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "cdn-static\\.farfetch-contents.com\\.js"
+    ],
+    "website": "https://www.farfetchplatformsolutions.com/"
+  },
   "FAST ESP": {
     "cats": [
       29
@@ -252,20 +267,25 @@
     "scriptSrc": "fareharbor\\.com/embeds/api/",
     "website": "https://fareharbor.com"
   },
-  "FARFETCH Black & White": {
+  "Fast Bundle": {
     "cats": [
-      6
+      100
     ],
-    "description": "Farfetch Platform Solutions is a full service platform and agency providing end-to-end, multichannel e-commerce solutions for luxury fashion brands under the name Farfetch Black & White.",
-    "icon": "Farfetch.png",
+    "description": "Fast Bundle gives you the ability to create product bundle offers with discounts.",
+    "icon": "Fast Bundle.svg",
+    "implies": "Shopify",
+    "js": {
+      "FastBundleConf.bundleBox": "",
+      "FastBundleConf.cartInfo.app_version": "v([\\d\\.]+)\\;version:\\1"
+    },
     "pricing": [
-      "poa"
+      "freemium",
+      "recurring",
+      "low"
     ],
     "saas": true,
-    "scriptSrc": [
-      "cdn-static\\.farfetch-contents.com\\.js"
-    ],
-    "website": "https://www.farfetchplatformsolutions.com/"
+    "scriptSrc": "api\\.fastbundle\\.co/",
+    "website": "https://fastbundle.co"
   },
   "Fast Checkout": {
     "cats": [
@@ -793,6 +813,23 @@
     "scriptSrc": "/flickity(?:\\.pkgd)?(?:\\.min)?\\.js",
     "website": "https://flickity.metafizzy.co/"
   },
+  "Flits": {
+    "cats": [
+      100
+    ],
+    "description": "Flits is a customer account pages that get all your shopper data in one place.",
+    "icon": "Flits.png",
+    "implies": "Shopify",
+    "js": {
+      "flitsObjects.accountPage": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://getflits.com"
+  },
   "Flocktory": {
     "cats": [
       94,
@@ -829,6 +866,17 @@
     "saas": true,
     "scriptSrc": "(?:shopify-)?cdn\\.flow\\.io/",
     "website": "https://www.flow.io/"
+  },
+  "Flowbite": {
+    "cats": [
+      66
+    ],
+    "description": "Flowbite is an open-source library of UI components based on the utility-first Tailwind CSS framework featuring dark mode support, a Figma design system, and more.",
+    "icon": "Flowbite.svg",
+    "implies": "Tailwind CSS",
+    "oss": true,
+    "scriptSrc": "/flowbite(?:@([\\d\\.]+)/|\\.bundle\\.js)\\;version:\\1",
+    "website": "https://github.com/themesberg/flowbite"
   },
   "Flowplayer": {
     "cats": [
@@ -1000,6 +1048,33 @@
     "saas": true,
     "scriptSrc": "\\.(?:fbgcdn|foodbooking)\\.com/",
     "website": "https://www.foodbooking.com"
+  },
+  "Food-Ordering.co.uk": {
+    "cats": [
+      6,
+      93
+    ],
+    "description": "Food-Ordering.co.uk is a multi-lingual food ordering system for several hospitality scenarios including online ordering for delivery/takeout, in-store ordering (order at table, room service, self ordering kiosk), telephone ordering with callerID, and table booking.",
+    "icon": "Food-Ordering.co.uk.png",
+    "requires": [
+      "Microsoft ASP.NET",
+      "Bootstrap",
+      "Plesk",
+      "Google Maps"
+    ],
+    "js": {
+      "disabledelivery": "No\\;confidence:25",
+      "disablecollection": "No\\;confidence:25",
+      "GetOrderAcceptFor": "\\;confidence:25",
+      "StoreToC": "\\;confidence:25"
+    },
+    "pricing": [
+      "low",
+      "recurring",
+      "onetime"
+    ],
+    "saas": true,
+    "website": "https://www.food-ordering.co.uk"
   },
   "Fork Awesome": {
     "cats": [
@@ -1447,7 +1522,14 @@
       24
     ],
     "description": "Froala Editor is a WYSIWYG HTML Editor written in Javascript that enables rich text editing capabilities for applications.",
-    "dom": ".fr-view, .fr-box, .fr-popup, .froala-box",
+    "dom": {
+      ".fr-view, .fr-box, .fr-popup": {
+        "exists": "\\;version:2+"
+      },
+      ".froala-box": {
+        "exists": "\\;version:1"
+      }
+    },
     "icon": "Froala.svg",
     "implies": [
       "jQuery",
@@ -1530,6 +1612,23 @@
     "saas": true,
     "scriptSrc": "frosmo\\.easy\\.js",
     "website": "https://frosmo.com"
+  },
+  "FullContact": {
+    "cats": [
+      10
+    ],
+    "description": "FullContact is a privacy-safe Identity Resolution company building trust between people and brands.",
+    "icon": "FullContact.svg",
+    "js": {
+      "Fullcontact": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "tags\\.fullcontact\\.com/",
+    "website": "https://www.fullcontact.com"
   },
   "FullStory": {
     "cats": [

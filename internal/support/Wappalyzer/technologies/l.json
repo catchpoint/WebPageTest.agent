@@ -211,14 +211,14 @@
     ],
     "description": "LayoutHub is an easy page builder that helps merchants quickly set up an online store with any kind of page type by using our library of pre-designed layouts and blocks.",
     "icon": "LayoutHub.png",
-    "requires": "Shopify",
-    "scriptSrc": "app\\.layouthub\\.com/shopify/layouthub\\.js",
-    "saas": true,
+    "implies": "Shopify",
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "saas": true,
+    "scriptSrc": "app\\.layouthub\\.com/shopify/layouthub\\.js",
     "website": "https://layouthub.com"
   },
   "Lazada": {
@@ -230,15 +230,16 @@
     "meta": {
       "aplus-auto-exp": "lzdhome\\.desktop\\."
     },
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
     "website": "https://www.lazada.com"
   },
   "LazySizes": {
     "cats": [
-      59
+      59,
+      92
     ],
     "description": "LazySizes is a JavaScript library used to delay the loading of images (iframes, scripts, etc) until they come into view.",
     "icon": "default.svg",
@@ -248,6 +249,17 @@
     },
     "oss": true,
     "website": "https://github.com/aFarkas/lazysizes"
+  },
+  "LazySizes unveilhooks plugin": {
+    "cats": [
+      59,
+      92
+    ],
+    "description": "LazySizes unveilhooks plugin extends lazySizes to lazyload scripts/widgets, background images, styles and video/audio elements.",
+    "icon": "default.svg",
+    "oss": true,
+    "scriptSrc": "ls.\\unveilhooks(?:\\.min)?\\.js",
+    "website": "https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/unveilhooks"
   },
   "Leadinfo": {
     "cats": [
@@ -288,10 +300,10 @@
     ],
     "description": "Leaflet is the price testing platform for Shopify.",
     "icon": "Leaflet platform.png",
+    "implies": "Shopify",
     "pricing": [
       "payg"
     ],
-    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "scripts\\.leaflet\\.co/",
     "website": "https://join.leaflet.co"
@@ -396,6 +408,15 @@
     "icon": "Less.png",
     "website": "http://lesscss.org"
   },
+  "Let's Encrypt": {
+    "cats": [
+      70
+    ],
+    "certIssuer": "Let's Encrypt",
+    "description": "Let's Encrypt is a free, automated, and open certificate authority.",
+    "icon": "Lets Encrypt.svg",
+    "website": "https://letsencrypt.org/"
+  },
   "Letro": {
     "cats": [
       90,
@@ -407,21 +428,12 @@
       "__letroUgcGadget": "",
       "letroUgcSet": ""
     },
-    "scriptSrc": "letro\\.jp/tags",
-    "saas": true,
     "pricing": [
       "recurring"
     ],
+    "saas": true,
+    "scriptSrc": "letro\\.jp/tags",
     "website": "https://service.aainc.co.jp/product/letro/"
-  },
-  "Let's Encrypt": {
-    "cats": [
-      70
-    ],
-    "certIssuer": "Let's Encrypt",
-    "description": "Let's Encrypt is a free, automated, and open certificate authority.",
-    "icon": "Lets Encrypt.svg",
-    "website": "https://letsencrypt.org/"
   },
   "Level 5": {
     "cats": [
@@ -636,8 +648,10 @@
     "dom": "noscript > img[src*='dc.ads.linkedin.com']",
     "icon": "Linkedin.svg",
     "js": {
-      "_linkedin_data_partner_id": ""
+      "_linkedin_data_partner_id": "",
+      "_linkedin_partner_id": ""
     },
+    "scripts": "_linkedin_partner_id",
     "scriptSrc": "snap\\.licdn\\.com/li\\.lms-analytics/insight\\.min\\.js",
     "website": "https://business.linkedin.com/marketing-solutions/insight-tag"
   },
@@ -785,10 +799,11 @@
   },
   "Littledata": {
     "cats": [
-      10
+      100
     ],
     "description": "Littledata provides a seamless connection between your Shopify site, marketing channels, and Google Analytics.",
     "icon": "Littledata.svg",
+    "implies": "Shopify",
     "js": {
       "LittledataLayer": "",
       "LittledataLayer.version": "v([\\d\\.]+)\\;version:\\1"
@@ -995,11 +1010,11 @@
     ],
     "description": "Livescale is a video platform that enables teams to transform content and ecommerce into a live shopping experience that reaches engages and monetizes audiences with LiveShopping.",
     "icon": "Livescale.png",
+    "implies": "Shopify",
     "pricing": [
       "mid",
       "recurring"
     ],
-    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "\\.livescale\\.tv/",
     "website": "https://www.livescale.tv"
@@ -1030,6 +1045,17 @@
     },
     "oss": true,
     "website": "https://github.com/gregberge/loadable-components"
+  },
+  "Loadify": {
+    "cats": [
+      92,
+      100
+    ],
+    "description": "Loadify is a shopify app which helps merchants deploy performance techniques like loading screen, transitions & lazy Load.",
+    "icon": "Loadify.png",
+    "implies": "Shopify",
+    "scriptSrc": "\\.loadifyapp\\.ninety9\\.dev",
+    "website": "https://apps.shopify.com/loadify"
   },
   "LocalFocus": {
     "cats": [
@@ -1067,6 +1093,23 @@
     "saas": true,
     "website": "https://www.localised.com",
     "xhr": "api\\.localised\\.com"
+  },
+  "Locksmith": {
+    "cats": [
+      100
+    ],
+    "description": "Locksmith is a shopify app for adding access control capability on shopify stores.",
+    "icon": "Locksmith.png",
+    "implies": "Shopify",
+    "js": {
+      "Locksmith": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://apps.shopify.com/locksmith"
   },
   "LocomotiveCMS": {
     "cats": [
@@ -1322,6 +1365,7 @@
     ],
     "description": "Loox is a reviews app for Shopify that helps you gather reviews and user-generated photos from your customers.",
     "icon": "Loox.svg",
+    "implies": "Shopify",
     "js": {
       "loox_global_hash": ""
     },
@@ -1329,7 +1373,6 @@
       "low",
       "recurring"
     ],
-    "requires": "Shopify",
     "saas": true,
     "scriptSrc": "loox\\.io/widget",
     "website": "https://loox.app"
@@ -1603,8 +1646,25 @@
     ],
     "description": "The lite-youtube-embed technique renders the YouTube video inside the IFRAME tag only when the play button in clicked thus improving the core web vitals score of your website.",
     "dom": "lite-youtube",
-    "website": "https://github.com/paulirish/lite-youtube-embed",
-    "oss": true, 
-    "implies": "YouTube"
+    "implies": "YouTube",
+    "oss": true,
+    "website": "https://github.com/paulirish/lite-youtube-embed"
+  },
+  "LiveSession": {
+    "cats": [
+      10
+    ],
+    "description": "LiveSession helps increase conversion rates using session replays, and event-based product analytics.",
+    "icon": "LiveSession.svg",
+    "scriptSrc": [
+      "cdn\\.livesession\\.io"
+    ],
+    "website": "https://livesession.io/",
+    "saas": true,
+    "pricing": [
+        "low",
+        "freemium",
+        "recurring"
+    ]
   }
 }
