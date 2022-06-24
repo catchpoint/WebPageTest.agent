@@ -382,9 +382,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             if self.netlog:
                 requests = self.netlog.get_requests()
                 self.netlog = None
-                netlog_requests = os.path.join(task['dir'], task['prefix']) + '_netlog_requests.json.gz'
-                with gzip.open(netlog_requests, 'wt', compresslevel=7, encoding='utf-8') as outfile:
-                    json.dump(requests, outfile)
+                if requests is not None and len(requests):
+                    netlog_requests = os.path.join(task['dir'], task['prefix']) + '_netlog_requests.json.gz'
+                    with gzip.open(netlog_requests, 'wt', compresslevel=7, encoding='utf-8') as outfile:
+                        json.dump(requests, outfile)
         DevtoolsBrowser.on_stop_recording(self, task)
 
     def on_start_processing(self, task):
