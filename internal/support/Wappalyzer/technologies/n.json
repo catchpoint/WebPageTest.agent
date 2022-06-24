@@ -261,6 +261,22 @@
     "scriptSrc": "rua-api\\.ncloud\\.com/",
     "website": "https://analytics.naver.com"
   },
+  "Neat A/B testing": {
+    "cats": [
+      74,
+      100
+    ],
+    "description": "Neat A/B Testing is a Shopify app built by NeatShift.",
+    "icon": "Neat.png",
+    "implies": "Shopify",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.neatab\\.com/",
+    "website": "https://neatab.com"
+  },
   "Neos CMS": {
     "cats": [
       1
@@ -828,6 +844,19 @@
     },
     "oss": true,
     "website": "http://www.nopcommerce.com"
+  },
+  "nopStation": {
+    "cats": [
+      19
+    ],
+    "description": "nopStation is a one stop ecommerce solution with custom integrations and custom built plugins based on custom tailored requirements on top of nopCommerce.",
+    "dom": "a[href*='.nop-station.com/']",
+    "icon": "nopStation.png",
+    "requires": [
+      "nopCommerce"
+    ],
+    "implies": "Microsoft ASP.NET",
+    "website": "http://www.nop-station.com"
   },
   "novomind iSHOP": {
     "cats": [

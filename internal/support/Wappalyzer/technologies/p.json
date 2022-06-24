@@ -639,6 +639,22 @@
     "website": "https://paypal.com",
     "xhr": "\\.paypal\\.com"
   },
+  "PayPal Credit": {
+    "cats": [
+      91
+    ],
+    "description": "PayPal Credit is a reusable line of credit that lets you pay for online purchases over time.",
+    "dom": "img[alt*='PayPal Credit'], a[title*='PayPal Credit']",
+    "icon": "PayPal.svg",
+    "implies": "PayPal",
+    "js": {
+      "PaypalOffersObject": "",
+      "payPalCreditPopover": ""
+    },
+    "requiresCategory": 6,
+    "scriptSrc": "\\.paypalobjects\\.com/.+/smart-credit-message@([\\d\\.]+)\\.js\\;version:\\1",
+    "website": "https://www.paypal.com/uk/webapps/mpp/paypal-virtual-credit"
+  },
   "PayPal Marketing Solutions": {
     "cats": [
       10,
@@ -710,6 +726,19 @@
     "saas": true,
     "website": "https://www.paylocity.com"
   },
+  "PebblePost": {
+    "cats": [
+      77
+    ],
+    "description": "PebblePost provides marketers a way to transform recent online data into intelligent direct mail programs that perform.",
+    "icon": "PebblePost.svg",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.pbbl\\.co/",
+    "website": "https://www.pebblepost.com"
+  },
   "Peek": {
     "cats": [
       5,
@@ -731,12 +760,12 @@
     ],
     "description": "PeerBoard is a plug-and-play community solution, which helps groups, clubs, startups, marketplaces and businesses create discussion forums.",
     "icon": "PeerBoard.png",
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "saas": true,
     "scriptSrc": "\\.peerboard\\.com/",
     "website": "https://peerboard.com"
   },
@@ -1352,8 +1381,8 @@
       10
     ],
     "description": "Piwik PRO Core is a free alternative to Google Analytics that is privacy & compliance focused.",
-    "icon": "Piwik PRO Core.svg",
     "excludes": "Matomo Analytics",
+    "icon": "Piwik PRO Core.svg",
     "pricing": [
       "freemium",
       "poa"
@@ -1361,6 +1390,20 @@
     "saas": true,
     "scriptSrc": "\\.piwik\\.pro/",
     "website": "https://piwik.pro"
+  },
+  "Pixc": {
+    "cats": [
+      19
+    ],
+    "description": "Pixc is human powered image editing platform.",
+    "icon": "Pixc.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "//pixc\\.com/",
+    "website": "https://pixc.com"
   },
   "PixelFed": {
     "cats": [
@@ -1591,13 +1634,15 @@
     "cats": [
       14
     ],
-    "description": "Rlyr is a set of tools for splitting, applying and combining Data. ",
+    "description": "Plyr is a simple, lightweight, accessible and customizable HTML5, YouTube and Vimeo media player that supports modern browsers.",
     "icon": "Plyr.png",
+    "css": "--plyr-progress",
     "js": {
       "Plyr": ""
     },
-    "scriptSrc": "https://cdn\\.plyr\\.io/([0-9.]+)/.+\\.js\\;version:\\1",
-    "website": "https://plyr.io/"
+    "scriptSrc": "cdn\\.plyr\\.io/([0-9.]+)/.+\\.js\\;version:\\1",
+    "oss": true,
+    "website": "https://plyr.io"
   },
   "Po.st": {
     "cats": [
@@ -1750,10 +1795,14 @@
     "icon": "Popper.svg",
     "js": {
       "Popper.Defaults": "",
+      "Popper.applyStyles": "",
       "createPopper": ""
     },
     "oss": true,
-    "scriptSrc": "/popper(?:\\.min)?\\.js(?:/([0-9.]+))?\\;version:\\1",
+    "scriptSrc": [
+      "/popper(?:\\.min)?\\.js(?:/([0-9.]+))?\\;version:\\1",
+      "popperjs(?:/|-)core(?:@|-)([\\d\\.]+)\\;version:\\1"
+    ],
     "website": "https://popper.js.org"
   },
   "PopularFX": {
@@ -1951,7 +2000,8 @@
     "icon": "Prebid.png",
     "js": {
       "PREBID_TIMEOUT": "",
-      "pbjs": ""
+      "pbjs": "",
+      "pbjs.version": "v([\\d\\.]+)\\;version:\\1"
     },
     "oss": true,
     "scriptSrc": [
@@ -1977,6 +2027,25 @@
     "saas": true,
     "scriptSrc": "js/prediggo/(?:[\\w]+)\\.js",
     "website": "https://prediggo.com"
+  },
+  "Premio Chaty": {
+    "cats": [
+      87
+    ],
+    "description": "Chat with your website visitors via their favorite channels with Chaty by Premio.",
+    "icon": "Premio.png",
+    "requires": "WordPress",
+    "js": {
+      "chaty_settings.object_settings": "",
+      "chaty_settings.chaty_widgets": ""
+    },
+    "scriptSrc": "/wp-content/plugins/chaty/",
+    "saas": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://premio.io/downloads/chaty"
   },
   "Prefix-Free": {
     "cats": [
@@ -2225,11 +2294,11 @@
       1
     ],
     "description": "ProcessWire is an open source content management system (CMS) and framework (CMF).",
-    "icon": "ProcessWire.svg",
-    "implies": "PHP",
     "headers": {
       "X-Powered-By": "ProcessWire CMS"
     },
+    "icon": "ProcessWire.svg",
+    "implies": "PHP",
     "js": {
       "ProcessWire": ""
     },
@@ -2256,11 +2325,11 @@
     "cats": [
       87
     ],
-    "description": "ProfilePress is a WordPress registration plugin that lets you create login forms, registration forms, user profiles, and more.",
-    "dom": "link[href*='/wp-content/plugins/wp-user-avatar/']",
     "cookies": {
       "ppwp_wp_session": ""
     },
+    "description": "ProfilePress is a WordPress registration plugin that lets you create login forms, registration forms, user profiles, and more.",
+    "dom": "link[href*='/wp-content/plugins/wp-user-avatar/']",
     "icon": "ProfilePress.svg",
     "pricing": [
       "low",
