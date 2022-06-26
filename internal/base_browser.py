@@ -6,6 +6,7 @@
 """Base class support for browsers"""
 import os
 import sys
+from internal.debug import trace
 if (sys.version_info >= (3, 0)):
     from time import monotonic
 else:
@@ -14,6 +15,7 @@ else:
 class BaseBrowser(object):
     """Browser base"""
     def __init__(self):
+        trace.debug("Init BrowserBase")
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.task = None
         self.must_exit = False

@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import traceback
+from internal.debug import trace
 if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
@@ -29,6 +30,7 @@ except BaseException:
 class WPTAgent(object):
     """Main agent workflow"""
     def __init__(self, options, browsers):
+        trace.debug("Initializing WPTAgent")
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
         from internal.traffic_shaping import TrafficShaper
@@ -84,6 +86,7 @@ class WPTAgent(object):
 
     def run_testing(self):
         """Main testing flow"""
+        trace.info("***Main Testing Flow***")
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
@@ -125,6 +128,7 @@ class WPTAgent(object):
                 logging.exception('Error starting pubsub subscription')
 
         while not self.must_exit and not done:
+            trace.info("***Entering Main Server Loop***")
             try:
                 self.alive()
                 if os.path.isfile(exit_file):
@@ -235,6 +239,7 @@ class WPTAgent(object):
                 self.job['capture_display'] = self.capture_display
                 self.job['shaper'] = self.shaper
                 self.task = self.wpt.get_task(self.job)
+                trace.debug("Getting Task End")
                 while self.task is not None:
                     start = monotonic()
                     try:
@@ -281,6 +286,7 @@ class WPTAgent(object):
 
     def run_single_test(self):
         """Run a single test run"""
+        trace.info("***Running Single Test***")
         if self.health_check_server is not None:
             self.health_check_server.healthy()
         self.alive()
@@ -321,6 +327,7 @@ class WPTAgent(object):
             logging.critical(err)
             self.task['error'] = err
         self.browser = None
+        trace.info("***End of Single Test***")
 
     def signal_handler(self, signum, frame):
         """Ctrl+C handler"""
@@ -501,14 +508,14 @@ class WPTAgent(object):
         if platform.system() == "Linux" and not self.options.android and \
                 not self.options.iOS and 'DISPLAY' not in os.environ:
             self.options.xvfb = True
-
+        trace.debug("before XVFB")
         if self.options.xvfb:
             ret = self.requires('xvfbwrapper') and ret
             if ret:
                 from xvfbwrapper import Xvfb
                 self.xvfb = Xvfb(width=1920, height=1200, colordepth=24)
                 self.xvfb.start()
-
+        trace.debug("after XVFB")
         # Figure out which display to capture from
         if not self.options.android and not self.options.iOS:
             if platform.system() == "Linux" and 'DISPLAY' in os.environ:

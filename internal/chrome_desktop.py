@@ -11,6 +11,7 @@ import platform
 import subprocess
 import shutil
 import time
+from internal.debug import trace
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 
@@ -72,6 +73,7 @@ ENABLE_BLINK_FEATURES = [
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
     """Desktop Chrome"""
     def __init__(self, path, options, job):
+        trace.debug("Init ChromeDesktop")
         self.options = options
         DesktopBrowser.__init__(self, path, options, job)
         use_devtools_video = True if self.job['capture_display'] is None else False
