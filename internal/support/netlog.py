@@ -713,7 +713,7 @@ class Netlog():
             parent_id = params['source_dependency']['id']
             if 'connect_job' in self.netlog and parent_id in self.netlog['connect_job']:
                 self.netlog['connect_job'][parent_id]['dns'] = request_id
-        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'ph' in event:
+        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'phase' in event:
             if event['phase'] == 'PHASE_BEGIN':
                 if 'start' not in entry or event['time'] < entry['start']:
                     entry['start'] = event['time']
@@ -722,7 +722,11 @@ class Netlog():
                     entry['end'] = event['time']
         if 'start' not in entry and name == 'HOST_RESOLVER_IMPL_ATTEMPT_STARTED':
             entry['start'] = event['time']
+        if 'start' not in entry and name == 'HOST_RESOLVER_MANAGER_ATTEMPT_STARTED':
+            entry['start'] = event['time']
         if name == 'HOST_RESOLVER_IMPL_ATTEMPT_FINISHED':
+            entry['end'] = event['time']
+        if name == 'HOST_RESOLVER_MANAGER_ATTEMPT_FINISHED':
             entry['end'] = event['time']
         if name == 'HOST_RESOLVER_IMPL_CACHE_HIT':
             if 'end' not in entry or event['time'] > entry['end']:
