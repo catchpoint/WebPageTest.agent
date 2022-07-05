@@ -416,7 +416,7 @@ class Netlog():
         # millisecond is still correct.
         for request in requests:
             if 'start' in request and 'netlog_id' in request:
-                request['start'] = float(request['start']) + (float(request['netlog_id'] % 1000) / 1000000.0)
+                request['start'] = float(request['start']) + (float(request['netlog_id'] % 10000) / 1000000.0)
         self.netlog_requests = requests
         return requests
 
