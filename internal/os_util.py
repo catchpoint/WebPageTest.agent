@@ -138,3 +138,5 @@ def pc_name():
             return socket.gethostname() + "-" + s.getsockname()[0]
     except Exception as e:
         logging.error("Error getting pc_name: ", e)
+        
+    return platform.uname()[1]
