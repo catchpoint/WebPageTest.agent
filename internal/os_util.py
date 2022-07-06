@@ -131,6 +131,10 @@ def get_file_version(filename):
     return version
 
 def pc_name():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect(("8.8.8.8", 80))
-        return socket.gethostname() + "-" + s.getsockname()[0]
+    """ Grabs the hostname and Local IP address of the machine and returns hostname-IP """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return socket.gethostname() + "-" + s.getsockname()[0]
+    except Exception as e:
+        logging.error("Error getting pc_name: ", e)

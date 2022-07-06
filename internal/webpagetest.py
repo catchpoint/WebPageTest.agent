@@ -105,8 +105,6 @@ class WebPageTest(object):
         self.last_diagnostics = None
         self.time_limit = 120
         self.cpu_scale_multiplier = None
-        # get the hostname or build one automatically if we are on a vmware system
-        # (specific MAC address range)
         self.pc_name = os_util.pc_name() if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
