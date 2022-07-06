@@ -120,7 +120,7 @@ def get_free_disk_space():
 def get_file_version(filename):
     version = 0.0
     try:
-        from win32api import GetFileVersionInfo, LOWORD, HIWORD
+        from win32api import GetFileVersionInfo, LOWORD, HIWORD # pylint: disable=import-error
         info = GetFileVersionInfo (filename, "\\")
         ms = info['FileVersionMS']
         ls = info['FileVersionLS']

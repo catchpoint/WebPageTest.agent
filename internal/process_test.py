@@ -21,13 +21,7 @@ if (sys.version_info >= (3, 0)):
     GZIP_READ_TEXT = 'rt'
     GZIP_TEXT = 'wt'
     string_types = str
-else:
-    from monotonic import monotonic
-    from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
-    from urlparse import urlsplit # pylint: disable=import-error
-    GZIP_READ_TEXT = 'r'
-    GZIP_TEXT = 'w'
-    string_types = basestring
+
 try:
     import ujson as json
 except BaseException:

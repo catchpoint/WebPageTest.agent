@@ -40,7 +40,7 @@ class InternetExplorer(Edge):
     def prepare(self, job, task):
         Edge.prepare(self, job, task)
         try:
-            import _winreg
+            import _winreg # pylint: disable=import-error
             reg_path = 'Software\\Microsoft\\Windows\\CurrentVersion\\' \
                        'Internet Settings\\5.0\\User Agent\\Post Platform'
             key = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, reg_path)

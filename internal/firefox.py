@@ -149,8 +149,8 @@ class Firefox(DesktopBrowser):
         """Start Firefox using Marionette"""
         if self.must_exit:
             return
-        from marionette_driver.marionette import Marionette
-        from marionette_driver.addons import Addons
+        from marionette_driver.marionette import Marionette # pylint: disable=import-error
+        from marionette_driver.addons import Addons # pylint: disable=import-error
         args = ['-profile', '"{0}"'.format(task['profile']),
                 '-no-remote',
                 '-marionette',

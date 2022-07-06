@@ -141,7 +141,7 @@ class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
         if 'capture_rect' in self.job:
             del self.job['capture_rect']
         while count < attempts and not found and not self.must_exit:
-            from Quartz import (
+            from Quartz import ( # pylint: disable=import-error
                 CGWindowListCopyWindowInfo,
                 kCGWindowListOptionOnScreenOnly,
                 kCGNullWindowID
