@@ -467,7 +467,7 @@ class WPTAgent(object):
             ret = self.requires('AppKit', 'PyObjC') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
-            if self.options.webdriver and 'Firefox' in detected_browsers:
+            if 'Firefox' in detected_browsers:
                 ret = self.requires('selenium')
         # Windows-specific imports
         if platform.system() == "Windows":
@@ -513,7 +513,7 @@ class WPTAgent(object):
                 logging.debug("Traceroute is missing, installing...")
                 subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
 
-        if not self.options.android and not self.options.iOS and self.options.webdriver and 'Firefox' in detected_browsers:
+        if not self.options.android and not self.options.iOS and 'Firefox' in detected_browsers:
             try:
                 subprocess.check_output(['geckodriver', '-V'])
             except Exception:
@@ -1010,14 +1010,6 @@ def find_browsers(options):
             logging.debug('%s: %s', browser, browsers[browser]['exe'])
         else:
             logging.debug('%s', browser)
-    if not options.webdriver and 'Firefox' in browsers:
-        try:
-            # make sure marionette is up to date
-            from internal.os_util import run_elevated
-            run_elevated(sys.executable, '-m pip install --upgrade marionette_driver')
-            run_elevated(sys.executable, '-m pip install \'mozrunner==7.4.0\' --force-reinstall')
-        except Exception:
-            pass
 
     return browsers
 
@@ -1159,10 +1151,6 @@ def main():
     parser.add_argument('--ioswebdriver', action='store_true', default=False,
                         help="Use WebDriver for launching the iOS simulator.")
 
-    # Firefox
-    parser.add_argument('--webdriver', action='store_true', default=False,
-                        help="Use WebDriver instead of Marionette for Firefox (Defaults to False on Python 2, always True for Python 3).")
-
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
@@ -1208,10 +1196,6 @@ def main():
         for device in devices:
             logging.critical(device)
         exit(1)
-
-    # Force WebDriver for Python 3
-    if (sys.version_info >= (3, 0)):
-        options.webdriver = True
 
     # Set up logging
     log_level = logging.CRITICAL

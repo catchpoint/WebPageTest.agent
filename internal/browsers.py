@@ -92,12 +92,8 @@ class Browsers(object):
         elif name in self.browsers and 'exe' in self.browsers[name]:
             job['browser_info'] = self.browsers[name]
             if 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Firefox':
-                if self.options.webdriver:
-                    from .firefox_webdriver import FirefoxWebDriver
-                    browser = FirefoxWebDriver(self.browsers[name]['exe'], self.options, job)
-                else:
-                    from .firefox import Firefox
-                    browser = Firefox(self.browsers[name]['exe'], self.options, job)
+                from .firefox import Firefox
+                browser = Firefox(self.browsers[name]['exe'], self.options, job)
             elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Edge':
                 from .microsoft_edge import Edge
                 browser = Edge(self.browsers[name]['exe'], self.options, job)
