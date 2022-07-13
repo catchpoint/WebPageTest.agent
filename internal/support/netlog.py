@@ -140,6 +140,7 @@ class Netlog():
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
+                request['netlog_id'] = request_id
                 request['fromNet'] = bool('start' in request)
                 if 'start' in request and request['start'] > last_time:
                     last_time = request['start']
@@ -410,6 +411,12 @@ class Netlog():
                     requests = []
         if not len(requests):
             requests = None
+        # Add the netlog request ID as a nanosecond addition to the start time
+        # so that sorting by start time for requests that start within the same
+        # millisecond is still correct.
+        for request in requests:
+            if 'start' in request and 'netlog_id' in request:
+                request['start'] = float(request['start']) + (float(request['netlog_id'] % 10000) / 1000000.0)
         self.netlog_requests = requests
         return requests
 
@@ -713,7 +720,7 @@ class Netlog():
             parent_id = params['source_dependency']['id']
             if 'connect_job' in self.netlog and parent_id in self.netlog['connect_job']:
                 self.netlog['connect_job'][parent_id]['dns'] = request_id
-        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'ph' in event:
+        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'phase' in event:
             if event['phase'] == 'PHASE_BEGIN':
                 if 'start' not in entry or event['time'] < entry['start']:
                     entry['start'] = event['time']
@@ -722,7 +729,11 @@ class Netlog():
                     entry['end'] = event['time']
         if 'start' not in entry and name == 'HOST_RESOLVER_IMPL_ATTEMPT_STARTED':
             entry['start'] = event['time']
+        if 'start' not in entry and name == 'HOST_RESOLVER_MANAGER_ATTEMPT_STARTED':
+            entry['start'] = event['time']
         if name == 'HOST_RESOLVER_IMPL_ATTEMPT_FINISHED':
+            entry['end'] = event['time']
+        if name == 'HOST_RESOLVER_MANAGER_ATTEMPT_FINISHED':
             entry['end'] = event['time']
         if name == 'HOST_RESOLVER_IMPL_CACHE_HIT':
             if 'end' not in entry or event['time'] > entry['end']:
