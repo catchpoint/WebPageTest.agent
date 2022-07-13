@@ -24,6 +24,8 @@ import threading
 import time
 import zipfile
 import psutil
+from internal import os_util
+
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     from urllib.parse import quote_plus # pylint: disable=import-error
@@ -103,32 +105,7 @@ class WebPageTest(object):
         self.last_diagnostics = None
         self.time_limit = 120
         self.cpu_scale_multiplier = None
-        # get the hostname or build one automatically if we are on a vmware system
-        # (specific MAC address range)
-        hostname = platform.uname()[1]
-        interfaces = psutil.net_if_addrs()
-        if interfaces is not None:
-            logging.debug('Interfaces:')
-            logging.debug(interfaces)
-            for interface in interfaces:
-                iface = interfaces[interface]
-                for addr in iface:
-                    match = re.search(r'^00[\-:]50[\-:]56[\-:]00[\-:]'
-                                      r'([\da-fA-F]+)[\-:]([\da-fA-F]+)$', addr.address)
-                    if match:
-                        server = match.group(1)
-                        machine = match.group(2)
-                        hostname = 'VM{0}-{1}'.format(server, machine)
-        if platform.system() == 'Linux':
-            try:
-                out = subprocess.check_output(["ip", "-o", "route", "get", "1.1.1.1"],
-                                        universal_newlines=True)
-                addr = (out.split(" ")[6]).strip()
-                if addr is not None and len(addr):
-                    hostname += '-' + addr
-            except Exception:
-                pass
-        self.pc_name = hostname if options.name is None else options.name
+        self.pc_name = os_util.pc_name() if options.name is None else options.name
         self.auth_name = options.username
         self.auth_password = options.password if options.password is not None else ''
         self.validate_server_certificate = options.validcertificate

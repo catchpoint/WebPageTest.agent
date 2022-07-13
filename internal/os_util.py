@@ -8,6 +8,7 @@ import logging
 import os
 import platform
 import subprocess
+import socket
 
 def kill_all(exe, force, timeout=30):
     """Terminate all instances of the given process"""
@@ -128,3 +129,14 @@ def get_file_version(filename):
     except:
         logging.exception('Error getting file version for %s', filename)
     return version
+
+def pc_name():
+    """ Grabs the hostname and Local IP address of the machine and returns hostname-IP """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return socket.gethostname() + "-" + s.getsockname()[0]
+    except Exception as e:
+        logging.error("Error getting pc_name: ", e)
+        
+    return platform.uname()[1]
