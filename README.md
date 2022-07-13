@@ -18,17 +18,13 @@ There are separate lines of development under different licenses (pull requests 
 - All browsers should support basic page loading, scripts, and video capture on all platforms.
 - Traffic-shaping is supported on all platforms.
 
-### ⚠️ Known Issues
-
-- Internet Explorer does not support manipulating requests (adding headers, blocking requests, etc)
-
 ### Linux (with display, or headless with [Xvfb])
 
 - Chrome: Stable, Beta, and Unstable
 - Firefox: Stable and Nightly
 - Opera: Stable, Beta, and Developer
 - Brave: Stable, Beta, Dev, and Nightly
-- Microsoft Edge: Dev
+- Microsoft Edge: Chromium-based Stable, Beta, Dev
 - Epiphany: Ubuntu 20.04+
 - Vivaldi
 
@@ -36,8 +32,7 @@ There are separate lines of development under different licenses (pull requests 
 
 - Chrome: Stable, Beta, Dev and Canary
 - Firefox: Stable, ESR, Developer Edition, Beta, and Nightly
-- Microsoft Edge: Legacy and Chromium-based
-- Internet Explorer
+- Microsoft Edge: Chromium-based
 - Opera: Stable, Beta and Developer
 - Brave: Stable, Beta, Dev and Nightly
 
