@@ -8,6 +8,7 @@ import logging
 import os
 import platform
 import subprocess
+from shutil import rmtree
 
 def kill_all(exe, force, timeout=30):
     """Terminate all instances of the given process"""
@@ -128,3 +129,21 @@ def get_file_version(filename):
     except:
         logging.exception('Error getting file version for %s', filename)
     return version
+
+def remove_file(_file):
+    """ Function to handle removing a single file"""
+    logging.debug("Removing File %s", _file, stacklevel=3)
+    try:
+        if os.path.isfile(_file):
+            os.remove(_file)
+    except Exception:
+        pass
+
+def remove_dir_tree(_dir):
+    """ Function to remove a entire directory and the files within"""
+    logging.debug("Removing Folder %s", _dir, stacklevel=3)
+    try:
+        if os.path.isdir(_dir):
+            rmtree(_dir)
+    except Exception:
+        pass 
