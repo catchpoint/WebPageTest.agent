@@ -98,12 +98,6 @@ class Browsers(object):
                 else:
                     from .firefox import Firefox
                     browser = Firefox(self.browsers[name]['exe'], self.options, job)
-            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Edge':
-                from .microsoft_edge import Edge
-                browser = Edge(self.browsers[name]['exe'], self.options, job)
-            elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'IE':
-                from .internet_explorer import InternetExplorer
-                browser = InternetExplorer(self.browsers[name]['exe'], self.options, job)
             elif 'type' in self.browsers[name] and self.browsers[name]['type'] == 'Safari':
                 from .safari_webdriver import SafariWebDriver
                 browser = SafariWebDriver(self.browsers[name]['exe'], self.options, job)

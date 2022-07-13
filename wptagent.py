@@ -657,15 +657,6 @@ def parse_ini(ini):
             ret = None
     return ret
 
-
-def get_windows_build():
-    """Get the current Windows build number from the registry"""
-    key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
-    val = 'CurrentBuild'
-    output = os.popen('REG QUERY "{0}" /V "{1}"'.format(key, val)).read()
-    return int(output.strip().split(' ')[-1])
-
-
 def find_browsers(options):
     """Find the various known-browsers in case they are not explicitly configured"""
     browsers = parse_ini(os.path.join(os.path.dirname(__file__), "browsers.ini"))
@@ -745,44 +736,6 @@ def find_browsers(options):
                     browsers['Firefox Nightly'] = {'exe': firefox_path,
                                                    'type': 'Firefox',
                                                    'log_level': 5}
-        # Microsoft Edge (Legacy)
-        edge = None
-        try:
-            build = get_windows_build()
-            if build >= 10240:
-                edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
-                                        'support', 'edge', 'current', 'MicrosoftWebDriver.exe')
-                if not os.path.isfile(edge_exe):
-                    if build > 17134:
-                        edge_exe = os.path.join(os.environ['windir'], 'System32', 'MicrosoftWebDriver.exe')
-                    else:
-                        if build >= 17000:
-                            edge_version = 17
-                        elif build >= 16000:
-                            edge_version = 16
-                        elif build >= 15000:
-                            edge_version = 15
-                        elif build >= 14000:
-                            edge_version = 14
-                        elif build >= 10586:
-                            edge_version = 13
-                        else:
-                            edge_version = 12
-                        edge_exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'internal',
-                                                'support', 'edge', str(edge_version),
-                                                'MicrosoftWebDriver.exe')
-                if os.path.isfile(edge_exe):
-                    edge = {'exe': edge_exe}
-        except Exception:
-            logging.exception('Error getting windows build, skipping check for legacy Edge')
-        if edge is not None:
-            edge['type'] = 'Edge'
-            if 'Microsoft Edge (EdgeHTML)' not in browsers:
-                browsers['Microsoft Edge (EdgeHTML)'] = dict(edge)
-            if 'Microsoft Edge' not in browsers:
-                browsers['Microsoft Edge'] = dict(edge)
-            if 'Edge' not in browsers:
-                browsers['Edge'] = dict(edge)
         # Microsoft Edge (Chromium)
         paths = [program_files, program_files_x86, local_appdata]
         channels = ['Edge', 'Edge Dev']
@@ -804,13 +757,6 @@ def find_browsers(options):
                 browsers['Microsoft Edge Canary (Chromium)'] = {'exe': edge_path}
                 if 'Edgium Canary' not in browsers:
                     browsers['Edgium Canary'] = {'exe': edge_path}
-        # Internet Explorer
-        paths = [program_files, program_files_x86]
-        for path in paths:
-            if path is not None and 'IE' not in browsers:
-                ie_path = os.path.join(path, 'Internet Explorer', 'iexplore.exe')
-                if os.path.isfile(ie_path):
-                    browsers['ie'] = {'exe': ie_path, 'type': 'IE'}
         # Brave
         paths = [program_files, program_files_x86]
         for path in paths:
