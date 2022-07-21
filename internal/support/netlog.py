@@ -140,6 +140,7 @@ class Netlog():
         if 'url_request' in self.netlog:
             for request_id in self.netlog['url_request']:
                 request = self.netlog['url_request'][request_id]
+                request['netlog_id'] = request_id
                 request['fromNet'] = bool('start' in request)
                 if 'start' in request and request['start'] > last_time:
                     last_time = request['start']
@@ -410,6 +411,12 @@ class Netlog():
                     requests = []
         if not len(requests):
             requests = None
+        # Add the netlog request ID as a nanosecond addition to the start time
+        # so that sorting by start time for requests that start within the same
+        # millisecond is still correct.
+        for request in requests:
+            if 'start' in request and 'netlog_id' in request:
+                request['start'] = float(request['start']) + (float(request['netlog_id'] % 10000) / 1000000.0)
         self.netlog_requests = requests
         return requests
 

@@ -384,6 +384,8 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
+        if self.options.noidle:
+            return
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
@@ -578,7 +580,7 @@ class WPTAgent(object):
             ret = self.requires('usbmuxwrapper') and ret
             ret = self.ios.check_install() and ret
 
-        if not self.options.android and not self.options.iOS and not self.options.noidle:
+        if not self.options.android and not self.options.iOS:
             self.wait_for_idle(300)
         if self.adb is not None:
             if not self.adb.start():
@@ -1075,7 +1077,7 @@ def main():
     parser.add_argument('--log',
                         help="Log critical errors to the given file.")
     parser.add_argument('--noidle', action='store_true', default=False,
-                        help="Do not wait for system idle at startup.")
+                        help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
                         help="Collection browser versions and submit to controller.")
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
