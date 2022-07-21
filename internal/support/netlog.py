@@ -292,7 +292,7 @@ class Netlog():
                 requests.sort(key=lambda x: x['start'] if 'start' in x else x['created'])
                 # Assign the socket connect time to the first request on each socket
                 if 'socket' in self.netlog:
-                    for request in requests:
+                    for request in requests or []:
                         if 'socket' in request and request['socket'] in self.netlog['socket']:
                             socket = self.netlog['socket'][request['socket']]
                             if 'address' in socket:
@@ -350,7 +350,7 @@ class Netlog():
                                 'elapsed': dns['elapsed'],
                             })
                     # Go through the requests and assign the DNS lookups as needed
-                    for request in requests:
+                    for request in requests or []:
                         if 'connect_start' in request:
                             hostname = urlparse(request['url']).hostname
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
@@ -368,7 +368,7 @@ class Netlog():
                                                 request['dns_start'] = dns['start']
                                                 request['dns_end'] = dns['end']
                     # Make another pass for any DNS lookups that didn't establish a connection (HTTP/2 coalescing)
-                    for request in requests:
+                    for request in requests or []:
                         hostname = urlparse(request['url']).hostname
                         if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                             dns = dns_lookups[hostname]
@@ -390,14 +390,14 @@ class Netlog():
                          'connect_start', 'connect_end',
                          'ssl_start', 'ssl_end',
                          'start', 'created', 'first_byte', 'end']
-                for request in requests:
+                for request in requests or []:
                     for time_name in times:
                         if time_name in request and self.marked_start_time is None:
                             if self.start_time is None or request[time_name] < self.start_time:
                                 self.start_time = request[time_name]
                 # Go through and adjust all of the times to be relative in ms
                 if self.start_time is not None:
-                    for request in requests:
+                    for request in requests or []:
                         for time_name in times:
                             if time_name in request:
                                 request[time_name] = \
@@ -414,7 +414,7 @@ class Netlog():
         # Add the netlog request ID as a nanosecond addition to the start time
         # so that sorting by start time for requests that start within the same
         # millisecond is still correct.
-        for request in requests:
+        for request in requests or []:
             if 'start' in request and 'netlog_id' in request:
                 request['start'] = float(request['start']) + (float(request['netlog_id'] % 10000) / 1000000.0)
         self.netlog_requests = requests
