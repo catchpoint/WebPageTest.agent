@@ -33,7 +33,7 @@ try:
 except BaseException:
     import json
 from ws4py.client.threadedclient import WebSocketClient
-
+from internal import os_util
 
 class DevTools(object):
     """Interface into Chrome's remote dev tools protocol"""
@@ -1059,11 +1059,8 @@ class DevTools(object):
                         tmp_file, resize_string, self.job['imageQuality'], path)
                     logging.debug(command)
                     subprocess.call(command, shell=True)
-                    if os.path.isfile(tmp_file):
-                        try:
-                            os.remove(tmp_file)
-                        except Exception:
-                            pass
+                    os_util.remove_file(tmp_file)
+
             self.profile_end('screenshot')
         else:
             logging.debug('Skipping screenshot because the main thread is blocked')
