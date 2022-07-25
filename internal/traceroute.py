@@ -11,12 +11,10 @@ import platform
 import re
 import subprocess
 import sys
-if (sys.version_info >= (3, 0)):
-    from urllib.parse import urlparse # pylint: disable=import-error
-    GZIP_TEXT = 'wt'
-else:
-    from urlparse import urlparse # pylint: disable=import-error
-    GZIP_TEXT = 'w'
+
+from urllib.parse import urlparse # pylint: disable=import-error
+GZIP_TEXT = 'wt'
+
 
 class Traceroute(object):
     """Traceroute (desktop)"""
@@ -64,10 +62,8 @@ class Traceroute(object):
         last_hop = 0
         command = ['tracert', '-h', '30', '-w', '500', hostname]
         logging.debug(' '.join(command))
-        if (sys.version_info >= (3, 0)):
-            out = subprocess.check_output(command, encoding='UTF-8')
-        else:
-            out = subprocess.check_output(command)
+        out = subprocess.check_output(command, encoding='UTF-8')
+
         lines = out.splitlines()
         dest = re.compile(r'^Tracing route to.*\[([\d\.]+)\]')
         timeout = re.compile(r'^\s*(\d+).*Request timed out')
@@ -135,10 +131,7 @@ class Traceroute(object):
         last_hop = 0
         command = ['traceroute', '-m', '30', '-w', '0.5', hostname]
         logging.debug(' '.join(command))
-        if (sys.version_info >= (3, 0)):
-            out = subprocess.check_output(command, encoding='UTF-8')
-        else:
-            out = subprocess.check_output(command)
+        out = subprocess.check_output(command, encoding='UTF-8')
         lines = out.splitlines()
         dest = re.compile(r'^traceroute to [^\(]+\(([\d\.]+)\)')
         timeout = re.compile(r'^\s*(\d+)\s+\*\s+\*\s+\*')

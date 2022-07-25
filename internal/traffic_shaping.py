@@ -534,10 +534,7 @@ class NetEm(object):
         # Figure out the default interface
         try:
             if self.interface is None:
-                if (sys.version_info >= (3, 0)):
-                    out = subprocess.check_output(['route'], encoding='UTF-8')
-                else:
-                    out = subprocess.check_output(['route'])
+                out = subprocess.check_output(['route'], encoding='UTF-8')
                 routes = out.splitlines()
                 match = re.compile(r'^([^\s]+)\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+'\
                                 r'[^\s]+\s+[^\s]+\s+[^\s]+\s+([^\s]+)')
