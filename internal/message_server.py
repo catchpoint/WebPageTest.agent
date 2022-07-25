@@ -162,10 +162,8 @@ class MessageServer(object):
     def is_ok(self):
         """Check that the server is responding and restart it if necessary"""
         import requests
-        if (sys.version_info >= (3, 0)):
-            from time import monotonic
-        else:
-            from monotonic import monotonic
+        from time import monotonic
+        
         end_time = monotonic() + 30
         server_ok = False
         proxies = {"http": None, "https": None}

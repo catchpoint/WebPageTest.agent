@@ -447,11 +447,8 @@ class DevtoolsBrowser(object):
                 if isinstance(entry, dict) or isinstance(entry, list):
                     self.strip_non_text(entry)
                 elif isinstance(entry, str) or isinstance(entry, unicode):
-                    try:
-                        if (sys.version_info >= (3, 0)):
-                            entry.encode('utf-8').decode('utf-8')
-                        else:
-                            entry.decode('utf-8')
+                    try:                    
+                        entry.encode('utf-8').decode('utf-8')
                     except Exception:
                         data[key] = None
                 elif isinstance(entry, bytes):
@@ -466,10 +463,7 @@ class DevtoolsBrowser(object):
                     self.strip_non_text(entry)
                 elif isinstance(entry, str) or isinstance(entry, unicode):
                     try:
-                        if (sys.version_info >= (3, 0)):
-                            entry.encode('utf-8').decode('utf-8')
-                        else:
-                            entry.decode('utf-8')
+                        entry.encode('utf-8').decode('utf-8')
                     except Exception:
                         data[key] = None
                 elif isinstance(entry, bytes):
