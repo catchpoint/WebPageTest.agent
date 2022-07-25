@@ -12,10 +12,10 @@ import subprocess
 import sys
 from threading import Timer
 import time
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
+
+
 
 # cSpell:ignore vpndialogs, sysctl, iptables, ifconfig, dstaddr, clientidbase, nsecs
 

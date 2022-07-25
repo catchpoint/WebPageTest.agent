@@ -6,10 +6,9 @@
 """Base class support for browsers"""
 import os
 import sys
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
+
 
 class BaseBrowser(object):
     """Browser base"""

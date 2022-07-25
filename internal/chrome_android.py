@@ -11,10 +11,9 @@ import re
 import shutil
 import sys
 import time
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
+
 from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
