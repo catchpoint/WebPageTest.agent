@@ -38,7 +38,6 @@
     "headers": {
       "X-Powered-By": "MATORI.NET"
     },
-    "icon": "default.svg",
     "implies": "OpenResty",
     "website": "http://matori.net"
   },
@@ -232,6 +231,18 @@
     "saas": true,
     "website": "https://www.magazord.com.br"
   },
+  "MageWorx Search Autocomplete": {
+    "cats": [
+      29
+    ],
+    "description": "MageWorx Search Autocomplete extension offers an AJAX-based popup window that displays and updates relevant search results while a customer forms his or her query.",
+    "dom": "link[href*='MageWorx_SearchSuiteAutocomplete']",
+    "icon": "MageWorx.svg",
+    "oss": true,
+    "requires": "Magento",
+    "scriptSrc": "MageWorx_SearchSuiteAutocomplete",
+    "website": "https://github.com/mageworx/search-suite-autocomplete"
+  },
   "Magento": {
     "cats": [
       6
@@ -267,18 +278,6 @@
       "static/_requirejs\\;confidence:50\\;version:2"
     ],
     "website": "https://magento.com"
-  },
-  "MageWorx Search Autocomplete": {
-    "cats": [
-      29
-    ],
-    "description": "MageWorx Search Autocomplete extension offers an AJAX-based popup window that displays and updates relevant search results while a customer forms his or her query.",
-    "icon": "MageWorx.svg",
-    "requires": "Magento",
-    "dom":"link[href*='MageWorx_SearchSuiteAutocomplete']",
-    "oss": true,
-    "scriptSrc": "MageWorx_SearchSuiteAutocomplete",
-    "website": "https://github.com/mageworx/search-suite-autocomplete"
   },
   "Magisto": {
     "cats": [
@@ -384,6 +383,24 @@
     "scriptSrc": "\\.mailerlite\\.com/",
     "website": "https://www.mailerlite.com"
   },
+  "MailerLite Website Builder": {
+    "cats": [
+      51
+    ],
+    "description": "MailerLite Website Builder is a free drag & drop website builder with interactive blocks and ecommerce integrations.",
+    "icon": "MailerLite.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": [
+      "MailerLite",
+      "Go",
+      "Caddy"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.mailerlite\\.com/moment/moment\\.min\\.js",
+    "website": "https://www.mailerlite.com/features/website-builder"
+  },
   "MailerLite plugin": {
     "cats": [
       87
@@ -420,6 +437,23 @@
     },
     "icon": "Mailjet.svg",
     "website": "https://www.mailjet.com/"
+  },
+  "Mailman": {
+    "cats": [
+      75
+    ],
+    "description": "Mailman is free software for managing electronic mail discussion and e-newsletter lists. Mailman is integrated with the web, making it easy for users to manage their accounts and for list owners to administer their lists. Mailman supports built-in archiving, automatic bounce processing, content filtering, digest delivery, spam filters, and more.",
+    "icon": "Mailman.svg",
+    "implies": [
+      "Python",
+      "Django"
+    ],
+    "oss": true,
+    "scriptSrc": [
+      "/mailman\\d+/static/.+\\.js",
+      "/static/(?:hyperkitty|django-mailman3)/.+\\.js"
+    ],
+    "website": "http://list.org"
   },
   "Mailmunch": {
     "cats": [
@@ -469,6 +503,24 @@
       "MakeshopLogUniqueId": ""
     },
     "website": "https://www.makeshop.co.kr"
+  },
+  "Malomo": {
+    "cats": [
+      107
+    ],
+    "description": "Malomo is a cloud-based shipment tracking solution that helps small to midsize eCommerce businesses provide customers with shipping updates via white-label package tracking pages.",
+    "icon": "Malomo.svg",
+    "js": {
+      "Malomo": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.gomalomo\\.com/",
+    "website": "https://gomalomo.com"
   },
   "Mambo": {
     "cats": [
@@ -541,8 +593,8 @@
     "js": {
       "mapboxgl.version": "^(.+)$\\;version:\\1\\;confidence:0"
     },
-    "scriptSrc": "mapbox-gl\\.js",
     "oss": true,
+    "scriptSrc": "mapbox-gl\\.js",
     "website": "https://github.com/mapbox/mapbox-gl-js"
   },
   "Mapp": {
@@ -593,11 +645,11 @@
       35
     ],
     "description": "Maptalks is a light and plugable JavaScript library for integrated 2D/3D maps.",
-    "icon": "Maptalks.png",
     "dom": "div.maptalks-wrapper",
+    "icon": "Maptalks.png",
     "js": {
-      "maptalks.GeoJSON": "",
-      "map._eventMap": ""
+      "map._eventMap": "",
+      "maptalks.GeoJSON": ""
     },
     "oss": true,
     "website": "https://maptalks.org"
@@ -1251,21 +1303,6 @@
     },
     "website": "https://www.eidosmedia.com/"
   },
-  "metisMenu": {
-    "cats": [
-      59
-    ],
-    "description": "metisMenu is a collapsible jQuery menu plugin.",
-    "icon": "default.svg",
-    "implies": "jQuery",
-    "js": {
-      "metisMenu": "",
-      "MetisMenu": ""
-    },
-    "scriptSrc": "(?:/|\\.)metisMenu(?:js)?(?:\\.min)?\\.js(?:\\?([\\d\\.]+))?\\;version:\\1",
-    "oss": true,
-    "website": "https://github.com/onokumus/metismenu"
-  },
   "Metomic": {
     "cats": [
       67
@@ -1404,8 +1441,8 @@
     "description": "The Microsoft Authentication Library for JavaScript enables both client-side and server-side JavaScript applications to authenticate users using Azure AD for work and school accounts (AAD), Microsoft personal accounts (MSA), and social identity providers like Facebook, Google, LinkedIn, Microsoft accounts, etc. through Azure AD B2C service.",
     "icon": "Microsoft.svg",
     "js": {
-      "msal.authorityInstance": "",
       "Msal.Authority": "",
+      "msal.authorityInstance": "",
       "msalConfig.auth": ""
     },
     "oss": true,
@@ -1625,6 +1662,17 @@
       "//minero\\.cc/lib/minero(?:-miner|-hidden)?\\.min\\.js"
     ],
     "website": "http://minero.cc/"
+  },
+  "MiniServ": {
+    "cats": [
+      22
+    ],
+    "headers": {
+      "Server": "MiniServ/([\\d\\.]+)\\;version:\\1"
+    },
+    "implies": "Webmin",
+    "oss": true,
+    "website": "https://github.com/webmin/webmin/blob/master/miniserv.pl"
   },
   "Mint": {
     "cats": [
@@ -2399,18 +2447,6 @@
     "icon": "mycashflow.png",
     "website": "https://www.mycashflow.fi/"
   },
-  "Myhkw player": {
-    "cats": [
-      5
-    ],
-    "description": "Myhkw player is a website music player.",
-    "icon": "Myhkw player.png",
-    "js": {
-      "myhkplayerlist": "",
-      "myhk_player_songid": ""
-    },
-    "website": "https://myhkw.cn"
-  },
   "MyLiveChat": {
     "cats": [
       52
@@ -2509,6 +2545,18 @@
     "saas": true,
     "website": "https://www.ionos.com"
   },
+  "Myhkw player": {
+    "cats": [
+      5
+    ],
+    "description": "Myhkw player is a website music player.",
+    "icon": "Myhkw player.png",
+    "js": {
+      "myhk_player_songid": "",
+      "myhkplayerlist": ""
+    },
+    "website": "https://myhkw.cn"
+  },
   "Mynetcap": {
     "cats": [
       1
@@ -2603,6 +2651,20 @@
     "oss": true,
     "scripts": "localStorage\\.getItem\\('mdbook-(?:sidebar|theme)'\\)",
     "website": "https://github.com/rust-lang/mdBook"
+  },
+  "metisMenu": {
+    "cats": [
+      59
+    ],
+    "description": "metisMenu is a collapsible jQuery menu plugin.",
+    "implies": "jQuery",
+    "js": {
+      "MetisMenu": "",
+      "metisMenu": ""
+    },
+    "oss": true,
+    "scriptSrc": "(?:/|\\.)metisMenu(?:js)?(?:\\.min)?\\.js(?:\\?([\\d\\.]+))?\\;version:\\1",
+    "website": "https://github.com/onokumus/metismenu"
   },
   "microCMS": {
     "cats": [
