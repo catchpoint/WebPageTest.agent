@@ -18,15 +18,11 @@ try:
     HAS_FUTURE = True
 except BaseException:
     pass
-if (sys.version_info >= (3, 0)):
-    from urllib.parse import urlsplit # pylint: disable=import-error
-    unicode = str
-    GZIP_TEXT = 'wt'
-    GZIP_READ_TEXT = 'rt'
-else:
-    from urlparse import urlsplit # pylint: disable=import-error
-    GZIP_TEXT = 'w'
-    GZIP_READ_TEXT = 'r'
+
+from urllib.parse import urlsplit # pylint: disable=import-error
+unicode = str
+GZIP_TEXT = 'wt'
+GZIP_READ_TEXT = 'rt'
 
 # try a fast json parser if it is installed
 try:

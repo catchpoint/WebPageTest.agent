@@ -14,10 +14,9 @@ import os
 import struct
 import sys
 import time
-if (sys.version_info >= (3, 0)):
-    GZIP_TEXT = 'wt'
-else:
-    GZIP_TEXT = 'w'
+
+GZIP_TEXT = 'wt'
+
 
 #Globals
 options = None
