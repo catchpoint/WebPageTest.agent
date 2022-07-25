@@ -17,12 +17,10 @@ import subprocess
 import sys
 import threading
 import time
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-    GZIP_TEXT = 'wt'
-else:
-    from monotonic import monotonic
-    GZIP_TEXT = 'w'
+
+from time import monotonic
+GZIP_TEXT = 'wt'
+
 try:
     import ujson as json
 except BaseException:
@@ -805,10 +803,8 @@ class DesktopBrowser(BaseBrowser):
             cmd = [sys.executable, pcap_parser, '--json', '-i', pcap_file, '-d', slices_file]
             logging.debug(cmd)
             try:
-                if (sys.version_info >= (3, 0)):
-                    stdout = subprocess.check_output(cmd, encoding='UTF-8')
-                else:
-                    stdout = subprocess.check_output(cmd)
+                stdout = subprocess.check_output(cmd, encoding='UTF-8')
+                
                 if stdout is not None:
                     result = json.loads(stdout)
                     if result:

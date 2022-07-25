@@ -6,10 +6,8 @@ import re
 import subprocess
 import sys
 import time
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
 
 if platform.system() != 'Darwin':
     print("This is only supported for MacOS")
