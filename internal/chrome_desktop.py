@@ -15,6 +15,7 @@ import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
 from .support.netlog import Netlog
+from internal import os_util
 try:
     import ujson as json
 except BaseException:
@@ -308,8 +309,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             with open(netlog_file, 'rb') as f_in:
                 with gzip.open(netlog_gzip, 'wb', 7) as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            if os.path.isfile(netlog_gzip):
-                os.remove(netlog_file)
+            os_util.remove_file(netlog_file)
         self.remove_policy()
 
     def setup_prefs(self, profile_dir):
