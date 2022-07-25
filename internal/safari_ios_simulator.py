@@ -9,10 +9,8 @@ import sys
 import time
 from .desktop_browser import DesktopBrowser
 from .devtools_browser import DevtoolsBrowser
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
 
 class SafariSimulator(DesktopBrowser, DevtoolsBrowser):
     """iOS Simulator"""

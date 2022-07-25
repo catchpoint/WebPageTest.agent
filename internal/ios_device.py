@@ -14,10 +14,9 @@ import shutil
 import subprocess
 import sys
 import threading
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+
+from time import monotonic
+
 try:
     import ujson as json
 except BaseException:

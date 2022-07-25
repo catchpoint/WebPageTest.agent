@@ -14,20 +14,14 @@ import re
 import shutil
 import sys
 import zipfile
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-    from urllib.parse import quote_plus # pylint: disable=import-error
-    from urllib.parse import urlsplit # pylint: disable=import-error
-    GZIP_READ_TEXT = 'rt'
-    GZIP_TEXT = 'wt'
-    string_types = str
-else:
-    from monotonic import monotonic
-    from urllib import quote_plus # pylint: disable=import-error,no-name-in-module
-    from urlparse import urlsplit # pylint: disable=import-error
-    GZIP_READ_TEXT = 'r'
-    GZIP_TEXT = 'w'
-    string_types = basestring
+
+from time import monotonic
+from urllib.parse import quote_plus # pylint: disable=import-error
+from urllib.parse import urlsplit # pylint: disable=import-error
+GZIP_READ_TEXT = 'rt'
+GZIP_TEXT = 'wt'
+string_types = str
+
 try:
     import ujson as json
 except BaseException:
