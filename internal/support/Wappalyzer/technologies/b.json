@@ -76,6 +76,26 @@
     ],
     "website": "https://www.brt.it"
   },
+  "BSmart": {
+    "cats": [
+      6
+    ],
+    "cookies": {
+      "bsmartstate": ""
+    },
+    "description": "BSmart is an ecommerce platform, programmed by Microline.",
+    "icon": "BSmart.png",
+    "js": {
+      "BSmartConfirmWindow": "",
+      "bsGetBSmartStock": "",
+      "bsmartPriceList": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.bsmart.co.il"
+  },
   "Babel": {
     "cats": [
       19
@@ -427,6 +447,24 @@
     "saas": true,
     "scriptSrc": "\\.getbento\\.com/",
     "website": "https://getbento.com"
+  },
+  "Better Price": {
+    "cats": [
+      100
+    ],
+    "description": "Better Price is a Shopify app which provide coupons to real leads only when discounted price is requested build by Architechpro.",
+    "icon": "Better Price.png",
+    "implies": "Shopify",
+    "js": {
+      "fc_metafield_betterprice.betterpricesuccess": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "/shopify-apps//js/betterprice/betterprice\\.js",
+    "website": "https://apps.shopify.com/better-price"
   },
   "Betty Blocks": {
     "cats": [
@@ -2217,6 +2255,21 @@
     ],
     "saas": true,
     "website": "https://www.bynder.com"
+  },
+  "bSecure": {
+    "cats": [
+      41
+    ],
+    "description": "bSecure is a one-click checkout solution for selling your products all across the globe instantly.",
+    "icon": "bSecure.svg",
+    "js": {
+      "bsecure_js_object": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.bsecure.pk"
   },
   "basket.js": {
     "cats": [

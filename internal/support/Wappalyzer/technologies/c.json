@@ -460,6 +460,22 @@
     "scriptSrc": "/cargo\\.",
     "website": "https://cargo.site"
   },
+  "Carrd": {
+    "cats": [
+      51
+    ],
+    "description": "Carrd is a platform for building simple, responsive, one-page sites.",
+    "icon": "Carrd.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "Apache",
+    "saas": true,
+    "scripts": "\\(\\!section\\s\\|\\|\\ssection\\.tagName\\s\\!\\=\\s\\'SECTION\\'\\)",
+    "website": "https://carrd.co"
+  },
   "Carro": {
     "cats": [
       100
@@ -740,7 +756,7 @@
       66
     ],
     "description": "Chakra UI is a simple, modular and accessible component library that gives you the building blocks you need to build your React applications.",
-    "dom": "html[style*='chakra-ui-color-mode']",
+    "dom": "html[style*='chakra-ui-color-mode'], body.chakra-ui-dark, body.chakra-ui-light, div.chakra-portal",
     "icon": "Chakra UI.svg",
     "implies": "React",
     "oss": true,
@@ -1106,6 +1122,27 @@
       "choices\\.js/|@([\\d.]+)(?:/assets)?(?:/scripts)?(?:/styles)?(?:/dist)?/choices(?:\\.min)?\\.js|css\\;version:\\1"
     ],
     "website": "https://github.com/Choices-js/Choices"
+  },
+  "Chord": {
+    "cats": [
+      52,
+      103
+    ],
+    "description": "Chord is a video-enabled social community and communication platform completely customised to your brand.",
+    "icon": "Chord.svg",
+    "js": {
+      "CHORDCONNECT": "",
+      "ChordConnect.__esModule": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "chord\\.us/embeddable/client-([\\d\\.]+)\\.min\\.js\\;version:\\1",
+    "website": "https://m.chord.us"
   },
   "Chorus": {
     "cats": [
@@ -1760,6 +1797,22 @@
     },
     "website": "http://codemirror.net"
   },
+  "CodeSandbox": {
+    "cats": [
+      5,
+      20
+    ],
+    "description": "CodeSandbox is an online code editor and prototyping tool that makes creating and sharing web apps faster.",
+    "dom": "iframe[src^='https://codesandbox.io/embed/']",
+    "icon": "CodeSandbox.svg",
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://codesandbox.io/"
+  },
   "Coin Currency Converter": {
     "cats": [
       100
@@ -2304,23 +2357,6 @@
     },
     "website": "http://www.gocontentbox.org"
   },
-  "Contentsquare": {
-    "cats": [
-      10,
-      74
-    ],
-    "description": "Contentsquare is an enterprise-level UX optimisation platform.",
-    "icon": "Contentsquare.svg",
-    "js": {
-      "CS_CONF.trackerDomain": ""
-    },
-    "pricing": [
-      "poa"
-    ],
-    "saas": true,
-    "scriptSrc": "\\.contentsquare\\.net/",
-    "website": "https://contentsquare.com"
-  },
   "ContentStudio": {
     "cats": [
       96
@@ -2368,6 +2404,23 @@
     ],
     "saas": true,
     "website": "https://contently.com"
+  },
+  "Contentsquare": {
+    "cats": [
+      10,
+      74
+    ],
+    "description": "Contentsquare is an enterprise-level UX optimisation platform.",
+    "icon": "Contentsquare.svg",
+    "js": {
+      "CS_CONF.trackerDomain": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.contentsquare\\.net/",
+    "website": "https://contentsquare.com"
   },
   "Contentstack": {
     "cats": [
@@ -2951,17 +3004,17 @@
     "description": "Crisp Live Chat is a live chat solution with free and paid options.",
     "icon": "Crisp Live Chat.svg",
     "js": {
+      "$__CRISP_INCLUDED": "",
       "$crisp": "",
-      "CRISP_WEBSITE_ID": "",
-      "$__CRISP_INCLUDED": ""
+      "CRISP_WEBSITE_ID": ""
     },
-    "scriptSrc": "client\\.crisp\\.chat/",
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
     "saas": true,
+    "scriptSrc": "client\\.crisp\\.chat/",
     "website": "https://crisp.chat/"
   },
   "Criteo": {

@@ -420,6 +420,9 @@
         "properties": {
           "_reactRootContainer": ""
         }
+      },
+      "div[id*='react-root'], span[id*='react-']": {
+        "exists": ""
       }
     },
     "html": "<[^>]+data-react",
@@ -706,6 +709,15 @@
     "icon": "Red Hat.svg",
     "website": "https://www.redhat.com"
   },
+  "Red Hat Gluster": {
+    "cats": [
+      48
+    ],
+    "description": "Gluster is a free and open source scalable network filesystem.",
+    "icon": "gluster.png",
+    "saas": true,
+    "website": "https://www.gluster.org"
+  },
   "Red je Pakketje": {
     "cats": [
       99
@@ -796,6 +808,15 @@
       "description": "Redmine"
     },
     "website": "http://www.redmine.org"
+  },
+  "Redonner": {
+    "cats": [
+      84
+    ],
+    "description": "This company promotes the collection and recycling of textiles by rewarding each donation of clothing made on its website with 'Re' points, allowing you to benefit from advantages and discounts at more than 70 partner brands.",
+    "icon": "Redonner.svg",
+    "scriptSrc": "\\.redonner\\.fr/",
+    "website": "https://www.redonner.fr"
   },
   "Redux": {
     "cats": [
@@ -965,7 +986,7 @@
     "description": "Remarkable Commerce is a technology and services company which provides a ecommerce platform for mid-sized retailers.",
     "icon": "Remarkable.png",
     "js": {
-      "Remarkable": ""
+      "Remarkable.BasketItems": ""
     },
     "pricing": [
       "poa"
@@ -1206,6 +1227,24 @@
     "scriptSrc": "\\.returngo\\.ai/",
     "website": "https://returngo.ai"
   },
+  "Returnly": {
+    "cats": [
+      102
+    ],
+    "description": "Returnly is the provider of digital return experiences for direct-to-consumer brands.",
+    "dom": "a[href*='.returnly.com/']",
+    "icon": "Returnly.svg",
+    "js": {
+      "Returnly.ContainerSwitcher": "",
+      "Returnly.InternalEventTracker": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://returnly.com"
+  },
   "RevJet": {
     "cats": [
       36
@@ -1304,6 +1343,24 @@
     "scriptSrc": "\\.reviewsolicitors\\.co\\.uk/",
     "website": "https://www.reviewsolicitors.co.uk"
   },
+  "Reviews.io": {
+    "cats": [
+      90
+    ],
+    "description": "Reviews.io is a review collection tool for companies to collect merchant (company) & product reviews from genuine customers, then share these on Google.",
+    "dom": "a[href*='.reviews.io/company-reviews/']",
+    "icon": "Reviews.io.svg",
+    "js": {
+      "reviewsio_hasVoted": "",
+      "reviewsio_shareLink": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.reviews.io"
+  },
   "RevolverMaps": {
     "cats": [
       35
@@ -1312,20 +1369,6 @@
     "icon": "RevolverMaps.svg",
     "scriptSrc": "\\.revolvermaps\\.com",
     "website": "https://www.revolvermaps.com"
-  },
-  "Revslider": {
-    "cats": [
-      19,
-      87
-    ],
-    "description": "Slider Revolution is a WordPress plugin that allows you to create responsive sliders with many animation effects, text, image and video layers, and many other features.",
-    "html": [
-      "<link[^>]* href=[\\'\"][^']+revslider[/\\w-]+\\.css\\?ver=([0-9.]+)[\\'\"]\\;version:\\1"
-    ],
-    "icon": "revslider.png",
-    "requires": "WordPress",
-    "scriptSrc": "/revslider/[/\\w-]+/js",
-    "website": "https://revolution.themepunch.com/"
   },
   "Revy": {
     "cats": [
@@ -1416,6 +1459,26 @@
     "saas": true,
     "scriptSrc": "\\.richrelevance\\.com/",
     "website": "https://richrelevance.com"
+  },
+  "Richpanel": {
+    "cats": [
+      53
+    ],
+    "description": "Richpanel is a purpose-built CRM and customer support platform for ecommerce and DTC brands.",
+    "icon": "Richpanel.svg",
+    "js": {
+      "Richpanel.PLUGIN_API_URL": "",
+      "RichpanelAppProxy": "",
+      "richpanel_messenger_url": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.richpanel\\.com/",
+    "website": "https://www.richpanel.com"
   },
   "Rickshaw": {
     "cats": [
@@ -1517,12 +1580,12 @@
     "js": {
       "rive.Rive": ""
     },
-    "saas": true,
     "pricing": [
       "freemium",
       "payg",
       "recurring"
     ],
+    "saas": true,
     "website": "https://rive.app"
   },
   "Roadiz CMS": {
@@ -1664,7 +1727,7 @@
   },
   "Route": {
     "cats": [
-      19
+      107
     ],
     "description": "Route is a delivery and shipping tracking app",
     "icon": "route.png",
@@ -1765,7 +1828,7 @@
   },
   "Rudderstack": {
     "cats": [
-      10
+      97
     ],
     "description": "Rudderstack is a customer data platform (CDP) that helps you collect, clean, and control your customer data.",
     "icon": "Rudderstack.png",

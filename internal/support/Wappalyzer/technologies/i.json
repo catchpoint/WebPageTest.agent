@@ -93,6 +93,25 @@
     "scriptSrc": "jscripts/ips_",
     "website": "https://invisioncommunity.com/"
   },
+  "IPFS": {
+    "cats": [
+      48
+    ],
+    "description": "IPFS is a peer-to-peer hypermedia protocol that provides a distributed hypermedia web.",
+    "headers": {
+      "x-cf-ipfs-cache-status": "",
+      "x-ipfs-datasize": "",
+      "x-ipfs-gateway-host": "",
+      "x-ipfs-lb-pop": "",
+      "x-ipfs-path": "",
+      "x-ipfs-pop": "",
+      "x-ipfs-root": "",
+      "x-ipfs-root-cid": "",
+      "x-ipfs-roots": ""
+    },
+    "icon": "IPFS.png",
+    "website": "https://ipfs.io/"
+  },
   "IPInfoDB": {
     "cats": [
       79
@@ -133,18 +152,6 @@
     "saas": true,
     "scriptSrc": "cdn\\.iamport\\.kr/js/iamport\\.payment-([\\d\\.]+)\\.js\\;version:\\1",
     "website": "https://www.iamport.kr"
-  },
-  "idCloudHost": {
-    "cats": [
-      88
-    ],
-    "description": "idCloudHost is a local web service provider based in Indonesia that offer a wide range of services including domain name registration and cloud hosting.",
-    "icon": "idCloudHost.png",
-    "dns": {
-      "SOA": "ns\\d+\\.cloudhost\\.id",
-      "NS": "ns\\d+\\.cloudhost\\.id"
-    }, 
-    "website": "https://idcloudhost.com"
   },
   "Ideasoft": {
     "cats": [
@@ -666,6 +673,25 @@
     "scriptSrc": "instantclick\\.min\\.js",
     "website": "http://instantclick.io/"
   },
+  "InstantGeo": {
+    "cats": [
+      59
+    ],
+    "description": "InstantGeo is a service that provides IP geolocation to web pages",
+    "icon": "InstantGeo.svg",
+    "js": {
+      "geojs": ""
+    },
+    "pricing": [
+      "freemium"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "js\\.instantgeo\\.info",
+      "script\\.instantgeo\\.info"
+    ],
+    "website": "https://instantgeo.info"
+  },
   "Instapage": {
     "cats": [
       51,
@@ -692,6 +718,21 @@
       "heatmap-events-collector\\.instapage\\.com"
     ],
     "website": "https://instapage.com"
+  },
+  "Instatus": {
+    "cats": [
+      13
+    ],
+    "description": "Instatus is a status and incident communication tool.",
+    "dom": "a[href*='instatus.com'][target='_blank']",
+    "icon": "Instatus.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://instatus.com"
   },
   "Integral Ad Science": {
     "cats": [
@@ -1087,6 +1128,18 @@
       "generator": "^iWeb( [\\d.]+)?\\;version:\\1"
     },
     "website": "http://apple.com/ilife/iweb"
+  },
+  "idCloudHost": {
+    "cats": [
+      88
+    ],
+    "description": "idCloudHost is a local web service provider based in Indonesia that offer a wide range of services including domain name registration and cloud hosting.",
+    "dns": {
+      "NS": "ns\\d+\\.cloudhost\\.id",
+      "SOA": "ns\\d+\\.cloudhost\\.id"
+    },
+    "icon": "idCloudHost.png",
+    "website": "https://idcloudhost.com"
   },
   "ikiwiki": {
     "cats": [
