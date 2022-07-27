@@ -276,6 +276,24 @@
     "saas": true,
     "website": "https://aws.amazon.com/certificate-manager/"
   },
+  "AWS WAF Captcha": {
+    "cats": [
+      16
+    ],
+    "description": "AWS WAF Captcha helps block unwanted bot traffic by requiring users to successfully complete challenges before their web request are allowed to reach AWS WAF protected resources.",
+    "headers": {
+      "x-amzn-waf-action": "^captcha$"
+    },
+    "icon": "aws.svg",
+    "implies": "Amazon Web Services",
+    "pricing": [
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "captcha\\.awswaf\\.com/",
+    "website": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-captcha.html"
+  },
   "AWStats": {
     "cats": [
       10
@@ -404,10 +422,13 @@
   },
   "Accessibly": {
     "cats": [
-      76
+      68
     ],
-    "description": "Accessily is an app which is designed to assist with meeting certain requirements of WCAG 2.1 using an overlay solution.",
+    "description": "Accessibly is an app which is designed to assist with meeting certain requirements of WCAG 2.1 using an overlay solution.",
     "icon": "Accessibly.svg",
+    "js": {
+      "accessibilityWidget.name": "bound"
+    },
     "pricing": [
       "low",
       "recurring"
@@ -502,6 +523,24 @@
     ],
     "website": "https://www.acquia.com/products/marketing-cloud/campaign-factory"
   },
+  "Acquia Cloud Classic": {
+    "cats": [
+      88
+    ],
+    "description": "Acquia Cloud Classic is a Amazon EC2 based Drupal hosting platform.",
+    "headers": {
+      "X-AH-Environment": "prod"
+    },
+    "icon": "acquia-cloud-platform.svg",
+    "implies": [
+      "Acquia Cloud Platform",
+      "Amazon EC2",
+      "Percona",
+      "Red Hat Gluster"
+    ],
+    "saas": true,
+    "website": "https://docs.acquia.com/cloud-platform/"
+  },
   "Acquia Cloud IDE": {
     "cats": [
       47
@@ -518,6 +557,24 @@
     "url": "https:?\\/\\/.+\\.web\\.ahdev\\.cloud",
     "website": "https://www.acquia.com/products/drupal-cloud/cloud-ide"
   },
+  "Acquia Cloud Next": {
+    "cats": [
+      88
+    ],
+    "description": "Acquia Cloud Next is a Kubernetes-native Drupal hosting platform.",
+    "headers": {
+      "X-AH-Environment": "next"
+    },
+    "icon": "acquia-cloud-platform.svg",
+    "implies": [
+      "Acquia Cloud Platform",
+      "Kubernetes Dashboard",
+      "Amazon EFS",
+      "Amazon Aurora"
+    ],
+    "saas": true,
+    "website": "https://docs.acquia.com/cloud-platform/cloud-next/"
+  },
   "Acquia Cloud Platform": {
     "cats": [
       62
@@ -528,9 +585,7 @@
     },
     "icon": "acquia-cloud.png",
     "implies": [
-      "Drupal",
-      "Apache",
-      "Percona"
+      "Amazon Web Services"
     ],
     "saas": true,
     "website": "https://www.acquia.com/"
@@ -592,17 +647,16 @@
   },
   "Acquia Customer Data Platform": {
     "cats": [
-      10
+      97
     ],
     "description": "Acquia Customer Data Platform (formerly AgilOne) is a customer data platform for Drupal.",
     "dom": [
       "[data-function*='Agilone']"
     ],
     "icon": "acquia-cdp.png",
-    "implies": [
-      "Acquia Cloud Platform"
-    ],
     "js": {
+      "$A1": "",
+      "$A1Config": "",
       "agiloneObject": ""
     },
     "saas": true,
@@ -653,6 +707,42 @@
       "sites/\\w*/files/cohesion"
     ],
     "website": "https://www.acquia.com/products/drupal-cloud/site-studio"
+  },
+  "Acquire Cobrowse": {
+    "cats": [
+      19,
+      103
+    ],
+    "description": "Acquire Cobrowse is a safe and secure method of interacting with a customer's browser without downloading any additional software.",
+    "icon": "Acquire.svg",
+    "js": {
+      "acquireCobrowseRTC": "",
+      "acquireCobrowseSettings": "",
+      "acquireConfigNodeServer": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.acquire\\.io/cobrowse/",
+    "website": "https://acquire.io/co-browsing"
+  },
+  "Acquire Live Chat": {
+    "cats": [
+      52
+    ],
+    "description": "Acquire is a multi-channel customer support platform designed to provide real-time customer support to customers.",
+    "icon": "Acquire.svg",
+    "js": {
+      "_acquire_init_config": "",
+      "acquire": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.acquire\\.io/(?!cobrowse)",
+    "website": "https://acquire.io"
   },
   "Act-On": {
     "cats": [
@@ -1648,7 +1738,7 @@
   },
   "AfterShip": {
     "cats": [
-      19
+      107
     ],
     "description": "AfterShip provides automated shipment tracking as a service.",
     "icon": "AfterShip.svg",
@@ -1870,7 +1960,6 @@
   },
   "Akamai mPulse": {
     "cats": [
-      10,
       78
     ],
     "cookies": {
@@ -2232,6 +2321,15 @@
     "scriptSrc": "\\.associates-amazon\\.com",
     "website": "https://affiliate-program.amazon.com"
   },
+  "Amazon Aurora": {
+    "cats": [
+      34
+    ],
+    "description": "Amazon Aurora is a relational database service developed and offered by Amazon Web Services.",
+    "icon": "aws_aurora.png",
+    "implies": "Amazon Web Services",
+    "website": "https://aws.amazon.com/rds/aurora"
+  },
   "Amazon CloudWatch RUM": {
     "cats": [
       78
@@ -2306,7 +2404,19 @@
       "Docker"
     ],
     "saas": true,
-    "website": "https://aws.amazon.com/elasticloadbalancing/"
+    "website": "https://aws.amazon.com/ecs/"
+  },
+  "Amazon EFS": {
+    "cats": [
+      48
+    ],
+    "description": "Amazon Elastic File System is a cloud storage service provided by Amazon Web Services.",
+    "icon": "amazon-efs.png",
+    "implies": [
+      "Amazon Web Services"
+    ],
+    "saas": true,
+    "website": "https://aws.amazon.com/efs/"
   },
   "Amazon ELB": {
     "cats": [
@@ -3481,6 +3591,23 @@
     "scriptSrc": "\\.iperceptions\\.com",
     "website": "https://astutesolutions.com"
   },
+  "Atatus": {
+    "cats": [
+      78,
+      13
+    ],
+    "description": "Atatus is a full-stack observability tool that let you identify the performance bottlenecks and helps you optimise your application at the right time.",
+    "icon": "Atatus.svg",
+    "js": {
+      "atatus.VERSION": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "/atatus\\.js",
+    "website": "https://www.atatus.com"
+  },
   "Athena Search": {
     "cats": [
       29
@@ -3603,8 +3730,7 @@
   },
   "Attentive": {
     "cats": [
-      76,
-      5
+      76
     ],
     "description": "Attentive is a personalised mobile messaging platform that helps retail & ecommerce brands acquire, retain, and interact with mobile shoppers.",
     "icon": "Attentive.svg",
@@ -3725,6 +3851,41 @@
     "icon": "Auth0.png",
     "scriptSrc": "/lock/([\\d.]+)/lock(?:.min)?\\.js\\;version:\\1",
     "website": "https://auth0.com/docs/libraries/lock"
+  },
+  "Autoketing": {
+    "cats": [
+      32
+    ],
+    "description": "Autoketing is a marketing automation platform.",
+    "icon": "Autoketing.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://autoketing.com"
+  },
+  "Autoketing Product Reviews": {
+    "cats": [
+      100,
+      90
+    ],
+    "description": "Autoketing Product Reviews is an application that allows shop owners to manage the product review section on their website.",
+    "icon": "Autoketing.png",
+    "implies": [
+      "Shopify",
+      "Autoketing"
+    ],
+    "js": {
+      "autoketingproduct_reivew": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://apps.shopify.com/product-reviews-autoketing"
   },
   "Automizely": {
     "cats": [

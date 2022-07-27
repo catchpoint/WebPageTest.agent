@@ -190,6 +190,27 @@
     "scriptSrc": "gm_javascript\\.js\\.php",
     "website": "http://gambio.de"
   },
+  "Gameball": {
+    "cats": [
+      84
+    ],
+    "description": "Gameball is a loyalty & retention platform that offers gamified customer engagement tools for customers such as rewards, points, and referrals.",
+    "icon": "Gameball.svg",
+    "js": {
+      "GbSdk.settings.shop": "",
+      "gbReferralCodeInput": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "payg",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "assets\\.gameball\\.co/",
+    "website": "https://www.gameball.co"
+  },
   "Gatsby": {
     "cats": [
       57,
@@ -234,6 +255,26 @@
       "_gauges": ""
     },
     "website": "https://get.gaug.es"
+  },
+  "GemPages": {
+    "cats": [
+      100,
+      51
+    ],
+    "description": "GemPages is a powerful Shopify landing page buidler that empowers SMEs, agency, and freelancers to build their brands and sell online.",
+    "icon": "GemPages.svg",
+    "implies": "Shopify",
+    "js": {
+      "GEMSTORE": "",
+      "GEMVENDOR": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "/files/gempagev\\d+\\.js",
+    "website": "https://gempages.net"
   },
   "Gemius": {
     "cats": [
@@ -405,6 +446,22 @@
       "GSFN": ""
     },
     "website": "https://getsatisfaction.com/corp/"
+  },
+  "GetButton": {
+    "cats": [
+      5,
+      52
+    ],
+    "description": "The chat button by GetButton takes website visitor directly to the messaging app such as Facebook Messenger or WhatsApp and allows them to initiate a conversation with you.",
+    "icon": "GetButton.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.getbutton\\.io/",
+    "website": "https://getbutton.io"
   },
   "GetFeedback": {
     "cats": [
@@ -708,7 +765,7 @@
     },
     "saas": true,
     "scriptSrc": "cdn\\.gladly\\.com",
-    "website": " https://www.gladly.com/"
+    "website": "https://www.gladly.com"
   },
   "GlassFish": {
     "cats": [
@@ -721,6 +778,33 @@
     "icon": "GlassFish.png",
     "implies": "Java",
     "website": "http://glassfish.java.net"
+  },
+  "Glassbox": {
+    "cats": [
+      10
+    ],
+    "description": "Glassbox is an Israeli software company. It sells session-replay analytics software and services.",
+    "icon": "Glassbox.svg",
+    "js": {
+      "SessionCamRecorder": "",
+      "sessioncamConfiguration": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.glassboxcdn\\.com/",
+    "website": "https://www.glassbox.com"
+  },
+  "Glider.js": {
+    "cats": [
+      59
+    ],
+    "description": "Glider.js is a fast, lightweight, responsive, dependency-free scrollable list with customisable paging controls.",
+    "icon": "Glider.js.svg",
+    "oss": true,
+    "scriptSrc": "(?:/|@)?([\\d\\.]{2,})?/glider\\.min\\.js\\;version:\\1",
+    "website": "https://nickpiscitelli.github.io/Glider.js"
   },
   "Glitch": {
     "cats": [
@@ -917,6 +1001,26 @@
     "cpe": "cpe:/a:golang:go",
     "icon": "Go.svg",
     "website": "https://golang.org"
+  },
+  "Go Instore": {
+    "cats": [
+      103
+    ],
+    "description": "Go Instore uses high-definition live video to connect online customers with in-store product experts.",
+    "headers": {
+      "content-security-policy": "\\.goinstore\\.com"
+    },
+    "icon": "Go Instore.svg",
+    "js": {
+      "GISAPP.videoJsCtrl": "",
+      "gisAppLib.postRobot": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "//gis\\.goinstore\\.com/",
+    "website": "https://goinstore.com"
   },
   "GoAffPro": {
     "cats": [
@@ -1117,6 +1221,24 @@
     },
     "website": "https://gojs.net/"
   },
+  "GoKwik": {
+    "cats": [
+      19
+    ],
+    "description": "GoKwik is a platform for solving shopping experience problems on ecommerce websites on the internet.",
+    "icon": "GoKwik.svg",
+    "js": {
+      "gokwikBuyNow": "",
+      "gokwikCheckoutApp": "",
+      "gokwikSdk": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://www.gokwik.co"
+  },
   "GoStats": {
     "cats": [
       10
@@ -1128,23 +1250,6 @@
       "go_msie": ""
     },
     "website": "http://gostats.com/"
-  },
-  "GotiPath": {
-    "cats": [
-      31
-    ],
-    "description": "GotiPath is a content delivery network (CDN) provider that is associated with telecom giant Telekom Malaysia Berhad.",
-    "icon": "GotiPath.png",
-    "headers": {
-      "X-Cache": "\\.swiftserve\\.com"
-    },
-    "dom":"img[src*='.gotipath.com/'], link[href*='.gpcdn.net/']",
-    "pricing": [
-      "recurring",
-      "poa",
-      "payg"
-    ],
-    "website": "https://gotipath.com"
   },
   "GoatCounter": {
     "cats": [
@@ -1212,8 +1317,8 @@
       "Goog_AdSense_": "",
       "Goog_AdSense_OsdAdapter": "",
       "__google_ad_urls": "",
-      "google_ad_": "",
-      "adsbygoogle": ""
+      "adsbygoogle": "",
+      "google_ad_": ""
     },
     "saas": true,
     "scriptSrc": [
@@ -1617,6 +1722,23 @@
     ],
     "saas": true,
     "website": "https://www.gorgias.com/"
+  },
+  "GotiPath": {
+    "cats": [
+      31
+    ],
+    "description": "GotiPath is a content delivery network (CDN) provider that is associated with telecom giant Telekom Malaysia Berhad.",
+    "dom": "img[src*='.gotipath.com/'], link[href*='.gpcdn.net/']",
+    "headers": {
+      "X-Cache": "\\.swiftserve\\.com"
+    },
+    "icon": "GotiPath.png",
+    "pricing": [
+      "recurring",
+      "poa",
+      "payg"
+    ],
+    "website": "https://gotipath.com"
   },
   "Grab Pay Later": {
     "cats": [
