@@ -1064,6 +1064,7 @@ class DevtoolsBrowser(object):
                         cookies[name].append(cookie['value'])
                 # Get the relavent DNS records for the origin
                 dns = {}
+                dns_types = ['cname', 'ns', 'mx', 'txt', 'soa']
                 if self.document_domain is not None:
                     dns_domain = str(self.document_domain)
                     while dns_domain.find('.') > 0:
@@ -1073,12 +1074,11 @@ class DevtoolsBrowser(object):
                             dns_resolver = resolver.Resolver()
                             dns_resolver.timeout = 1
                             dns_resolver.lifetime = 1
-                            dns_types = ['CNAME', 'NS', 'MX', 'TXT', 'SOA']
                             for dns_type in dns_types:
                                 if dns_type not in dns:
                                     try:
                                         result = []
-                                        answer = dns_resolver.query(dns_domain, dns_type, raise_on_no_answer=False)
+                                        answer = dns_resolver.query(dns_domain, dns_type.upper(), raise_on_no_answer=False)
                                         for a in answer:
                                             result.append(str(a))
                                         if len(result):

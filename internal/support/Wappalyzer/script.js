@@ -140,8 +140,8 @@
     let wptResult = JSON.stringify({
       categories: categories,
       apps: apps,
-      //technologies: detected,
-      //resolved: resolved
+      technologies: detected,
+      resolved: resolved
     });
     return wptResult;
   }
