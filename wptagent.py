@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import traceback
+from internal.debug import trace
 if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
@@ -1207,10 +1208,15 @@ def main():
         log_level = logging.WARNING
     elif options.verbose == 3:
         log_level = logging.INFO
-    elif options.verbose >= 4:
+    elif options.verbose == 4:
         log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
-                        datefmt="%H:%M:%S")
+    elif options.verbose >= 5:
+        log_level = logging.TRACE
+    
+    if log_level >= logging.DEBUG:
+        logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s", datefmt="%H:%M:%S")
+    elif log_level <= logging.TRACE:
+        trace.setup()
 
     if options.log:
         err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,

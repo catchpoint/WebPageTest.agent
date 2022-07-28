@@ -161,3 +161,10 @@ def pc_name():
         
     return platform.uname()[1]
 
+def makeDirs(_dir: str):
+    logging.debug("Creating Dir %s", _dir)
+    try:
+        if _dir != "" and not os.path.isdir(_dir):
+            os.makedirs(_dir)
+    except Exception as e:
+        pass
