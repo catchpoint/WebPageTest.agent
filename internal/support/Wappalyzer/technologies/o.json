@@ -179,9 +179,9 @@
     "description": "Oct8ne is a visual customer service software.",
     "icon": "Oct8ne.png",
     "js": {
+      "oct8ne.agentsAvailable": "",
       "oct8neApi": "",
-      "oct8neVars.pluginVersion": "([\\d\\.]+)\\;version:\\1",
-      "oct8ne.agentsAvailable": ""
+      "oct8neVars.pluginVersion": "([\\d\\.]+)\\;version:\\1"
     },
     "pricing": [
       "poa"
@@ -274,6 +274,23 @@
     "oss": true,
     "scriptSrc": "/web/js/(?:web\\.assets_common/|website\\.assets_frontend/)\\;confidence:25",
     "website": "http://odoo.com"
+  },
+  "Oh Dear": {
+    "cats": [
+      13
+    ],
+    "description": "The all-in-one monitoring tool for your entire website. Oh Dear monitors uptime, SSL certificates, broken links, scheduled tasks, application health, DNS, domain expiry and more.",
+    "icon": "Oh Dear.svg",
+    "js": {
+      "__NEXT_DATA__.props.pageProps.config.userAgent": "OhDear\\.app"
+    },
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.ohdear\\.app/",
+    "website": "https://ohdear.app"
   },
   "Okendo": {
     "cats": [
@@ -1338,18 +1355,6 @@
     "saas": true,
     "scriptSrc": "cdn\\.ordersify\\.com/sdk/productalerts-shopify\\.js",
     "website": "https://ordersify.com/products/product-alerts"
-  },
-  "Oribi": {
-    "cats": [
-      10
-    ],
-    "description": "Oribi is an all-in-one marketing analytics tool.",
-    "icon": "Oribi.svg",
-    "js": {
-      "ORIBI": ""
-    },
-    "scriptSrc": "cdn\\.oribi\\.io",
-    "website": "https://oribi.io/"
   },
   "OroCommerce": {
     "cats": [

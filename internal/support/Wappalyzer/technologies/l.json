@@ -60,6 +60,28 @@
     "icon": "Lagoon.png",
     "website": "https://www.amazee.io/hosting"
   },
+  "LangShop": {
+    "cats": [
+      100,
+      89
+    ],
+    "description": "LangShop is an app for translating Shopify stores.",
+    "icon": "LangShop.svg",
+    "implies": "Shopify",
+    "js": {
+      "LangShop": "",
+      "LangShopConfig": "",
+      "LangShopSDK": ""
+    },
+    "pricing": [
+      "low",
+      "recurring",
+      "freemium"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.langshop\\.app/",
+    "website": "https://langshop.io"
+  },
   "Laravel": {
     "cats": [
       18
@@ -97,7 +119,8 @@
     "dom": "a[href*='latitudepay.com/'][target='_blank'], img[src='.latitudepayapps.com/']",
     "icon": "LatitudePay.svg",
     "js": {
-      "checkout.enabledpayments.latitudepay": "^true$"
+      "checkout.enabledpayments.latitudepay": "^true$",
+      "wc_ga_pro.available_gateways.latitudepay": ""
     },
     "pricing": [
       "freemium"
@@ -162,7 +185,8 @@
       "LaybuyHelper": "",
       "checkout.enabledpayments.laybuy": "^true$",
       "laybuyEnableCart": "",
-      "laybuyMoneyOverides": ""
+      "laybuyMoneyOverides": "",
+      "wc_ga_pro.available_gateways.laybuy": ""
     },
     "pricing": [
       "payg"
@@ -174,35 +198,6 @@
       "/wp-content/plugins/woo-laybuy/"
     ],
     "website": "https://www.laybuy.com"
-  },
-  "Layer0": {
-    "cats": [
-      31,
-      62
-    ],
-    "cookies": {
-      "layer0_bucket": "",
-      "layer0_destination": "",
-      "layer0_eid": ""
-    },
-    "description": "Layer0 is an all-in-one Jamstack platform to develop, deploy, preview, split test, and monitor the company's frontend.",
-    "headers": {
-      "x-0-status": "",
-      "x-0-t": "",
-      "x-0-version": "^\\d+ ([\\d.]+) \\;version:\\1"
-    },
-    "icon": "Layer0.svg",
-    "js": {
-      "Layer0.Metrics": ""
-    },
-    "pricing": [
-      "freemium",
-      "mid",
-      "recurring"
-    ],
-    "saas": true,
-    "scriptSrc": "/__layer0__/cache-manifest\\.js",
-    "website": "https://www.layer0.co"
   },
   "LayoutHub": {
     "cats": [
@@ -258,7 +253,7 @@
     "description": "LazySizes unveilhooks plugin extends lazySizes to lazyload scripts/widgets, background images, styles and video/audio elements.",
     "icon": "default.svg",
     "oss": true,
-    "scriptSrc": "ls.\\unveilhooks(?:\\.min)?\\.js",
+    "scriptSrc": "ls\\.unveilhooks(?:\\.min)?\\.js",
     "website": "https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/unveilhooks"
   },
   "Leadinfo": {
@@ -612,6 +607,23 @@
     "scriptSrc": "\\.personalizer\\.io/",
     "website": "https://www.limespot.com"
   },
+  "Limepay": {
+    "cats": [
+      91
+    ],
+    "description": "Limepay is a buy now, pay later platform that's fully integrated with the merchant's payment platform.",
+    "icon": "Limepay.svg",
+    "js": {
+      "LimepayIdentity": "",
+      "wc_ga_pro.available_gateways.limepay": ""
+    },
+    "saas": true,
+    "scriptSrc": [
+      "/wp-content/plugins/Limepay-v\\d+/",
+      "/limepay-installment-show\\.js"
+    ],
+    "website": "https://www.limepay.com.au"
+  },
   "Limit Login Attempts Reloaded": {
     "cats": [
       87,
@@ -648,11 +660,15 @@
     "dom": "noscript > img[src*='dc.ads.linkedin.com']",
     "icon": "Linkedin.svg",
     "js": {
+      "ORIBI": "",
       "_linkedin_data_partner_id": "",
       "_linkedin_partner_id": ""
     },
+    "scriptSrc": [
+      "snap\\.licdn\\.com/li\\.lms-analytics/insight\\.min\\.js",
+      "cdn\\.oribi\\.io"
+    ],
     "scripts": "_linkedin_partner_id",
-    "scriptSrc": "snap\\.licdn\\.com/li\\.lms-analytics/insight\\.min\\.js",
     "website": "https://business.linkedin.com/marketing-solutions/insight-tag"
   },
   "Linkedin Sign-in": {
@@ -675,6 +691,8 @@
     "description": "Linx Commerce is an ecommerce platform, which provides seamless and personalised cross-channel solution that enables a true omni-channel shopping experience.",
     "icon": "Linx.png",
     "js": {
+      "EzGaCfg.Config.Store": "",
+      "EzGaCfg.Shopper": "",
       "linxImpulse.config.integrationFlags.platformProvider": "linxCommerce"
     },
     "pricing": [
@@ -940,6 +958,23 @@
     },
     "scriptSrc": "gdpr\\.privacymanager\\.io",
     "website": "https://liveramp.com/our-platform/preference-consent-management"
+  },
+  "LiveSession": {
+    "cats": [
+      10
+    ],
+    "description": "LiveSession helps increase conversion rates using session replays, and event-based product analytics.",
+    "icon": "LiveSession.svg",
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "cdn\\.livesession\\.io"
+    ],
+    "website": "https://livesession.io/"
   },
   "LiveStreet CMS": {
     "cats": [
@@ -1649,22 +1684,5 @@
     "implies": "YouTube",
     "oss": true,
     "website": "https://github.com/paulirish/lite-youtube-embed"
-  },
-  "LiveSession": {
-    "cats": [
-      10
-    ],
-    "description": "LiveSession helps increase conversion rates using session replays, and event-based product analytics.",
-    "icon": "LiveSession.svg",
-    "scriptSrc": [
-      "cdn\\.livesession\\.io"
-    ],
-    "website": "https://livesession.io/",
-    "saas": true,
-    "pricing": [
-        "low",
-        "freemium",
-        "recurring"
-    ]
   }
 }

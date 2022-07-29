@@ -384,6 +384,8 @@ class WPTAgent(object):
 
     def wait_for_idle(self, timeout=30):
         """Wait for the system to go idle for at least 2 seconds"""
+        if self.options.noidle:
+            return
         if (sys.version_info >= (3, 0)):
             from time import monotonic
         else:
@@ -467,7 +469,7 @@ class WPTAgent(object):
             ret = self.requires('AppKit', 'PyObjC') and ret
         if not self.options.android and not self.options.iOS:
             ret = self.requires('tornado') and ret
-            if self.options.webdriver and 'Firefox' in detected_browsers:
+            if 'Firefox' in detected_browsers:
                 ret = self.requires('selenium')
         # Windows-specific imports
         if platform.system() == "Windows":
@@ -513,7 +515,7 @@ class WPTAgent(object):
                 logging.debug("Traceroute is missing, installing...")
                 subprocess.call(['sudo', 'apt', '-yq', 'install', 'traceroute'])
 
-        if not self.options.android and not self.options.iOS and self.options.webdriver and 'Firefox' in detected_browsers:
+        if not self.options.android and not self.options.iOS and 'Firefox' in detected_browsers:
             try:
                 subprocess.check_output(['geckodriver', '-V'])
             except Exception:
@@ -578,7 +580,7 @@ class WPTAgent(object):
             ret = self.requires('usbmuxwrapper') and ret
             ret = self.ios.check_install() and ret
 
-        if not self.options.android and not self.options.iOS and not self.options.noidle:
+        if not self.options.android and not self.options.iOS:
             self.wait_for_idle(300)
         if self.adb is not None:
             if not self.adb.start():
@@ -962,14 +964,6 @@ def find_browsers(options):
             logging.debug('%s: %s', browser, browsers[browser]['exe'])
         else:
             logging.debug('%s', browser)
-    if not options.webdriver and 'Firefox' in browsers:
-        try:
-            # make sure marionette is up to date
-            from internal.os_util import run_elevated
-            run_elevated(sys.executable, '-m pip install --upgrade marionette_driver')
-            run_elevated(sys.executable, '-m pip install \'mozrunner==7.4.0\' --force-reinstall')
-        except Exception:
-            pass
 
     return browsers
 
@@ -1027,7 +1021,7 @@ def main():
     parser.add_argument('--log',
                         help="Log critical errors to the given file.")
     parser.add_argument('--noidle', action='store_true', default=False,
-                        help="Do not wait for system idle at startup.")
+                        help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
                         help="Collection browser versions and submit to controller.")
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
@@ -1111,10 +1105,6 @@ def main():
     parser.add_argument('--ioswebdriver', action='store_true', default=False,
                         help="Use WebDriver for launching the iOS simulator.")
 
-    # Firefox
-    parser.add_argument('--webdriver', action='store_true', default=False,
-                        help="Use WebDriver instead of Marionette for Firefox (Defaults to False on Python 2, always True for Python 3).")
-
     # Options for authenticating the agent with the server
     parser.add_argument('--username',
                         help="User name if using HTTP Basic auth with WebPageTest server.")
@@ -1160,10 +1150,6 @@ def main():
         for device in devices:
             logging.critical(device)
         exit(1)
-
-    # Force WebDriver for Python 3
-    if (sys.version_info >= (3, 0)):
-        options.webdriver = True
 
     # Set up logging
     log_level = logging.CRITICAL

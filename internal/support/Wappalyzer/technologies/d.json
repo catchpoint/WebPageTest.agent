@@ -466,7 +466,7 @@
   },
   "Deliverr": {
     "cats": [
-      19
+      107
     ],
     "description": "Deliverr is a fulfilment service that facilitates shipping services for ecommerce businesses.",
     "icon": "Deliverr.svg",
@@ -501,6 +501,34 @@
     "saas": true,
     "scriptSrc": "tag.demandbase.com",
     "website": "https://www.demandbase.com"
+  },
+  "Deno": {
+    "cats": [
+      22
+    ],
+    "description": "A modern runtime for JavaScript and TypeScript.",
+    "icon": "deno.svg",
+    "oss": true,
+    "website": "https://deno.land"
+  },
+  "Deno Deploy": {
+    "cats": [
+      62
+    ],
+    "description": "Deno Deploy is a distributed system that runs JavaScript, TypeScript, and WebAssembly at the edge, worldwide.",
+    "headers": {
+      "server": "^deno/*"
+    },
+    "icon": "deno.svg",
+    "implies": [
+      "Deno"
+    ],
+    "pricing": [
+      "freemium",
+      "low"
+    ],
+    "saas": true,
+    "website": "https://deno.land/"
   },
   "Deta": {
     "cats": [
@@ -1139,6 +1167,18 @@
     "saas": true,
     "website": "https://doubleverify.com"
   },
+  "Dovetale": {
+    "cats": [
+      71
+    ],
+    "description": "Dovetale (Acquired by Shopify) helps e-commerce stores recruit, manage, & grow their sales with communities of people who love their products.",
+    "icon": "Dovetale.png",
+    "js": {
+      "Dovetale": ""
+    },
+    "scriptSrc": "dttrk\\.com",
+    "website": "https://dovetale.com/"
+  },
   "Doxygen": {
     "cats": [
       4
@@ -1175,6 +1215,20 @@
     ],
     "requires": "WordPress",
     "website": "https://draftpress.com/products/header-footer-code-manager-pro/"
+  },
+  "Drapr": {
+    "cats": [
+      76
+    ],
+    "description": "Drapr is an ecommerce startup and online application based on technology that enables customers to quickly create 3D avatars and virtually try on clothing.",
+    "icon": "Drapr.png",
+    "js": {
+      "drapr_data": "",
+      "drapr_deferLoading": ""
+    },
+    "requiresCategory": 6,
+    "scriptSrc": "draprpubsubtest\\.firebaseapp\\.com/",
+    "website": "https://www.drapr.com"
   },
   "DreamHost": {
     "cats": [
@@ -1264,6 +1318,21 @@
     "saas": true,
     "website": "https://apps.shopify.com/drop-a-hint-v2"
   },
+  "DropInBlog": {
+    "cats": [
+      11
+    ],
+    "description": "DropInBlog is a remotely hosted, cloud based platform that is designed to embed a blog into your html site.",
+    "dom": "link[href*='.dropinblog.com/']",
+    "icon": "DropInBlog.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.dropinblog\\.com/",
+    "website": "https://dropinblog.com"
+  },
   "Dropbox": {
     "cats": [
       95
@@ -1281,16 +1350,16 @@
     "description": "Dropzone is a JavaScript library that turns any HTML element into a dropzone.",
     "icon": "Dropzone.svg",
     "js": {
-      "Dropzone.version": "([\\d\\.]+)\\;version:\\1",
-      "Dropzone": ""
+      "Dropzone": "",
+      "Dropzone.version": "([\\d\\.]+)\\;version:\\1"
     },
     "oss": true,
-    "saas": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
+    "saas": true,
     "website": "https://www.dropzone.dev"
   },
   "Droxit": {
@@ -1311,11 +1380,11 @@
     ],
     "description": "Droz Bot is a multi-channel, customisable chatbot designed to help brands provide customer service across commonly used social apps.",
     "icon": "Droz.svg",
-    "scriptSrc": "chat-app\\.meudroz\\.com/",
-    "saas": true,
     "pricing": [
       "poa"
     ],
+    "saas": true,
+    "scriptSrc": "chat-app\\.meudroz\\.com/",
     "website": "https://meudroz.com/droz-bot/"
   },
   "Drupal": {

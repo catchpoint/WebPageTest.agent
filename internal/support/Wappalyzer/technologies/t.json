@@ -1,4 +1,12 @@
 {
+  "T-Soft": {
+    "cats": [
+      6
+    ],
+    "html": "<a href=\"http://www\\.tsoft\\.com\\.tr\" target=\"_blank\" title=\"T-Soft E-ticaret Sistemleri\">",
+    "icon": "Tsoft.png",
+    "website": "https://www.tsoft.com.tr/"
+  },
   "T1 Comercios": {
     "cats": [
       19
@@ -8,10 +16,10 @@
     "meta": {
       "generator": "^T1COMERCIOS$"
     },
-    "saas": true,
     "pricing": [
       "freemium"
     ],
+    "saas": true,
     "website": "https://www.t1comercios.com"
   },
   "T1 Envios": {
@@ -23,10 +31,10 @@
     "meta": {
       "generator": "^T1ENVIOS$"
     },
-    "saas": true,
     "pricing": [
       "payg"
     ],
+    "saas": true,
     "website": "https://t1envios.com"
   },
   "T1 Paginas": {
@@ -43,11 +51,11 @@
     "meta": {
       "generator": "^T1PAGINAS$"
     },
-    "saas": true,
     "pricing": [
       "high",
       "recurring"
     ],
+    "saas": true,
     "website": "https://t1paginas.com"
   },
   "T1 Pagos": {
@@ -59,19 +67,11 @@
     "meta": {
       "generator": "^T1PAGOS$"
     },
-    "saas": true,
     "pricing": [
       "payg"
     ],
+    "saas": true,
     "website": "https://www.t1pagos.com"
-  },
-  "T-Soft": {
-    "cats": [
-      6
-    ],
-    "html": "<a href=\"http://www\\.tsoft\\.com\\.tr\" target=\"_blank\" title=\"T-Soft E-ticaret Sistemleri\">",
-    "icon": "Tsoft.png",
-    "website": "https://www.tsoft.com.tr/"
   },
   "THG Ingenuity": {
     "cats": [
@@ -321,6 +321,22 @@
     "oss": true,
     "website": "https://tachyons.io"
   },
+  "Tada": {
+    "cats": [
+      100
+    ],
+    "description": "Tada offers interactive website popups that allow Shopify merchants to collect more emails and increase sales by engaging website visitors through gamification.",
+    "icon": "Tada.png",
+    "implies": "Shopify",
+    "pricing": [
+      "freemium",
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.trytada\\.com/",
+    "website": "https://trytada.com"
+  },
   "TagPro": {
     "cats": [
       42
@@ -458,28 +474,28 @@
     ],
     "description": "Tallentor is a subscription-based software website analytics, heatmap, channel chat intergration.",
     "icon": "Tallentor.png",
-    "scriptSrc": "tallentor\\.com/js/script_tracker\\.js",
-    "saas": true,
     "pricing": [
       "low",
       "recurring"
     ],
+    "saas": true,
+    "scriptSrc": "tallentor\\.com/js/script_tracker\\.js",
     "website": "https://tallentor.com"
   },
   "Tallentor Widget": {
     "cats": [
       52
     ],
-    "description": "Tallentor is a subscription-based software website analytics, heatmap, channel chat intergration.",
-    "icon": "Tallentor.png",
     "cookies": {
       "tallentor_widget": ""
     },
-    "saas": true,
+    "description": "Tallentor is a subscription-based software website analytics, heatmap, channel chat intergration.",
+    "icon": "Tallentor.png",
     "pricing": [
       "low",
       "recurring"
     ],
+    "saas": true,
     "website": "https://tallentor.com"
   },
   "Tamago": {
@@ -697,17 +713,17 @@
       6
     ],
     "description": "Tebex specialises in providing gcommerce solutions for online games.",
-    "icon": "Tebex.svg",
-    "requires": "Cart Functionality",
-    "implies": [
-      "MySQL",
-      "Sass"
-    ],
     "headers": {
       "tb-cache-country": "\\;confidence:33",
       "tb-cache-group": "\\;confidence:34",
       "tb-node": "\\;confidence:33"
     },
+    "icon": "Tebex.svg",
+    "implies": [
+      "MySQL",
+      "Sass"
+    ],
+    "requires": "Cart Functionality",
     "saas": true,
     "website": "https://www.tebex.io"
   },
@@ -906,6 +922,23 @@
     "saas": true,
     "scriptSrc": "\\.thehotelsnetwork\\.com/",
     "website": "https://thehotelsnetwork.com"
+  },
+  "The SEO Framework": {
+    "cats": [
+      54,
+      87
+    ],
+    "description": "The SEO Framework is the only WordPress plugin that can intelligently generate critical SEO meta tags by reading your WordPress environment.",
+    "html": "<!--[^>]+The SEO Framework by Sybre Waaijer",
+    "icon": "The SEO Framework.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "website": "https://theseoframework.com"
   },
   "The Theme Foundry Make": {
     "cats": [
@@ -1427,23 +1460,6 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/themes/iconic-one(?:-[\\w]+)?/",
     "website": "https://themonic.com/iconic-one"
-  },
-  "The SEO Framework": {
-    "cats": [
-      54,
-      87
-    ],
-    "description": "The SEO Framework is the only WordPress plugin that can intelligently generate critical SEO meta tags by reading your WordPress environment.",
-    "icon": "The SEO Framework.svg",
-    "html":"<!--[^>]+The SEO Framework by Sybre Waaijer",
-    "requires": "WordPress",
-    "saas": true,
-    "pricing": [
-      "freemium",
-      "low",
-      "recurring"
-    ],
-    "website": "https://theseoframework.com"
   },
   "Thesis": {
     "cats": [
@@ -2353,6 +2369,26 @@
     "scriptSrc": "trustspot\\.io",
     "website": "https://trustspot.io/"
   },
+  "Trustvox": {
+    "cats": [
+      90
+    ],
+    "description": "Trustvox collects reviews from customers who purchased ecommerce products and publishes them on product pages with Sincerity Seals.",
+    "icon": "Trustvox.png",
+    "js": {
+      "TrustvoxCertificateWidget": "",
+      "TrustvoxRatesWidget": "",
+      "_trustvox": "",
+      "_trustvox_colt": "",
+      "_trustvox_shelf_rate": "",
+      "trustvox_id": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://site.trustvox.com.br"
+  },
   "Tumblr": {
     "cats": [
       11
@@ -2403,22 +2439,6 @@
     },
     "scriptSrc": "(turf@[\\d.]+)?/?turf\\.min\\.js",
     "website": "https://turfjs.org/"
-  },
-  "TurnTo": {
-    "cats": [
-      90
-    ],
-    "description": "TurnTo Networks Inc provides customer-generated content solutions platform for large retailers and the global brands that sell through them.",
-    "icon": "TurnTo.svg",
-    "js": {
-      "TurnTo": "",
-      "turnToConfig": ""
-    },
-    "pricing": [
-      "poa"
-    ],
-    "saas": true,
-    "website": "https://www.turntonetworks.com"
   },
   "Twenty Eleven": {
     "cats": [
@@ -2835,6 +2855,27 @@
     "saas": true,
     "scriptSrc": "portal/js/typof\\.js\\;confidence:50",
     "website": "https://typof.com"
+  },
+  "Tyslo EasySell": {
+    "cats": [
+      100
+    ],
+    "description": "Tyslo EasySell replaces default Shopify checkout process by embedding (or popup) a simple order form on the product or cart page.",
+    "icon": "Tyslo EasySell.png",
+    "implies": "Shopify",
+    "js": {
+      "openTysloForm": "",
+      "tysloApplyDiscount": "",
+      "tysloConfigVersion": "",
+      "tysloEasysellConfig": ""
+    },
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://tyslo.com"
   },
   "theTradeDesk": {
     "cats": [

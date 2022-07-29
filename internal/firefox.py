@@ -42,7 +42,7 @@ class Firefox(DesktopBrowser):
         self.path = path
         self.event_name = None
         self.moz_log = None
-        self.marionette = None
+        self.driver = None
         self.addons = None
         self.extension_id = None
         self.possible_navigation_error = None
@@ -134,51 +134,47 @@ class Firefox(DesktopBrowser):
                     config[name] = task[name]
             self.job['message_server'].config = config
 
-    def disable_fsync(self, command_line):
-        """Use eatmydata if it is installed to disable fsync"""
-        if platform.system() == 'Linux':
-            try:
-                cmd = ['eatmydata', 'date']
-                logging.debug(' '.join(cmd))
-                subprocess.check_call(cmd)
-                command_line = 'eatmydata ' + command_line
-            except Exception:
-                pass
-        return command_line
-
     def start_firefox(self, job, task):
-        """Start Firefox using Marionette"""
+        """Start Firefox using WebDriver"""
         if self.must_exit:
             return
-        from marionette_driver.marionette import Marionette
-        from marionette_driver.addons import Addons
-        args = ['-profile', '"{0}"'.format(task['profile']),
-                '-no-remote',
-                '-marionette',
-                'about:blank']
-        if self.path.find(' ') > -1:
-            command_line = '"{0}"'.format(self.path)
-        else:
-            command_line = self.path
-        command_line += ' ' + ' '.join(args)
-        command_line = self.disable_fsync(command_line)
-        DesktopBrowser.launch_browser(self, command_line)
-        self.marionette = Marionette('localhost', port=2828)
-        capabilities = None
+        from selenium import webdriver # pylint: disable=import-error
+
+        capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
         if 'ignoreSSL' in job and job['ignoreSSL']:
-            capabilities = {'acceptInsecureCerts': True}
-        self.marionette.start_session(timeout=self.task['time_limit'], capabilities=capabilities)
-        self.configure_prefs()
-        logging.debug('Installing extension')
-        self.addons = Addons(self.marionette)
-        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                        'support', 'Firefox', 'extension')
-        self.extension_id = self.addons.install(extension_path, temp=True)
+            capabilities['acceptInsecureCerts'] = True
+        else:
+            capabilities['acceptInsecureCerts'] = False
+
+        capabilities['moz:firefoxOptions'] = {
+            'binary': self.path,
+            'args': ['-profile', task['profile']],
+            'prefs': self.prepare_prefs(),
+            "log": {"level": "error"},
+            'env': {
+                "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
+                "MOZ_LOG": os.environ["MOZ_LOG"]
+            }
+        }
+        service_args = ["--marionette-port", "2828"]
+
+        self.driver = webdriver.Firefox(desired_capabilities=capabilities, service_args=service_args)
+        logging.debug(self.driver.capabilities)
+
+        self.driver.set_page_load_timeout(task['time_limit'])
+        if 'browserVersion' in self.driver.capabilities:
+            self.browser_version = self.driver.capabilities['browserVersion']
+        elif 'version' in self.driver.capabilities:
+            self.browser_version = self.driver.capabilities['version']
+        DesktopBrowser.wait_for_idle(self)
+        self.driver.get(self.start_page)
         logging.debug('Resizing browser to %dx%d', task['width'], task['height'])
-        self.marionette.set_window_rect(x=0, y=0, height=task['height'], width=task['width'])
-        if 'browserVersion' in self.marionette.session_capabilities:
-            self.browser_version = self.marionette.session_capabilities['browserVersion']
-        self.marionette.navigate(self.start_page)
+        self.driver.set_window_position(0, 0)
+        self.driver.set_window_size(task['width'], task['height'])
+
+        logging.debug('Installing extension')
+        extension_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'Firefox', 'extension')
+        self.driver.install_addon(extension_path, temporary=True)
 
     def launch(self, job, task):
         """Launch the browser"""
@@ -261,48 +257,39 @@ class Firefox(DesktopBrowser):
             value = None
         return value
 
-    def configure_prefs(self):
-        """Load the prefs file and configure them through Marionette"""
-        prefs = {}
-        prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  'support', 'Firefox', 'profile', 'prefs.js')
-        with open(prefs_file) as f_in:
-            for line in f_in:
-                matches = re.search(r'user_pref\("([^"]+)",[\s]*([^\)]*)[\s]*\);', line)
-                if matches:
-                    key = matches.group(1).strip()
-                    value = self.get_pref_value(matches.group(2).strip())
-                    if value is not None:
-                        prefs[key] = value
-        if prefs:
-            try:
-                self.marionette.set_prefs(prefs, True)
-            except Exception:
-                logging.exception('Error setting prefs through marionette')
-
     def driver_set_pref(self, key, value):
-        """Set a Firefox pref at runtime using Marionette"""
-        self.marionette.set_pref(key, value)
+        """Set a Firefox pref at runtime"""
+        if self.driver is not None:
+            try:
+                script = 'const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");'
+                script += 'Services.prefs.'
+                if isinstance(value, bool):
+                    script += 'setBoolPref'
+                elif isinstance(value, (str, unicode)):
+                    script += 'setStringPref'
+                else:
+                    script += 'setIntPref'
+                script += '({0}, {1});'.format(json.dumps(key), json.dumps(value))
+                logging.debug(script)
+                self.driver.set_context(self.driver.CONTEXT_CHROME)
+                self.driver.execute_script(script)
+            except Exception:
+                logging.exception("Error setting pref")
+            finally:
+                self.driver.set_context(self.driver.CONTEXT_CONTENT)
 
     def set_window_size(self, width, height):
         """Position the window"""
-        self.marionette.set_window_rect(x=0, y=0, height=height, width=width)
+        self.driver.set_window_size(width, height)
 
     def disconnect_driver(self):
-        """Disconnect Marionette"""
-        if self.extension_id is not None and self.addons is not None:
+        """Disconnect WebDriver"""
+        if self.driver is not None:
             try:
-                self.addons.uninstall(self.extension_id)
+                self.driver.quit()
             except Exception:
-                logging.exception('Error removing addons')
-            self.extension_id = None
-            self.addons = None
-        if self.marionette is not None:
-            try:
-                self.marionette.close()
-            except Exception:
-                logging.exception('Error closing marionette')
-            self.marionette = None
+                logging.exception('Error quitting WebDriver')
+            self.driver = None
 
     def close_browser(self, job, task):
         """Terminate the browser but don't do all of the cleanup that stop does"""
@@ -504,9 +491,10 @@ class Firefox(DesktopBrowser):
         if self.must_exit:
             return
         ret = None
-        if self.marionette is not None:
+        if self.driver is not None:
             try:
-                ret = self.marionette.execute_script(script, script_timeout=30000)
+                self.driver.set_script_timeout(30)
+                ret = self.driver.execute_script(script)
             except Exception:
                 logging.exception('Error executing script')
         return ret
@@ -521,9 +509,10 @@ class Firefox(DesktopBrowser):
         if os.path.isfile(script_file_path):
             with open(script_file_path, 'r') as script_file:
                 script = script_file.read()
-        if script is not None:
+        if self.driver is not None and script is not None:
             try:
-                ret = self.marionette.execute_script('return ' + script, script_timeout=30000)
+                self.driver.set_script_timeout(30)
+                ret = self.driver.execute_script('return ' + script)
             except Exception:
                 logging.exception('Error executing script file')
             if ret is not None:
@@ -997,11 +986,25 @@ class Firefox(DesktopBrowser):
 
     def navigate(self, url):
         """Navigate to the given URL"""
-        if self.marionette is not None:
+        if self.driver is not None:
             try:
-                self.marionette.navigate(url)
+                self.driver.get(url)
             except Exception as err:
                 logging.exception("Error navigating Firefox: %s", str(err))
+
+    def prepare_prefs(self):
+        """Load the prefs file and configure them through webdriver"""
+        prefs = {}
+        prefs_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'Firefox', 'profile', 'prefs.js')
+        with open(prefs_file) as f_in:
+            for line in f_in:
+                matches = re.search(r'user_pref\("([^"]+)",[\s]*([^\)]*)[\s]*\);', line)
+                if matches:
+                    key = matches.group(1).strip()
+                    value = self.get_pref_value(matches.group(2).strip())
+                    if value is not None:
+                        prefs[key] = value
+        return prefs
 
     def set_pref(self, key, value_str):
         """Set an individual pref value"""
@@ -1012,10 +1015,12 @@ class Firefox(DesktopBrowser):
                 self.driver_set_pref(key, value)
             except Exception:
                 logging.exception('Error setting pref')
-
+    
     def grab_raw_screenshot(self):
         """Grab a screenshot using Marionette"""
-        return self.marionette.screenshot(format='binary', full=False)
+        if self.must_exit:
+            return
+        return self.driver.get_screenshot_as_png()
 
     def grab_screenshot(self, path, png=True, resize=0):
         """Save the screen shot (png or jpeg)"""
