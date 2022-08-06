@@ -877,7 +877,8 @@ class DevToolsParser(object):
                    'tls_next_proto': 'tls_next_proto',
                    'tls_cipher_suite': 'tls_cipher_suite',
                    'uncompressed_bytes_in': 'objectSizeUncompressed',
-                   'early_hint_headers': 'early_hint_headers'}
+                   'early_hint_headers': 'early_hint_headers',
+                   'netlog_id': 'netlog_id'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':

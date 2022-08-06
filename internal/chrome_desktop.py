@@ -32,7 +32,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--net-log-capture-mode=IncludeSensitive',
     '--load-media-router-component-extension=0',
     '--mute-audio',
     '--disable-hang-monitor',
@@ -127,6 +126,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 job['streaming_netlog'] = True
             except Exception:
                 logging.exception('Error creating netlog fifo')
+        if using_fifo:
+            args.append('--net-log-capture-mode=Everything')
+        else:
+            args.append('--net-log-capture-mode=IncludeSensitive')
         if not using_fifo and 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
             args.append('--log-net-log="{0}"'.format(netlog_file))
@@ -353,6 +356,14 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                     netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt.gz'
                     self.netlog_out = gzip.open(netlog_file, 'wt', compresslevel=7, encoding='utf-8')
                 self.netlog = Netlog()
+
+                # set up the callbacks (these will happen on a background thread)
+                if self.devtools is not None:
+                    self.netlog.on_request_created = self.devtools.on_netlog_request_created                     # (request_id, request_info)
+                    self.netlog.on_request_headers_sent = self.devtools.on_netlog_request_headers_sent           # (request_id, request_headers)
+                    self.netlog.on_response_headers_received = self.devtools.on_netlog_response_headers_received # (request_id, response_headers)
+                    self.netlog.on_response_bytes_received = self.devtools.on_netlog_response_bytes_received     # (request_id, filtered_bytes)
+
                 if self.netlog_header:
                     for line in self.netlog_header:
                         if self.netlog_out:
