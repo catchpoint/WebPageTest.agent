@@ -6,6 +6,7 @@ Copyright 2022 Catchpoint Systems Inc.
 Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
 found in the LICENSE.md file.
 """
+import base64
 import gzip
 import logging
 import os
@@ -37,6 +38,11 @@ class Netlog():
             "VeryLow": "Lowest"
         }
         self.constants = None
+        # Callbacks for streaming request state as events are processed
+        self.on_request_created = None              # (request_id, request_info)
+        self.on_request_headers_sent = None         # (request_id, request_headers)
+        self.on_response_headers_received = None    # (request_id, response_headers)
+        self.on_response_bytes_received = None      # (request_id, filtered_bytes)
 
     def set_constants(self, constants):
         """Setup the event look-up tables"""
@@ -585,12 +591,16 @@ class Netlog():
                     stream['start'] = event['time']
                 if 'headers' in params:
                     stream['request_headers'] = params['headers']
+                    if 'url_request' in stream and self.on_request_headers_sent is not None:
+                        self.on_request_headers_sent(str(stream['url_request']), params['headers'])
             if name == 'HTTP2_SESSION_RECV_HEADERS':
                 if 'first_byte' not in stream:
                     stream['first_byte'] = event['time']
                 stream['end'] = event['time']
                 if 'headers' in params:
                     stream['response_headers'] = params['headers']
+                    if 'url_request' in stream and self.on_response_headers_received is not None:
+                        self.on_response_headers_received(str(stream['url_request']), params['headers'])
             if name == 'HTTP2_STREAM_ADOPTED_PUSH_STREAM' and 'url' in params and 'url_request' in self.netlog:
                 # Clone the fake urlrequest entry to the real one and delete the fake entry
                 old_request = stream['url_request'] if 'url_request' in stream else None
@@ -839,12 +849,18 @@ class Netlog():
             entry['url'] = params['url'].split('#', 1)[0]
         if 'start' not in entry and name == 'HTTP_TRANSACTION_SEND_REQUEST':
             entry['start'] = event['time']
+            if self.on_request_created is not None:
+                self.on_request_created(str(request_id), entry)
         if 'headers' in params and name == 'HTTP_TRANSACTION_SEND_REQUEST_HEADERS':
             entry['request_headers'] = params['headers']
             if 'line' in params:
                 entry['line'] = params['line']
             if 'start' not in entry:
                 entry['start'] = event['time']
+                if self.on_request_created is not None:
+                    self.on_request_created(str(request_id), entry)
+            if self.on_request_headers_sent is not None:
+                self.on_request_headers_sent(str(request_id), entry['request_headers'])
         if 'headers' in params and name == 'HTTP_TRANSACTION_HTTP2_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -857,6 +873,10 @@ class Netlog():
                 entry['line'] = params['line']
             if 'start' not in entry:
                 entry['start'] = event['time']
+                if self.on_request_created is not None:
+                    self.on_request_created(str(request_id), entry)
+            if self.on_request_headers_sent is not None:
+                self.on_request_headers_sent(str(request_id), entry['request_headers'])
         if 'headers' in params and name == 'HTTP_TRANSACTION_QUIC_SEND_REQUEST_HEADERS':
             if isinstance(params['headers'], dict):
                 entry['request_headers'] = []
@@ -869,11 +889,17 @@ class Netlog():
             entry['protocol'] = 'QUIC'
             if 'start' not in entry:
                 entry['start'] = event['time']
+                if self.on_request_created is not None:
+                    self.on_request_created(str(request_id), entry)
+            if self.on_request_headers_sent is not None:
+                self.on_request_headers_sent(str(request_id), entry['request_headers'])
         if 'headers' in params and name == 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS':
             entry['response_headers'] = params['headers']
             if 'first_byte' not in entry:
                 entry['first_byte'] = event['time']
             entry['end'] = event['time']
+            if self.on_response_headers_received is not None:
+                self.on_response_headers_received(str(request_id), entry['response_headers'])
         if 'headers' in params and name == 'HTTP_TRANSACTION_READ_EARLY_HINTS_RESPONSE_HEADERS':
             entry['early_hint_headers'] = params['headers']
             entry['end'] = event['time']
@@ -890,6 +916,12 @@ class Netlog():
             if 'has_raw_bytes' not in entry or not entry['has_raw_bytes']:
                 entry['bytes_in'] += params['byte_count']
                 entry['chunks'].append({'ts': event['time'], 'bytes': params['byte_count']})
+            if 'bytes' in params and self.on_response_bytes_received is not None:
+                try:
+                    raw_bytes = base64.b64decode(params['bytes'])
+                    self.on_response_bytes_received(str(request_id), raw_bytes)
+                except Exception:
+                    logging.exception('Error decoding netlog response bytes')
         if 'stream_id' in params:
             entry['stream_id'] = params['stream_id']
         if name == 'URL_REQUEST_REDIRECTED':
