@@ -1,16 +1,13 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: Python application
 
 on:
   push:
-    branches: [ master, wptaction ]
+    branches: [ master, MoreActions]
   pull_request:
-    branches: [ master, wptaction ]
+    branches: [ master, MoreActions]
 
 permissions:
   contents: read
@@ -52,9 +49,15 @@ jobs:
       run: |
         pytest -vv
         
-    # - name: Run a local test # We could add Local Tests here
-    #   run: |
-    #     sudo python3 wptagent.py -vvvv --location Test --xvfb --noidle --testurl 'https://www.google.com/' --testspec testspec.json --testout url --dockerized
-    # - name: Print Profil # Call a python function to print the profile data or log data after run
-    #   run: |
-    #     python3 test_wptagent.py
+    - name: Chrome Run # We could add Local Tests here
+      run: |
+        python3 wptagent.py -vvvv --location Test --xvfb --noidle --testurl 'https://www.google.com/' --browser Chrome
+
+    - name: FireFox Run # We could add Local Tests here
+      run: |
+        python3 wptagent.py -vvvv --location Test --xvfb --noidle --testurl 'https://www.google.com/' --browser Firefox
+
+    - name: Edge Run # We could add Local Tests here
+      run: |
+        python3 wptagent.py -vvvv --location Test --xvfb --noidle --testurl 'https://www.google.com/' --browser Edge
+    
