@@ -916,6 +916,8 @@ class Netlog():
             if 'has_raw_bytes' not in entry or not entry['has_raw_bytes']:
                 entry['bytes_in'] += params['byte_count']
                 entry['chunks'].append({'ts': event['time'], 'bytes': params['byte_count']})
+            elif entry['chunks']:
+                entry['chunks'][-1]['filtered'] = params['byte_count']
             if 'bytes' in params and self.on_response_bytes_received is not None:
                 try:
                     raw_bytes = base64.b64decode(params['bytes'])
