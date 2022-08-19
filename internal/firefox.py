@@ -1340,7 +1340,9 @@ class Firefox(DesktopBrowser):
                             (request['responseCode'] == 200 or request['responseCode'] == 304) and \
                             ('contentType' not in request or
                             (request['contentType'] != 'application/ocsp-response' and
-                            request['contentType'] != 'application/pkix-crl')):
+                             request['contentType'] != 'application/pkix-crl' and 
+                             request['contentType'] != 'application/pkix-cert' and
+                             request['contentType'] != 'application/ca-cert')):
                         main_request = request['id']
                         request['is_base_page'] = True
                         page['final_base_page_request'] = index

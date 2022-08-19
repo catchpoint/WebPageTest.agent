@@ -818,6 +818,21 @@ class DevToolsParser(object):
                         break
         return value
 
+    def get_header(self, headers, header):
+        """Pull a specific header value from the raw headers"""
+        value = ''
+        try:
+            for entry in headers:
+                key_len = entry.find(':', 1)
+                if key_len >= 0:
+                    key = entry[:key_len]
+                    if key.lower() == header.lower():
+                        value = entry[key_len + 1:].strip()
+                        break
+        except Exception:
+            logging.exception('Error extracting header')
+        return value
+
     def merge_devtools_headers(self, initial, extra):
         """Merge the headers from the initial devtools request and the extra info (preferring values in the extra info events)"""
         headers = dict(extra)
@@ -1097,25 +1112,48 @@ class DevToolsParser(object):
         if 'main_frame' in page_data:
             index = 0
             main_request = None
+            # Make a first pass looking for the first "document" request
             for request in requests:
                 if main_request is None and 'full_url' in request and \
                         len(request['full_url']) and 'frame_id' in request and \
                         request['frame_id'] == page_data['main_frame'] and \
+                        'headers' in request and 'request' in request['headers'] and \
                         'responseCode' in request and \
                         (request['responseCode'] == 200 or request['responseCode'] == 304):
-                    if 'contentType' not in request or \
-                            (request['contentType'].find('ocsp-response') < 0 and \
-                             request['contentType'].find('pkix-crl') < 0 and \
-                             request['contentType'].find('ca-cert') < 0):
-                        main_request = request
-                        request['final_base_page'] = True
-                        request['is_base_page'] = True
-                        page_data['final_base_page_request'] = index
-                        page_data['final_base_page_request_id'] = request['id']
-                        page_data['final_url'] = request['full_url']
-                        page_data['URL'] = request['full_url']
-                        break
+                        dest = self.get_header(request['headers']['request'], 'Sec-Fetch-Dest')
+                        if dest.lower() == 'document':
+                            main_request = request
+                            request['final_base_page'] = True
+                            request['is_base_page'] = True
+                            page_data['final_base_page_request'] = index
+                            page_data['final_base_page_request_id'] = request['id']
+                            page_data['final_url'] = request['full_url']
+                            page_data['URL'] = request['full_url']
+                            break
                 index += 1
+            # Fall back to looking for the first non-certificate 200 response
+            if main_request is None:
+                index = 0
+                for request in requests:
+                    if main_request is None and 'full_url' in request and \
+                            len(request['full_url']) and 'frame_id' in request and \
+                            request['frame_id'] == page_data['main_frame'] and \
+                            'responseCode' in request and \
+                            (request['responseCode'] == 200 or request['responseCode'] == 304):
+                        if 'contentType' not in request or \
+                                (request['contentType'].find('ocsp-response') < 0 and \
+                                request['contentType'].find('pkix-crl') < 0 and \
+                                request['contentType'].find('pkix-cert') < 0 and \
+                                request['contentType'].find('ca-cert') < 0):
+                            main_request = request
+                            request['final_base_page'] = True
+                            request['is_base_page'] = True
+                            page_data['final_base_page_request'] = index
+                            page_data['final_base_page_request_id'] = request['id']
+                            page_data['final_url'] = request['full_url']
+                            page_data['URL'] = request['full_url']
+                            break
+                    index += 1
 
     def process_timeline_requests(self):
         """Process the timeline request data for render-blocking indicators"""
@@ -1177,6 +1215,7 @@ class DevToolsParser(object):
                     if 'contentType' not in request or \
                             (request['contentType'].find('ocsp-response') < 0 and \
                                 request['contentType'].find('pkix-crl') < 0 and \
+                                request['contentType'].find('pkix-cert') < 0 and \
                                 request['contentType'].find('ca-cert') < 0):
                         page_data['TTFB'] = int(round(float(request['load_start']) + float(request['ttfb_ms'])))
                         if request['ssl_end'] >= request['ssl_start'] and \
