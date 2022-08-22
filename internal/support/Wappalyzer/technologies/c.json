@@ -61,7 +61,7 @@
     "cats": [
       24
     ],
-    "cpe": "cpe:/a:ckeditor:ckeditor",
+    "cpe": "cpe:2.3:a:ckeditor:ckeditor:*:*:*:*:*:*:*:*",
     "description": "CKEditor is a WYSIWYG rich text editor which enables writing content directly inside of web pages or online applications. Its core code is written in JavaScript and it is developed by CKSource. CKEditor is available under open-source and commercial licenses.",
     "icon": "CKEditor.png",
     "js": {
@@ -78,7 +78,7 @@
     "cookies": {
       "CMSSESSID": ""
     },
-    "cpe": "cpe:/a:cmsmadesimple:cms_made_simple",
+    "cpe": "cpe:2.3:a:cmsmadesimple:cms_made_simple:*:*:*:*:*:*:*:*",
     "icon": "CMS Made Simple.png",
     "implies": "PHP",
     "meta": {
@@ -90,7 +90,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:cmsimple:cmsimple",
+    "cpe": "cpe:2.3:a:cmsimple:cmsimple:*:*:*:*:*:*:*:*",
     "implies": "PHP",
     "meta": {
       "generator": "CMSimple( [\\d.]+)?\\;version:\\1"
@@ -205,6 +205,7 @@
     "cats": [
       22
     ],
+    "cpe": "cpe:2.3:a:caddyserver:caddy:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "^Caddy$"
     },
@@ -236,7 +237,7 @@
     "cookies": {
       "cakephp": ""
     },
-    "cpe": "cpe:/a:cakephp:cakephp",
+    "cpe": "cpe:2.3:a:cakephp:cakephp:*:*:*:*:*:*:*:*",
     "icon": "CakePHP.png",
     "implies": "PHP",
     "meta": {
@@ -290,6 +291,7 @@
       72
     ],
     "description": "Calendly is an app for scheduling appointments, meetings, and events.",
+    "dom": "a[href*='//calendly.com/'][target='_blank']",
     "icon": "Calendly.svg",
     "js": {
       "Calendly": ""
@@ -299,7 +301,7 @@
       "freemium"
     ],
     "saas": true,
-    "scriptSrc": "https://assets\\.calendly\\.com/assets/external/widget\\.js",
+    "scriptSrc": "assets\\.calendly\\.com/",
     "website": "https://calendly.com/"
   },
   "CallRail": {
@@ -694,6 +696,18 @@
     "saas": true,
     "website": "https://www.celum.com"
   },
+  "Cendyn": {
+    "cats": [
+      1
+    ],
+    "description": "Cendyn (formerly NextGuest) is a hospitality focused content management system.",
+    "headers": {
+      "x-powered-by": "^NextGuest CMS"
+    },
+    "icon": "cendyn.png",
+    "saas": true,
+    "website": "https://www.cendyn.com"
+  },
   "Censhare": {
     "cats": [
       95
@@ -712,7 +726,7 @@
     "cats": [
       28
     ],
-    "cpe": "cpe:/o:centos:centos",
+    "cpe": "cpe:2.3:o:centos:centos:*:*:*:*:*:*:*:*",
     "description": "CentOS is a Linux distribution that provides a free, community-supported computing platform functionally compatible with its upstream source, Red Hat Enterprise Linux (RHEL).",
     "headers": {
       "Server": "CentOS",
@@ -801,7 +815,7 @@
     "cats": [
       21
     ],
-    "cpe": "cpe:/a:chamilo:chamilo_lms",
+    "cpe": "cpe:2.3:a:chamilo:chamilo_lms:*:*:*:*:*:*:*:*",
     "description": "Chamilo is an open-source learning management and collaboration system.",
     "dom": "link[href*='chamilo.org/']",
     "headers": {
@@ -1028,7 +1042,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:cherokee-project:cherokee",
+    "cpe": "cpe:2.3:a:cherokee-project:cherokee:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "^Cherokee(?:/([\\d.]+))?\\;version:\\1"
     },
@@ -1218,6 +1232,23 @@
     "scriptSrc": "checkout-static\\.citruspay\\.com/",
     "website": "https://consumers.citruspay.com/"
   },
+  "City Hive": {
+    "cats": [
+      6
+    ],
+    "description": "City Hive's all in one ecommerce platform for wine and spirit shops.",
+    "icon": "City Hive.png",
+    "js": {
+      "cityHiveSites": "",
+      "cityHiveWebsiteName": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.cityhive.net"
+  },
   "CityMail": {
     "cats": [
       99
@@ -1373,6 +1404,20 @@
     ],
     "website": "https://www.cleverbridge.com"
   },
+  "ClickCease": {
+    "cats": [
+      16
+    ],
+    "description": "ClickCease is an ad fraud and click-fraud detection and protection service software.",
+    "icon": "ClickCease.svg",
+    "scriptSrc": "\\.clickcease\\.com/monitor/",
+    "saas": true,
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "website": "https://www.clickcease.com"
+  },
   "ClickDimensions": {
     "cats": [
       32
@@ -1506,6 +1551,19 @@
     "icon": "Clipboard.js.svg",
     "scriptSrc": "clipboard(?:-([\\d.]+))?(?:\\.min)?\\.js\\;version:\\1",
     "website": "https://clipboardjs.com/"
+  },
+  "Clockwork": {
+    "cats": [
+      47
+    ],
+    "description": "Clockwork is a development tool for PHP available right in your browser.",
+    "icon": "default.svg",
+    "implies": "PHP",
+    "headers": {
+      "x-clockwork-version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://github.com/underground-works/clockwork-app"
   },
   "CloudCart": {
     "cats": [
@@ -1719,7 +1777,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:web-feet:coaster_cms",
+    "cpe": "cpe:2.3:a:web-feet:coaster_cms:*:*:*:*:*:*:*:*",
     "icon": "coaster-cms.png",
     "implies": "Laravel",
     "meta": {
@@ -1779,7 +1837,7 @@
       "exp_last_activity": "",
       "exp_tracker": ""
     },
-    "cpe": "cpe:/a:codeigniter:codeigniter",
+    "cpe": "cpe:2.3:a:codeigniter:codeigniter:*:*:*:*:*:*:*:*",
     "html": "<input[^>]+name=\"ci_csrf_token\"\\;version:2+",
     "icon": "CodeIgniter.png",
     "implies": "PHP",
@@ -2106,7 +2164,7 @@
     "cats": [
       6
     ],
-    "cpe": "cpe:/a:microsoft:commerce_server",
+    "cpe": "cpe:2.3:a:microsoft:commerce_server:*:*:*:*:*:*:*:*",
     "headers": {
       "COMMERCE-SERVER-SOFTWARE": ""
     },
@@ -2176,7 +2234,7 @@
     "cookies": {
       "CONCRETE5": ""
     },
-    "cpe": "cpe:/a:concrete5:concrete5",
+    "cpe": "cpe:2.3:a:concrete5:concrete5:*:*:*:*:*:*:*:*",
     "icon": "Concrete CMS.svg",
     "implies": "PHP",
     "js": {
@@ -2308,7 +2366,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:contao:contao_cms",
+    "cpe": "cpe:2.3:a:contao:contao_cms:*:*:*:*:*:*:*:*",
     "description": "Contao is an open source CMS that allows you to create websites and scalable web applications.",
     "dom": "link[href*='/typolight.css'], link[href*='/contao.css']",
     "icon": "Contao.svg",
@@ -2323,7 +2381,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:contenido:contendio",
+    "cpe": "cpe:2.3:a:contenido:contendio:*:*:*:*:*:*:*:*",
     "icon": "Contenido.png",
     "implies": "PHP",
     "meta": {
@@ -2710,7 +2768,7 @@
     "cats": [
       7
     ],
-    "cpe": "cpe:/a:coppermine-gallery:coppermine_photo_gallery",
+    "cpe": "cpe:2.3:a:coppermine-gallery:coppermine_photo_gallery:*:*:*:*:*:*:*:*",
     "description": "Coppermine is an open-source image gallery application.",
     "html": "<!--Coppermine Photo Gallery ([\\d.]+)\\;version:\\1",
     "icon": "Coppermine.png",
@@ -2773,7 +2831,7 @@
     "cats": [
       6
     ],
-    "cpe": "cpe:/a:cosmoshop:cosmoshop",
+    "cpe": "cpe:2.3:a:cosmoshop:cosmoshop:*:*:*:*:*:*:*:*",
     "icon": "Cosmoshop.png",
     "scriptSrc": "cosmoshop_functions\\.js",
     "website": "http://cosmoshop.de"
@@ -2782,7 +2840,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:cotonti:cotonti_siena",
+    "cpe": "cpe:2.3:a:cotonti:cotonti_siena:*:*:*:*:*:*:*:*",
     "icon": "Cotonti.png",
     "implies": "PHP",
     "meta": {
@@ -2794,7 +2852,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:apache:couchdb",
+    "cpe": "cpe:2.3:a:apache:couchdb:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "CouchDB/([\\d.]+)\\;version:\\1"
     },
@@ -2911,7 +2969,7 @@
     "cookies": {
       "CraftSessionId": ""
     },
-    "cpe": "cpe:/a:craftcms:craft_cms",
+    "cpe": "cpe:2.3:a:craftcms:craft_cms:*:*:*:*:*:*:*:*",
     "description": "Craft CMS is a content management system for building bespoke websites.",
     "headers": {
       "X-Powered-By": "\\bCraft CMS\\b"
@@ -3205,7 +3263,7 @@
     "cats": [
       6
     ],
-    "cpe": "cpe:/a:cubecart:cubecart",
+    "cpe": "cpe:2.3:a:cubecart:cubecart:*:*:*:*:*:*:*:*",
     "description": "CubeCart is a free ecommerce platform that businesses can use to build, manage, and market their online stores.",
     "dom": "a[href*='.cubecart.com'][target='_blank']",
     "icon": "CubeCart.png",
@@ -3355,6 +3413,7 @@
       "cprelogin": "",
       "cpsession": ""
     },
+    "cpe": "cpe:2.3:a:cpanel:cpanel:*:*:*:*:*:*:*:*",
     "description": "cPanel is a web hosting control panel. The software provides a graphical interface and automation tools designed to simplify the process of hosting a website.",
     "headers": {
       "Server": "cpsrvd/([\\d.]+)\\;version:\\1"
@@ -3488,5 +3547,23 @@
     "oss": true,
     "scriptSrc": "(?:/([\\d\\.-]+))?/crypto-js(?:\\.min)?\\.js\\;version:\\1",
     "website": "https://github.com/brix/crypto-js"
+  },
+  "Cart.com": {
+    "cats": [
+      6
+    ],
+    "description": "Cart.com is an ecommerce platform built for high volume online stores and complex products with features such as multi-store management.",
+    "dom": "p.AmeriCommerce-powered-by-link > a[href*='.americommerce.com/'][target='_blank']",
+    "icon": "Cart.com.svg",
+    "js": {
+      "AC.storeDomain": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.americommerce\\.com/",
+    "website": "https://www.americommerce.com"
   }
 }

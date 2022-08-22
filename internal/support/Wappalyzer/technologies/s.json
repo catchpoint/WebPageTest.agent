@@ -20,6 +20,7 @@
     "cats": [
       53
     ],
+    "cpe": "cpe:2.3:a:sap:netweaver_application_server:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "SAP NetWeaver Application Server"
     },
@@ -33,7 +34,7 @@
     "cookies": {
       "_hybris": ""
     },
-    "cpe": "cpe:/a:sap:commerce_cloud",
+    "cpe": "cpe:2.3:a:sap:commerce_cloud:*:*:*:*:*:*:*:*",
     "description": "SAP Commerce Cloud is a cloud-native omnichannel commerce solution for B2B, B2C, and B2B2C companies.",
     "html": [
       "<[^>]+/(?:sys_master|hybr|_ui/(?:.*responsive/)?(?:desktop|common(?:/images|/img|/css|ico)?))/",
@@ -194,6 +195,7 @@
     "cats": [
       1
     ],
+    "cpe": "cpe:2.3:a:spip:spip:*:*:*:*:*:*:*:*",
     "headers": {
       "Composed-By": "SPIP ([\\d.]+) @\\;version:\\1",
       "X-Spip-Cache": ""
@@ -229,6 +231,7 @@
     "cats": [
       34
     ],
+    "cpe": "cpe:2.3:a:sqlite:sqlite:*:*:*:*:*:*:*:*",
     "icon": "SQLite.png",
     "website": "http://www.sqlite.org"
   },
@@ -531,6 +534,7 @@
     "cookies": {
       "com.salesforce": ""
     },
+    "cpe": "cpe:2.3:a:salesforce:*:*:*:*:*:*:*:*:*",
     "description": "Salesforce is a cloud computing service software (SaaS) that specializes in customer relationship management (CRM).",
     "dns": {
       "TXT": [
@@ -1013,6 +1017,24 @@
     "saas": true,
     "scriptSrc": "searchanise(?:-.+\\.kxcdn)?\\.com/",
     "website": "https://start.searchanise.com"
+  },
+  "SearchFit": {
+    "cats": [
+      6
+    ],
+    "description": "Searchfit provides top ecommerce software, solutions and ecommerce website design for enterprise and mid-level retailers.",
+    "icon": "SearchFit.svg",
+    "meta": {
+      "generation-copyright": "by\\sSearchFit\\sShopping\\sCart\\sv([\\d\\.]+)\\;version:\\1"
+    },
+    "js": {
+      "SFUI.Checkout": ""
+    },
+    "saas": true,
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.searchfit.com"
   },
   "Searchspring": {
     "cats": [
@@ -1723,6 +1745,20 @@
     "scripts": "\"sheerIdEndpoint\":",
     "website": "https://www.sheerid.com/"
   },
+  "Shelf": {
+    "cats": [
+      33
+    ],
+    "description": "Shelf is a server framework for Dart.",
+    "headers": {
+      "Server": "dart:io with Shelf",
+      "x-powered-by": "Dart with package:shelf"
+    },
+    "icon": "Dart.svg",
+    "implies": "Dart",
+    "oss": true,
+    "website": "https://pub.dev/packages/shelf"
+  },
   "ShellInABox": {
     "cats": [
       46
@@ -1869,6 +1905,20 @@
       "recurring"
     ],
     "website": "https://apps.shopify.com/custom-options"
+  },
+  "ShopWired": {
+    "cats": [
+      6
+    ],
+    "description": "ShopWired is a UK based, fully hosted ecommerce platform that is focused on the UK market.",
+    "icon": "ShopWired.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.amazonaws\\.com/shopwired-theme-assets/",
+    "website": "https://www.shopwired.co.uk"
   },
   "Shopaholic": {
     "cats": [
@@ -2018,6 +2068,7 @@
       "sdks\\.shopifycdn\\.com",
       "cdn\\.shopify\\.com"
     ],
+    "scripts": "shopifyTag",
     "url": "^https?//.+\\.myshopify\\.com",
     "website": "http://shopify.com",
     "xhr": "\\.myshopify\\.com"
@@ -2229,6 +2280,23 @@
     "saas": true,
     "scriptSrc": "\\.shoppy\\.gg",
     "website": "https://shoppy.gg"
+  },
+  "Shoprenter": {
+    "cats": [
+      6
+    ],
+    "description": "Shoprenter offers a platform for building and running an ecommerce store.",
+    "icon": "Shoprenter.svg",
+    "js": {
+      "ShopRenter.customer": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.cdn\\.shoprenter\\.hu/",
+    "website": "https://www.shoprenter.hu"
   },
   "Shoprunner": {
     "cats": [
@@ -2844,20 +2912,20 @@
     "cats": [
       57
     ],
-    "description": "Build your professional website using easy to use editor and publish static web pages.",
+    "description": "SitePad is a WYSIWYG drag and drop website building and maintenance program.",
     "icon": "SitePad.png",
     "implies": [
       "PHP"
     ],
     "meta": {
-      "generator": "^SitePad .+$"
+      "generator": "^SitePad(?:\\s([\\d\\.]+))?$\\;version:\\1"
     },
     "pricing": [
       "freemium",
       "recurring",
       "low"
     ],
-    "website": "https://sitepad.com/"
+    "website": "https://sitepad.com"
   },
   "SiteSpect": {
     "cats": [
@@ -2916,6 +2984,7 @@
       "SC_OS_SessionId": "",
       "sc_expview": ""
     },
+    "cpe": "cpe:2.3:a:sitecore:*:*:*:*:*:*:*:*:*",
     "description": "Sitecore provides web content management, and multichannel marketing automation software.",
     "html": "<img[^>]+src=\"[^>]*/~/media/[^>]+\\.ashx",
     "icon": "Sitecore.svg",
@@ -3041,6 +3110,21 @@
     "scriptSrc": "\\.skimresources\\.com",
     "website": "https://skimlinks.com",
     "xhr": "\\.skimresources\\.com"
+  },
+  "Skio": {
+    "cats": [
+      100
+    ],
+    "description": "Skio helps brands on Shopify sell subscriptions without ripping their hair out.",
+    "icon": "Skio.png",
+    "implies": "Shopify",
+    "scriptSrc": "cdn\\.skio\\.com/",
+    "saas": true,
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "website": "https://skio.com"
   },
   "Sky-Shop": {
     "cats": [
@@ -3694,6 +3778,7 @@
     "cats": [
       34
     ],
+    "cpe": "cpe:2.3:a:apache:solr:*:*:*:*:*:*:*:*",
     "description": "Solr is an open-source enterprise-search platform, written in Java.",
     "icon": "Solr.png",
     "implies": "Lucene",
@@ -3727,6 +3812,25 @@
     },
     "scriptSrc": "^https?://api\\.solvemedia\\.com/",
     "website": "http://solvemedia.com"
+  },
+  "Solvemate": {
+    "cats": [
+      52
+    ],
+    "description": "Solvemate is a customer service automation platform that enables brands to deliver quality customer service through meaningful conversations via chatbots.",
+    "dom": "link[href*='.solvemate.com']",
+    "icon": "Solvemate.svg",
+    "js": {
+      "solvemate.config.solvemateCDN": "",
+      "solvemateCli": "",
+      "solvemateConfig": ""
+    },
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.solvemate.com"
   },
   "Solvvy": {
     "cats": [
@@ -3926,6 +4030,21 @@
     "icon": "SparkPost.svg",
     "website": "https://www.sparkpost.com/"
   },
+  "Speed Kit": {
+    "cats": [
+      92
+    ],
+    "description": "Speed Kit develops a performance add-on that uses caching algorithms to minimize loading times of ecommerce websites.",
+    "icon": "Speed Kit.svg",
+    "js": {
+      "speedKit": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.speedkit.com"
+  },
   "SpeedCurve": {
     "cats": [
       78
@@ -3945,16 +4064,22 @@
     "scriptSrc": "\\.speedcurve\\.com",
     "website": "https://www.speedcurve.com"
   },
-  "SpeedKit": {
+  "SpeedSize": {
     "cats": [
       92
     ],
-    "description": "Baqend develops a performance add-on that uses caching algorithms to minimize loading times of e-commerce websites.",
-    "icon": "Speedkit.svg",
-    "js": {
-      "speedKit": ""
-    },
-    "website": "https://www.baqend.com/"
+    "description": "SpeedSize is an AI-based media-compression technology that can auto-detect and compress all of a website's images and videos down to 99% of their original size without lowering the image quality.",
+    "icon": "SpeedSize.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "/speedsize(?:-sw)?\\.js\\;confidence:90",
+      "\\.speedsize\\.com/"
+    ],
+    "scripts": "data-speedsize-(?:srcset|src|params)?",
+    "website": "https://speedsize.com"
   },
   "Speedimize": {
     "cats": [
@@ -4482,6 +4607,7 @@
     "cats": [
       30
     ],
+    "cpe": "cpe:2.3:a:squirrelmail:squirrelmail:*:*:*:*:*:*:*:*",
     "description": "SquirrelMail is an open-source web-mail package that is based on PHP language. It provides a web-based-email client and a proxy server for IMAP protocol.",
     "html": "<small>SquirrelMail version ([.\\d]+)[^<]*<br \\;version:\\1",
     "icon": "SquirrelMail.png",
@@ -4546,6 +4672,23 @@
     },
     "icon": "StackPath.svg",
     "website": "https://www.stackpath.com"
+  },
+  "StackerHQ": {
+    "cats": [
+      51
+    ],
+    "description": "StackerHQ is a tool in the low code platforms and application builders categories.",
+    "dom": "link[href*='cdn.stackerhq.com/']",
+    "icon": "StackerHQ.svg",
+    "js": {
+      "stacker.install_feature": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.stackerhq.com"
   },
   "Stackify": {
     "cats": [
@@ -4629,6 +4772,7 @@
     "cats": [
       1
     ],
+    "cpe": "cpe:2.3:a:statamic:statamic:*:*:*:*:*:laravel:*:*",
     "description": "Statamic is an open-source and self-hosted content management system based on the PHP programming language.",
     "headers": {
       "x-powered-by": "^Statamic$"
@@ -4638,6 +4782,9 @@
       "PHP",
       "Laravel"
     ],
+    "js": {
+      "Statamic": ""
+    },
     "oss": true,
     "pricing": [
       "freemium",
@@ -4683,6 +4830,16 @@
     "saas": true,
     "scriptSrc": "\\.steelhousemedia\\.com/(?:spx\\?dxver=([\\d.]+))?\\;version:\\1",
     "website": "https://steelhouse.com"
+  },
+  "Stencil": {
+    "cats": [
+      18
+    ],
+    "description": "Stencil is a compiler that generates Web Components developed by the Ionic team.",
+    "dom": "html[data-stencil-build][class*='hydrated'], stencil-router, stencil-route-link",
+    "icon": "Stencil.svg",
+    "oss": true,
+    "website": "https://stenciljs.com"
   },
   "Stimulus": {
     "cats": [
@@ -4744,6 +4901,23 @@
     },
     "icon": "storeden.svg",
     "website": "https://www.storeden.com"
+  },
+  "Storefront UI": {
+    "cats": [
+      66
+    ],
+    "description": "Storefront UI is an independent, Vue. js-based, library of UI components.",
+    "icon": "Storefront UI.svg",
+    "dom": {
+      "link[href*='/dist/sfui']": {
+        "attributes": {
+          "href": "/dist/sfui.+\\.js"
+        }
+      }
+    },
+    "implies": "Vue.js",
+    "oss": true,
+    "website": "https://vuestorefront.io/storefront-ui"
   },
   "StorifyMe": {
     "cats": [
@@ -4895,6 +5069,22 @@
     "saas": true,
     "scriptSrc": "js\\.stripe\\.com",
     "website": "http://stripe.com"
+  },
+  "StrutFit": {
+    "cats": [
+      76
+    ],
+    "description": "StrutFit is an online sizing platform for footwear retailers.",
+    "dom": "iframe[scr*='.strut.fit/']",
+    "icon": "StrutFit.svg",
+    "js": {
+      "rerenderStrutfit": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.strut.fit"
   },
   "Stylitics": {
     "cats": [
@@ -5093,6 +5283,7 @@
     "cats": [
       28
     ],
+    "cpe": "cpe:2.3:o:oracle:sunos:*:*:*:*:*:*:*:*",
     "description": "SunOS is a Unix-branded operating system developed by Sun Microsystems for their workstation and server computer systems.",
     "headers": {
       "Server": "SunOS( [\\d\\.]+)?\\;version:\\1",
@@ -5349,11 +5540,12 @@
     "scriptSrc": "swiftype\\.com/embed\\.js$",
     "website": "http://swiftype.com"
   },
-  "Swiper Slider": {
+  "Swiper": {
     "cats": [
-      19
+      59
     ],
-    "html": "<[^>]+=swiper-container",
+    "description": "Swiper is a JavaScript library that creates modern touch sliders with hardware-accelerated transitions.",
+    "dom": "div[data-swiper-slide-index], [swiper-container]",
     "icon": "swiper.svg",
     "js": {
       "Swiper": ""
@@ -5413,6 +5605,7 @@
     "cookies": {
       "sf_redirect": ""
     },
+    "cpe": "cpe:2.3:a:sensiolabs:symfony:*:*:*:*:*:*:*:*",
     "description": "Symfony is a PHP web application framework and a set of reusable PHP components/libraries.",
     "dom": "div.sf-toolbar-block, div.sf-toolbar",
     "icon": "Symfony.svg",
