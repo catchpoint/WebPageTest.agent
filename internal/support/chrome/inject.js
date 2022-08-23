@@ -1,4 +1,4 @@
-const wptagent_lcp_observer = new PerformanceObserver((entryList) => {
+new PerformanceObserver((entryList) => {
     for (const entry of entryList.getEntries()) {
       try {
           let event = {
@@ -9,19 +9,19 @@ const wptagent_lcp_observer = new PerformanceObserver((entryList) => {
               url: entry['url'],
               id: entry['id'],
               loadTime: entry['loadTime'],
-              renderTime: entry['renderTime']
+              renderTime: entry['renderTime'],
           };
           if (entry['element']) {
               event['element'] = {
                   nodeName: entry.element['nodeName'],
                   boundingRect: entry.element.getBoundingClientRect(),
-                  outerHTML: entry.element.outerHTML
+                  outerHTML: entry.element.outerHTML,
               }
               if (entry.element['src']) {
-                  event.element['src'] = entry.element.src
+                  event.element['src'] = entry.element.src;
               }
               if (entry.element['currentSrc']) {
-                  event.element['currentSrc'] = entry.element.currentSrc
+                  event.element['currentSrc'] = entry.element.currentSrc;
               }
               try {
                   let style = window.getComputedStyle(object[key]);
@@ -37,7 +37,7 @@ const wptagent_lcp_observer = new PerformanceObserver((entryList) => {
     }
 }).observe({type: 'largest-contentful-paint', buffered: true});
 
-const wptagent_cls_observer = new PerformanceObserver((entryList) => {
+new PerformanceObserver((entryList) => {
     for (const entry of entryList.getEntries()) {
         try {
             let event = {
@@ -46,14 +46,14 @@ const wptagent_cls_observer = new PerformanceObserver((entryList) => {
                 startTime: entry['startTime'],
                 value: entry['value'],
                 hadRecentInput: entry['hadRecentInput'],
-                lastInputTime: entry['lastInputTime']
+                lastInputTime: entry['lastInputTime'],
             };
             if (entry['sources']) {
                 event['sources'] = [];
                 for (const source of entry.sources) {
                     let src = {
                         previousRect: source.previousRect,
-                        currentRect: source.currentRect
+                        currentRect: source.currentRect,
                     }
                     event.sources.push(src);
                 }
