@@ -906,6 +906,8 @@ class DevTools(object):
         # This is only used for optimization checks and custom metrics, not the
         # actual waterfall.
         with self.netlog_lock:
+            # use dummy sequence numbers at the end of the current range
+            sequence = self.request_sequence
             try:
                 path = os.path.join(self.task['dir'], 'netlog_bodies')
                 for netlog_id in self.netlog_requests:
@@ -918,7 +920,8 @@ class DevTools(object):
                             if 'url' in request and request['url'] == url:
                                 found = True
                         if not found:
-                            request = {'id': netlog_id, 'url': url}
+                            sequence += 1
+                            request = {'id': netlog_id, 'sequence': sequence, 'url': url}
                             if 'request_headers' in netlog_request:
                                 request['request_headers'] = self.extract_headers(netlog_request['request_headers'])
                             if 'response_headers' in netlog_request:
