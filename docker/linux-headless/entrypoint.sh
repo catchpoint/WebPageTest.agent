@@ -29,4 +29,4 @@ fi
 
 # exec replaces the shell process by the python process and is required to
 # propagate signals (i.e. SIGTERM)
-exec python /wptagent/wptagent.py --server "${SERVER_URL}" --location "${LOCATION}" ${EXTRA_ARGS} --xvfb --dockerized
+exec python3 /wptagent/wptagent.py --server "${SERVER_URL}" --location "${LOCATION}" ${EXTRA_ARGS} --xvfb --dockerized -vvvv

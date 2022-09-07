@@ -1,76 +1,68 @@
-# FROM debian:jessie-slim
-FROM ubuntu:18.04
+### IMPORTANT DOCKER COMMANDS ###
 
-RUN apt-get update && \
-  apt-get install -y \
-    wget \
-    curl \
-    git \
-    python \
-    python-pip \
-    python-ujson \
-    xvfb \
-    imagemagick \
-    python-dev \
-    zlib1g-dev \
-    libjpeg-dev \
-    psmisc \
-    dbus-x11 \
-    sudo \
-    kmod \
-    ffmpeg \
-    net-tools \
-    tcpdump \
-    traceroute \
-    bind9utils \
-    libnss3-tools \
-    iproute2 \
-    software-properties-common && \
-# Node setup
-  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && \
-  wget -q -O - https://www.webpagetest.org/keys/google/linux_signing_key.pub | apt-key add - && \
-  wget -qO- https://www.webpagetest.org/keys/opera/archive.key | apt-key add - && \
-  echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
-# Set repos
-  add-apt-repository -y ppa:ubuntu-mozilla-daily/ppa && \
-# Install browsers
-  apt-get update && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -yq \
-  google-chrome-stable \
-  google-chrome-beta \
-  google-chrome-unstable \
-  firefox \
-  firefox-trunk \
-  firefox-geckodriver \
-  nodejs && \
-# Get fonts
-  echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
-  sudo DEBIAN_FRONTEND=noninteractive apt-get -y install ttf-mscorefonts-installer fonts-noto* && \
-  sudo fc-cache -f -v && \
-# Cleaup to save space in layer
-  sudo apt-get clean && \
-# Install lighthouse
-  npm install -g lighthouse && \
-# Install other utilities
-  pip install \
-    dnspython \
-    monotonic \
-    pillow \
-    psutil \
-    requests \
-    tornado \
-    wsaccel \
-    xvfbwrapper \
-    'fonttools>=3.44.0,<4.0.0' \
-    marionette_driver \
-    selenium \
-    future
+###     docker images                               - List images available
+###     docker build <GITHUB-REPO-LINK> -t TAGNAME  - Builds the Dockerfile from the github repo
+###     docker ps                                   - List running images
+###     docker stop <IMAGE ID || IMAGE NAME>        - Stops running image with either --name <IMAGE NAME> || IMAGE ID>
+###     docker run -it -d TAGNAME /bin/bash         - Runs bash
+###     docker exec -it <IMAGE ID> /bin/bash        - Connects to bash for terminal execution (Needs to be running first)
 
-COPY wptagent.py /wptagent/wptagent.py
-COPY internal /wptagent/internal
-COPY ws4py /wptagent/ws4py
-COPY docker/linux-headless/entrypoint.sh /wptagent/entrypoint.sh
+### EXAMPLE DOCKER COMMANDS FOR RUNNING SERVER & AGENT
+
+###     docker run -d -p 4000:80 <IMAGE ID || <IMAGE TAG>
+###     docker run -d -p 4001:80 --network="host" -e "SERVER_URL=http://localhost:4000/work/" -e "LOCATION=Test" -e "-v" <IMAGE ID || <IMAGE TAG>
+
+### INSTALLING METHOD ###
+
+###     Recommend to install with "docker build <GITHUB-REPO-LINK> -t TAGNAME",
+###     grabs the latest copy of WPT and build time on average takes 10 minutes. 
+
+FROM ubuntu
+
+### PREVENTs INTERACTIVE PROMPTS WHILE INSTALLING ###
+ARG DEBIAN_FRONTEND=noninteractive
+
+### COPYING ENTIRE DIR TO LOCAL DOCKER /wptagent
+COPY / /wptagent
+RUN apt-get update
+
+# Git Clone Install
+# RUN apt-get install -y git
+# RUN git clone -b dockerfile https://github.com/sammeboy635/wptagent.git
+
+### UPDATE ###
+RUN apt-get update 
+
+### INSTALL APT-GET LIBS ###
+RUN xargs -a /wptagent/.github/workflows/docker-apt-get.txt apt-get install --no-install-recommends --yes; exit 0
+
+### UPGRADING PIP AND INSTALLING REQUIRED PACKAGES ###
+RUN python3 -m pip install --upgrade --user pip && \
+    python3 -m pip install --user -r /wptagent/.github/workflows/requirements.txt 
+
+### INSTALLING LIGHTHOUSE FROM NPM ###
+RUN npm install -g lighthouse
+
+### INSTALLING CHROME BROWSER ###
+###     Fails to Find all libs needed to run
+# RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+#     dpkg -i google-chrome-stable_current_amd64.deb; exit 0 && \
+#     apt -f install -y && \
+#     apt-get install google-chrome-stable
+
+### BETTER INSTALLING CHROME BROWSER METHOD ###
+###     Better Installing method but would like to change this to something less complex.
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+RUN apt-get update && apt-get -y install google-chrome-stable ; exit 0
+RUN apt-get update --fix-missing -y
+RUN apt-get install -f -y
+
+### CLEAN UP ###
+#       We could add some clean up here but in testing it was negotiable
+
 
 WORKDIR /wptagent
 
-CMD ["/bin/bash", "/wptagent/entrypoint.sh"]
+### /bin/bash LOCATION OF COMMAND EXECUTION ###
+CMD ["/bin/bash", "/wptagent/docker/linux-headless/entrypoint.sh"]
