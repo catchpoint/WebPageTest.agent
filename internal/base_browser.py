@@ -21,6 +21,10 @@ class BaseBrowser(object):
     def execute_js(self, script):
         """Stub to be overridden"""
         return None
+    
+    def alert_size(self,_alert_config, _task_dir, _prefix):
+        '''File alerting function to be overridden by browser class'''
+        return None
 
     def profile_start(self, event_name):
         if self.task is not None and 'profile_data' in self.task:
