@@ -422,6 +422,9 @@ class DevTools(object):
             # Add the required trace events
             if "rail" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("rail")
+            if "content" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("content")
+                self.job['discard_trace_content'] = True
             if "loading" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
@@ -1982,6 +1985,7 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
                 self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
+            self.trace_parser.WritePageData(self.path_base + '_trace_page_data.json.gz')
             if not job.get('streaming_netlog'):
                 self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
@@ -2036,6 +2040,8 @@ class DevToolsClient(WebSocketClient):
                         self.trace_event_counts[trace_event['cat']] = 0
                     self.trace_event_counts[trace_event['cat']] += 1
                     if not self.job['keep_netlog'] and trace_event['cat'] == 'netlog':
+                        keep_event = False
+                    if 'discard_trace_content' in self.job and self.job['discard_trace_content'] and trace_event['cat'] == 'content':
                         keep_event = False
                     if process_event and self.trace_parser is not None:
                         self.trace_parser.ProcessTraceEvent(trace_event)

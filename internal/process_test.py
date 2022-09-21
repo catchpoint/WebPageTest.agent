@@ -71,6 +71,7 @@ class ProcessTest(object):
         self.add_summary_metrics()
         self.merge_crux_data()
         self.merge_lighthouse_data()
+        self.merge_trace_page_data()
 
         # Mark the data as having been processed so the server can know not to re-process it
         page_data['edge-processed'] = True
@@ -561,6 +562,24 @@ class ProcessTest(object):
                         self.delete.append(metrics_file)
         except Exception:
             logging.exception('Error merging blink features')
+
+    def merge_trace_page_data(self):
+        """Merge any page data that was extracted from the trace events"""
+        try:
+            page_data = self.data['pageData']
+            metrics_file = os.path.join(self.task['dir'], self.prefix + '_trace_page_data.json.gz')
+            if os.path.isfile(metrics_file):
+                with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
+                    metrics = json.load(f)
+                    if metrics:
+                        for key in metrics:
+                            page_data[key] = metrics[key]
+                try:
+                    os.unlink(metrics_file)
+                except Exception:
+                    pass
+        except Exception:
+            logging.exception('Error merging trace page data')
 
     def merge_priority_streams(self):
         """Merge the list of HTTP/2 priority-only stream data"""
