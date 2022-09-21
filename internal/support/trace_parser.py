@@ -53,6 +53,7 @@ class Trace():
         self.marked_start_time = None
         self.end_time = None
         self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': [], 'valid': False}
+        self.page_data = {'values': {}, 'times': {}}
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
@@ -106,6 +107,18 @@ class Trace():
         out = self.post_process_feature_usage()
         if out is not None:
             self.write_json(out_file, out)
+    
+    def WritePageData(self, out_file):
+        if len(self.page_data) and self.start_time is not None:
+            out = {}
+            for key in self.page_data['values']:
+                out[key] = self.page_data['values'][key]
+            for key in self.page_data['times']:
+                value = self.page_data['times'][key]
+                if value >= self.start_time:
+                    out[key] = int(round(float(value - self.start_time) / 1000.0))
+            if len(out):
+                self.write_json(out_file, out)
 
     def WriteInteractive(self, out_file):
         # Generate the interactive periods from the long-task data
@@ -308,6 +321,8 @@ class Trace():
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
+        elif cat.find('content') >= 0:
+            self.ProcessContentEvent(trace_event)
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
@@ -868,6 +883,15 @@ class Trace():
                         1.0, max(0.0, 1.0 - available))
         except BaseException:
             logging.exception('Error adjusting timeline slice')
+
+    ##########################################################################
+    #   Blink Content Events
+    ##########################################################################
+    def ProcessContentEvent(self, trace_event):
+        if 'name' in trace_event:
+            if trace_event['name'] == 'WebContentsImpl::UpdateTitle':
+                if 'titleTime' not in self.page_data['times']:
+                    self.page_data['times']['titleTime'] = trace_event['ts']
 
     ##########################################################################
     #   Blink Features
