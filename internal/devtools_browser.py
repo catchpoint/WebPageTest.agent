@@ -487,15 +487,6 @@ class DevtoolsBrowser(object):
             for request_id in raw_requests:
                 self.strip_non_text(raw_requests[request_id])
                 requests.append(raw_requests[request_id])
-            # Make absolutely certain that every request has a sequence number for sorting
-            sequence = 0
-            for request in requests:
-                if 'sequence' in request and request['sequence'] > sequence:
-                    sequence = request['sequence']
-            for request in requests:
-                if 'sequence' not in request:
-                    sequence += 1
-                    request['sequence'] = sequence
             requests = sorted(requests, key=lambda request: request['sequence'])
             requests_json = json.dumps(requests)
         except Exception:
