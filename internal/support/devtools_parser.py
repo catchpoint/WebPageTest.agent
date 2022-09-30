@@ -1363,28 +1363,28 @@ class DevToolsParser(object):
             progressive_total_bytes = 0
             progressive_bytes = 0
             for request in requests:
-                if request['responseCode'] == 200:
-                    request_id = str(request['id'])
-                    pos = request_id.find('-')
-                    if pos > 0:
-                        request_id = request_id[:pos]
-                    if request_id in optimization_results:
-                        opt = optimization_results[request_id]
+                request_id = str(request['id'])
+                pos = request_id.find('-')
+                if pos > 0:
+                    request_id = request_id[:pos]
+                if request_id in optimization_results:
+                    opt = optimization_results[request_id]
+                    if 'cdn' in opt:
+                        request['score_cdn'] = opt['cdn']['score']
+                        request['cdn_provider'] = opt['cdn']['provider']
+                        if request['score_cdn'] >= 0:
+                            cdn_count += 1
+                            cdn_total += request['score_cdn']
+                        if 'is_base_page' in request and request['is_base_page'] and \
+                                request['cdn_provider'] is not None:
+                            page_data['base_page_cdn'] = request['cdn_provider']
+                    if request['responseCode'] >= 200 and request['responseCode'] < 300:
                         if 'cache' in opt:
                             request['score_cache'] = opt['cache']['score']
                             request['cache_time'] = opt['cache']['time']
                             if request['score_cache'] >= 0:
                                 cache_count += 1
                                 cache_total += request['score_cache']
-                        if 'cdn' in opt:
-                            request['score_cdn'] = opt['cdn']['score']
-                            request['cdn_provider'] = opt['cdn']['provider']
-                            if request['score_cdn'] >= 0:
-                                cdn_count += 1
-                                cdn_total += request['score_cdn']
-                            if 'is_base_page' in request and request['is_base_page'] and \
-                                    request['cdn_provider'] is not None:
-                                page_data['base_page_cdn'] = request['cdn_provider']
                         if 'keep_alive' in opt:
                             request['score_keep-alive'] = opt['keep_alive']['score']
                             if request['score_keep-alive'] >= 0:

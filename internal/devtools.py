@@ -422,6 +422,9 @@ class DevTools(object):
             # Add the required trace events
             if "rail" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("rail")
+            if "content" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("content")
+                self.job['discard_trace_content'] = True
             if "loading" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
@@ -820,8 +823,10 @@ class DevTools(object):
         if request_id in self.requests and 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
             events = self.requests[request_id]
             request = {'id': request_id}
-            if 'sequence' in events:
-                request['sequence'] = events['sequence']
+            if 'sequence' not in events:
+                self.request_sequence += 1
+                events['sequence'] = self.request_sequence
+            request['sequence'] = events['sequence']
             # See if we have a body
             if include_bodies:
                 body_path = os.path.join(self.task['dir'], 'bodies')
@@ -906,8 +911,6 @@ class DevTools(object):
         # This is only used for optimization checks and custom metrics, not the
         # actual waterfall.
         with self.netlog_lock:
-            # use dummy sequence numbers at the end of the current range
-            sequence = self.request_sequence
             try:
                 path = os.path.join(self.task['dir'], 'netlog_bodies')
                 for netlog_id in self.netlog_requests:
@@ -920,8 +923,8 @@ class DevTools(object):
                             if 'url' in request and request['url'] == url:
                                 found = True
                         if not found:
-                            sequence += 1
-                            request = {'id': netlog_id, 'sequence': sequence, 'url': url}
+                            self.request_sequence += 1
+                            request = {'id': netlog_id, 'sequence': self.request_sequence, 'url': url}
                             if 'request_headers' in netlog_request:
                                 request['request_headers'] = self.extract_headers(netlog_request['request_headers'])
                             if 'response_headers' in netlog_request:
@@ -1857,6 +1860,18 @@ class DevTools(object):
         except Exception:
             logging.exception('Error handling on_netlog_response_bytes_received')
 
+    def on_request_id_changed(self, request_id, new_request_id):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id in self.netlog_requests and new_request_id not in self.netlog_requests:
+                    self.netlog_requests[new_request_id] = self.netlog_requests[request_id]
+                    del self.netlog_requests[request_id]
+            logging.debug("Netlog request ID changed from %s to %s", request_id, new_request_id)
+        except Exception:
+            logging.exception('Error handling on_request_id_changed')
+
+
 class DevToolsClient(WebSocketClient):
     """DevTools WebSocket client"""
     def __init__(self, url, protocols=None, extensions=None, heartbeat_freq=None,
@@ -1982,6 +1997,7 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
                 self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
+            self.trace_parser.WritePageData(self.path_base + '_trace_page_data.json.gz')
             if not job.get('streaming_netlog'):
                 self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
@@ -2036,6 +2052,8 @@ class DevToolsClient(WebSocketClient):
                         self.trace_event_counts[trace_event['cat']] = 0
                     self.trace_event_counts[trace_event['cat']] += 1
                     if not self.job['keep_netlog'] and trace_event['cat'] == 'netlog':
+                        keep_event = False
+                    if 'discard_trace_content' in self.job and self.job['discard_trace_content'] and trace_event['cat'] == 'content':
                         keep_event = False
                     if process_event and self.trace_parser is not None:
                         self.trace_parser.ProcessTraceEvent(trace_event)

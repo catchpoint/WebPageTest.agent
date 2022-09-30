@@ -363,6 +363,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                     self.netlog.on_request_headers_sent = self.devtools.on_netlog_request_headers_sent           # (request_id, request_headers)
                     self.netlog.on_response_headers_received = self.devtools.on_netlog_response_headers_received # (request_id, response_headers)
                     self.netlog.on_response_bytes_received = self.devtools.on_netlog_response_bytes_received     # (request_id, filtered_bytes)
+                    self.netlog.on_request_id_changed = self.devtools.on_request_id_changed                      # (request_id, new_request_id)
 
                 if self.netlog_header:
                     for line in self.netlog_header:

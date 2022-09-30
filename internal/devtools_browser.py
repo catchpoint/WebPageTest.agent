@@ -492,7 +492,7 @@ class DevtoolsBrowser(object):
         except Exception:
             logging.exception('Error getting json request data')
         if requests_json is None:
-            requests_json = 'null'
+            requests_json = '[]'
         return requests_json
 
     def find_dom_node_info(self, dom_tree, node_id):
@@ -1064,7 +1064,7 @@ class DevtoolsBrowser(object):
                         cookies[name].append(cookie['value'])
                 # Get the relavent DNS records for the origin
                 dns = {}
-                dns_types = ['cname', 'ns', 'mx', 'txt', 'soa', 'https']
+                dns_types = ['cname', 'ns', 'mx', 'txt', 'soa', 'https', 'svcb']
                 if self.document_domain is not None:
                     dns_domain = str(self.document_domain)
                     while dns_domain.find('.') > 0:
