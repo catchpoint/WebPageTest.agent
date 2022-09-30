@@ -1860,6 +1860,18 @@ class DevTools(object):
         except Exception:
             logging.exception('Error handling on_netlog_response_bytes_received')
 
+    def on_request_id_changed(self, request_id, new_request_id):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id in self.netlog_requests and new_request_id not in self.netlog_requests:
+                    self.netlog_requests[new_request_id] = self.netlog_requests[request_id]
+                    del self.netlog_requests[request_id]
+            logging.debug("Netlog request ID changed from %s to %s", request_id, new_request_id)
+        except Exception:
+            logging.exception('Error handling on_request_id_changed')
+
+
 class DevToolsClient(WebSocketClient):
     """DevTools WebSocket client"""
     def __init__(self, url, protocols=None, extensions=None, heartbeat_freq=None,
