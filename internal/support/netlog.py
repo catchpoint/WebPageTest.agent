@@ -43,6 +43,7 @@ class Netlog():
         self.on_request_headers_sent = None         # (request_id, request_headers)
         self.on_response_headers_received = None    # (request_id, response_headers)
         self.on_response_bytes_received = None      # (request_id, filtered_bytes)
+        self.on_request_id_changed = None           # (request_id, new_request_id)
 
     def set_constants(self, constants):
         """Setup the event look-up tables"""
@@ -931,6 +932,22 @@ class Netlog():
             self.netlog['next_request_id'] += 1
             self.netlog['url_request'][new_id] = entry
             del self.netlog['url_request'][request_id]
+            if self.on_request_id_changed is not None:
+                self.on_request_id_changed(str(request_id), str(new_id))
+            # Remap any pointers to the urlrequest to point to the new ID
+            if 'stream_job' in self.netlog:
+                for job_id in self.netlog['stream_job']:
+                    job = self.netlog['stream_job'][job_id]
+                    if 'url_request' in job and job['url_request'] == request_id:
+                        job['url_request'] = new_id
+            if 'h2_session' in self.netlog:
+                for session_id in self.netlog['h2_session']:
+                    session = self.netlog['h2_session'][session_id]
+                    if 'stream' in session:
+                        for stream_id in session['stream']:
+                            stream = session['stream'][stream_id]
+                            if 'url_request' in stream and stream['url_request'] == request_id:
+                                stream['url_request'] = new_id
     
     def process_disk_cache_event(self, event):
         """Disk cache events"""
