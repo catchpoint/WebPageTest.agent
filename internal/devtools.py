@@ -823,8 +823,10 @@ class DevTools(object):
         if request_id in self.requests and 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
             events = self.requests[request_id]
             request = {'id': request_id}
-            if 'sequence' in events:
-                request['sequence'] = events['sequence']
+            if 'sequence' not in events:
+                self.request_sequence += 1
+                events['sequence'] = self.request_sequence
+            request['sequence'] = events['sequence']
             # See if we have a body
             if include_bodies:
                 body_path = os.path.join(self.task['dir'], 'bodies')
@@ -909,8 +911,6 @@ class DevTools(object):
         # This is only used for optimization checks and custom metrics, not the
         # actual waterfall.
         with self.netlog_lock:
-            # use dummy sequence numbers at the end of the current range
-            sequence = self.request_sequence
             try:
                 path = os.path.join(self.task['dir'], 'netlog_bodies')
                 for netlog_id in self.netlog_requests:
@@ -923,8 +923,8 @@ class DevTools(object):
                             if 'url' in request and request['url'] == url:
                                 found = True
                         if not found:
-                            sequence += 1
-                            request = {'id': netlog_id, 'sequence': sequence, 'url': url}
+                            self.request_sequence += 1
+                            request = {'id': netlog_id, 'sequence': self.request_sequence, 'url': url}
                             if 'request_headers' in netlog_request:
                                 request['request_headers'] = self.extract_headers(netlog_request['request_headers'])
                             if 'response_headers' in netlog_request:

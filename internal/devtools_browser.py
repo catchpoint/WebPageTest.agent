@@ -492,7 +492,7 @@ class DevtoolsBrowser(object):
         except Exception:
             logging.exception('Error getting json request data')
         if requests_json is None:
-            requests_json = 'null'
+            requests_json = '[]'
         return requests_json
 
     def find_dom_node_info(self, dom_tree, node_id):
