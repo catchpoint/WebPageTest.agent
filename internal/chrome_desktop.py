@@ -179,9 +179,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
+        self.sanitize_shell_args(args)
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + self.sanitize_shell_string(job['addCmdLine'])
         command_line += ' ' + 'about:blank'
         # re-try launching and connecting a few times if necessary
         connected = False

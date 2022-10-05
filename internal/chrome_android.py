@@ -156,9 +156,10 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         args.append('--enable-features=' + ','.join(features))
         args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         args.append('--disable-features=' + ','.join(disable_features))
+        self.sanitize_shell_args(args)
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + self.sanitize_shell_string(job['addCmdLine'])
         command_line += ' about:blank'
         local_command_line = os.path.join(task['dir'], self.config['command_line_file'])
         remote_command_line = '/data/local/tmp/' + self.config['command_line_file']
