@@ -1,37 +1,40 @@
 new PerformanceObserver((entryList) => {
     for (const entry of entryList.getEntries()) {
-      try {
-          let event = {
-              name: entry.name,
-              entryType: entry.entryType,
-              startTime: entry['startTime'],
-              size: entry['size'],
-              url: entry['url'],
-              id: entry['id'],
-              loadTime: entry['loadTime'],
-              renderTime: entry['renderTime'],
-          };
-          if (entry['element']) {
-              event['element'] = {
-                  nodeName: entry.element['nodeName'],
-                  boundingRect: entry.element.getBoundingClientRect(),
-                  outerHTML: entry.element.outerHTML,
-              }
-              if (entry.element['src']) {
-                  event.element['src'] = entry.element.src;
-              }
-              if (entry.element['currentSrc']) {
-                  event.element['currentSrc'] = entry.element.currentSrc;
-              }
-              try {
-                  let style = window.getComputedStyle(object[key]);
-                  if (style.backgroundImage && style.backgroundImage != 'none') {
-                      contents[key]['background-image'] = style.backgroundImage;
-                  }
-              } catch (err) {
-              }
-          }
-          console.debug('wptagent_message:' + JSON.stringify({'name': 'perfentry', 'data': event}));
+        try {
+            let event = {
+                name: entry.name,
+                entryType: entry.entryType,
+                startTime: entry['startTime'],
+                size: entry['size'],
+                url: entry['url'],
+                id: entry['id'],
+                loadTime: entry['loadTime'],
+                renderTime: entry['renderTime'],
+            };
+            if (entry['element']) {
+                event['element'] = {
+                    nodeName: entry.element['nodeName'],
+                    boundingRect: entry.element.getBoundingClientRect(),
+                    outerHTML: entry.element.outerHTML,
+                }
+                if (entry.element['src']) {
+                    event.element['src'] = entry.element.src;
+                }
+                if (entry.element['currentSrc']) {
+                    event.element['currentSrc'] = entry.element.currentSrc;
+                }
+                try {
+                    let style = window.getComputedStyle(entry.element);
+                    if (style.backgroundImage && style.backgroundImage != 'none') {
+                        event.element['background-image'] = style.backgroundImage;
+                    }
+                    if (style.content && style.content != 'none') {
+                        event.element['content'] = style.content;
+                    }
+                } catch (err) {
+                }
+            }
+            console.debug('wptagent_message:' + JSON.stringify({'name': 'perfentry', 'data': event}));
         } catch (err) {
         }
     }

@@ -352,7 +352,7 @@ class ProcessTest(object):
                                     if 'name' in event and 'ts' in event and 'args' in event and 'frame' in event['args'] and \
                                             event['args']['frame'] in main_frames and \
                                             (event['ts'] >= start_time or 'value' in event['args']) and \
-                                            event['name'].lower().find('largest') and \
+                                            event['name'].lower().find('largest') >= 0 and \
                                             'data' in event['args'] and 'size' in event['args']['data']:
                                         name = event['name']
                                         if name not in largest or event['args']['data']['size'] > largest[name]['args']['data']['size']:
@@ -379,6 +379,10 @@ class ProcessTest(object):
                                                     paint_event['element'] = event['args']['data']['element']
                                                 if 'type' in event['args']['data']:
                                                     paint_event['type'] = event['args']['data']['type']
+                                                if 'imageUrl' in event['args']['data'] and len(event['args']['data']['imageUrl']):
+                                                    paint_event['imageUrl'] = event['args']['data']['imageUrl']
+                                                if 'url' in event['args']['data'] and len(event['args']['data']['url']):
+                                                    paint_event['url'] = event['args']['data']['url']
                                                 if 'largestPaints' not in page_data:
                                                     page_data['largestPaints'] = []
                                                 page_data['largestPaints'].append(paint_event)
@@ -489,6 +493,8 @@ class ProcessTest(object):
                                                         if matches:
                                                             page_data['LargestContentfulPaintType'] = 'background-image'
                                                             page_data['LargestContentfulPaintImageURL'] = matches.group(1)
+                                                    if 'imageUrl' in paint_event:
+                                                        page_data['LargestContentfulPaintImageURL'] = paint_event['imageUrl']
                                         elif 'largestPaints' in page_data:
                                             for paint_event in page_data['largestPaints']:
                                                 if paint_event['event'] == 'LargestTextPaint' and paint_event['time'] == event['time']:
