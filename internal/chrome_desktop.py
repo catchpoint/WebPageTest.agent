@@ -277,6 +277,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
+    def alert_size(self, _alert_config, _task_dir, _prefix):
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''               
+        self.alert_desktop_results(_alert_config, 'Chrome', _task_dir, _prefix)
+
     def execute_js(self, script):
         """Run javascipt"""
         return DevtoolsBrowser.execute_js(self, script)

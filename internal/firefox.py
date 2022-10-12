@@ -404,6 +404,11 @@ class Firefox(DesktopBrowser):
                 logging.exception('Marionette exception navigating to about:blank after the test')
             self.task = None
 
+    def alert_size(self, _alert_config, _task_dir, _prefix):
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''             
+        self.alert_desktop_results(_alert_config, 'Firefox', _task_dir, _prefix)
+
+
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
