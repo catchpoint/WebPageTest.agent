@@ -392,6 +392,8 @@ class Trace():
                             for perf_entry in performance_timing:
                                 if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
                                     perf_entry['consumed'] = True
+                                    if 'url' in perf_entry and len(perf_entry['url']) and 'url' not in event['args']['data']:
+                                        event['args']['data']['url'] = perf_entry['url']
                                     if 'element' in perf_entry:
                                         event['args']['data']['element'] = perf_entry['element']
                         elif 'score' in event['args']['data'] and event['name'].startswith('LayoutShift'):
