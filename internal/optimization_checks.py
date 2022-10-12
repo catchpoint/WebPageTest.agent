@@ -220,6 +220,8 @@ class OptimizationChecks(object):
                        'youtube.',
                        '.googleusercontent.com',
                        'googlehosted.com',
+                       'googletagmanager.com',
+                       'googleadservices.com',
                        '.gstatic.com',
                        '.googleapis.com',
                        '.doubleclick.net'],
