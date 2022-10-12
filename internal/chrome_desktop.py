@@ -179,9 +179,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
+        self.sanitize_shell_args(args)
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + self.sanitize_shell_string(job['addCmdLine'])
         command_line += ' ' + 'about:blank'
         # re-try launching and connecting a few times if necessary
         connected = False
@@ -276,6 +277,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         """Run an individual test"""
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
+
+    def alert_size(self, _alert_config, _task_dir, _prefix):
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''               
+        self.alert_desktop_results(_alert_config, 'Chrome', _task_dir, _prefix)
 
     def execute_js(self, script):
         """Run javascipt"""

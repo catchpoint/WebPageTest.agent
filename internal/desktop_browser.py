@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime
 if (sys.version_info >= (3, 0)):
     from time import monotonic
     GZIP_TEXT = 'wt'
@@ -868,3 +869,63 @@ class DesktopBrowser(BaseBrowser):
                     else:
                         self.ffmpeg.terminate()
         self.usage_queue.put(None)
+
+    def alert_desktop_results(self, _config, _browser, _task_dir, _prefix):
+        try:
+            # Check if active
+            if _config[_browser]['active'] != 'True':
+                return
+            # Check if the results Dir does exist
+            if os.path.isdir(_task_dir) == False:
+                return
+
+            # Check if the Logging Dir exist
+            if os.path.isdir(_config['DEFAULT']['alert_path']) == False:
+                os.makedirs(_config['DEFAULT']['alert_path'])
+
+            alertPath = os.path.join(_config['DEFAULT']['alert_path'], _config['DEFAULT']['alert_file'])
+            # Check if the Logging alerts.json is less then a certain file size in bytes
+            if os.path.isfile(alertPath) and os.path.getsize(alertPath) > int(_config['DEFAULT']['alert_file_max_byte_size']):
+                return
+            
+            alerts = {}             # Stores alerts for writing to alerts.json
+            tot_size = 0            # Total of all file sizes in bytes of task dir including ones not watched
+
+            for file in os.listdir(_task_dir):
+                filePath = os.path.join(_task_dir, file)
+                expected_file_name = file[len(_prefix):]
+
+                if os.path.isfile(filePath):
+                    file_size = os.path.getsize(filePath)
+                    tot_size += file_size
+
+                    if expected_file_name not in _config[_browser]: # If file shouldn't alert then continue
+                        continue
+                    
+                    expected_file_size = int(_config[_browser][expected_file_name]) # Grab expected file size from config
+                    
+                    logging.debug(f'{percent_dif : 5}% | {file.ljust(30)} | {file_size : 10}')
+
+                    if file_size < expected_file_size: # No Need for alerts on byte sizes lower than expected
+                        continue
+
+                    percent_dif = int(abs(((file_size - expected_file_size) / expected_file_size) * 100.0))# Percent difference from expected
+                    
+                    # If Alert_percent in browsers config, use that first, if not then use default value in DEFAULT alert_percent
+                    if 'alert_percent' in _config[_browser] and percent_dif > int(_config[_browser]['alert_percent']) \
+                        or 'alert_percent' not in _config[_browser] and percent_dif > int(_config['DEFAULT']['alert_percent']):
+                        alerts[file] = {'percent_dif' : percent_dif, 'byte_size': file_size}
+
+            if alerts != {}: # If any alerts then write to the alert file
+                outdict = {
+                    datetime.now().strftime("%d|%m|%Y-%H:%M:%S") : {
+                        'total_files_bytes': tot_size,
+                        'running_args' : self.job,
+                        'alerted_files' : alerts
+                    }
+                }
+                with open(alertPath,"a") as f_out:
+                    json.dump(outdict, f_out)
+
+        except Exception as ex:
+            logging.error("exception in result size checker:", ex)

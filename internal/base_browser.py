@@ -4,12 +4,11 @@
 # Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
 # found in the LICENSE.md file.
 """Base class support for browsers"""
+import logging
 import os
-import sys
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+import platform
+import shlex
+from time import monotonic
 
 class BaseBrowser(object):
     """Browser base"""
@@ -20,6 +19,10 @@ class BaseBrowser(object):
 
     def execute_js(self, script):
         """Stub to be overridden"""
+        return None
+    
+    def alert_size(self,_alert_config, _task_dir, _prefix):
+        '''File alerting function to be overridden by browser class'''
         return None
 
     def profile_start(self, event_name):
@@ -37,3 +40,25 @@ class BaseBrowser(object):
     def shutdown(self):
         """Agent is dying, close as much as possible gracefully"""
         self.must_exit = True
+
+    def sanitize_shell_args(self, args):
+        """Sanitize a list of arguments that will be used in a shell subprocess"""
+        try:
+            if platform.system() in ["Linux", "Darwin"]:
+                args = [shlex.quote(arg) for arg in args]
+        except Exception:
+            logging.exception('Error sanitizing shell args')
+
+    def sanitize_shell_string(self, shell_string):
+        """Sanitize a string of arguments that will be used in a shell subprocess"""
+        sanitized_string = ''
+        try:
+            if platform.system() in ["Linux", "Darwin"]:
+                args = shlex.split(shell_string)
+                args = [shlex.quote(arg) for arg in args]
+                sanitized_string = ' '.join(args)
+            else:
+                sanitized_string = shell_string
+        except Exception:
+            logging.exception('Error sanitizing shell string')
+        return sanitized_string

@@ -83,6 +83,11 @@ class WPTAgent(object):
                                 self.image_magick['mogrify'] = mogrify
                                 break
 
+        if 'alertsize' in options and options.alertsize == True:
+            import configparser
+            self.alert_config = configparser.ConfigParser()
+            self.alert_config.read('internal/config/alert_config.ini')
+
     def run_testing(self):
         """Main testing flow"""
         if (sys.version_info >= (3, 0)):
@@ -327,6 +332,9 @@ class WPTAgent(object):
                             logging.exception('Error compressing lighthouse log')
                 else:
                     self.browser.run_task(self.task)
+                    # Alerts on large files in the results folder
+                    if 'alertsize' in self.options and self.options.alertsize:
+                        self.browser.alert_size(self.alert_config,self.task['dir'], self.task['task_prefix'])
             except Exception as err:
                 msg = ''
                 if err is not None and err.__str__() is not None:
@@ -1175,7 +1183,7 @@ def main():
     parser.add_argument('--testout', help="Output format (CLI). Valid options are id, url or json")
     parser.add_argument('--testruns', type=int, default=1, help="Number of test runs (CLI - defaults to 1).")
     parser.add_argument('--testrv', action='store_true', default=False, help="Include Repeat View tests (CLI - defaults to False).")
-
+    parser.add_argument('--alertsize', action='store_true', default=False, help="Alerts on large result file size(logging/alerts.log)")
     options, _ = parser.parse_known_args()
 
     # Make sure we are running python 2.7.11 or newer (required for Windows 8.1)
