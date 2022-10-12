@@ -87,6 +87,14 @@ def run_elevated(command, args, wait=True):
             else:
                 ret = process_info
         else:
+            try:
+                import shlex
+                if platform.system() in ["Linux", "Darwin"]:
+                    params = shlex.split(args)
+                    params = [shlex.quote(arg) for arg in params]
+                    args = ' '.join(params)
+            except Exception:
+                logging.exception('Error sanitizing elevated shell string')
             logging.debug('sudo ' + command + ' ' + args)
             ret = subprocess.call('sudo ' + command + ' ' + args, shell=True)
     except Exception:

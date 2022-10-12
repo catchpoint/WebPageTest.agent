@@ -4,12 +4,11 @@
 # Use of this source code is governed by the Polyform Shield 1.0.0 license that can be
 # found in the LICENSE.md file.
 """Base class support for browsers"""
+import logging
 import os
-import sys
-if (sys.version_info >= (3, 0)):
-    from time import monotonic
-else:
-    from monotonic import monotonic
+import platform
+import shlex
+from time import monotonic
 
 class BaseBrowser(object):
     """Browser base"""
@@ -41,3 +40,25 @@ class BaseBrowser(object):
     def shutdown(self):
         """Agent is dying, close as much as possible gracefully"""
         self.must_exit = True
+
+    def sanitize_shell_args(self, args):
+        """Sanitize a list of arguments that will be used in a shell subprocess"""
+        try:
+            if platform.system() in ["Linux", "Darwin"]:
+                args = [shlex.quote(arg) for arg in args]
+        except Exception:
+            logging.exception('Error sanitizing shell args')
+
+    def sanitize_shell_string(self, shell_string):
+        """Sanitize a string of arguments that will be used in a shell subprocess"""
+        sanitized_string = ''
+        try:
+            if platform.system() in ["Linux", "Darwin"]:
+                args = shlex.split(shell_string)
+                args = [shlex.quote(arg) for arg in args]
+                sanitized_string = ' '.join(args)
+            else:
+                sanitized_string = shell_string
+        except Exception:
+            logging.exception('Error sanitizing shell string')
+        return sanitized_string

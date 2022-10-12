@@ -84,9 +84,10 @@ class BlackBoxAndroid(AndroidBrowser):
         args.append('--host-resolver-rules=' + ','.join(host_rules))
         if 'ignoreSSL' in job and job['ignoreSSL']:
             args.append('--ignore-certificate-errors')
+        self.sanitize_shell_args(args)
         command_line = 'chrome ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + self.sanitize_shell_string(job['addCmdLine'])
         local_command_line = os.path.join(task['dir'], 'chrome-command-line')
         remote_command_line = '/data/local/tmp/chrome-command-line'
         root_command_line = '/data/local/chrome-command-line'
