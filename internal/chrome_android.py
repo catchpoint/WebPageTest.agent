@@ -58,7 +58,8 @@ DISABLE_CHROME_FEATURES = [
     'CalculateNativeWinOcclusion',
     'TranslateUI',
     'Translate',
-    'OfflinePagesPrefetching'
+    'OfflinePagesPrefetching',
+    'AutofillServerCommunication'
 ]
 
 ENABLE_CHROME_FEATURES = [

@@ -67,7 +67,8 @@ DISABLE_CHROME_FEATURES = [
     'TranslateUI',
     'Translate',
     'OfflinePagesPrefetching',
-    'HeavyAdPrivacyMitigations'
+    'HeavyAdPrivacyMitigations',
+    'AutofillServerCommunication'
 ]
 
 ENABLE_BLINK_FEATURES = [
