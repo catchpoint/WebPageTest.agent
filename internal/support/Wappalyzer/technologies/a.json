@@ -58,6 +58,20 @@
     "saas": true,
     "website": "https://commercesuite.aboutyou.com"
   },
+  "ABP Framework": {
+    "cats": [
+      18
+    ],
+    "description": "ABP Framework is a complete infrastructure to create modern web applications by following the best practices and conventions of software development.",
+    "icon": "abp.svg",
+    "implies": "Microsoft ASP.NET",
+    "js": {
+      "abp.timing.timeZone": "",
+      "abp.version": "(.*)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://abp.io/"
+  },
   "AD EBiS": {
     "cats": [
       36,
@@ -76,6 +90,23 @@
     "saas": true,
     "scriptSrc": "\\.ebis\\.ne\\.jp/",
     "website": "http://www.ebis.ne.jp"
+  },
+  "ADAPT": {
+    "cats": [
+      6
+    ],
+    "description": "ADAPT is a subscription-based app that allows anyone to create video focused online store in minutes on their phone.",
+    "icon": "ADAPT.svg",
+    "meta": {
+      "image": "assets\\.adapt\\.ws/"
+    },
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://adapt.ws"
   },
   "ADFOX": {
     "cats": [
@@ -174,9 +205,9 @@
     "description": "JavaScript library to animate elements on your page as you scroll.",
     "icon": "AOS.svg",
     "js": {
-      "AOS.init": "\\;confidence:25",
-      "AOS.refresh": "\\;confidence:50",
-      "AOS.refreshHard": "\\;confidence:50"
+      "AOS.init": "",
+      "AOS.refresh": "",
+      "AOS.refreshHard": ""
     },
     "oss": true,
     "scriptSrc": [
@@ -216,8 +247,8 @@
     "icon": "aspnetboilerplate.png",
     "implies": "Microsoft ASP.NET",
     "js": {
-      "abp.localization": "",
-      "abp.toAbsAppPath": ""
+      "abp.aspnetboilerplate.version": "(.*)\\;version:\\1",
+      "abp.timing.utcClockProvider": ""
     },
     "oss": true,
     "website": "https://www.aspnetboilerplate.com"
@@ -537,24 +568,6 @@
     ],
     "website": "https://www.acquia.com/products/marketing-cloud/campaign-factory"
   },
-  "Acquia Cloud Classic": {
-    "cats": [
-      88
-    ],
-    "description": "Acquia Cloud Classic is a Amazon EC2 based Drupal hosting platform.",
-    "headers": {
-      "X-AH-Environment": "prod"
-    },
-    "icon": "acquia-cloud-platform.svg",
-    "implies": [
-      "Acquia Cloud Platform",
-      "Amazon EC2",
-      "Percona",
-      "Red Hat Gluster"
-    ],
-    "saas": true,
-    "website": "https://docs.acquia.com/cloud-platform/"
-  },
   "Acquia Cloud IDE": {
     "cats": [
       47
@@ -571,38 +584,20 @@
     "url": "https:?\\/\\/.+\\.web\\.ahdev\\.cloud",
     "website": "https://www.acquia.com/products/drupal-cloud/cloud-ide"
   },
-  "Acquia Cloud Next": {
-    "cats": [
-      88
-    ],
-    "description": "Acquia Cloud Next is a Kubernetes-native Drupal hosting platform.",
-    "headers": {
-      "X-AH-Environment": "next"
-    },
-    "icon": "acquia-cloud-platform.svg",
-    "implies": [
-      "Acquia Cloud Platform",
-      "Kubernetes Dashboard",
-      "Amazon EFS",
-      "Amazon Aurora"
-    ],
-    "saas": true,
-    "website": "https://docs.acquia.com/cloud-platform/cloud-next/"
-  },
   "Acquia Cloud Platform": {
     "cats": [
       62
     ],
     "description": "Acquia Cloud Platform is a Drupal-tuned application lifecycle management suite with an infrastructure to support Drupal deployment workflow processes.",
     "headers": {
-      "X-AH-Environment": "^\\w+$"
+      "X-AH-Environment": "^(next)?.*$\\;version:\\1?Next:"
     },
     "icon": "acquia-cloud.png",
     "implies": [
       "Amazon Web Services"
     ],
     "saas": true,
-    "website": "https://www.acquia.com/"
+    "website": "https://www.acquia.com/products/drupal-cloud/cloud-platform"
   },
   "Acquia Cloud Platform CDN": {
     "cats": [
@@ -611,6 +606,7 @@
     "headers": {
       "via": "Acquia Platform CDN (.+)\\;version:\\1"
     },
+    "implies": "Acquia Cloud Platform",
     "icon": "acquia-cloud-platform.svg",
     "saas": true,
     "website": "https://docs.acquia.com/cloud-platform/platformcdn/"
@@ -1210,6 +1206,23 @@
     "saas": true,
     "scriptSrc": "\\.adform\\.net/",
     "website": "https://site.adform.com"
+  },
+  "Adjust": {
+    "cats": [
+      10
+    ],
+    "description": "Adjust is the mobile marketing analytics platform.",
+    "dom": "div[data-adjust*='app.adjust.com/'], a[href*='app.adjust.com/'], a[href*='.adj.st/'], form[action*='app.adjust.com/']",
+    "icon": "Adjust.svg",
+    "js": {
+      "Adjust.initSdk": ""
+    },
+    "pricing": [
+      "payg",
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.adjust.com"
   },
   "Adloox": {
     "cats": [
@@ -2500,8 +2513,8 @@
     ],
     "description": "Amazon S3 or Amazon Simple Storage Service is a service offered by Amazon Web Services (AWS) that provides object storage through a web service interface.",
     "headers": {
-      "Content-Security-Policy": "s3[^ ]*amazonaws\\.com\\s",
-      "Content-Security-Policy-Report-Only": "s3[^ ]*\\.amazonaws\\.com\\s",
+      "Content-Security-Policy": "s3[^ ]*amazonaws\\.com",
+      "Content-Security-Policy-Report-Only": "s3[^ ]*\\.amazonaws\\.com",
       "server": "^AmazonS3$"
     },
     "icon": "aws-s3.svg",
@@ -2668,7 +2681,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "cdn\\.amplitude\\.com",
+    "scriptSrc": "cdn\\.(?:segment.+)?amplitude(?:\\.com|-plugins)",
     "website": "https://amplitude.com",
     "xhr": "\\.amplitude\\.com"
   },
@@ -2768,7 +2781,7 @@
     "dom": {
       "[ng-version]": {
         "attributes": {
-          "ng-version": "^([\\d.]+)\\;version:\\1"
+          "ng-version": "^([\\d\\.]+)\\;version:\\1"
         }
       }
     },
@@ -2835,7 +2848,7 @@
     "scriptSrc": [
       "angular[.-]([\\d.]*\\d)[^/]*\\.js\\;version:\\1",
       "/([\\d.]+(?:-?rc[.\\d]*)*)/angular(?:\\.min)?\\.js\\;version:\\1",
-      "\\bangular.{0,32}\\.js"
+      "(?!angular\\.io)\\bangular.{0,32}\\.js"
     ],
     "website": "https://angularjs.org"
   },
@@ -2848,6 +2861,11 @@
       "link[href*='animate']": {
         "attributes": {
           "href": "([\\d\\.]+)?/animate\\.min\\.css\\;version:\\1"
+        }
+      },
+      ".animate__animated": {
+        "attributes": {
+          "class": "\\;confidence:99"
         }
       }
     },
@@ -2926,6 +2944,23 @@
     ],
     "saas": true,
     "website": "https://g6.antv.vision"
+  },
+  "Antee IPO": {
+    "cats": [
+      1
+    ],
+    "description": "Antee is a Czech company that will make a custom-made website for you, then you manage it in CMS IPO.",
+    "icon": "Antee.png",
+    "js": {
+      "ipo.api.hideSpinner": ""
+    },
+    "meta": {
+      "author": "Antee\\ss\\.r\\.o\\."
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://ipo.antee.cz"
   },
   "Antsomi CDP 365": {
     "cats": [
@@ -3182,9 +3217,15 @@
       62
     ],
     "description": "Appian is an enterprise low-code application platform.",
-    "icon": "Appian.png",
+    "icon": "Appian.svg",
+    "js": {
+      "APPIAN": "",
+      "Appian": "",
+      "_APPIAN_PROXIES_INITIALIZED": "",
+      "webpackJsonpAppian": ""
+    },
     "saas": true,
-    "scriptSrc": "/suite/tempo/ui/sail-client/embeddedBootstrap.nocache.js",
+    "scriptSrc": "tempo/ui/sail-client/embeddedBootstrap\\.nocache\\.js",
     "website": "https://www.appian.com"
   },
   "Apple Business Chat": {
@@ -3338,6 +3379,20 @@
     ],
     "saas": true,
     "website": "https://www.aprimo.com"
+  },
+  "AptusShop": {
+    "cats": [
+      6
+    ],
+    "description": "AptusShop is proprietary online store software created from scratch and developed by Aptus.pl.",
+    "icon": "AptusShop.png",
+    "meta": {
+      "generator": "^AptusShop\\.pl$"
+    },
+    "pricing": [
+      "onetime"
+    ],
+    "website": "https://www.aptusshop.pl"
   },
   "AquilaCMS": {
     "cats": [
@@ -3551,6 +3606,19 @@
     "text": "\\Asendia\\b",
     "website": "https://www.asendia.com"
   },
+  "Asgaros Forum": {
+    "cats": [
+      87,
+      2
+    ],
+    "description": "Asgaros Forum is a lightweight and simple forum plugin for WordPress.",
+    "dom": "link[href*='/wp-content/plugins/asgaros-forum/']",
+    "icon": "Asgaros Forum.png",
+    "oss": true,
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/asgaros-forum/",
+    "website": "https://www.asgaros.de"
+  },
   "Astra": {
     "cats": [
       80
@@ -3622,6 +3690,12 @@
       }
     },
     "icon": "Astro.svg",
+    "js": {
+      "Astro": ""
+    },
+    "meta": {
+      "generator": "^Astro\\sv([\\d\\.]+)$\\;version:\\1"
+    },
     "oss": true,
     "website": "https://astro.build"
   },
@@ -3834,6 +3908,18 @@
     "dom": "img[src*='listen.audiohook.com/']",
     "icon": "Audiohook.svg",
     "website": "https://www.audiohook.com"
+  },
+  "Aura": {
+    "cats": [
+      66
+    ],
+    "description": "Aura is an open-source UI framework built by Salesforce for developing dynamic web apps for mobile and desktop devices.",
+    "icon": "default.svg",
+    "js": {
+      "Aura.app": "siteforce\\:communityApp"
+    },
+    "oss": true,
+    "website": "https://github.com/forcedotcom/aura"
   },
   "Aurelia": {
     "cats": [
@@ -4189,6 +4275,28 @@
     "saas": true,
     "website": "https://www.azion.com/"
   },
+  "Azoya": {
+    "cats": [
+      6,
+      106
+    ],
+    "description": "Azoya helps international brands and retailers sell directly to Chinese consumers through cross-border ecommerce.",
+    "excludes": "Magento",
+    "headers": {
+      "x-azoya-webisteid": ""
+    },
+    "icon": "Azoya.svg",
+    "js": {
+      "IMAGE_CDN_HOST": "\\.azoyacdn\\.com"
+    },
+    "pricing": [
+      "high",
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.azoyagroup.com"
+  },
   "Azure": {
     "cats": [
       62
@@ -4459,5 +4567,15 @@
     "icon": "augmented-ui.png",
     "oss": true,
     "website": "http://augmented-ui.com"
+  },
+  "autoComplete.js": {
+    "cats": [
+      59
+    ],
+    "description": "autoComplete.js is a simple, pure vanilla Javascript library.",
+    "icon": "autoComplete.js.svg",
+    "oss": true,
+    "scriptSrc": "@tarekraafat/autocomplete\\.js@([\\d\\.]+)/\\;version:\\1",
+    "website": "https://tarekraafat.github.io/autoComplete.js"
   }
 }

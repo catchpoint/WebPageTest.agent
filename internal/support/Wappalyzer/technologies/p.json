@@ -356,6 +356,24 @@
     "scriptSrc": "\\.getpaloma\\.com/",
     "website": "https://www.getpaloma.com"
   },
+  "Panelbear": {
+    "cats": [
+      10,
+      13
+    ],
+    "description": "Panelbear is a simple website performance and traffic analytics tool.",
+    "icon": "Panelbear.svg",
+    "js": {
+      "panelbear": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://panelbear.com"
+  },
   "Pantheon": {
     "cats": [
       62
@@ -1373,6 +1391,16 @@
     ],
     "website": "https://picturepark.com"
   },
+  "Piman": {
+    "cats": [
+      68
+    ],
+    "description": "Piman is an open-source accessibility UI framework create by Blueplanet Inc.",
+    "icon": "Piman.svg",
+    "dom": "button.bpa-btn",
+    "oss": true,
+    "website": "https://ya-sai.github.io/piman/"
+  },
   "Pimcore": {
     "cats": [
       1,
@@ -1390,7 +1418,7 @@
     "pricing": [
       "poa"
     ],
-    "website": "http://pimcore.org"
+    "website": "https://pimcore.com/en/digital-experience-platform"
   },
   "Pin Payments": {
     "cats": [
@@ -1425,6 +1453,24 @@
       "designer": "Pingoteam"
     },
     "website": "https://www.pingoteam.ir/"
+  },
+  "PinnacleCart": {
+    "cats": [
+      6
+    ],
+    "description": "PinnacleCart is an ecommerce platform.",
+    "icon": "PinnacleCart.png",
+    "js": {
+      "USER_DELETE_ADDRESS": "^DeleteShippingAddress$\\;confidence:49",
+      "USER_DELETE_PAYMENT_PROFILE": "^DeletePaymentProfile$\\;confidence:49"
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.pinnaclecart.com"
   },
   "Pinterest": {
     "cats": [
@@ -1618,6 +1664,26 @@
     ],
     "website": "https://www.pizzanetz.de"
   },
+  "Plaid": {
+    "cats": [
+      41,
+      19
+    ],
+    "description": "Plaid is a fintech company that facilitates communication between financial services apps and users' banks and credit card providers.",
+    "headers": {
+      "content-security-policy": "cdn\\.plaid\\.com/"
+    },
+    "icon": "Plaid.svg",
+    "js": {
+      "Plaid.version": "([\\.\\d]+)\\;version:\\1"
+    },
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "scriptSrc": "\\.plaid\\.com/",
+    "website": "https://plaid.com"
+  },
   "Planet": {
     "cats": [
       49
@@ -1743,12 +1809,14 @@
       1
     ],
     "cpe": "cpe:2.3:a:plone:plone:*:*:*:*:*:*:*:*",
+    "description": "Plone is a free and open source content management system (CMS) built on top of the Zope application server.",
     "icon": "Plone.svg",
     "implies": "Python",
     "meta": {
       "generator": "Plone"
     },
-    "website": "http://plone.org"
+    "oss": true,
+    "website": "https://plone.org/"
   },
   "Plotly": {
     "cats": [
@@ -1892,12 +1960,21 @@
       87,
       89
     ],
-    "description": "Polylang is a WordPress plugin which allows you to create a bilingual or multilingual WordPress site.",
-    "dom": "img[src*='/wp-content/plugins/polylang/']",
+    "cookies": {
+      "pll_language": "[a-z]{2}"
+    },
+    "description": "Polylang is a WordPress plugin which allows you to create multilingual WordPress site.",
+    "dom": "#pll_switcher",
+    "headers": {
+      "x-redirected-by": "Polylang(?: (Pro))?\\;version:\\1"
+    },
     "icon": "Polylang.svg",
     "oss": true,
+    "pricing": [
+      "freemium"
+    ],
     "requires": "WordPress",
-    "website": "https://github.com/polylang/polylang"
+    "website": "https://wordpress.org/plugins/polylang"
   },
   "Polymer": {
     "cats": [
@@ -2396,7 +2473,8 @@
     "description": "Prism is an extensible syntax highlighter.",
     "icon": "Prism.svg",
     "js": {
-      "Prism": ""
+      "Prism": "",
+      "apex.libVersions.prismJs": "^([\\d\\.]+)$\\;version:\\1"
     },
     "scriptSrc": "prism\\.js",
     "website": "http://prismjs.com"
@@ -2414,6 +2492,7 @@
       "recurring"
     ],
     "saas": true,
+    "scriptSrc": "\\.prismic\\.io/",
     "website": "https://prismic.io",
     "xhr": "\\.cdn\\.prismic\\.io"
   },
@@ -2452,7 +2531,27 @@
       "ProcessWire": ""
     },
     "oss": true,
-    "website": "https://processwire.com"
+    "website": "https://processwire.com/"
+  },
+  "Product Hunt": {
+    "cats": [
+      19
+    ],
+    "description": "Product Hunt is a community-based website that allows makers and marketers to launch their products or services and get in touch with their first real users.",
+    "dom": {
+      "a[href*='.producthunt.com/']": {
+        "attributes": {
+          "href": "\\.producthunt\\.com/(?:post|tech|products)"
+        }
+      }
+    },
+    "icon": "Product Hunt.svg",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "website": "https://www.producthunt.com"
   },
   "Product Personalizer": {
     "cats": [
@@ -2853,6 +2952,16 @@
     "scriptSrc": "api\\.pushnami\\.com",
     "website": "https://pushnami.com"
   },
+  "PyScript": {
+    "cats": [
+      19
+    ],
+    "description": "PyScript is a python script that can be run in the browser using a mix of Python and standard HTML.",
+    "dom": "py-script",
+    "icon": "PyScript.svg",
+    "oss": true,
+    "website": "https://pyscript.net"
+  },
   "Pygments": {
     "cats": [
       19
@@ -2888,6 +2997,25 @@
     "icon": "Python.png",
     "website": "http://python.org"
   },
+  "PythonAnywhere": {
+    "cats": [
+      62,
+      88
+    ],
+    "description": "PythonAnywhere is an online integrated development environment (IDE) and web hosting service (Platform as a service) based on the Python programming language.",
+    "headers": {
+      "Server": "^PythonAnywhere$"
+    },
+    "icon": "PythonAnywhere.svg",
+    "implies": "Python",
+    "oss": false,
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": false,
+    "website": "https://www.pythonanywhere.com"
+  },
   "papaya CMS": {
     "cats": [
       1
@@ -2912,12 +3040,24 @@
       25
     ],
     "description": "Particles.js is a JavaScript library for creating particles.",
-    "html": "<div id=\"particles-js\">",
+    "dom": "div#particles-js",
     "js": {
       "particlesJS": ""
     },
+    "oss": true,
     "scriptSrc": "/particles(?:\\.min)?\\.js",
-    "website": "https://vincentgarreau.com/particles.js/"
+    "website": "https://github.com/VincentGarreau/particles.js"
+  },
+  "petite-vue": {
+    "cats": [
+      19
+    ],
+    "description": "petite-vue is an alternative distribution of Vue optimised for progressive enhancement.",
+    "icon": "vue.svg",
+    "oss": true,
+    "scriptSrc": "/petite-vue",
+    "scripts": "/petite-vue@([\\d\\.]+)/\\;version:\\1",
+    "website": "https://github.com/vuejs/petite-vue"
   },
   "phpAlbum": {
     "cats": [
@@ -3007,6 +3147,26 @@
     "icon": "phpPgAdmin.png",
     "implies": "PHP",
     "website": "http://phppgadmin.sourceforge.net"
+  },
+  "phpRS": {
+    "cats": [
+      1
+    ],
+    "description": "phpRS is a content management software written in PHP.",
+    "dom": {
+      "a[href*='.php']": {
+        "attributes": {
+          "href": "search\\.php\\?.+all-phpRS-all"
+        }
+      }
+    },
+    "icon": "default.svg",
+    "implies": "PHP",
+    "meta": {
+      "generator": "^phpRS$"
+    },
+    "oss": true,
+    "website": "https://phprs.net"
   },
   "phpSQLiteCMS": {
     "cats": [
