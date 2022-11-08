@@ -103,7 +103,7 @@
   },
   "USWDS": {
     "cats": [
-      18
+      66
     ],
     "description": "USWDS is a design system for the federal government.",
     "icon": "USWDS.svg",
@@ -201,6 +201,9 @@
     ],
     "description": "Umami is a self-hosted web analytics solution. It's goal is to provide a friendlier, privacy-focused alternative to Google Analytics and a free, open-sourced alternative to paid solutions.",
     "icon": "umami.svg",
+    "js": {
+      "umami": ""
+    },
     "oss": true,
     "scriptSrc": "umami\\.js",
     "website": "https://umami.is/"
@@ -210,6 +213,7 @@
       1
     ],
     "description": "Umbraco is an open-source Microsoft ASP.NET based content management system.",
+    "dom": "script[src*='/UmbracoForms/']",
     "headers": {
       "X-Umbraco-Version": "^(.+)$\\;version:\\1"
     },
@@ -233,7 +237,7 @@
     "saas": true,
     "scripts": "/Umbraco/Api/",
     "url": "/umbraco/login\\.aspx(?:$|\\?)",
-    "website": "http://umbraco.com",
+    "website": "https://umbraco.com/",
     "xhr": "/umbraco/api/"
   },
   "UmiJs": {
@@ -355,6 +359,23 @@
     "saas": true,
     "website": "https://unicornplatform.com"
   },
+  "UnoCSS": {
+    "cats": [
+      66
+    ],
+    "css": "--un-(?:rotate|translate|space-x|text-opacity|border-opacity)",
+    "description": "UnoCSS is instant on-demand Atomic CSS engine.",
+    "dom": {
+      "style[data-unocss]": {
+        "attributes": {
+          "data-unocss": "([\\d\\.]+)\\;version:\\1"
+        }
+      }
+    },
+    "icon": "UnoCSS.svg",
+    "oss": true,
+    "website": "https://uno.antfu.me/"
+  },
   "Unpkg": {
     "cats": [
       31
@@ -451,7 +472,13 @@
       13
     ],
     "description": "UptimeRobot is a web-based software that is designed to monitor the sites frequently to check whether any site is down owing to server problem or any bug in coding.",
-    "dom": "a[href*='stats.uptimerobot.com/']",
+    "dom": {
+      "a[href*='uptimerobot.com']": {
+        "attributes": {
+          "href": "(?:\\.|//)uptimerobot\\.com/"
+        }
+      }
+    },
     "headers": {
       "content-security-policy": "\\.uptimerobot\\.com"
     },
@@ -462,7 +489,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "stats\\.uptimerobot\\.com/",
+    "scriptSrc": "\\.uptimerobot\\.com/",
     "website": "https://uptimerobot.com"
   },
   "Uptrends": {
@@ -549,6 +576,7 @@
     "description": "Userlike is a cloud-based live chat solution that can be integrated with existing websites.",
     "icon": "UserLike.svg",
     "js": {
+      "__USERLIKE_MOUNT_GUARD__": "",
       "userlike": "",
       "userlikeInit": ""
     },

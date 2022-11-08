@@ -152,6 +152,26 @@
     "scriptSrc": "^rainloop/v/([0-9.]+)/\\;version:\\1",
     "website": "https://www.rainloop.net/"
   },
+  "Raisely": {
+    "cats": [
+      51,
+      41
+    ],
+    "description": "Raisely is a cloud-based fundraising platform that helps non-profits and charities drive fundraising campaigns and collect donations.",
+    "icon": "Raisely.svg",
+    "js": {
+      "RaiselyComponents": "",
+      "__raiselyDebug": "",
+      "wpRaisely": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://raisely.com"
+  },
   "Rakuten": {
     "cats": [
       71
@@ -203,7 +223,7 @@
       54
     ],
     "description": "RankMath SEO is a search engine optimization plugin for WordPress.",
-    "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/']",
+    "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/'], script.rank-math-schema-pro, script.rank-math-schema",
     "icon": "RankMath SEO.svg",
     "pricing": [
       "freemium",
@@ -511,12 +531,13 @@
       12
     ],
     "description": "React Router provides declarative routing for React.",
-    "icon": "React Router.png",
+    "icon": "React Router.svg",
     "implies": "React",
+    "oss": true,
     "scriptSrc": [
-      "/react-router(@|/)([\\d.]+)(?:/[a-z]+)?/react-router(?:.min)?\\.js\\;version:\\2"
+      "(?:/react-router(@|/)([\\d.]+)(?:/[a-z]+)?)?/react-router(?:\\.min)?\\.js\\;version:\\2"
     ],
-    "website": "https://reactrouter.com/"
+    "website": "https://reactrouter.com"
   },
   "Reactive": {
     "cats": [
@@ -538,6 +559,23 @@
     "saas": true,
     "url": "^https?//.+\\.reactiveonline\\.io",
     "website": "https://reactiveonline.io"
+  },
+  "Readymag": {
+    "cats": [
+      51
+    ],
+    "description": "Readymag is a browser-based design tool that helps create websites, portfolios and all kinds of online publications without coding.",
+    "icon": "Readymag.svg",
+    "meta": {
+      "generator": "^Readymag$"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://readymag.com"
   },
   "Really Simple CAPTCHA": {
     "cats": [
@@ -709,6 +747,28 @@
     ],
     "saas": true,
     "website": "https://recruitee.com"
+  },
+  "Recurate": {
+    "cats": [
+      19
+    ],
+    "description": "Recurate is a tech-enabled resale service that empowers brands & retailers to establish their own integrated resale platforms directly on their ecommerce sites.",
+    "dom": {
+      "a[href*='support@recurate.com']": {
+        "attributes": {
+          "href": "mailto\\:support\\@recurate\\.com"
+        }
+      },
+      "link[href*='/recurate-site.css']": {
+        "attributes": {
+          "href": "cdn\\.shopify\\.com/.+/recurate-site\\.css"
+        }
+      }
+    },
+    "icon": "Recurate.svg",
+    "requires": "Shopify",
+    "scripts": "\"(?:vendor|title)?\"\\:\"Recurate\"",
+    "website": "https://www.recurate.com"
   },
   "Recurly": {
     "cats": [
@@ -1175,6 +1235,30 @@
     "scriptSrc": "static\\.resmio\\.\\w+/static/",
     "website": "https://www.resmio.com"
   },
+  "Resova": {
+    "cats": [
+      72
+    ],
+    "description": "Resova is an online booking software.",
+    "dom": {
+      "a[href*='.resova.']": {
+        "attributes": {
+          "href": "\\.resova\\.(?:us|eu|co\\.uk)"
+        }
+      }
+    },
+    "icon": "Resova.svg",
+    "js": {
+      "baseUrl": "\\.resova\\.(?:us|eu|co\\.uk)",
+      "initResova": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://resova.com"
+  },
   "Responsive Lightbox & Gallery": {
     "cats": [
       87,
@@ -1556,6 +1640,23 @@
     },
     "scriptSrc": "riot(?:\\+compiler)?(?:\\.min)?\\.js",
     "website": "https://riot.js.org/"
+  },
+  "Ripple": {
+    "cats": [
+      12
+    ],
+    "description": "Ripple is the frontend framework for Single Digital Presence, delivered using Nuxt and Vue.js.",
+    "headers": {
+      "x-sdp-app-type": "ripple"
+    },
+    "icon": "ripple.png",
+    "implies": [
+      "Nuxt.js",
+      "Vue.js",
+      "Drupal"
+    ],
+    "oss": true,
+    "website": "https://dpc-sdp.github.io/sdp-docs/ripple/"
   },
   "Rise.ai": {
     "cats": [
