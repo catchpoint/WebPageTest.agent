@@ -34,14 +34,19 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-external-intent-requests',
     '--enable-remote-debugging',
     '--net-log-capture-mode=IncludeSensitive',
-    '--load-media-router-component-extension=0',
     '--mute-audio',
     '--disable-hang-monitor',
     '--password-store=basic',
     '--disable-breakpad',
-    '--dont-require-litepage-redirect-infobar',
-    '--override-https-image-compression-infobar',
-    '--disable-fetching-hints-at-navigation-start'
+    '--disable-fetching-hints-at-navigation-start',
+    '--disable-site-isolation-trials',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-sync',
+    '--metrics-recording-only',
+    '--use-mock-keychain',
+    '--disable-ipc-flooding-protection',
+    '--disable-prompt-on-repost'
 ]
 
 HOST_RULES = [
@@ -59,15 +64,17 @@ DISABLE_CHROME_FEATURES = [
     'TranslateUI',
     'Translate',
     'OfflinePagesPrefetching',
-    'AutofillServerCommunication'
+    'HeavyAdPrivacyMitigations',
+    'AutofillServerCommunication',
+    'BackForwardCache',
+    'MediaRouter',
+    'OptimizationHints'
 ]
 
 ENABLE_CHROME_FEATURES = [
-    'SecMetadata'
 ]
 
 ENABLE_BLINK_FEATURES = [
-    'LayoutInstabilityAPI'
 ]
 
 """ Orange page
@@ -151,11 +158,10 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if 'netlog' in job and job['netlog']:
             self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
             args.append('--log-net-log=/data/local/tmp/netlog.txt')
-        if 'overrideHosts' in task and task['overrideHosts']:
-            features.append('NetworkService')
-            features.append('NetworkServiceInProcess')
-        args.append('--enable-features=' + ','.join(features))
-        args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        if len(features):
+            args.append('--enable-features=' + ','.join(features))
+        if len(ENABLE_BLINK_FEATURES):
+            args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         args.append('--disable-features=' + ','.join(disable_features))
         self.sanitize_shell_args(args)
         command_line = 'chrome ' + ' '.join(args)
