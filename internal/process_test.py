@@ -71,6 +71,7 @@ class ProcessTest(object):
         self.add_summary_metrics()
         self.merge_crux_data()
         self.merge_lighthouse_data()
+        self.merge_trace_page_data()
 
         # Mark the data as having been processed so the server can know not to re-process it
         page_data['edge-processed'] = True
@@ -351,7 +352,7 @@ class ProcessTest(object):
                                     if 'name' in event and 'ts' in event and 'args' in event and 'frame' in event['args'] and \
                                             event['args']['frame'] in main_frames and \
                                             (event['ts'] >= start_time or 'value' in event['args']) and \
-                                            event['name'].lower().find('largest') and \
+                                            event['name'].lower().find('largest') >= 0 and \
                                             'data' in event['args'] and 'size' in event['args']['data']:
                                         name = event['name']
                                         if name not in largest or event['args']['data']['size'] > largest[name]['args']['data']['size']:
@@ -378,6 +379,10 @@ class ProcessTest(object):
                                                     paint_event['element'] = event['args']['data']['element']
                                                 if 'type' in event['args']['data']:
                                                     paint_event['type'] = event['args']['data']['type']
+                                                if 'imageUrl' in event['args']['data'] and len(event['args']['data']['imageUrl']):
+                                                    paint_event['imageUrl'] = event['args']['data']['imageUrl']
+                                                if 'url' in event['args']['data'] and len(event['args']['data']['url']):
+                                                    paint_event['url'] = event['args']['data']['url']
                                                 if 'largestPaints' not in page_data:
                                                     page_data['largestPaints'] = []
                                                 page_data['largestPaints'].append(paint_event)
@@ -488,6 +493,8 @@ class ProcessTest(object):
                                                         if matches:
                                                             page_data['LargestContentfulPaintType'] = 'background-image'
                                                             page_data['LargestContentfulPaintImageURL'] = matches.group(1)
+                                                    if 'imageUrl' in paint_event:
+                                                        page_data['LargestContentfulPaintImageURL'] = paint_event['imageUrl']
                                         elif 'largestPaints' in page_data:
                                             for paint_event in page_data['largestPaints']:
                                                 if paint_event['event'] == 'LargestTextPaint' and paint_event['time'] == event['time']:
@@ -561,6 +568,24 @@ class ProcessTest(object):
                         self.delete.append(metrics_file)
         except Exception:
             logging.exception('Error merging blink features')
+
+    def merge_trace_page_data(self):
+        """Merge any page data that was extracted from the trace events"""
+        try:
+            page_data = self.data['pageData']
+            metrics_file = os.path.join(self.task['dir'], self.prefix + '_trace_page_data.json.gz')
+            if os.path.isfile(metrics_file):
+                with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
+                    metrics = json.load(f)
+                    if metrics:
+                        for key in metrics:
+                            page_data[key] = metrics[key]
+                try:
+                    os.unlink(metrics_file)
+                except Exception:
+                    pass
+        except Exception:
+            logging.exception('Error merging trace page data')
 
     def merge_priority_streams(self):
         """Merge the list of HTTP/2 priority-only stream data"""

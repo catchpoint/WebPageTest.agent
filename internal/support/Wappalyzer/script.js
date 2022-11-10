@@ -4,6 +4,7 @@
   const wappalyzer_categories = %CATEGORIES%;
   const cookies = %COOKIES%;
   const responseHeaders = %RESPONSE_HEADERS%;
+  const dns = %DNS%;
   Wappalyzer.setTechnologies(wappalyzer_technologies);
   Wappalyzer.setCategories(wappalyzer_categories);
 
@@ -51,7 +52,8 @@
       headers: responseHeaders,
       meta: meta,
       cookies: cookies,
-      scriptSrc: scripts
+      scriptSrc: scripts,
+      dns: dns
     });
     let dom = getDom(Wappalyzer.technologies);
     detections = detections.concat(analyzeDom(dom, Wappalyzer.technologies));
@@ -76,7 +78,8 @@
           headers: responseHeaders,
           meta: meta,
           cookies: cookies,
-          scriptSrc: scripts
+          scriptSrc: scripts,
+          dns: dns
         }, requires_tech));
       dom = getDom(requires_tech);
       detections = detections.concat(analyzeDom(dom, requires_tech));

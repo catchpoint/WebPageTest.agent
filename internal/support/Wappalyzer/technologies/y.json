@@ -36,14 +36,16 @@
     "cats": [
       59
     ],
-    "cpe": "cpe:/a:yahoo:yui",
+    "cpe": "cpe:2.3:a:yahoo:yui:*:*:*:*:*:*:*:*",
+    "description": "YUI is a JavaScript and CSS library with more than 30 unique components including low-level DOM utilities and high-level user-interface widgets.",
     "icon": "YUI.png",
     "js": {
       "YAHOO.VERSION": "^(.+)$\\;version:\\1",
       "YUI.version": "^(.+)$\\;version:\\1"
     },
+    "oss": true,
     "scriptSrc": "(?:/yui/|yui\\.yahooapis\\.com)",
-    "website": "http://yuilibrary.com"
+    "website": "https://clarle.github.io/yui3"
   },
   "YUI Doc": {
     "cats": [
@@ -113,6 +115,18 @@
     },
     "scriptSrc": "d\\.yimg\\.com/mi/ywa\\.js",
     "website": "http://web.analytics.yahoo.com"
+  },
+  "YalinHost": {
+    "cats": [
+      88
+    ],
+    "description": "YalinHost is a web hosting service provider.",
+    "dns": {
+      "NS": "\\.yalinhost\\.com",
+      "SOA": "\\.yalinhost\\.com"
+    },
+    "icon": "YalinHost.png",
+    "website": "https://yalinhost.com"
   },
   "Yampi Checkout": {
     "cats": [
@@ -471,6 +485,27 @@
     "scriptSrc": "\\.yoomoney\\.ru/",
     "website": "https://yoomoney.ru"
   },
+  "Yoori": {
+    "cats": [
+      6
+    ],
+    "description": "Yoori is a multi-vendor PWA ecommerce CMS.",
+    "dom": "div.yoori--cookies",
+    "icon": "Yoori.png",
+    "implies": [
+      "Laravel",
+      "PHP",
+      "Vue.js",
+      "PWA",
+      "MySQL",
+      "cPanel"
+    ],
+    "pricing": [
+      "onetime"
+    ],
+    "scripts": "console\\.log\\(\\'Yoori-Ecommerce",
+    "website": "https://spagreen.net/yoori-ecommerce-solution"
+  },
   "Yotpo Loyalty & Referrals": {
     "cats": [
       84
@@ -579,6 +614,25 @@
     ],
     "saas": true,
     "website": "https://youcan.shop"
+  },
+  "YouPay": {
+    "cats": [
+      100
+    ],
+    "description": "YouPay is an alternative method of payment that allows you to give someone else the ability to pay for your shopping cart with no fees or interest.",
+    "icon": "YouPay.svg",
+    "implies": "Shopify",
+    "js": {
+      "YouPay.buttonWindow": "",
+      "youpayReady": "",
+      "youpayStatus": ""
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "app\\.youpay\\.ai/",
+    "website": "https://youpay.co"
   },
   "YouTrack": {
     "cats": [

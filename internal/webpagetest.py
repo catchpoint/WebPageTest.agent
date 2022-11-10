@@ -1262,6 +1262,7 @@ class WebPageTest(object):
         try:
             path_base = os.path.join(task['dir'], task['prefix'])
             path = os.path.join(task['dir'], 'bodies')
+            netlog_path = os.path.join(task['dir'], 'netlog_bodies')
             requests = []
             devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
             with gzip.open(devtools_file, GZIP_READ_TEXT) as f_in:
@@ -1311,6 +1312,9 @@ class WebPageTest(object):
                             if body_id not in bodies:
                                 count += 1
                                 body_file_path = os.path.join(path, str(body_id))
+                                netlog_file_path = None
+                                if 'netlog_id' in request:
+                                    netlog_file_path = os.path.join(netlog_path, str(request['netlog_id']))
                                 headers = None
                                 if 'headers' in request and 'request' in request['headers']:
                                     headers = request['headers']['request']
@@ -1318,7 +1322,9 @@ class WebPageTest(object):
                                         'file': body_file_path,
                                         'id': body_id,
                                         'headers': headers}
-                                if os.path.isfile(body_file_path):
+                                if os.path.isfile(body_file_path) or os.path.isfile(netlog_file_path):
+                                    if netlog_file_path is not None and os.path.isfile(netlog_file_path):
+                                        task['netlog_file'] = netlog_file_path
                                     self.fetch_result_queue.put(task)
                                 else:
                                     self.fetch_queue.put(task)
@@ -1348,18 +1354,18 @@ class WebPageTest(object):
                             if thread_count == 0:
                                 break
                         else:
-                            if os.path.isfile(task['file']):
-                                # check to see if it is text or utf-8 data
+                            file_path = task['netlog_file'] if 'netlog_file' in task else task['file']
+                            if os.path.isfile(file_path):
+                                # Only append if the data can be read as utf-8
                                 try:
-                                    data = ''
-                                    with open(task['file'], 'r') as f_in:
-                                        data = f_in.read()
-                                    json.loads('"' + data.replace('"', '\\"') + '"')
+                                    with open(file_path, 'r', encoding='utf-8') as f_in:
+                                        f_in.read()
                                     body_index += 1
                                     file_name = '{0:03d}-{1}-body.txt'.format(body_index, task['id'])
-                                    bodies.append({'name': file_name, 'file': task['file']})
+                                    bodies.append({'name': file_name, 'file': file_path})
+                                    logging.debug('Added response body for %s', task['url'])
                                 except Exception:
-                                    logging.exception('Error appending bodies')
+                                    logging.exception('Non-text body for %s', task['url'])
                             self.fetch_result_queue.task_done()
                 except Exception:
                     pass
@@ -1560,6 +1566,12 @@ class WebPageTest(object):
         self.update_browser_viewport(task)
         if task['run'] == 1 and not task['cached']:
             self.collect_crux_data(task)
+        # Post-process the given test run
+        try:
+            from internal.process_test import ProcessTest
+            ProcessTest(self.options, self.job, task)
+        except Exception:
+            logging.exception('Error post-processing test')
         # Stop logging to the file
         if self.log_handler is not None:
             try:
@@ -1580,12 +1592,6 @@ class WebPageTest(object):
         if self.job['warmup'] > 0:
             logging.debug('Discarding warmup run')
         else:
-            # Post-process the given test run
-            try:
-                from internal.process_test import ProcessTest
-                ProcessTest(self.options, self.job, task)
-            except Exception:
-                logging.exception('Error post-processing test')
             # Continue with the upload
             if 'page_data' in task and 'fullyLoadedCPUpct' in task['page_data']:
                 self.cpu_pct = task['page_data']['fullyLoadedCPUpct']

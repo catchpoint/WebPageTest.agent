@@ -3,7 +3,7 @@
     "cats": [
       6
     ],
-    "cpe": "cpe:/a:lockon:ec-cube",
+    "cpe": "cpe:2.3:a:lockon:ec-cube:*:*:*:*:*:*:*:*",
     "description": "EC-CUBE is an open source package used to build ecommerce sites.",
     "icon": "EC-CUBE.svg",
     "implies": "PHP",
@@ -67,22 +67,6 @@
     "implies": "ELOG",
     "website": "http://midas.psi.ch/elog"
   },
-  "EPiServer": {
-    "cats": [
-      1
-    ],
-    "cookies": {
-      "EPiServer": "",
-      "EPiTrace": ""
-    },
-    "cpe": "cpe:/a:episerver:episerver",
-    "icon": "EPiServer.png",
-    "implies": "Microsoft ASP.NET",
-    "meta": {
-      "generator": "EPiServer"
-    },
-    "website": "http://episerver.com"
-  },
   "EPrints": {
     "cats": [
       19
@@ -97,6 +81,25 @@
       "generator": "EPrints ([\\d.]+)\\;version:\\1"
     },
     "website": "http://www.eprints.org"
+  },
+  "ERPNext": {
+    "cats": [
+      1
+    ],
+    "cpe": "cpe:2.3:a:frappe:erpnext:*:*:*:*:*:*:*:*",
+    "description": "ERPNext is a free and open-source integrated Enterprise Resource Planning (ERP) software developed by Frappe Technologies.",
+    "icon": "ERPNext.png",
+    "implies": "Frappe",
+    "js": {
+      "erpnext.shopping_cart": "",
+      "erpnext.subscribe_to_newsletter": ""
+    },
+    "oss": true,
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "website": "https://erpnext.com"
   },
   "ESW": {
     "cats": [
@@ -260,6 +263,27 @@
     "scriptSrc": "cdnebasnet\\.com/",
     "website": "https://ebasnet.com"
   },
+  "EcForce": {
+    "cats": [
+      6
+    ],
+    "description": "EcForce is an all-in-one ecommerce platform with all the functions necessary for ecommerce, from landing-page creation to order and customer data management analysis.",
+    "icon": "EcForce.png",
+    "implies": [
+      "Ruby",
+      "Ruby on Rails",
+      "Nginx"
+    ],
+    "js": {
+      "EcForce.Models": "",
+      "EcForce.Models.Shop": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://ec-force.com"
+  },
   "Ecovium": {
     "cats": [
       99
@@ -307,7 +331,7 @@
     "url": "https?://(?:[^/]+\\.)?edgecastcdn\\.net/",
     "website": "http://www.edgecast.com"
   },
-  "Edgio App Platform": {
+  "Edgio": {
     "cats": [
       31,
       62
@@ -317,7 +341,7 @@
       "layer0_destination": "",
       "layer0_eid": ""
     },
-    "description": "Edgio App Platform is an integrated suite of Edge services, from Delivery to Compute.",
+    "description": "Edgio is an integrated suite of Edge services, from Delivery to Compute.",
     "headers": {
       "x-0-status": "",
       "x-0-t": "",
@@ -364,6 +388,20 @@
     "saas": true,
     "scriptSrc": "\\.eggplant\\.cloud/",
     "website": "https://www.eggplantsoftware.com"
+  },
+  "Ektron CMS": {
+    "cats": [
+      1
+    ],
+    "cpe": "cpe:2.3:a:ektron:ektron_content_management_system:*:*:*:*:*:*:*:*",
+    "description": "Ektron CMS is developed on the Microsoft .NET framework and is 100% ASP.NET. In 2015 Ektron merged with EPiServer.",
+    "icon": "optimizely-cms.svg",
+    "implies": "Microsoft ASP.NET",
+    "js": {
+      "Ektron": ""
+    },
+    "scriptSrc": "/ektron\\.javascript\\.ashx",
+    "website": "https://www.optimizely.com/ektron-cms"
   },
   "Elastic APM": {
     "cats": [
@@ -433,8 +471,14 @@
     "cats": [
       29
     ],
+    "cpe": "cpe:2.3:a:elastic:elasticsearch:*:*:*:*:*:*:*:*",
     "description": "Elasticsearch is a search engine based on the Lucene library. It provides a distributed, multitenant-capable full-text search engine with an HTTP web interface and schema-free JSON documents.",
+    "dom": "div#topsearchelastic_widget",
     "icon": "Elasticsearch.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
     "website": "https://www.elastic.co"
   },
   "Elcodi": {
@@ -451,11 +495,28 @@
     ],
     "website": "http://elcodi.io"
   },
+  "Elcom": {
+    "cats": [
+      1
+    ],
+    "description": "The Elcom Platform is a web content management and intranet portal software written in Microsoft ASP.NET and SQL Server by Elcom Technology.",
+    "icon": "elcom.png",
+    "implies": "Microsoft ASP.NET",
+    "meta": {
+      "generator": "^elcomCMS"
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "text": "Web CMS by Elcom",
+    "website": "https://www.elcom.com.au/"
+  },
   "Eleanor CMS": {
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:eleanor-cms:eleanor_cms",
+    "cpe": "cpe:2.3:a:eleanor-cms:eleanor_cms:*:*:*:*:*:*:*:*",
     "icon": "Eleanor CMS.png",
     "implies": "PHP",
     "meta": {
@@ -613,6 +674,24 @@
     "scriptSrc": "(?:static|cdn)\\.scarabresearch\\.com",
     "website": "https://emarsys.com/"
   },
+  "Ematic Solutions": {
+    "cats": [
+      32
+    ],
+    "description": "Ematic Solutions is part of Ematic Group and started to revolve around transforming email marketing into an ROI machine.",
+    "icon": "Ematic Solutions.svg",
+    "js": {
+      "EmaticsObject": "",
+      "ematicApikey": "",
+      "ematics": "",
+      "ematicsSubscribe": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.ematicsolutions.com"
+  },
   "EmbedPlus": {
     "cats": [
       87
@@ -649,7 +728,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:embedthis:appweb",
+    "cpe": "cpe:2.3:a:embedthis:appweb:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "Mbedthis-Appweb(?:/([\\d.]+))?\\;version:\\1"
     },
@@ -677,7 +756,7 @@
     "cats": [
       12
     ],
-    "cpe": "cpe:/a:emberjs:ember.js",
+    "cpe": "cpe:2.3:a:emberjs:ember.js:*:*:*:*:*:*:*:*",
     "icon": "Ember.js.png",
     "js": {
       "Ember": "",
@@ -903,7 +982,7 @@
     "cats": [
       64
     ],
-    "cpe": "cpe:/a:envoyproxy:envoy",
+    "cpe": "cpe:2.3:a:envoyproxy:envoy:*:*:*:*:*:*:*:*",
     "description": "Envoy is an open-source edge and service proxy, designed for cloud-native applications.",
     "headers": {
       "Server": "^envoy$",
@@ -1024,7 +1103,7 @@
     "cats": [
       27
     ],
-    "cpe": "cpe:/a:erlang:erlang%2fotp",
+    "cpe": "cpe:2.3:a:erlang:erlang%2fotp:*:*:*:*:*:*:*:*",
     "description": "Erlang is a general-purpose, concurrent, functional programming language, and a garbage-collected runtime system.",
     "headers": {
       "Server": "Erlang( OTP/(?:[\\d.ABR-]+))?\\;version:\\1"
@@ -1118,7 +1197,7 @@
     "cats": [
       24
     ],
-    "cpe": "cpe:/a:etherpad:etherpad",
+    "cpe": "cpe:2.3:a:etherpad:etherpad:*:*:*:*:*:*:*:*",
     "description": "Etherpad is an open-source, web-based collaborative real-time editor, allowing authors to simultaneously edit a text document, and see all of the participants' edits in real-time, with the ability to display each author's text in their own colour.",
     "headers": {
       "Server": "^Etherpad"
@@ -1366,7 +1445,7 @@
       18,
       22
     ],
-    "cpe": "cpe:/a:expressjs:express",
+    "cpe": "cpe:2.3:a:expressjs:express:*:*:*:*:*:*:*:*",
     "description": "Express is a web application framework for Node.js, released as free and open-source software under the MIT License. It is designed for building web applications and APIs.",
     "headers": {
       "X-Powered-By": "^Express(?:$|,)"
@@ -1384,18 +1463,18 @@
       "exp_last_activity": "",
       "exp_tracker": ""
     },
-    "cpe": "cpe:/a:ellislab:expressionengine",
+    "cpe": "cpe:2.3:a:ellislab:expressionengine:*:*:*:*:*:*:*:*",
     "description": "ExpressionEngine is a free and open-source CMS.",
     "icon": "ExpressionEngine.svg",
     "implies": "PHP",
     "oss": true,
-    "website": "http://expressionengine.com"
+    "website": "https://expressionengine.com/"
   },
   "ExtJS": {
     "cats": [
       12
     ],
-    "cpe": "cpe:/a:sencha:ext_js",
+    "cpe": "cpe:2.3:a:sencha:ext_js:*:*:*:*:*:*:*:*",
     "icon": "ExtJS.png",
     "js": {
       "Ext": "",
@@ -1674,6 +1753,18 @@
     "saas": true,
     "website": "https://www.ekomi.de"
   },
+  "eNamad": {
+    "cats": [
+      19
+    ],
+    "description": "eNamad is an electronic trust symbol.",
+    "dom": "a[href*='.enamad.ir/'][target='_blank'], div.e-namad-widget-wrapper, img[src*='.enamad.ir/']",
+    "icon": "eNamad.png",
+    "meta": {
+      "enamad": "^\\d+$"
+    },
+    "website": "https://enamad.ir/"
+  },
   "ePages": {
     "cats": [
       6
@@ -1697,7 +1788,7 @@
     "cats": [
       68
     ],
-    "description": "eSSENTIAL Accessibility provides an accessibility overlay for websites.",
+    "description": "eSSENTIAL Accessibility is a digital accessibility-as-a-service platform.",
     "dom": " a[href*='.essentialaccessibility.com'] > img",
     "icon": "eSSENTIAL Accessibility.png",
     "pricing": [
@@ -1719,6 +1810,24 @@
     "saas": true,
     "scriptSrc": "eshopcrm\\.com/",
     "website": "https://eshopcrm.com"
+  },
+  "eSputnik": {
+    "cats": [
+      32,
+      97
+    ],
+    "description": "eSputnik is a marketing automation service for ecommerce.",
+    "icon": "eSputnik.svg",
+    "js": {
+      "esSdk": "^es$"
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "(?://|\\.)esputnik\\.com/",
+    "website": "https://esputnik.com"
   },
   "eSyndiCat": {
     "cats": [
@@ -1767,6 +1876,7 @@
     "cookies": {
       "eZSESSID": ""
     },
+    "cpe": "cpe:2.3:a:ez:ez_publish:*:*:*:*:*:*:*:*",
     "headers": {
       "X-Powered-By": "^eZ Publish"
     },
@@ -1776,6 +1886,25 @@
       "generator": "eZ Publish"
     },
     "website": "https://github.com/ezsystems/ezpublish-legacy"
+  },
+  "ebisumart": {
+    "cats": [
+      6
+    ],
+    "description": "ebisumart is a cloud-based storefront system for developing and renewing high-quality ecommerce websites.",
+    "icon": "ebisumart.svg",
+    "js": {
+      "Ebisu.FontChanger": "",
+      "Ebisu.FontChanger.map.L": "",
+      "ebisu_conv": ""
+    },
+    "pricing": [
+      "low",
+      "recurring",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.ebisumart.com"
   },
   "ef.js": {
     "cats": [
@@ -1848,7 +1977,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:experiencedcms:experiencedcms",
+    "cpe": "cpe:2.3:a:experiencedcms:experiencedcms:*:*:*:*:*:*:*:*",
     "icon": "experiencedCMS_Logo.png",
     "implies": "PHP",
     "meta": {

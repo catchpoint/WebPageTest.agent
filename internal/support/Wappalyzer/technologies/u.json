@@ -103,7 +103,7 @@
   },
   "USWDS": {
     "cats": [
-      18
+      66
     ],
     "description": "USWDS is a design system for the federal government.",
     "icon": "USWDS.svg",
@@ -127,6 +127,7 @@
     "cats": [
       28
     ],
+    "cpe": "cpe:2.3:o:canonical:ubuntu_linux:*:*:*:*:*:*:*:*",
     "description": "Ubuntu is a free and open-source operating system on Linux for the enterprise server, desktop, cloud, and IoT.",
     "headers": {
       "Server": "Ubuntu",
@@ -200,6 +201,9 @@
     ],
     "description": "Umami is a self-hosted web analytics solution. It's goal is to provide a friendlier, privacy-focused alternative to Google Analytics and a free, open-sourced alternative to paid solutions.",
     "icon": "umami.svg",
+    "js": {
+      "umami": ""
+    },
     "oss": true,
     "scriptSrc": "umami\\.js",
     "website": "https://umami.is/"
@@ -209,6 +213,7 @@
       1
     ],
     "description": "Umbraco is an open-source Microsoft ASP.NET based content management system.",
+    "dom": "script[src*='/UmbracoForms/']",
     "headers": {
       "X-Umbraco-Version": "^(.+)$\\;version:\\1"
     },
@@ -232,8 +237,21 @@
     "saas": true,
     "scripts": "/Umbraco/Api/",
     "url": "/umbraco/login\\.aspx(?:$|\\?)",
-    "website": "http://umbraco.com",
+    "website": "https://umbraco.com/",
     "xhr": "/umbraco/api/"
+  },
+  "UmiJs": {
+    "cats": [
+      12
+    ],
+    "description": "UmiJs is a scalable, enterprise-class frontend application framework that supports both configuration and conventional routing while maintaining functional completeness, such as dynamic routing, nested routing, and permission routing.",
+    "icon": "UmiJs.png",
+    "implies": "Node.js",
+    "js": {
+      "g_umi.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://umijs.org"
   },
   "Umso": {
     "cats": [
@@ -323,6 +341,41 @@
     "scriptSrc": "cmp\\.uniconsent\\.mgr\\.consensu\\.org/dfp\\.js",
     "website": "https://www.uniconsent.com/"
   },
+  "Unicorn Platform": {
+    "cats": [
+      1,
+      51
+    ],
+    "description": "Unicorn Platform is a drag and drop website and blog builder for startups, mobile apps, and SaaS.",
+    "icon": "Unicorn Platform.svg",
+    "js": {
+      "unicornplatform": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://unicornplatform.com"
+  },
+  "UnoCSS": {
+    "cats": [
+      66
+    ],
+    "css": "--un-(?:rotate|translate|space-x|text-opacity|border-opacity)",
+    "description": "UnoCSS is instant on-demand Atomic CSS engine.",
+    "dom": {
+      "style[data-unocss]": {
+        "attributes": {
+          "data-unocss": "([\\d\\.]+)\\;version:\\1"
+        }
+      }
+    },
+    "icon": "UnoCSS.svg",
+    "oss": true,
+    "website": "https://uno.antfu.me/"
+  },
   "Unpkg": {
     "cats": [
       31
@@ -386,6 +439,20 @@
     ],
     "website": "https://uploadcare.com"
   },
+  "Upptime": {
+    "cats": [
+      13
+    ],
+    "description": "Upptime is the open-source uptime monitor and status page, powered entirely by GitHub Actions, Issues, and Pages.",
+    "dom": {
+      "p > a[href*='upptime.js.org']": {
+        "text": "^Upptime$"
+      }
+    },
+    "icon": "Upptime.svg",
+    "oss": true,
+    "website": "https://upptime.js.org"
+  },
   "Upserve": {
     "cats": [
       93
@@ -405,7 +472,13 @@
       13
     ],
     "description": "UptimeRobot is a web-based software that is designed to monitor the sites frequently to check whether any site is down owing to server problem or any bug in coding.",
-    "dom": "a[href*='stats.uptimerobot.com/']",
+    "dom": {
+      "a[href*='uptimerobot.com']": {
+        "attributes": {
+          "href": "(?:\\.|//)uptimerobot\\.com/"
+        }
+      }
+    },
     "headers": {
       "content-security-policy": "\\.uptimerobot\\.com"
     },
@@ -416,7 +489,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "stats\\.uptimerobot\\.com/",
+    "scriptSrc": "\\.uptimerobot\\.com/",
     "website": "https://uptimerobot.com"
   },
   "Uptrends": {
@@ -503,6 +576,7 @@
     "description": "Userlike is a cloud-based live chat solution that can be integrated with existing websites.",
     "icon": "UserLike.svg",
     "js": {
+      "__USERLIKE_MOUNT_GUARD__": "",
       "userlike": "",
       "userlikeInit": ""
     },
@@ -768,7 +842,7 @@
       15
     ],
     "description": "Utterances is a lightweight comments widget built on GitHub issues.",
-    "dom": "iframe[src*='utteranc.es/client.js']",
+    "dom": "iframe[src*='utteranc.es']",
     "icon": "utterances.png",
     "oss": true,
     "website": "https://github.com/utterance/utterances",

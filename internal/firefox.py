@@ -404,6 +404,11 @@ class Firefox(DesktopBrowser):
                 logging.exception('Marionette exception navigating to about:blank after the test')
             self.task = None
 
+    def alert_size(self, _alert_config, _task_dir, _prefix):
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''             
+        self.alert_desktop_results(_alert_config, 'Firefox', _task_dir, _prefix)
+
+
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
         if self.job['message_server'] is not None:
@@ -1340,7 +1345,9 @@ class Firefox(DesktopBrowser):
                             (request['responseCode'] == 200 or request['responseCode'] == 304) and \
                             ('contentType' not in request or
                             (request['contentType'] != 'application/ocsp-response' and
-                            request['contentType'] != 'application/pkix-crl')):
+                             request['contentType'] != 'application/pkix-crl' and 
+                             request['contentType'] != 'application/pkix-cert' and
+                             request['contentType'] != 'application/ca-cert')):
                         main_request = request['id']
                         request['is_base_page'] = True
                         page['final_base_page_request'] = index

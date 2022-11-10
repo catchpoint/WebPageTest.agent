@@ -3,7 +3,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:lepton-cms:lepton",
+    "cpe": "cpe:2.3:a:lepton-cms:lepton:*:*:*:*:*:*:*:*",
     "icon": "LEPTON.png",
     "implies": "PHP",
     "meta": {
@@ -53,12 +53,14 @@
     "cats": [
       62
     ],
+    "description": "The Open Source Application Delivery Platform for Kubernetes.",
     "headers": {
       "X-LAGOON": "",
       "x-lagoon": ""
     },
-    "icon": "Lagoon.png",
-    "website": "https://www.amazee.io/hosting"
+    "icon": "lagoon.svg",
+    "oss": true,
+    "website": "https://lagoon.sh/"
   },
   "LangShop": {
     "cats": [
@@ -89,7 +91,7 @@
     "cookies": {
       "laravel_session": ""
     },
-    "cpe": "cpe:/a:laravel:laravel",
+    "cpe": "cpe:2.3:a:laravel:laravel:*:*:*:*:*:*:*:*",
     "description": "Laravel is a free, open-source PHP web framework.",
     "icon": "Laravel.svg",
     "implies": "PHP",
@@ -256,6 +258,27 @@
     "scriptSrc": "ls\\.unveilhooks(?:\\.min)?\\.js",
     "website": "https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/unveilhooks"
   },
+  "Leadfeeder": {
+    "cats": [
+      10
+    ],
+    "description": "Leadfeeder is a B2B visitor identification software that tracks and identifies companies that visit your website.",
+    "headers": {
+      "Content-Security-Policy": "\\.(?:lfeeder|leadfeeder)\\.com"
+    },
+    "icon": "Leadfeeder.png",
+    "js": {
+      "ldfdr.getTracker": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.leadfeeder\\.com/",
+    "website": "https://www.leadfeeder.com"
+  },
   "Leadinfo": {
     "cats": [
       10
@@ -273,6 +296,25 @@
     "saas": true,
     "scriptSrc": "cdn\\.leadinfo\\.net",
     "website": "https://www.leadinfo.com"
+  },
+  "Leadster": {
+    "cats": [
+      52
+    ],
+    "description": "Leadster is a conversation marketing plataform based on chatbot.",
+    "icon": "Leadster.svg",
+    "js": {
+      "neurolead.convoScript": "",
+      "neurolead.elChatbot": "",
+      "neuroleadLanguage": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://leadster.com.br"
   },
   "Leaflet": {
     "cats": [
@@ -395,6 +437,32 @@
     "scriptSrc": "\\.legalmonster\\.com/",
     "website": "https://www.legalmonster.com"
   },
+  "Lengow": {
+    "cats": [
+      19
+    ],
+    "description": "Lengow is an ecommerce automation solution that enables brands and retailers to integrate, structure and optimise their product content across all distribution channels: marketplaces, comparison shopping engines, affiliate platforms, display and retargeting.",
+    "icon": "Lengow.svg",
+    "pricing": [
+      "payg",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.lengow\\.com/",
+    "website": "https://www.lengow.com"
+  },
+  "Lenis": {
+    "cats": [
+      59
+    ],
+    "description": "Lenis is a smooth scroll library to normalise the scrolling experience across devices.",
+    "icon": "Lenis.svg",
+    "js": {
+      "lenisVersion": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://lenis.studiofreight.com"
+  },
   "Less": {
     "cats": [
       19
@@ -462,6 +530,25 @@
     "saas": true,
     "website": "https://www.lever.co"
   },
+  "Lexity": {
+    "cats": [
+      10
+    ],
+    "description": "Lexity is the one-stop-shop of ecommerce services for SMBs.",
+    "icon": "Lexity.png",
+    "scriptSrc": "\\.lexity\\.com/",
+    "website": "http://lexity.com"
+  },
+  "Liberapay": {
+    "cats": [
+      41
+    ],
+    "description": "Liberapay is a non-profit organisation subscription payment platform.",
+    "dom": "a[href*='//liberapay.com/'][target='_blank']",
+    "icon": "Liberapay.svg",
+    "scriptSrc": "//liberapay\\.com/",
+    "website": "https://liberapay.com/"
+  },
   "Libravatar": {
     "cats": [
       19
@@ -491,12 +578,13 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:liferay:liferay_portal",
+    "cpe": "cpe:2.3:a:liferay:liferay_portal:*:*:*:*:*:*:*:*",
     "description": "Liferay is an open-source company that provides free documentation and paid professional service to users of its software.",
     "headers": {
       "Liferay-Portal": "[a-z\\s]+([\\d.]+)\\;version:\\1"
     },
     "icon": "Liferay.svg",
+    "implies": "Java",
     "js": {
       "Liferay": ""
     },
@@ -504,13 +592,13 @@
     "pricing": [
       "poa"
     ],
-    "website": "https://www.liferay.com"
+    "website": "https://www.liferay.com/"
   },
   "Lift": {
     "cats": [
       18
     ],
-    "cpe": "cpe:/a:liftweb:lift",
+    "cpe": "cpe:2.3:a:liftweb:lift:*:*:*:*:*:*:*:*",
     "headers": {
       "X-Lift-Version": "(.+)\\;version:\\1"
     },
@@ -537,7 +625,7 @@
     "cats": [
       59
     ],
-    "cpe": "cpe:/a:lightbox_photo_gallery_project:lightbox_photo_gallery",
+    "cpe": "cpe:2.3:a:lightbox_photo_gallery_project:lightbox_photo_gallery:*:*:*:*:*:*:*:*",
     "html": "<link [^>]*href=\"[^\"]+lightbox(?:\\.min)?\\.css",
     "icon": "Lightbox.png",
     "scriptSrc": "lightbox(?:-plus-jquery)?.{0,32}\\.js",
@@ -653,11 +741,35 @@
     "scriptSrc": "^https?://cdn\\.linksmart\\.com/linksmart_([\\d.]+?)(?:\\.min)?\\.js\\;version:\\1",
     "website": "http://linksmart.com"
   },
+  "Linkedin Ads": {
+    "cats": [
+      36
+    ],
+    "description": "Linkedin Ads is a paid marketing tool that offers access to Linkedin social networks through various sponsored posts and other methods.",
+    "dom": {
+      "img[src*='dc.ads.linkedin.com']": {
+        "attributes": {
+          "src": "dc\\.ads\\.linkedin\\.com"
+        }
+      },
+      "link[href*='px.ads.linkedin.com']": {
+        "attributes": {
+          "href": "px\\.ads\\.linkedin\\.com"
+        }
+      }
+    },
+    "headers": {
+      "Content-Security-Policy": "px\\.ads\\.linkedin\\.com"
+    },
+    "html": "<img [^>]*src=\"[^/]*//[^/]*px\\.ads\\.linkedin\\.com",
+    "icon": "Linkedin.svg",
+    "website": "https://business.linkedin.com/marketing-solutions/ads"
+  },
   "Linkedin Insight Tag": {
     "cats": [
       10
     ],
-    "dom": "noscript > img[src*='dc.ads.linkedin.com']",
+    "description": "LinkedIn Insight Tag is a lightweight JavaScript tag that powers conversion tracking, website audiences, and website demographics.",
     "icon": "Linkedin.svg",
     "js": {
       "ORIBI": "",
@@ -778,7 +890,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:litespeedtech:litespeed_web_server",
+    "cpe": "cpe:2.3:a:litespeedtech:litespeed_web_server:*:*:*:*:*:*:*:*",
     "description": "LiteSpeed is a high-scalability web server.",
     "headers": {
       "Server": "^LiteSpeed$"
@@ -1059,12 +1171,14 @@
       18,
       19
     ],
+    "description": "Livewire is a full-stack Laravel framework for building dynamic interfaces.",
     "html": "<[^>]{1,512}\\bwire:",
-    "icon": "Livewire.png",
+    "icon": "Livewire.svg",
     "implies": "Laravel",
     "js": {
       "livewire": ""
     },
+    "oss": true,
     "scriptSrc": "livewire(?:\\.min)?\\.js",
     "website": "https://laravel-livewire.com"
   },
@@ -1162,7 +1276,7 @@
     "cats": [
       59
     ],
-    "cpe": "cpe:/a:lodash:lodash",
+    "cpe": "cpe:2.3:a:lodash:lodash:*:*:*:*:*:*:*:*",
     "description": "Lodash is a JavaScript library which provides utility functions for common programming tasks using the functional programming paradigm.",
     "excludes": "Underscore.js",
     "icon": "Lo-dash.png",
@@ -1210,8 +1324,12 @@
     ],
     "description": "LogiCommerce is the headless ecommerce platform.",
     "icon": "LogiCommerce.svg",
+    "js": {
+      "logicommerceGlobal": ""
+    },
     "meta": {
-      "generator": "^LogiCommerce$"
+      "generator": "^LogiCommerce$",
+      "logicommerce": ""
     },
     "pricing": [
       "low",
@@ -1442,18 +1560,6 @@
     ],
     "website": "https://lottiefiles.com"
   },
-  "Lotus Domino": {
-    "cats": [
-      22
-    ],
-    "cpe": "cpe:/a:ibm:lotus_domino",
-    "headers": {
-      "Server": "Lotus-Domino"
-    },
-    "icon": "Lotus Domino.png",
-    "implies": "Java",
-    "website": "http://www-01.ibm.com/software/lotus/products/domino"
-  },
   "LoyaltyLion": {
     "cats": [
       84
@@ -1489,7 +1595,7 @@
     "cats": [
       27
     ],
-    "cpe": "cpe:/a:lua:lua",
+    "cpe": "cpe:2.3:a:lua:lua:*:*:*:*:*:*:*:*",
     "description": "Lua is a multi-paradigm programming language designed primarily for embedded use in applications.",
     "headers": {
       "X-Powered-By": "\\bLua(?: ([\\d.]+))?\\;version:\\1"
@@ -1497,11 +1603,27 @@
     "icon": "Lua.png",
     "website": "http://www.lua.org"
   },
+  "Luana": {
+    "cats": [
+      18
+    ],
+    "description": "Luana is a web framework that uses web browser APIs and features to make a cross-platform web app look like a Native one and bring the same experience.",
+    "icon": "Luana.png",
+    "implies": "PWA",
+    "js": {
+      "luanaframework": ""
+    },
+    "meta": {
+      "generator": "^Luana\\sFramework\\s([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://luanaframework.github.io"
+  },
   "Lucene": {
     "cats": [
       34
     ],
-    "cpe": "cpe:/a:apache:lucene",
+    "cpe": "cpe:2.3:a:apache:lucene:*:*:*:*:*:*:*:*",
     "description": "Lucene is a free and open-source search engine software library.",
     "icon": "Lucene.png",
     "implies": "Java",

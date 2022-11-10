@@ -63,6 +63,9 @@ class DevTools(object):
         self.trace_file = None
         self.trace_enabled = False
         self.requests = {}
+        self.netlog_requests = {}
+        self.netlog_urls = {}
+        self.netlog_lock = threading.Lock()
         self.request_count = 0
         self.response_bodies = {}
         self.body_fail_count = 0
@@ -419,6 +422,9 @@ class DevTools(object):
             # Add the required trace events
             if "rail" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("rail")
+            if "content" not in trace_config["includedCategories"]:
+                trace_config["includedCategories"].append("content")
+                self.job['discard_trace_content'] = True
             if "loading" not in trace_config["includedCategories"]:
                 trace_config["includedCategories"].append("loading")
             if "blink.user_timing" not in trace_config["includedCategories"]:
@@ -667,7 +673,26 @@ class DevTools(object):
         """Retrieve and store the given response body (if necessary)"""
         if request_id not in self.response_bodies and self.body_fail_count < 3 and not self.is_ios and not self.must_exit:
             request = self.get_request(request_id, True)
-            if request is not None and 'status' in request and request['status'] == 200 and \
+            # See if we have a netlog-based response body
+            found = False
+            if request is not None and 'url' in request:
+                try:
+                    path = os.path.join(self.task['dir'], 'netlog_bodies')
+                    with self.netlog_lock:
+                        if request['url'] in self.netlog_urls:
+                            for netlog_id in self.netlog_urls[request['url']]:
+                                if netlog_id in self.netlog_requests and 'body_claimed' not in self.netlog_requests[netlog_id]:
+                                    body_file_path = os.path.join(path, netlog_id)
+                                    if os.path.exists(body_file_path):
+                                        self.netlog_requests[netlog_id]['body_claimed'] = True
+                                        found = True
+                                        logging.debug('Matched netlog response body %s for %s', netlog_id, request['url'])
+                                        self.process_response_body(request_id, None, body_file_path)
+                    if not found and len(self.netlog_requests):
+                        logging.debug('Unable to match netlog response body for %s', request['url'])
+                except Exception:
+                    logging.exception('Error matching netlog response body')
+            if not found and request is not None and 'status' in request and request['status'] == 200 and \
                     'response_headers' in request and 'url' in request and request['url'].startswith('http'):
                 content_length = self.get_header_value(request['response_headers'], 'Content-Length')
                 if content_length is not None:
@@ -703,64 +728,83 @@ class DevTools(object):
                         if wait:
                             self.process_response_body(request_id, response)
 
-    def process_response_body(self, request_id, response):
-        request = self.get_request(request_id, True)
-        path = os.path.join(self.task['dir'], 'bodies')
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        body_file_path = os.path.join(path, request_id)
-        if not os.path.exists(body_file_path):
+    def process_response_body(self, request_id, response, netlog_body_file=None):
+        try:
+            request = self.get_request(request_id, True)
+            path = os.path.join(self.task['dir'], 'bodies')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            body_file_path = os.path.join(path, request_id)
             is_text = False
-            if request is not None and 'status' in request and request['status'] == 200 and 'response_headers' in request:
-                content_type = self.get_header_value(request['response_headers'], 'Content-Type')
-                if content_type is not None:
-                    content_type = content_type.lower()
-                    if content_type.startswith('text/') or \
-                            content_type.find('javascript') >= 0 or \
-                            content_type.find('json') >= 0 or \
-                            content_type.find('/svg+xml'):
-                        is_text = True
-            if response is None:
-                self.body_fail_count += 1
-                logging.warning('No response to body request for request %s',
-                                request_id)
-            elif 'result' not in response or \
-                    'body' not in response['result']:
-                self.body_fail_count = 0
-                logging.warning('Missing response body for request %s',
-                                request_id)
-            elif len(response['result']['body']):
+            body = None
+            if netlog_body_file is not None:
                 try:
-                    self.body_fail_count = 0
-                    # Write the raw body to a file (all bodies)
-                    if 'base64Encoded' in response['result'] and \
-                            response['result']['base64Encoded']:
-                        body = base64.b64decode(response['result']['body'])
-                        is_text = False
-                    else:
-                        body = response['result']['body'].encode('utf-8')
+                    with open(netlog_body_file, 'r', encoding='utf-8') as f:
+                        body = f.read()
+                        body = body.encode('utf-8')
                         is_text = True
-                    if 'request_headers' in request and 'Sec-Fetch-Dest' in request['request_headers']:
-                        if request['request_headers']['Sec-Fetch-Dest'] in ['audio', 'audioworklet', 'font', 'image', 'object', 'track', 'video']:
-                            is_text = False
-                    # Add text bodies to the zip archive
-                    store_body = self.all_bodies
-                    if self.html_body and request_id == self.main_request:
-                        store_body = True
-                    if store_body and self.bodies_zip_file is not None and is_text:
-                        self.body_index += 1
-                        name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
-                        self.bodies_zip_file.writestr(name, body)
-                        logging.debug('%s: Stored body in zip', request_id)
-                    logging.debug('%s: Body length: %d', request_id, len(body))
-                    self.response_bodies[request_id] = body
-                    with open(body_file_path, 'wb') as body_file:
-                        body_file.write(body)
                 except Exception:
-                    logging.exception('Exception retrieving body')
-            else:
-                self.body_fail_count = 0
-                self.response_bodies[request_id] = response['result']['body']
+                    pass
+                if body is None:
+                    with open(netlog_body_file, 'rb') as f:
+                        body = f.read()
+            elif not os.path.exists(body_file_path):
+                is_text = False
+                if request is not None and 'status' in request and request['status'] == 200 and 'response_headers' in request:
+                    content_type = self.get_header_value(request['response_headers'], 'Content-Type')
+                    if content_type is not None:
+                        content_type = content_type.lower()
+                        if content_type.startswith('text/') or \
+                                content_type.find('javascript') >= 0 or \
+                                content_type.find('json') >= 0 or \
+                                content_type.find('/svg+xml'):
+                            is_text = True
+                if response is None:
+                    self.body_fail_count += 1
+                    logging.warning('No response to body request for request %s',
+                                    request_id)
+                elif 'result' not in response or \
+                        'body' not in response['result']:
+                    self.body_fail_count = 0
+                    logging.warning('Missing response body for request %s',
+                                    request_id)
+                elif len(response['result']['body']):
+                    try:
+                        self.body_fail_count = 0
+                        # Write the raw body to a file (all bodies)
+                        if 'base64Encoded' in response['result'] and \
+                                response['result']['base64Encoded']:
+                            body = base64.b64decode(response['result']['body'])
+                            is_text = False
+                        else:
+                            body = response['result']['body'].encode('utf-8')
+                            is_text = True
+                    except Exception:
+                        logging.exception('Exception retrieving body')
+                else:
+                    self.body_fail_count = 0
+                    self.response_bodies[request_id] = response['result']['body']
+            # Store the actual body for processing
+            if body is not None and not os.path.exists(body_file_path):
+                if 'request_headers' in request:
+                    fetch_dest = self.get_header_value(request['request_headers'], 'Sec-Fetch-Dest')
+                    if fetch_dest is not None and fetch_dest in ['audio', 'audioworklet', 'font', 'image', 'object', 'track', 'video']:
+                        is_text = False
+                # Add text bodies to the zip archive
+                store_body = self.all_bodies
+                if self.html_body and request_id == self.main_request:
+                    store_body = True
+                if store_body and self.bodies_zip_file is not None and is_text:
+                    self.body_index += 1
+                    name = '{0:03d}-{1}-body.txt'.format(self.body_index, request_id)
+                    self.bodies_zip_file.writestr(name, body)
+                    logging.debug('%s: Stored body in zip', request_id)
+                logging.debug('%s: Body length: %d', request_id, len(body))
+                self.response_bodies[request_id] = body
+                with open(body_file_path, 'wb') as body_file:
+                    body_file.write(body)
+        except Exception:
+            logging.exception('Error processing response body')
 
     def get_response_bodies(self):
         """Retrieve all of the response bodies for the requests that we know about"""
@@ -779,8 +823,10 @@ class DevTools(object):
         if request_id in self.requests and 'fromNet' in self.requests[request_id] and self.requests[request_id]['fromNet']:
             events = self.requests[request_id]
             request = {'id': request_id}
-            if 'sequence' in events:
-                request['sequence'] = events['sequence']
+            if 'sequence' not in events:
+                self.request_sequence += 1
+                events['sequence'] = self.request_sequence
+            request['sequence'] = events['sequence']
             # See if we have a body
             if include_bodies:
                 body_path = os.path.join(self.task['dir'], 'bodies')
@@ -837,6 +883,20 @@ class DevTools(object):
                 request['transfer_size'] = transfer_size
         return request
 
+    def extract_headers(self, raw_headers):
+        """Convert flat headers into a keyed dictionary"""
+        headers = {}
+        for header in raw_headers:
+            key_len = header.find(':', 1)
+            if key_len >= 0:
+                key = header[:key_len].strip(' :')
+                value = header[key_len + 1:].strip()
+                if key in headers:
+                    headers[key] += ',' + value
+                else:
+                    headers[key] = value
+        return headers
+
     def get_requests(self, include_bodies):
         """Get a dictionary of all of the requests and the details (headers, body file)"""
         requests = None
@@ -847,6 +907,39 @@ class DevTools(object):
                     if requests is None:
                         requests = {}
                     requests[request_id] = request
+        # Patch-in any netlog requests that were not seen through dev tools
+        # This is only used for optimization checks and custom metrics, not the
+        # actual waterfall.
+        with self.netlog_lock:
+            try:
+                path = os.path.join(self.task['dir'], 'netlog_bodies')
+                for netlog_id in self.netlog_requests:
+                    netlog_request = self.netlog_requests[netlog_id]
+                    if 'url' in netlog_request:
+                        url = netlog_request['url']
+                        found = False
+                        for request_id in requests:
+                            request = requests[request_id]
+                            if 'url' in request and request['url'] == url:
+                                found = True
+                        if not found:
+                            self.request_sequence += 1
+                            request = {'id': netlog_id, 'sequence': self.request_sequence, 'url': url}
+                            if 'request_headers' in netlog_request:
+                                request['request_headers'] = self.extract_headers(netlog_request['request_headers'])
+                            if 'response_headers' in netlog_request:
+                                request['response_headers'] = self.extract_headers(netlog_request['response_headers'])
+                            body_file_path = os.path.join(path, netlog_id)
+                            if os.path.exists(body_file_path):
+                                request['body'] = body_file_path
+                                body = None
+                                with open(body_file_path, 'rb') as f:
+                                    body = f.read()
+                                if body is not None and len(body):
+                                    request['response_body'] = body
+                            requests[netlog_id] = request
+            except Exception:
+                logging.exception('Error adding netlog requests')
         return requests
 
     def flush_pending_messages(self):
@@ -1713,6 +1806,71 @@ class DevTools(object):
                     self.task['profile_data'][event_name]['e'] = round(monotonic() - self.task['profile_data']['start'], 3)
                     self.task['profile_data'][event_name]['d'] = round(self.task['profile_data'][event_name]['e'] - self.task['profile_data'][event_name]['s'], 3)
 
+    def on_netlog_request_created(self, request_id, request_info):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id not in self.netlog_requests:
+                    self.netlog_requests[request_id] = request_info
+                if 'url' in request_info:
+                    url = request_info['url']
+                    self.netlog_requests[request_id]['url'] = url
+                    if url not in self.netlog_urls:
+                        self.netlog_urls[url] = []
+                    if request_id not in self.netlog_urls[url]:
+                        self.netlog_urls[url].append(request_id)
+            logging.debug("Netlog request %s created: %s", request_id, json.dumps(request_info))
+        except Exception:
+            logging.exception('Error handling on_netlog_request_created')
+
+    def on_netlog_request_headers_sent(self, request_id, request_headers):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id not in self.netlog_requests:
+                    self.netlog_requests[request_id] = {}
+                self.netlog_requests[request_id]['request_headers'] = request_headers
+            logging.debug("Netlog request headers for %s: %s", request_id, json.dumps(request_headers))
+        except Exception:
+            logging.exception('Error handling on_netlog_request_headers_sent')
+
+    def on_netlog_response_headers_received(self, request_id, response_headers):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id not in self.netlog_requests:
+                    self.netlog_requests[request_id] = {}
+                self.netlog_requests[request_id]['response_headers'] = response_headers
+            logging.debug("Netlog response headers for %s: %s", request_id, json.dumps(response_headers))
+        except Exception:
+            logging.exception('Error handling on_netlog_response_headers_received')
+
+    def on_netlog_response_bytes_received(self, request_id, filtered_bytes):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            if filtered_bytes is not None and len(filtered_bytes):
+                with self.netlog_lock:
+                    path = os.path.join(self.task['dir'], 'netlog_bodies')
+                    if not os.path.isdir(path):
+                        os.makedirs(path)
+                    body_file_path = os.path.join(path, request_id)
+                    with open(body_file_path, 'a+b') as body_file:
+                        body_file.write(filtered_bytes)
+            logging.debug("Netlog response bytes for %s: %d bytes", request_id, len(filtered_bytes))
+        except Exception:
+            logging.exception('Error handling on_netlog_response_bytes_received')
+
+    def on_request_id_changed(self, request_id, new_request_id):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            with self.netlog_lock:
+                if request_id in self.netlog_requests and new_request_id not in self.netlog_requests:
+                    self.netlog_requests[new_request_id] = self.netlog_requests[request_id]
+                    del self.netlog_requests[request_id]
+            logging.debug("Netlog request ID changed from %s to %s", request_id, new_request_id)
+        except Exception:
+            logging.exception('Error handling on_request_id_changed')
+
 
 class DevToolsClient(WebSocketClient):
     """DevTools WebSocket client"""
@@ -1839,6 +1997,7 @@ class DevToolsClient(WebSocketClient):
                 self.trace_parser.WriteLongTasks(self.path_base + '_long_tasks.json.gz')
                 self.trace_parser.WriteTimelineRequests(self.path_base + '_timeline_requests.json.gz')
             self.trace_parser.WriteFeatureUsage(self.path_base + '_feature_usage.json.gz')
+            self.trace_parser.WritePageData(self.path_base + '_trace_page_data.json.gz')
             if not job.get('streaming_netlog'):
                 self.trace_parser.WriteNetlog(self.path_base + '_netlog_requests.json.gz')
             self.trace_parser.WriteV8Stats(self.path_base + '_v8stats.json.gz')
@@ -1893,6 +2052,8 @@ class DevToolsClient(WebSocketClient):
                         self.trace_event_counts[trace_event['cat']] = 0
                     self.trace_event_counts[trace_event['cat']] += 1
                     if not self.job['keep_netlog'] and trace_event['cat'] == 'netlog':
+                        keep_event = False
+                    if 'discard_trace_content' in self.job and self.job['discard_trace_content'] and trace_event['cat'] == 'content':
                         keep_event = False
                     if process_event and self.trace_parser is not None:
                         self.trace_parser.ProcessTraceEvent(trace_event)

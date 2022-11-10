@@ -53,6 +53,7 @@ class Trace():
         self.marked_start_time = None
         self.end_time = None
         self.cpu = {'main_thread': None, 'main_threads':[], 'subframes': [], 'valid': False}
+        self.page_data = {'values': {}, 'times': {}}
         self.feature_usage = None
         self.feature_usage_start_time = None
         self.netlog = {'bytes_in': 0, 'bytes_out': 0, 'next_request_id': 1000000}
@@ -106,6 +107,18 @@ class Trace():
         out = self.post_process_feature_usage()
         if out is not None:
             self.write_json(out_file, out)
+    
+    def WritePageData(self, out_file):
+        if len(self.page_data) and self.start_time is not None:
+            out = {}
+            for key in self.page_data['values']:
+                out[key] = self.page_data['values'][key]
+            for key in self.page_data['times']:
+                value = self.page_data['times'][key]
+                if value >= self.start_time:
+                    out[key] = int(round(float(value - self.start_time) / 1000.0))
+            if len(out):
+                self.write_json(out_file, out)
 
     def WriteInteractive(self, out_file):
         # Generate the interactive periods from the long-task data
@@ -308,6 +321,8 @@ class Trace():
             self.ProcessTimelineTraceEvent(trace_event)
         elif cat.find('blink.feature_usage') >= 0:
             self.ProcessFeatureUsageEvent(trace_event)
+        elif cat.find('content') >= 0:
+            self.ProcessContentEvent(trace_event)
         if cat.find('v8') >= 0:
             self.ProcessV8Event(trace_event)
     
@@ -377,6 +392,8 @@ class Trace():
                             for perf_entry in performance_timing:
                                 if 'entryType' in perf_entry and perf_entry['entryType'] == 'largest-contentful-paint' and 'size' in perf_entry and perf_entry['size'] == event['args']['data']['size'] and 'consumed' not in perf_entry:
                                     perf_entry['consumed'] = True
+                                    if 'url' in perf_entry and len(perf_entry['url']) and 'url' not in event['args']['data']:
+                                        event['args']['data']['url'] = perf_entry['url']
                                     if 'element' in perf_entry:
                                         event['args']['data']['element'] = perf_entry['element']
                         elif 'score' in event['args']['data'] and event['name'].startswith('LayoutShift'):
@@ -868,6 +885,15 @@ class Trace():
                         1.0, max(0.0, 1.0 - available))
         except BaseException:
             logging.exception('Error adjusting timeline slice')
+
+    ##########################################################################
+    #   Blink Content Events
+    ##########################################################################
+    def ProcessContentEvent(self, trace_event):
+        if 'name' in trace_event:
+            if trace_event['name'] == 'WebContentsImpl::UpdateTitle':
+                if 'titleTime' not in self.page_data['times']:
+                    self.page_data['times']['titleTime'] = trace_event['ts']
 
     ##########################################################################
     #   Blink Features
@@ -5737,7 +5763,98 @@ BLINK_FEATURES = {
     "4282": "V8PendingBeacon_SetData_Method",
     "4283": "V8PendingBeacon_SendNow_Method",
     "4284": "TabSharingBarSwitchToCapturer",
-    "4285": "TabSharingBarSwitchToCapturee"
+    "4285": "TabSharingBarSwitchToCapturee",
+    "4286": "AutomaticLazyAds",
+    "4287": "AutomaticLazyEmbeds",
+    "4288": "TouchActionChangedAtPointerDown",
+    "4289": "DeviceOrientationPermissionRequested",
+    "4290": "DeviceOrientationUsedWithoutPermissionRequest",
+    "4291": "DeviceMotionPermissionRequested",
+    "4292": "DeviceMotionUsedWithoutPermissionRequest",
+    "4293": "PrivateNetworkAccessPermissionPrompt",
+    "4294": "PseudoBeforeAfterForDateTimeInputElement",
+    "4295": "OBSOLETE_kV8PendingBeacon_IsPending_AttributeGetter",
+    "4296": "ParentOfDisabledFormControlRespondsToMouseEvents",
+    "4297": "UnhandledExceptionCountInMainThread",
+    "4298": "UnhandledExceptionCountInWorker",
+    "4299": "OBSOLETE_WebCodecsImageDecoderPremultiplyAlphaDeprecation",
+    "4300": "CookieDomainNonASCII",
+    "4301": "ClientHintsMetaEquivDelegateCH",
+    "4302": "ExpectCTHeader",
+    "4303": "OBSOLETE_kNavigateEventTransitionWhile",
+    "4304": "OBSOLETE_kNavigateEventRestoreScroll",
+    "4305": "SendBeaconWithArrayBuffer",
+    "4306": "SendBeaconWithArrayBufferView",
+    "4307": "SendBeaconWithBlob",
+    "4308": "SendBeaconWithFormData",
+    "4309": "SendBeaconWithURLSearchParams",
+    "4310": "SendBeaconWithUSVString",
+    "4311": "ReplacedElementPaintedWithOverflow",
+    "4312": "ImageAd",
+    "4313": "LinkRelPrefetchAsDocumentSameOrigin",
+    "4314": "LinkRelPrefetchAsDocumentCrossOrigin",
+    "4315": "PersistentQuotaType",
+    "4316": "CrossOriginScrollIntoView",
+    "4317": "LinkRelCanonical",
+    "4318": "CredentialManagerIsConditionalMediationAvailable",
+    "4319": "V8PendingBeacon_Pending_AttributeGetter",
+    "4320": "V8PendingBeacon_BackgroundTimeout_AttributeGetter",
+    "4321": "V8PendingBeacon_BackgroundTimeout_AttributeSetter",
+    "4322": "V8PendingBeacon_Timeout_AttributeGetter",
+    "4323": "V8PendingBeacon_Timeout_AttributeSetter",
+    "4324": "V8PendingGetBeacon_Constructor",
+    "4325": "V8PendingGetBeacon_SetURL_Method",
+    "4326": "V8PendingPostBeacon_Constructor",
+    "4327": "V8PendingPostBeacon_SetData_Method",
+    "4328": "ContentVisibilityAutoStateChangedHandlerRegistered",
+    "4329": "ReplacedElementPaintedWithLargeOverflow",
+    "4330": "FlexboxAbsPosJustifyContent",
+    "4331": "MultipleFetchHandlersInServiceWorker",
+    "4332": "StorageAccessAPI_requestStorageAccessForOrigin_Method",
+    "4333": "PrivateAggregationApiAll",
+    "4334": "PrivateAggregationApiFledge",
+    "4335": "PrivateAggregationApiSharedStorage",
+    "4336": "DeferredShaping2ReshapedByComputedStyle",
+    "4337": "DeferredShaping2ReshapedByDomContentLoaded",
+    "4338": "DeferredShaping2ReshapedByFcp",
+    "4339": "DeferredShaping2DisabledByFragmentAnchor",
+    "4340": "DeferredShaping2ReshapedByFocus",
+    "4341": "DeferredShaping2ReshapedByGeometry",
+    "4342": "DeferredShaping2ReshapedByInspector",
+    "4343": "DeferredShaping2ReshapedByPrinting",
+    "4344": "DeferredShaping2ReshapedByScrolling",
+    "4345": "LCPCandidateImageFromOriginDirtyStyle",
+    "4346": "V8TurboFanOsrCompileStarted",
+    "4347": "V8Document_HasRedemptionRecord_Method",
+    "4348": "DeferredShaping2ReshapedByLastResort",
+    "4349": "AudioContextSinkId",
+    "4350": "AudioContextSetSinkId",
+    "4351": "ViewportDependentLazyLoadedImageWithSizesAttribute",
+    "4352": "XRWebGLBindingGetCameraImage",
+    "4353": "SelectiveInOrderScript",
+    "4354": "V8AsyncStackTaggingCreateTaskCall",
+    "4355": "WebkitBoxWithoutWebkitLineClamp",
+    "4356": "DataUrlInSvgUse",
+    "4357": "WebAuthnConditionalUiGet",
+    "4358": "WebAuthnConditionalUiGetSuccess",
+    "4359": "WebAuthnRkRequiredCreationSuccess",
+    "4360": "DestructiveDocumentWriteAfterModuleScript",
+    "4361": "CSSAtSupportsDropInvalidWhileForgivingParsing",
+    "4362": "PermissionsPolicyUnload",
+    "4363": "ServiceWorkerSkippedForSubresourceLoad",
+    "4364": "ClientHintsPrefersReducedMotion",
+    "4365": "WakeLockAcquireScreenLockWithoutActivation",
+    "4366": "InteractiveWidgetOverlaysContent",
+    "4367": "InteractiveWidgetResizesContent",
+    "4368": "InteractiveWidgetResizesVisual",
+    "4369": "SerivceWorkerFallbackMainResource",
+    "4370": "GetDisplayMediaWithoutUserActivation",
+    "4371": "BackForwardCacheNotRestoredReasons",
+    "4372": "CSSNesting",
+    "4373": "SandboxIneffectiveAllowOriginAllowScript",
+    "4374": "DocumentOpenDifferentWindow",
+    "4375": "DocumentOpenMutateSandbox",
+    "4376": "EligibleForImageLoadingPrioritizationFix"
 }
 
 ##########################################################################
@@ -6414,7 +6531,21 @@ CSS_FEATURES = {
     "717": "CSSPropertyToggleTrigger",
     "718": "CSSPropertyToggle",
     "719": "CSSPropertyAnchorName",
-    "720": "CSSPropertyPositionFallback"
+    "720": "CSSPropertyPositionFallback",
+    "721": "CSSPropertyAnchorScroll",
+    "722": "CSSPropertyPopUpShowDelay",
+    "723": "CSSPropertyPopUpHideDelay",
+    "724": "CSSPropertyHyphenateCharacter",
+    "725": "CSSPropertyScrollTimeline",
+    "726": "CSSPropertyScrollTimelineName",
+    "727": "CSSPropertyScrollTimelineAxis",
+    "728": "CSSPropertyViewTimeline",
+    "729": "CSSPropertyViewTimelineAxis",
+    "730": "CSSPropertyViewTimelineInset",
+    "731": "CSSPropertyViewTimelineName",
+    "732": "CSSPropertyToggleVisibility",
+    "733": "CSSPropertyInitialLetter",
+    "734": "CSSPropertyHyphenateLimitChars"
 }
 
 if '__main__' == __name__:

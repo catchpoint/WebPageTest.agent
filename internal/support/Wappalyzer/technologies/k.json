@@ -169,7 +169,7 @@
       103
     ],
     "description": "Kaltura is a video content management platform that allows users to upload, manage, share, publish, and stream videos.",
-    "dom": "link[href*='.kaltura.com']",
+    "dom": "link[href*='.kaltura.com'], div.kaltura-zone",
     "icon": "Kaltura.svg",
     "js": {
       "Kplayer": "",
@@ -281,7 +281,7 @@
       53
     ],
     "description": "Keap offers an email marketing and sales platform for small businesses, including products to manage customers, customer relationship management, marketing, and ecommerce.",
-    "dom": "form[action*='property.infusionsoft.com']",
+    "dom": "form[action*='property.infusionsoft.com'], link[href*='.infusionsoft.com']",
     "icon": "Keap.svg",
     "pricing": [
       "low",
@@ -336,7 +336,7 @@
     "cookies": {
       "CMSPreferredCulture": ""
     },
-    "cpe": "cpe:/a:kentico:kentico_cms",
+    "cpe": "cpe:2.3:a:kentico:kentico_cms:*:*:*:*:*:*:*:*",
     "description": "Kentico CMS is a web content management system for building websites, online stores, intranets, and Web 2.0 community sites.",
     "icon": "Kentico CMS.png",
     "js": {
@@ -390,6 +390,19 @@
     "implies": "Microsoft ASP.NET",
     "website": "https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel"
   },
+  "Ketch": {
+    "cats": [
+      67
+    ],
+    "description": "Ketch is a data control platform that manages compliance with privacy regulations.",
+    "icon": "Ketch.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.ketchcdn\\.com/",
+    "website": "https://www.ketch.com"
+  },
   "Kevel": {
     "cats": [
       36
@@ -424,7 +437,7 @@
       29,
       25
     ],
-    "cpe": "cpe:/a:elasticsearch:kibana",
+    "cpe": "cpe:2.3:a:elasticsearch:kibana:*:*:*:*:*:*:*:*",
     "description": "Kibana is an open-source data visualisation dashboard for Elasticsearch. It provides visualisation capabilities on top of the content indexed on an Elasticsearch cluster. Users can create bar, line and scatter plots, or pie charts and maps on top of large volumes of data.",
     "headers": {
       "kbn-name": "kibana",
@@ -644,6 +657,27 @@
     "scriptSrc": "js\\.klevu\\.\\w+/klevu-js-v([\\d.]+)\\;version:\\1",
     "website": "https://www.klevu.com"
   },
+  "KlickPages": {
+    "cats": [
+      32,
+      51
+    ],
+    "description": "KlickPages is a landing page management software designed to help businesses execute email marketing campaigns and capture leads.",
+    "icon": "KlickPages.svg",
+    "js": {
+      "klickart.analytics": ""
+    },
+    "meta": {
+      "klickart:url": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.klickpages\\.com\\.br/",
+    "website": "https://klickpages.com.br"
+  },
   "Klickly": {
     "cats": [
       36
@@ -661,10 +695,12 @@
     "cats": [
       12
     ],
-    "icon": "Knockout.js.png",
+    "description": "Knockout.js is basically a library written in JavaScript, based on MVVM pattern that helps developers build rich and responsive websites.",
+    "icon": "Knockout.js.svg",
     "js": {
       "ko.version": "^(.+)$\\;version:\\1"
     },
+    "oss": true,
     "website": "http://knockoutjs.com"
   },
   "Ko-fi": {
@@ -728,7 +764,7 @@
     "cats": [
       50
     ],
-    "cpe": "cpe:/a:koha:koha",
+    "cpe": "cpe:2.3:a:koha:koha:*:*:*:*:*:*:*:*",
     "description": "Koha is an open-source Integrated Library System (ILS).",
     "html": [
       "<input name=\"koha_login_context\" value=\"intranet\" type=\"hidden\">",
@@ -751,7 +787,7 @@
     "cookies": {
       "kohanasession": ""
     },
-    "cpe": "cpe:/a:kohanaframework:kohana",
+    "cpe": "cpe:2.3:a:kohanaframework:kohana:*:*:*:*:*:*:*:*",
     "headers": {
       "X-Powered-By": "Kohana Framework ([\\d.]+)\\;version:\\1"
     },
@@ -810,6 +846,40 @@
     "scriptSrc": "\\.k-analytix\\.com",
     "website": "https://www.konduto.com"
   },
+  "Kong": {
+    "cats": [
+      64
+    ],
+    "description": "Kong is an open-source API gateway and platform that acts as middleware between compute clients and the API-centric applications.",
+    "headers": {
+      "via": "^kong/([\\d\\.]+)(?:.+)?$\\;version:\\1"
+    },
+    "icon": "Kong.svg",
+    "oss": true,
+    "pricing": [
+      "payg",
+      "freemium"
+    ],
+    "website": "https://konghq.com"
+  },
+  "Kontent.ai": {
+    "cats": [
+      1
+    ],
+    "description": "Kontent.ai is a SaaS-based modular content platform.",
+    "dom": "img[src*='.kc-usercontent.com'], link[href*='.kc-usercontent.com']",
+    "headers": {
+      "content-security-policy": "\\.kc-usercontent\\.com"
+    },
+    "icon": "Kontent.ai.svg",
+    "pricing": [
+      "freemium",
+      "high",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://kontent.ai"
+  },
   "Koobi": {
     "cats": [
       1
@@ -863,6 +933,16 @@
     "scriptSrc": "kotisivukone(?:\\.min)?\\.js",
     "website": "http://www.kotisivukone.fi"
   },
+  "Kotlin": {
+    "cats": [
+      27
+    ],
+    "cpe": "cpe:2.3:a:jetbrains:kotlin:*:*:*:*:*:*:*:*",
+    "description": "Kotlin is a general purpose, free, open-source, statically typed “pragmatic” programming language initially designed for the JVM (Java Virtual Machine) and Android that combines object-oriented and functional programming features.",
+    "icon": "Kotlin.svg",
+    "oss": true,
+    "website": "https://kotlinlang.org"
+  },
   "Kount": {
     "cats": [
       10,
@@ -883,12 +963,27 @@
     ],
     "website": "https://kount.com"
   },
+  "Ktor": {
+    "cats": [
+      18
+    ],
+    "cpe": "cpe:2.3:a:jetbrains:ktor:*:*:*:*:*:*:*:*",
+    "description": "Ktor is a Kotlin framework that allow developers to write asynchronous clients and servers applications, in Kotlin.",
+    "headers": {
+      "server": "^Ktor/debug$",
+      "x-engine": "^Ktor$"
+    },
+    "icon": "Ktor.svg",
+    "implies": "Kotlin",
+    "oss": true,
+    "website": "https://ktor.io"
+  },
   "Kubernetes Dashboard": {
     "cats": [
       47
     ],
-    "cpe": "cpe:/a:kubernetes:kubernetes",
-    "html": "<html ng-app=\"kubernetesDashboard\">",
+    "cpe": "cpe:2.3:a:kubernetes:kubernetes:*:*:*:*:*:*:*:*",
+    "dom": "[ng-app='kubernetesDashboard']",
     "icon": "Kubernetes.svg",
     "website": "https://kubernetes.io/"
   },
@@ -925,6 +1020,18 @@
       "cdn\\.kustomerapp\\.com"
     ],
     "website": "https://www.kustomer.com/"
+  },
+  "Kwai pixel": {
+    "cats": [
+      10
+    ],
+    "description": "Kwai is a social network for short videos and trends.",
+    "icon": "Kwai.png",
+    "js": {
+      "KwaiAnalyticsObject": "",
+      "kwaiq": ""
+    },
+    "website": "https://www.kwai.com"
   },
   "k-eCommerce": {
     "cats": [

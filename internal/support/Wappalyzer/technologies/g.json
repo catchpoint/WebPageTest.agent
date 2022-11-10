@@ -256,6 +256,22 @@
     },
     "website": "https://get.gaug.es"
   },
+  "GeeTest": {
+    "cats": [
+      16
+    ],
+    "description": "GeeTest is a CAPTCHA and bot management provider, protects websites, mobile apps, and APIs from automated bot-driven attacks, like ATO, credential stuffing, web scalping, etc.",
+    "headers": {
+      "content-security-policy": "\\.geetest\\.com"
+    },
+    "icon": "GeeTest.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.geetest\\.com/",
+    "website": "https://www.geetest.com"
+  },
   "GemPages": {
     "cats": [
       100,
@@ -393,7 +409,7 @@
     "cats": [
       28
     ],
-    "cpe": "cpe:/o:gentoo:linux",
+    "cpe": "cpe:2.3:o:gentoo:linux:*:*:*:*:*:*:*:*",
     "description": "Gentoo is a free operating system based on Linux.",
     "headers": {
       "X-Powered-By": "gentoo"
@@ -517,7 +533,7 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:/a:get-simple:getsimple_cms",
+    "cpe": "cpe:2.3:a:get-simple:getsimple_cms:*:*:*:*:*:*:*:*",
     "icon": "GetSimple CMS.png",
     "implies": "PHP",
     "meta": {
@@ -673,6 +689,7 @@
     "cookies": {
       "_gitlab_session": ""
     },
+    "cpe": "cpe:2.3:a:gitlab:gitlab:*:*:*:*:*:*:*:*",
     "description": "GitLab is a web-based DevOps lifecycle tool that provides a Git-repository manager providing wiki, issue-tracking and continuous integration and deployment pipeline features, using an open-source license.",
     "html": [
       "<meta content=\"https?://[^/]+/assets/gitlab_logo-",
@@ -711,7 +728,7 @@
     "cookies": {
       "i_like_gitea": ""
     },
-    "cpe": "cpe:/a:gitea:gitea",
+    "cpe": "cpe:2.3:a:gitea:gitea:*:*:*:*:*:*:*:*",
     "description": "Gitea is an open-source forge software package for hosting software development version control using Git as well as other collaborative features like bug tracking, wikis and code review. It supports self-hosting but also provides a free public first-party instance hosted on DiDi's cloud.",
     "html": [
       "<div class=\"ui left\">\\n\\s+© Gitea Version: ([\\d.]+)\\;version:\\1"
@@ -771,7 +788,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:oracle:glassfish_server",
+    "cpe": "cpe:2.3:a:oracle:glassfish_server:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "GlassFish(?: Server)?(?: Open Source Edition)?(?: ?/?([\\d.]+))?\\;version:\\1"
     },
@@ -998,7 +1015,7 @@
     "cats": [
       27
     ],
-    "cpe": "cpe:/a:golang:go",
+    "cpe": "cpe:2.3:a:golang:go:*:*:*:*:*:*:*:*",
     "icon": "Go.svg",
     "website": "https://golang.org"
   },
@@ -1043,7 +1060,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:embedthis:goahead",
+    "cpe": "cpe:2.3:a:embedthis:goahead:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "GoAhead"
     },
@@ -1239,6 +1256,25 @@
     "saas": true,
     "website": "https://www.gokwik.co"
   },
+  "GoMage": {
+    "cats": [
+      19
+    ],
+    "description": "GoMage is a Magento development company with 10 years of experience.",
+    "icon": "GoMage.svg",
+    "implies": [
+      "PWA",
+      "Magento"
+    ],
+    "js": {
+      "GomageNavigation": "",
+      "GomageNavigationClass": "",
+      "gomageSpinnerModal": "",
+      "gomage_navigation_loadinfo_text": "",
+      "gomage_navigation_urlhash": ""
+    },
+    "website": "https://www.gomage.com/magento-2-pwa"
+  },
   "GoStats": {
     "cats": [
       10
@@ -1289,7 +1325,7 @@
     "cookies": {
       "i_like_gogits": ""
     },
-    "cpe": "cpe:/a:gogs:gogs",
+    "cpe": "cpe:2.3:a:gogs:gogs:*:*:*:*:*:*:*:*",
     "description": "Gogs is a self-hosted Git service written in Go.",
     "html": [
       "<div class=\"ui left\">\\n\\s+© \\d{4} Gogs Version: ([\\d.]+) Page:\\;version:\\1",
@@ -1399,11 +1435,8 @@
     "cats": [
       22
     ],
-    "headers": {
-      "Server": "Google Frontend"
-    },
     "icon": "Google App Engine.svg",
-    "website": "http://code.google.com/appengine"
+    "website": "https://cloud.google.com/appengine"
   },
   "Google Call Conversion Tracking": {
     "cats": [
@@ -1438,7 +1471,7 @@
     "cats": [
       63
     ],
-    "cpe": "cpe:/a:google:cloud_platform",
+    "cpe": "cpe:2.3:a:google:cloud_platform:*:*:*:*:*:*:*:*",
     "description": "Google Cloud is a suite of cloud computing services.",
     "icon": "google_cloud.svg",
     "website": "https://cloud.google.com"
@@ -1506,7 +1539,18 @@
       17
     ],
     "description": "Google Font API is a web service that supports open-source font files that can be used on your web designs.",
-    "html": "<link[^>]* href=[^>]+fonts\\.(?:googleapis|google)\\.com",
+    "dom": {
+      "link[href*='fonts.g']": {
+        "attributes": {
+          "href": "fonts\\.(?:googleapis|google|gstatic)\\.com"
+        }
+      },
+      "style[data-href*='fonts.g']": {
+        "attributes": {
+          "data-href": "fonts\\.(?:googleapis|google|gstatic)\\.com"
+        }
+      }
+    },
     "icon": "Google Font API.png",
     "js": {
       "WebFonts": ""
@@ -1628,7 +1672,6 @@
     ],
     "icon": "Google Tag Manager.svg",
     "js": {
-      "google_tag_manager": "",
       "googletag": ""
     },
     "saas": true,
@@ -1664,7 +1707,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:google:web_server",
+    "cpe": "cpe:2.3:a:google:web_server:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "gws"
     },
@@ -1675,7 +1718,7 @@
     "cats": [
       18
     ],
-    "cpe": "cpe:/a:google:web_toolkit",
+    "cpe": "cpe:2.3:a:google:web_toolkit:*:*:*:*:*:*:*:*",
     "description": "Google Web Toolkit (GWT) is an open-source Java software development framework that makes writing AJAX applications.",
     "icon": "Google Web Toolkit.png",
     "implies": "Java",
@@ -1740,6 +1783,26 @@
     ],
     "website": "https://gotipath.com"
   },
+  "Govalo": {
+    "cats": [
+      100
+    ],
+    "description": "Govalo is a software startup company that builds a Shopify app.",
+    "icon": "Govalo.svg",
+    "implies": "Shopify",
+    "js": {
+      "Govalo.meta": ""
+    },
+    "pricing": [
+      "freemium",
+      "payg",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.shopify\\.com/extensions/.+/([\\d\\.]+)/assets/govalo\\.min\\.js\\;version:\\1",
+    "website": "https://govalo.com"
+  },
   "Grab Pay Later": {
     "cats": [
       41,
@@ -1802,6 +1865,20 @@
       "generator": "grandnode"
     },
     "website": "https://grandnode.com"
+  },
+  "GrapesJS": {
+    "cats": [
+      51,
+      18
+    ],
+    "cpe": "cpe:2.3:a:grapesjs:grapesjs:*:*:*:*:*:node.js:*:*",
+    "description": "GrapesJS is an open-source, multi-purpose page builder which combines different plugins and intuitive drag and drop interface.",
+    "icon": "GrapesJS.png",
+    "js": {
+      "grapesjs.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://grapesjs.com"
   },
   "GraphCMS": {
     "cats": [
@@ -2154,7 +2231,7 @@
     "cats": [
       47
     ],
-    "cpe": "cpe:/a:git-scm:git",
+    "cpe": "cpe:2.3:a:git-scm:git:*:*:*:*:*:*:*:*",
     "icon": "git.svg",
     "meta": {
       "generator": "\\bgit/([\\d.]+\\d)\\;version:\\1"
@@ -2165,7 +2242,7 @@
     "cats": [
       47
     ],
-    "cpe": "cpe:/a:gitlist:gitlist",
+    "cpe": "cpe:2.3:a:gitlist:gitlist:*:*:*:*:*:*:*:*",
     "html": "<p>Powered by <a[^>]+>GitList ([\\d.]+)\\;version:\\1",
     "implies": [
       "PHP",

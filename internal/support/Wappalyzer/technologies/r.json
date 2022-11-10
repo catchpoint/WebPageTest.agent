@@ -38,7 +38,7 @@
     "cats": [
       4
     ],
-    "cpe": "cpe:/a:dave_thomas:rdoc",
+    "cpe": "cpe:2.3:a:dave_thomas:rdoc:*:*:*:*:*:*:*:*",
     "description": "RDoc produces HTML and command-line documentation for Ruby projects.",
     "html": [
       "<link[^>]+href=\"[^\"]*rdoc-style\\.css",
@@ -116,6 +116,19 @@
     "implies": "Ruby",
     "website": "https://github.com/rtomayko/rack-cache"
   },
+  "Rain": {
+    "cats": [
+      6
+    ],
+    "description": "Rain is a cloud-based point of sale (POS) system for small to midsized retailers.",
+    "icon": "Rain.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.rainpos\\.com/",
+    "website": "https://www.rainpos.com"
+  },
   "RainLoop": {
     "cats": [
       30
@@ -138,6 +151,26 @@
     },
     "scriptSrc": "^rainloop/v/([0-9.]+)/\\;version:\\1",
     "website": "https://www.rainloop.net/"
+  },
+  "Raisely": {
+    "cats": [
+      51,
+      41
+    ],
+    "description": "Raisely is a cloud-based fundraising platform that helps non-profits and charities drive fundraising campaigns and collect donations.",
+    "icon": "Raisely.svg",
+    "js": {
+      "RaiselyComponents": "",
+      "__raiselyDebug": "",
+      "wpRaisely": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://raisely.com"
   },
   "Rakuten": {
     "cats": [
@@ -190,7 +223,7 @@
       54
     ],
     "description": "RankMath SEO is a search engine optimization plugin for WordPress.",
-    "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/']",
+    "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/'], script.rank-math-schema-pro, script.rank-math-schema",
     "icon": "RankMath SEO.svg",
     "pricing": [
       "freemium",
@@ -282,6 +315,20 @@
     },
     "icon": "Raspbian.svg",
     "website": "https://www.raspbian.org/"
+  },
+  "RateParity": {
+    "cats": [
+      5
+    ],
+    "description": "RateParity is a conversion rate optimisation platform for hotels.",
+    "icon": "RateParity.svg",
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "saas": true,
+    "scriptSrc": "code\\.rateparity\\.com/",
+    "website": "https://www.rateparity.com"
   },
   "Raychat": {
     "cats": [
@@ -413,7 +460,7 @@
     "cats": [
       12
     ],
-    "cpe": "cpe:/a:facebook:react",
+    "cpe": "cpe:2.3:a:facebook:react:*:*:*:*:*:*:*:*",
     "description": "React is an open-source JavaScript library for building user interfaces or UI components.",
     "dom": {
       "body > div": {
@@ -484,12 +531,13 @@
       12
     ],
     "description": "React Router provides declarative routing for React.",
-    "icon": "React Router.png",
+    "icon": "React Router.svg",
     "implies": "React",
+    "oss": true,
     "scriptSrc": [
-      "/react-router(@|/)([\\d.]+)(?:/[a-z]+)?/react-router(?:.min)?\\.js\\;version:\\2"
+      "(?:/react-router(@|/)([\\d.]+)(?:/[a-z]+)?)?/react-router(?:\\.min)?\\.js\\;version:\\2"
     ],
-    "website": "https://reactrouter.com/"
+    "website": "https://reactrouter.com"
   },
   "Reactive": {
     "cats": [
@@ -511,6 +559,23 @@
     "saas": true,
     "url": "^https?//.+\\.reactiveonline\\.io",
     "website": "https://reactiveonline.io"
+  },
+  "Readymag": {
+    "cats": [
+      51
+    ],
+    "description": "Readymag is a browser-based design tool that helps create websites, portfolios and all kinds of online publications without coding.",
+    "icon": "Readymag.svg",
+    "meta": {
+      "generator": "^Readymag$"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://readymag.com"
   },
   "Really Simple CAPTCHA": {
     "cats": [
@@ -683,6 +748,28 @@
     "saas": true,
     "website": "https://recruitee.com"
   },
+  "Recurate": {
+    "cats": [
+      19
+    ],
+    "description": "Recurate is a tech-enabled resale service that empowers brands & retailers to establish their own integrated resale platforms directly on their ecommerce sites.",
+    "dom": {
+      "a[href*='support@recurate.com']": {
+        "attributes": {
+          "href": "mailto\\:support\\@recurate\\.com"
+        }
+      },
+      "link[href*='/recurate-site.css']": {
+        "attributes": {
+          "href": "cdn\\.shopify\\.com/.+/recurate-site\\.css"
+        }
+      }
+    },
+    "icon": "Recurate.svg",
+    "requires": "Shopify",
+    "scripts": "\"(?:vendor|title)?\"\\:\"Recurate\"",
+    "website": "https://www.recurate.com"
+  },
   "Recurly": {
     "cats": [
       41
@@ -700,7 +787,7 @@
     "cats": [
       28
     ],
-    "cpe": "cpe:/o:redhat:linux",
+    "cpe": "cpe:2.3:o:redhat:linux:*:*:*:*:*:*:*:*",
     "description": "Red Hat is an open-source Linux operating system.",
     "headers": {
       "Server": "Red Hat",
@@ -775,7 +862,7 @@
     "cats": [
       34
     ],
-    "cpe": "cpe:/a:redislabs:redis",
+    "cpe": "cpe:2.3:a:redislabs:redis:*:*:*:*:*:*:*:*",
     "description": "Redis is an in-memory data structure project implementing a distributed, in-memory key–value database with optional durability. Redis supports different kinds of abstract data structures, such as strings, lists, maps, sets, sorted sets, HyperLogLogs, bitmaps, streams, and spatial indexes.",
     "icon": "Redis.svg",
     "website": "https://redis.io"
@@ -799,7 +886,7 @@
     "cookies": {
       "_redmine_session": ""
     },
-    "cpe": "cpe:/a:redmine:redmine",
+    "cpe": "cpe:2.3:a:redmine:redmine:*:*:*:*:*:*:*:*",
     "description": "Redmine is a free and open-source, web-based project management and issue tracking tool.",
     "html": "Powered by <a href=\"[^>]+Redmine",
     "icon": "Redmine.png",
@@ -941,6 +1028,23 @@
     "saas": true,
     "scriptSrc": "\\.cloudfront\\.net/js/reflektion\\.js",
     "website": "https://reflektion.com"
+  },
+  "Refundid": {
+    "cats": [
+      102
+    ],
+    "description": "Refundid provides ecommerce customers instant refunds for their online returns.",
+    "dom": "a[href*='.refundid.com/']",
+    "icon": "Refundid.png",
+    "js": {
+      "launchRefundidPopup": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://refundid.com"
   },
   "Regiondo": {
     "cats": [
@@ -1104,7 +1208,7 @@
     "cats": [
       22
     ],
-    "cpe": "cpe:/a:caucho:resin",
+    "cpe": "cpe:2.3:a:caucho:resin:*:*:*:*:*:*:*:*",
     "headers": {
       "Server": "^Resin(?:/(\\S*))?\\;version:\\1"
     },
@@ -1130,6 +1234,30 @@
     "saas": true,
     "scriptSrc": "static\\.resmio\\.\\w+/static/",
     "website": "https://www.resmio.com"
+  },
+  "Resova": {
+    "cats": [
+      72
+    ],
+    "description": "Resova is an online booking software.",
+    "dom": {
+      "a[href*='.resova.']": {
+        "attributes": {
+          "href": "\\.resova\\.(?:us|eu|co\\.uk)"
+        }
+      }
+    },
+    "icon": "Resova.svg",
+    "js": {
+      "baseUrl": "\\.resova\\.(?:us|eu|co\\.uk)",
+      "initResova": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://resova.com"
   },
   "Responsive Lightbox & Gallery": {
     "cats": [
@@ -1513,6 +1641,23 @@
     "scriptSrc": "riot(?:\\+compiler)?(?:\\.min)?\\.js",
     "website": "https://riot.js.org/"
   },
+  "Ripple": {
+    "cats": [
+      12
+    ],
+    "description": "Ripple is the frontend framework for Single Digital Presence, delivered using Nuxt and Vue.js.",
+    "headers": {
+      "x-sdp-app-type": "ripple"
+    },
+    "icon": "ripple.png",
+    "implies": [
+      "Nuxt.js",
+      "Vue.js",
+      "Drupal"
+    ],
+    "oss": true,
+    "website": "https://dpc-sdp.github.io/sdp-docs/ripple/"
+  },
   "Rise.ai": {
     "cats": [
       84,
@@ -1715,6 +1860,7 @@
     "cats": [
       30
     ],
+    "cpe": "cpe:2.3:a:roundcube:webmail:*:*:*:*:*:*:*:*",
     "description": "RoundCube is free and open-source web-based IMAP email client.",
     "html": "<title>RoundCube",
     "icon": "RoundCube.png",
@@ -1776,7 +1922,7 @@
     "cats": [
       27
     ],
-    "cpe": "cpe:/a:ruby-lang:ruby",
+    "cpe": "cpe:2.3:a:ruby-lang:ruby:*:*:*:*:*:*:*:*",
     "description": "Ruby is an open-source object-oriented programming language.",
     "headers": {
       "Server": "(?:Mongrel|WEBrick|Ruby)"
@@ -1808,7 +1954,7 @@
     "cookies": {
       "_session_id": "\\;confidence:75"
     },
-    "cpe": "cpe:/a:rubyonrails:rails",
+    "cpe": "cpe:2.3:a:rubyonrails:rails:*:*:*:*:*:*:*:*",
     "description": "Ruby on Rails is a server-side web application framework written in Ruby under the MIT License.",
     "headers": {
       "Server": "mod_(?:rails|rack)",
@@ -1840,6 +1986,19 @@
       "cdn\\.rudderlabs\\.com"
     ],
     "website": "https://rudderstack.com/"
+  },
+  "Rumble": {
+    "cats": [
+      14
+    ],
+    "description": "Rumble is a Canadian video-streaming platform that presents itself as an alternative to YouTube.",
+    "dom": "iframe[src*='//rumble.com/']",
+    "icon": "Rumble.svg",
+    "js": {
+      "Rumble.gdpr": "",
+      "Rumble.resize": ""
+    },
+    "website": "https://rumble.com"
   },
   "Rust": {
     "cats": [

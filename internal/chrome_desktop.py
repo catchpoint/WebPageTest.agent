@@ -32,7 +32,6 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
     '--disable-background-timer-throttling',
-    '--net-log-capture-mode=IncludeSensitive',
     '--load-media-router-component-extension=0',
     '--mute-audio',
     '--disable-hang-monitor',
@@ -68,7 +67,8 @@ DISABLE_CHROME_FEATURES = [
     'TranslateUI',
     'Translate',
     'OfflinePagesPrefetching',
-    'HeavyAdPrivacyMitigations'
+    'HeavyAdPrivacyMitigations',
+    'AutofillServerCommunication'
 ]
 
 ENABLE_BLINK_FEATURES = [
@@ -127,6 +127,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 job['streaming_netlog'] = True
             except Exception:
                 logging.exception('Error creating netlog fifo')
+        if using_fifo:
+            args.append('--net-log-capture-mode=Everything')
+        else:
+            args.append('--net-log-capture-mode=IncludeSensitive')
         if not using_fifo and 'netlog' in job and job['netlog']:
             netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt'
             args.append('--log-net-log="{0}"'.format(netlog_file))
@@ -176,9 +180,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
             command_line = '"{0}"'.format(self.path)
         else:
             command_line = self.path
+        self.sanitize_shell_args(args)
         command_line += ' ' + ' '.join(args)
         if 'addCmdLine' in job:
-            command_line += ' ' + job['addCmdLine']
+            command_line += ' ' + self.sanitize_shell_string(job['addCmdLine'])
         command_line += ' ' + 'about:blank'
         # re-try launching and connecting a few times if necessary
         connected = False
@@ -274,6 +279,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if self.connected:
             DevtoolsBrowser.run_task(self, task)
 
+    def alert_size(self, _alert_config, _task_dir, _prefix):
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''               
+        self.alert_desktop_results(_alert_config, 'Chrome', _task_dir, _prefix)
+
     def execute_js(self, script):
         """Run javascipt"""
         return DevtoolsBrowser.execute_js(self, script)
@@ -353,6 +362,15 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                     netlog_file = os.path.join(task['dir'], task['prefix']) + '_netlog.txt.gz'
                     self.netlog_out = gzip.open(netlog_file, 'wt', compresslevel=7, encoding='utf-8')
                 self.netlog = Netlog()
+
+                # set up the callbacks (these will happen on a background thread)
+                if self.devtools is not None:
+                    self.netlog.on_request_created = self.devtools.on_netlog_request_created                     # (request_id, request_info)
+                    self.netlog.on_request_headers_sent = self.devtools.on_netlog_request_headers_sent           # (request_id, request_headers)
+                    self.netlog.on_response_headers_received = self.devtools.on_netlog_response_headers_received # (request_id, response_headers)
+                    self.netlog.on_response_bytes_received = self.devtools.on_netlog_response_bytes_received     # (request_id, filtered_bytes)
+                    self.netlog.on_request_id_changed = self.devtools.on_request_id_changed                      # (request_id, new_request_id)
+
                 if self.netlog_header:
                     for line in self.netlog_header:
                         if self.netlog_out:
