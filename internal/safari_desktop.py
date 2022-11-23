@@ -13,6 +13,7 @@ import re
 import subprocess
 import threading
 import time
+from datetime import datetime
 from time import monotonic
 from urllib.parse import urlsplit # pylint: disable=import-error
 try:
@@ -41,6 +42,7 @@ class SafariDesktop(DesktopBrowser):
         self.must_exit_now = False
         self.page = {}
         self.requests = {}
+        self.connections = {}
         self.request_count = 0
         self.total_sleep = 0
         self.long_tasks = []
@@ -51,12 +53,21 @@ class SafariDesktop(DesktopBrowser):
         self.safari_log_thread = None
         self.stop_safari_log = False
         self.events = multiprocessing.JoinableQueue()
+        self.re_content_resource = re.compile(r'^[^\[]*\[[^\]]*frameID=(?P<frame>\d+)[^\]]*resourceID=(?P<resource>\d+)[^\]]*\] (?P<msg>.*)$')
+        self.re_net_task = re.compile(r'Task (?P<task><[^>]+>\.<[^>]+>)')
+        self.re_net_connection = re.compile(r'Connection (?P<connection>\d+)')
+        self.re_connection = re.compile(r' \[C(?P<connection>\d+)')
+        self.re_parens = re.compile(r'\(([^\)]+)\)')
+        self.re_curley = re.compile(r'\{([^\}]+)\}')
+        self.tasks = {}
+        self.start_time = None
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.page = {}
         self.requests = {}
         self.request_count = 0
+        self.start_time = None
         # Manually kill Safari gracefully here because DesktopBrowser will try a SIGTERM which doesn't work
         if self.path is not None:
             try:
@@ -82,7 +93,7 @@ class SafariDesktop(DesktopBrowser):
                 ]
         self.safari_log = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.stop_safari_log = False
-        self.safari_log_thread = threading.Thread(target=self.pump_safari_log_putput)
+        self.safari_log_thread = threading.Thread(target=self.pump_safari_log_output)
         self.safari_log_thread.start()
         # Start the browser
         from selenium import webdriver # pylint: disable=import-error
@@ -121,6 +132,7 @@ class SafariDesktop(DesktopBrowser):
                             self.set_window_size(width, height)
                 # Wait for the browser startup to finish
                 DesktopBrowser.wait_for_idle(self)
+                self.wait_for_events_idle()
         except Exception as err:
             logging.exception("Error starting Safari")
             task['error'] = 'Error starting Safari: {0}'.format(err.__str__())
@@ -570,43 +582,207 @@ class SafariDesktop(DesktopBrowser):
 
     def process_event(self, event):
         """ Process and individual event """
-        if event['wpt_proc'] == 'Safari':
+        # Use the timestamp from the first log event as the start time base if
+        # we are not doing the first page load
+        if self.start_time is None and self.page_loaded is not None:
+            self.start_time = event['ts']
+
+        # Process the actual event
+        if event['proc'] == 'Safari':
             self.process_safari_event(event)
-        elif event['wpt_proc'] == 'WebKit':
-            self.process_webkit_event(event)
-        elif event['wpt_proc'] == 'com.apple.WebKit.Networking':
+        elif event['proc'] == 'com.apple.WebKit.Networking':
             self.process_network_event(event)
-        elif event['wpt_proc'] == 'com.apple.WebKit.WebContent':
+        elif event['proc'] == 'com.apple.WebKit.WebContent':
             self.process_content_event(event)
-        elif event['wpt_proc'] in ['safaridriver', 'SafariBookmarksSyncAgent']:
-            pass
-        else:
-            logging.debug('Unknown event: %s (%s) %s (%s): %s', event['wpt_proc'], event['wpt_sender'], event['subsystem'], event['category'], event['eventMessage'])
 
     def process_safari_event(self, event):
         """Process 'Safari' process events"""
-        msg = event['eventMessage']
-        if event['category'] == 'Loading' and msg.find('isMainFrame=1') >= 0:
+        msg = event['msg']
+        if event['cat'] == 'Loading' and msg.find('isMainFrame=1') >= 0:
             if msg.find('didStartProvisionalLoadForFrame') >= 0:
                 self.page_loaded = None
+                if self.start_time is None:
+                    self.start_time = event['ts']
+                ts = max(.0, event['ts'] - self.start_time)
+                logging.debug('%0.6f ***** Safari page load start', ts)
             elif msg.find('didFinishLoadForFrame') >= 0:
+                if self.start_time is None:
+                    self.start_time = event['ts']
+                ts = max(.0, event['ts'] - self.start_time)
                 self.page_loaded = monotonic()
-
-    def process_webkit_event(self, event):
-        """Process 'WebKit' process events"""
-        pass
+                logging.debug('%0.6f ***** Safari page load done', ts)
 
     def process_network_event(self, event):
         """Process 'com.apple.WebKit.Networking' process events"""
-        msg = event['eventMessage']
-        if event['category'] == 'Loading':
-            self.last_activity = monotonic()
-            if msg.find('scheduleResourceLoad') >= 0:
-                self.request_count += 1
+        msg = event['msg']
+        if event['cat'] in ['boringssl', 'connection']:
+            if self.start_time is None:
+                self.start_time = event['ts']
+            ts = max(.0, event['ts'] - self.start_time)
+            connection_search = self.re_connection.search(event['msg'])
+            connection = connection_search.group('connection') if connection_search else None
+            if connection is not None:
+                if connection not in self.connections:
+                    self.connections[connection] = {'claimed': False}
+                conn = self.connections[connection]
+                id = conn['request'] if 'request' in conn else ''
+                if event['cat'] == 'boringssl':
+                    if 'start' not in conn:
+                        conn['start'] = ts
+                    if 'tls_start' not in conn:
+                        conn['end'] = ts
+                        conn['tls_start'] = ts
+                        logging.debug('%0.6f %s: Connection %s TLS started', ts, id, connection)
+                    if 'tls_end' not in conn and msg.find('Client handshake done') >= 0:
+                        conn['tls_end'] = ts
+                        logging.debug('%0.6f %s: Connection %s TLS complete', ts, id, connection)
+                elif event['cat'] == 'connection':
+                    if 'dns_start' not in conn and msg.find('Starting host resolution') >= 0:
+                        conn['dns_start'] = ts
+                        logging.debug('%0.6f %s (connection): DNS Lookup started', ts, id)
+                    if 'dns_end' not in conn and msg.find('Got DNS result') >= 0:
+                        conn['dns_end'] = ts
+                        if 'start' in conn:
+                            conn['start'] = ts
+                        logging.debug('%0.6f %s (connection): DNS Lookup complete', ts, id)
+        else:
+            res = self.re_content_resource.match(event['msg'])
+            task_search = self.re_net_task.search(event['msg'])
+            task = task_search.group('task') if task_search else None
+            connection_search = self.re_net_connection.search(event['msg'])
+            connection = connection_search.group('connection') if connection_search else None
+            id = None
+            if res:
+                id = '{}.{}'.format(res.group('frame'), res.group('resource'))
+                msg = res.group('msg')
+                if task and task not in self.tasks:
+                    self.tasks[task] = id
+            elif task and task in self.tasks:
+                id = self.tasks[task]
+            # Only process network events where we have a resource ID
+            if id:
+                self.last_activity = monotonic()
+                if self.start_time is None:
+                    self.start_time = event['ts']
+                ts = max(.0, event['ts'] - self.start_time)
+                if id not in self.requests:
+                    self.requests[id] = {'id': id,
+                                        'created': ts,
+                                        'url': 'https://' + id,
+                                        'from_net': True}
+                    self.request_count += 1
+                request = self.requests[id]
+                if connection is not None:
+                    request['socket'] = connection
+                    if connection not in self.connections:
+                        self.connections[connection] = {'claimed': False}
+                    conn = self.connections[connection]
+                    if 'start' not in conn and msg.find('setting up Connection') >= 0:
+                        conn['start'] = ts
+                        if 'request' not in conn:
+                            conn['request'] = id
+                        logging.debug('%0.6f %s: Connection %s started', ts, id, connection)
+                    if 'end' not in conn and msg.find('done setting up Connection') >= 0:
+                        conn['end'] = ts
+                        logging.debug('%0.6f %s: Connection %s complete', ts, id, connection)
+                if 'start' not in request and msg.find('sent request') >= 0:
+                    request['start'] = ts
+                    logging.debug('%0.6f %s: Request started', ts, id)
+                if 'first_byte' not in request and msg.find('received response') >= 0:
+                    request['first_byte'] = ts
+                    logging.debug('%0.6f %s: Response started', ts, id)
+                if msg.find('NetworkResourceLoader::didReceiveResponse') >= 0 or \
+                        msg.find('NetworkResourceLoader::didReceiveData') >= 0 or \
+                        msg.find('NetworkResourceLoader::didFinishLoading') >= 0:
+                    if 'first_byte' not in request:
+                        request['first_byte'] = ts
+                    request['end'] = ts
+                    # Parse any details that are available
+                    values_search = self.re_parens.search(event['msg'])
+                    if values_search:
+                        values = values_search.group(1)
+                        self.parse_response_values(request, ts, values)
+                elif msg.find('summary for task') >= 0:
+                    # Parse any details that are available
+                    values_search = self.re_curley.search(event['msg'])
+                    if values_search:
+                        values = values_search.group(1)
+                        self.parse_response_values(request, ts, values)
+                logging.debug('%0.6f %s (Net): %s', ts, id, msg)
 
     def process_content_event(self, event):
         """Process 'com.apple.WebKit.WebContent' process events"""
-        pass
+        if event['sender'] in ['CoreFoundation', 'SkyLight', 'LaunchServices', 'AppKit']:
+            return
+        res = self.re_content_resource.match(event['msg'])
+        # Only process content events where we have a resource ID
+        if res:
+            if self.start_time is None:
+                self.start_time = event['ts']
+            ts = max(.0, event['ts'] - self.start_time)
+            id = '{}.{}'.format(res.group('frame'), res.group('resource'))
+            msg = res.group('msg')
+            if id not in self.requests:
+                self.requests[id] = {'id': id,
+                                     'created': ts,
+                                     'url': 'https://' + id,
+                                     'from_net': True}
+            request = self.requests[id]
+            if msg.find('WebLoaderStrategy::scheduleLoad') >= 0:
+                # Parse any details that are available
+                values_search = self.re_parens.search(event['msg'])
+                if values_search:
+                    values = values_search.group(1)
+                    self.parse_response_values(request, ts, values)
+            elif msg.find('WebResourceLoader::didReceiveResponse') >= 0:
+                if 'first_byte' not in request:
+                    request['first_byte'] = ts
+                request['end'] = ts
+                # Parse any details that are available
+                values_search = self.re_parens.search(event['msg'])
+                if values_search:
+                    values = values_search.group(1)
+                    self.parse_response_values(request, ts, values)
+            logging.debug('%0.6f %s (Content): %s', ts, id, msg)
+
+    def parse_response_values(self, request, ts, values):
+        """ Tokenize a set of response values """
+        tokens = values.split(',')
+        for token in tokens:
+            try:
+                parts = token.split('=')
+                if len(parts) == 2:
+                    key = parts[0].strip(' =,')
+                    value = parts[1].strip(' =,')
+                    if key == 'httpStatusCode':
+                        request['status'] = int(value)
+                    elif key == 'MIMEType':
+                        request['contentType'] = value
+                    elif key == 'reportedEncodedDataLength':
+                        bytes_in = int(value)
+                        if 'bytes_in' not in request:
+                            request['bytes_in'] = 0
+                        request['bytes_in'] += bytes_in
+                        if 'chunks' not in request:
+                            request['chunks'] = []
+                        request['chunks'].append({'ts': ts, 'bytes': bytes_in})
+                    elif key == 'numBytesReceived':
+                        request['bytes_in'] = int(value)
+                    elif key == 'priority':
+                        request['priority'] = value
+                    elif key == 'request_bytes':
+                        request['bytes_out'] = int(value)
+                    elif key == 'response_bytes':
+                        request['bytes_in'] = int(value)
+                    elif key == 'cache_hit':
+                        if value == 'true':
+                            request['from_net'] = False
+                    elif key == 'connection':
+                        request['socket'] = value
+                    elif key == 'response_status':
+                        request['status'] = int(value)
+            except Exception:
+                logging.exception('Error processing response token')
 
     def get_event(self, timeout):
         """Wait for and return an event from the queue"""
@@ -626,13 +802,27 @@ class SafariDesktop(DesktopBrowser):
         try:
             while True:
                 self.events.get_nowait()
+                self.events.task_done()
         except Exception:
             pass
 
-    def pump_safari_log_putput(self):
+    def wait_for_events_idle(self):
+        """ Wait for there to be a 1 second gap in log events or up to 30 seconds max """
+        logging.debug('Waiting for Safari to go idle...')
+        end = monotonic() + 30
+        try:
+            while monotonic() < end:
+                self.events.get(True, 1)
+                self.events.task_done()
+        except Exception:
+            pass
+        logging.debug('Done waiting for Safari to go idle.')
+
+    def pump_safari_log_output(self):
         """ Background thread for reading and processing log output """
         try:
             entry = None
+            start_time = None
             while self.safari_log is not None and not self.stop_safari_log:
                 line_start = self.safari_log.stdout.read(1)
                 # Start collecting JSON objects at the first {
@@ -643,12 +833,27 @@ class SafariDesktop(DesktopBrowser):
                     if line_start == '}' and entry is not None:
                         entry += '}'
                         try:
-                            event = json.loads(entry)
-                            if 'processImagePath' in event and 'senderImagePath' in event and 'subsystem' in event and 'eventMessage' in event and 'category' in event:
-                                event['wpt_proc'] = os.path.basename(event['processImagePath'])
-                                event['wpt_sender'] = os.path.basename(event['senderImagePath'])
+                            raw = json.loads(entry)
+                            if 'processImagePath' in raw and \
+                                    'senderImagePath' in raw and \
+                                    'subsystem' in raw and \
+                                    'eventMessage' in raw and \
+                                    'category' in raw and \
+                                    'timestamp' in raw:
+                                ts = datetime.strptime(raw['timestamp'][0:26], '%Y-%m-%d %H:%M:%S.%f').timestamp()
+                                if start_time is None:
+                                    start_time = ts
+                                elapsed = ts - start_time
+                                event = {
+                                    'proc': os.path.basename(raw['processImagePath']),
+                                    'sender': os.path.basename(raw['senderImagePath']),
+                                    'subsystem': raw['subsystem'],
+                                    'msg': raw['eventMessage'],
+                                    'cat': raw['category'],
+                                    'ts': elapsed,
+                                }
                                 # Filter out a bunch of noise
-                                if event['wpt_sender'] in ['Safari', 'WebKit'] or event['wpt_proc'] != 'Safari' :
+                                if event['sender'] in ['Safari', 'WebKit'] or event['proc'] != 'Safari' :
                                     self.events.put(event)
                         except Exception:
                             logging.exception('Error parsing log event')
