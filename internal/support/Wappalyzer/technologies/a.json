@@ -606,8 +606,8 @@
     "headers": {
       "via": "Acquia Platform CDN (.+)\\;version:\\1"
     },
-    "implies": "Acquia Cloud Platform",
     "icon": "acquia-cloud-platform.svg",
+    "implies": "Acquia Cloud Platform",
     "saas": true,
     "website": "https://docs.acquia.com/cloud-platform/platformcdn/"
   },
@@ -1961,7 +1961,7 @@
       "X-EdgeConnect-MidMile-RTT": "",
       "X-EdgeConnect-Origin-MEX-Latency": ""
     },
-    "icon": "akamai.svg",
+    "icon": "Akamai.svg",
     "pricing": [
       "poa"
     ],
@@ -1978,7 +1978,7 @@
       "bm_sz": ""
     },
     "description": "Akamai Bot Manager detect bots using device fingerprinting bot signatures.",
-    "icon": "akamai.svg",
+    "icon": "Akamai.svg",
     "implies": "Akamai",
     "pricing": [
       "poa"
@@ -1991,7 +1991,7 @@
       16
     ],
     "description": "Akamai Web Application Protector is designed for companies looking for a more automated approach to web application firewall (WAF) and distributed denial-of-service (DDoS) security.",
-    "icon": "akamai.svg",
+    "icon": "Akamai.svg",
     "implies": "Akamai",
     "js": {
       "AKSB": "\\;confidence:50"
@@ -2017,7 +2017,7 @@
     "html": [
       "<script>[\\s\\S]*?go-mpulse\\.net\\/boomerang[\\s\\S]*?</script>"
     ],
-    "icon": "akamai.svg",
+    "icon": "Akamai.svg",
     "implies": [
       "Boomerang"
     ],
@@ -2533,7 +2533,7 @@
         "amazonses\\.com"
       ]
     },
-    "icon": "aws.svg",
+    "icon": "Amazon SES.svg",
     "implies": "Amazon Web Services",
     "saas": true,
     "website": "https://aws.amazon.com/ses/"
@@ -2858,14 +2858,14 @@
     ],
     "description": "Animate.css is a ready-to-use library collection of CSS3 animation effects.",
     "dom": {
-      "link[href*='animate']": {
-        "attributes": {
-          "href": "([\\d\\.]+)?/animate\\.min\\.css\\;version:\\1"
-        }
-      },
       ".animate__animated": {
         "attributes": {
           "class": "\\;confidence:99"
+        }
+      },
+      "link[href*='animate']": {
+        "attributes": {
+          "href": "([\\d\\.]+)?/animate\\.min\\.css\\;version:\\1"
         }
       }
     },
@@ -2992,7 +2992,7 @@
     "scriptSrc": "\\.anyclip\\.com",
     "website": "https://www.anyclip.com"
   },
-  "Apache": {
+  "Apache HTTP Server": {
     "cats": [
       22
     ],
@@ -3002,7 +3002,7 @@
       "Server": "(?:Apache(?:$|/([\\d.]+)|[^/-])|(?:^|\\b)HTTPD)\\;version:\\1"
     },
     "icon": "Apache.svg",
-    "website": "http://apache.org"
+    "website": "https://httpd.apache.org/"
   },
   "Apache JSPWiki": {
     "cats": [
@@ -3039,7 +3039,7 @@
     "headers": {
       "Server": "ATS/?([\\d.]+)?\\;version:\\1"
     },
-    "icon": "Apache Traffic Server.png",
+    "icon": "Apache Traffic Server.svg",
     "website": "http://trafficserver.apache.org/"
   },
   "Apache Wicket": {
@@ -3482,6 +3482,15 @@
     ],
     "website": "https://developers.arcgis.com/javascript/"
   },
+  "Arsys Domain Parking": {
+    "cats": [
+      109
+    ],
+    "description": "Arsys is a Spanish domain registrar.",
+    "dom": "link[rel='stylesheet'][href*='arsys.es/css/parking2.css']",
+    "icon": "arsys.png",
+    "website": "https://www.arsys.es"
+  },
   "Artifactory": {
     "cats": [
       47
@@ -3909,6 +3918,22 @@
     "icon": "Audiohook.svg",
     "website": "https://www.audiohook.com"
   },
+  "Aument": {
+    "cats": [
+      75,
+      98
+    ],
+    "description": "Aument is an ecommerce toolbox with easy to use marketing actions and workflows.",
+    "dom": "div#aumentDiscountCode",
+    "icon": "Aument.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://aument.io"
+  },
   "Aura": {
     "cats": [
       66
@@ -4255,6 +4280,7 @@
     "scriptSrc": [
       "/axios(@|/)([\\d.]+)(?:/[a-z]+)?/axios(?:.min)?\\.js\\;version:\\2"
     ],
+    "icon": "Axios.svg",
     "website": "https://github.com/axios/axios"
   },
   "Azion": {

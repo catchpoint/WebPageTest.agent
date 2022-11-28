@@ -81,6 +81,21 @@
     ],
     "website": "https://www.reg.ru"
   },
+  "RSS": {
+    "cats": [
+      19
+    ],
+    "description": "RSS is a family of web feed formats used to publish frequently updated works—such as blog entries, news headlines, audio, and video—in a standardized format.",
+    "dom": {
+      "link[type*='application']": {
+        "attributes": {
+          "type": "application/(?:rss|atom)\\+xml"
+        }
+      }
+    },
+    "icon": "RSS.svg",
+    "website": "https://www.rssboard.org/rss-specification"
+  },
   "RTB House": {
     "cats": [
       77
@@ -222,9 +237,10 @@
       87,
       54
     ],
-    "description": "RankMath SEO is a search engine optimization plugin for WordPress.",
+    "description": "RankMath SEO is a search engine optimisation plugin for WordPress.",
     "dom": "link[href*='/wp-content/plugins/seo-by-rank-math/'], script.rank-math-schema-pro, script.rank-math-schema",
     "icon": "RankMath SEO.svg",
+    "implies": "Google Analytics\\;version:4",
     "pricing": [
       "freemium",
       "low",
@@ -690,6 +706,23 @@
     ],
     "website": "https://rechargepayments.com"
   },
+  "Recharts": {
+    "cats": [
+      25
+    ],
+    "description": "Recharts is a component-based charting library, which is exclusively built for React applications.",
+    "dom": {
+      "div > div > svg.recharts-surface": {
+        "attributes": {
+          "class": ""
+        }
+      }
+    },
+    "icon": "Recharts.svg",
+    "implies": "React",
+    "oss": true,
+    "website": "https://recharts.org/"
+  },
   "Recite Me": {
     "cats": [
       68
@@ -1136,7 +1169,7 @@
       12
     ],
     "description": "RequireJS is a JavaScript library and file loader which manages the dependencies between JavaScript files and in modular programming.",
-    "icon": "RequireJS.png",
+    "icon": "RequireJS.svg",
     "js": {
       "requirejs.version": "^(.+)$\\;version:\\1"
     },
@@ -1623,12 +1656,13 @@
     "cats": [
       12
     ],
+    "description": "RightJS is a modular JavaScript framework.",
     "icon": "RightJS.png",
     "js": {
       "RightJS": ""
     },
-    "scriptSrc": "right\\.js",
-    "website": "http://rightjs.org"
+    "oss": true,
+    "website": "https://github.com/rightjs"
   },
   "Riot": {
     "cats": [
@@ -1813,6 +1847,27 @@
     ],
     "saas": true,
     "website": "https://rocket.chat"
+  },
+  "Rocketfy": {
+    "cats": [
+      6,
+      51
+    ],
+    "description": "Rocketfy is a platform that allows users to build an online store and allows dropshipping at the same time.",
+    "icon": "Rocketfy.svg",
+    "implies": [
+      "React",
+      "Next.js"
+    ],
+    "meta": {
+      "generator": "^Rocketfy\\sMaker\\s-\\sv([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.rocketfy\\.mx/",
+    "website": "https://rocketfy.mx"
   },
   "Rokt": {
     "cats": [
