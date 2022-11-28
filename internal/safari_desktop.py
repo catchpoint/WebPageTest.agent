@@ -469,6 +469,7 @@ class SafariDesktop(DesktopBrowser):
         DesktopBrowser.on_start_processing(self, task)
         if self.must_exit:
             return
+        self.process_requests(task)
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -580,6 +581,209 @@ class SafariDesktop(DesktopBrowser):
             except Exception as err:
                 logging.exception('Exception grabbing screen shot: %s', str(err))
 
+    def process_requests(self, task):
+        """Convert all of the request and page events into the format needed for WPT"""
+        result = {}
+        result['requests'] = self.merge_requests()
+        result['pageData'] = self.calculate_page_stats(result['requests'])
+        if 'metadata' in self.job:
+            result['pageData']['metadata'] = self.job['metadata']
+        devtools_file = os.path.join(task['dir'], task['prefix'] + '_devtools_requests.json.gz')
+        with gzip.open(devtools_file, 'wt', 7) as f_out:
+            json.dump(result, f_out)
+
+    def get_empty_request(self, request_id, url):
+        """Return and empty, initialized request"""
+        parts = urlsplit(url)
+        request = {'type': 3,
+                   'id': request_id,
+                   'request_id': request_id,
+                   'ip_addr': '',
+                   'full_url': url,
+                   'is_secure': 1 if parts.scheme == 'https' else 0,
+                   'method': '',
+                   'host': parts.netloc,
+                   'url': parts.path,
+                   'responseCode': -1,
+                   'load_start': -1,
+                   'load_ms': -1,
+                   'ttfb_ms': -1,
+                   'dns_start': -1,
+                   'dns_end': -1,
+                   'dns_ms': -1,
+                   'connect_start': -1,
+                   'connect_end': -1,
+                   'connect_ms': -1,
+                   'ssl_start': -1,
+                   'ssl_end': -1,
+                   'ssl_ms': -1,
+                   'bytesIn': 0,
+                   'bytesOut': 0,
+                   'objectSize': 0,
+                   'initiator': '',
+                   'initiator_line': '',
+                   'initiator_column': '',
+                   'server_rtt': None,
+                   'headers': {'request': [], 'response': []},
+                   'score_cache': -1,
+                   'score_cdn': -1,
+                   'score_gzip': -1,
+                   'score_cookies': -1,
+                   'score_keep-alive': -1,
+                   'score_minify': -1,
+                   'score_combine': -1,
+                   'score_compress': -1,
+                   'score_etags': -1,
+                   'gzip_total': None,
+                   'gzip_save': None,
+                   'minify_total': None,
+                   'minify_save': None,
+                   'image_total': None,
+                   'image_save': None,
+                   'cache_time': None,
+                   'cdn_provider': None,
+                   'server_count': None,
+                   'socket': -1
+                   }
+        if len(parts.query):
+            request['url'] += '?' + parts.query
+        return request
+
+    def merge_requests(self):
+        """Merge the requests from the extension and log files"""
+        requests = []
+        # Start with the requests reported from the extension
+        for req_id in self.requests:
+            try:
+                req = self.requests[req_id]
+                if req['from_net'] and 'start' in req:
+                    # Generate a bogus URL for the request
+                    proto = 'http'
+                    if 'socket' in req and req['socket'] in self.connections and 'tls_start' in self.connections[req['socket']]:
+                        proto = 'https'
+                    if 'socket' in req:
+                        req['url'] = '{}://{}/{}'.format(proto, req['socket'], req_id)
+                    else:
+                        req['url'] = '{}://{}/'.format(proto, req_id)
+                    request = self.get_empty_request(req['id'], req['url'])
+                    if 'status' in req:
+                        request['responseCode'] = req['status']
+                    request['created'] = int(round(req['created'] * 1000.0))
+                    request['load_start'] = int(round(req['start'] * 1000.0))
+                    request['startTime'] = req['start'] * 1000.0
+                    if 'first_byte' in req:
+                        ttfb = int(round((req['first_byte'] - req['start']) * 1000.0))
+                        request['ttfb_ms'] = max(0, ttfb)
+                    if 'end' in req:
+                        load_time = int(round((req['end'] - req['start']) * 1000.0))
+                        request['load_ms'] = max(0, load_time)
+                    copy_keys = ['priority', 'socket', 'contentType']
+                    for key in copy_keys:
+                        if key in req:
+                            request[key] = req[key]
+                    if 'bytes_in' in req:
+                        request['bytesIn'] = req['bytes_in']
+                        request['objectSize'] = req['bytes_in']
+                    if 'bytes_out' in req:
+                        request['bytesOut'] = req['bytes_out']
+                    if 'bytes_in_uncompressed' in req:
+                        request['objectSizeUncompressed'] = req['bytes_in_uncompressed']
+                    # Add the connection timings
+                    if 'socket' in req and req['socket'] in self.connections:
+                        conn = self.connections[req['socket']]
+                        if not conn['claimed']:
+                            conn['claimed'] = True
+                            if 'dns_start' in conn and conn['dns_start'] >= 0:
+                                request['dns_start'] = int(conn['dns_start'] * 1000)
+                            if 'dns_end' in conn and conn['dns_end'] >= 0:
+                                request['dns_end'] = int(round(conn['dns_end'] * 1000.0))
+                            if 'start' in conn and conn['start'] >= 0:
+                                request['connect_start'] = int(conn['start'] * 1000)
+                            if 'end' in conn and conn['end'] >= 0:
+                                request['connect_end'] = int(round(conn['end'] * 1000.0))
+                            if 'tls_start' in conn and conn['tls_start'] >= 0:
+                                request['ssl_start'] = int(conn['tls_start'] * 1000)
+                            if 'tls_end' in conn and conn['tls_end'] >= 0:
+                                request['ssl_end'] = int(round(conn['tls_end'] * 1000.0))
+                    requests.append(request)
+            except Exception:
+                logging.error('Error merging request')
+        requests.sort(key=lambda x: x['startTime'] if 'startTime' in x else 0)
+        return requests
+
+    def calculate_page_stats(self, requests):
+        """Calculate the page-level stats"""
+        page = {'loadTime': 0,
+                'docTime': 0,
+                'fullyLoaded': 0,
+                'bytesOut': 0,
+                'bytesOutDoc': 0,
+                'bytesIn': 0,
+                'bytesInDoc': 0,
+                'requests': len(requests),
+                'requestsDoc': 0,
+                'responses_200': 0,
+                'responses_404': 0,
+                'responses_other': 0,
+                'result': 0,
+                'testStartOffset': 0,
+                'cached': 1 if self.task['cached'] else 0,
+                'optimization_checked': 0
+                }
+        if 'loaded' in self.page:
+            page['loadTime'] = int(round(self.page['loaded'] * 1000.0))
+            page['docTime'] = page['loadTime']
+            page['loadEventStart'] = page['loadTime']
+            page['loadEventEnd'] = page['loadTime']
+        if 'DOMContentLoaded' in self.page:
+            page['domContentLoadedEventStart'] = int(round(self.page['DOMContentLoaded'] * 1000.0))
+            page['domContentLoadedEventEnd'] = page['domContentLoadedEventStart']
+
+        main_request = None
+        index = 0
+        for request in requests:
+            if request['load_ms'] >= 0:
+                end_time = request['load_start'] + request['load_ms']
+                if end_time > page['fullyLoaded']:
+                    page['fullyLoaded'] = end_time
+                if end_time <= page['loadTime']:
+                    page['requestsDoc'] += 1
+                    page['bytesInDoc'] += request['bytesIn']
+                    page['bytesOutDoc'] += request['bytesOut']
+            page['bytesIn'] += request['bytesIn']
+            page['bytesOut'] += request['bytesOut']
+            if request['responseCode'] == 200:
+                page['responses_200'] += 1
+            elif request['responseCode'] == 404:
+                page['responses_404'] += 1
+                page['result'] = 99999
+            elif request['responseCode'] > -1:
+                page['responses_other'] += 1
+            if main_request is None and \
+                    (request['responseCode'] == 200 or request['responseCode'] == 304) and \
+                    ('contentType' not in request or
+                     (request['contentType'] != 'application/ocsp-response' and
+                      request['contentType'] != 'application/pkix-crl')):
+                main_request = request['id']
+                request['is_base_page'] = True
+                page['final_base_page_request'] = index
+                page['final_base_page_request_id'] = main_request
+                page['final_url'] = request['full_url']
+                if 'URL' not in self.task['page_data']:
+                    self.task['page_data']['URL'] = page['final_url']
+                if request['ttfb_ms'] >= 0:
+                    page['TTFB'] = request['load_start'] + request['ttfb_ms']
+                if request['ssl_end'] >= request['ssl_start'] and \
+                        request['ssl_start'] >= 0:
+                    page['basePageSSLTime'] = int(round(request['ssl_end'] - request['ssl_start']))
+        if page['responses_200'] == 0 and len(requests):
+            if 'responseCode' in requests[0]:
+                page['result'] = requests[0]['responseCode']
+            else:
+                page['result'] = 12999
+        self.task['page_result'] = page['result']
+        return page
+
     def process_event(self, event):
         """ Process and individual event """
         # Use the timestamp from the first log event as the start time base if
@@ -609,6 +813,7 @@ class SafariDesktop(DesktopBrowser):
                 if self.start_time is None:
                     self.start_time = event['ts']
                 ts = max(.0, event['ts'] - self.start_time)
+                self.page['loaded'] = ts
                 self.page_loaded = monotonic()
                 logging.debug('%0.6f ***** Safari page load done', ts)
 
@@ -763,11 +968,8 @@ class SafariDesktop(DesktopBrowser):
                         if 'bytes_in' not in request:
                             request['bytes_in'] = 0
                         request['bytes_in'] += bytes_in
-                        if 'chunks' not in request:
-                            request['chunks'] = []
-                        request['chunks'].append({'ts': ts, 'bytes': bytes_in})
                     elif key == 'numBytesReceived':
-                        request['bytes_in'] = int(value)
+                        request['bytes_in_uncompressed'] = int(value)
                     elif key == 'priority':
                         request['priority'] = value
                     elif key == 'request_bytes':
