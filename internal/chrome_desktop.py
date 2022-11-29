@@ -21,58 +21,58 @@ except BaseException:
     import json
 
 CHROME_COMMAND_LINE_OPTIONS = [
-    '--disable-background-networking',
-    '--no-default-browser-check',
-    '--no-first-run',
-    '--new-window',
     '--allow-running-insecure-content',
+    '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-breakpad',
     '--disable-client-side-phishing-detection',
     '--disable-component-update',
     '--disable-default-apps',
-    '--disable-device-discovery-notifications',
     '--disable-domain-reliability',
-    '--disable-background-timer-throttling',
-    '--load-media-router-component-extension=0',
-    '--mute-audio',
-    '--disable-hang-monitor',
-    '--password-store=basic',
-    '--disable-breakpad',
-    '--dont-require-litepage-redirect-infobar',
-    '--override-https-image-compression-infobar',
     '--disable-fetching-hints-at-navigation-start',
-    '--disable-back-forward-cache',
-    '--disable-site-isolation-trials'
+    '--disable-hang-monitor',
+    '--disable-ipc-flooding-protection',
+    '--disable-prompt-on-repost',
+    '--disable-renderer-backgrounding',
+    '--disable-site-isolation-trials',
+    '--disable-sync',
+    '--metrics-recording-only',
+    '--mute-audio',
+    '--new-window',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--password-store=basic',
+    '--use-mock-keychain',
 ]
 
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
     '"MAP clients1.google.com 127.0.0.1"',
-    '"MAP update.googleapis.com 127.0.0.1"',
-    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP edge.microsoft.com 127.0.0.1"',
     '"MAP laptop-updates.brave.com 127.0.0.1"',
     '"MAP offlinepages-pa.googleapis.com 127.0.0.1"',
-    '"MAP edge.microsoft.com 127.0.0.1"',
-    '"MAP optimizationguide-pa.googleapis.com 127.0.0.1"'
+    '"MAP optimizationguide-pa.googleapis.com 127.0.0.1"',
+    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
 ]
 
 ENABLE_CHROME_FEATURES = [
-    'NetworkService',
-    'NetworkServiceInProcess',
-    'SecMetadata'
 ]
 
 DISABLE_CHROME_FEATURES = [
-    'InterestFeedContentSuggestions',
+    'AutofillServerCommunication',
+    'BackForwardCache',
     'CalculateNativeWinOcclusion',
-    'TranslateUI',
-    'Translate',
-    'OfflinePagesPrefetching',
     'HeavyAdPrivacyMitigations',
-    'AutofillServerCommunication'
+    'InterestFeedContentSuggestions',
+    'MediaRouter',
+    'OfflinePagesPrefetching',
+    'OptimizationHints',
+    'Translate',
 ]
 
 ENABLE_BLINK_FEATURES = [
-    'LayoutInstabilityAPI'
 ]
 
 class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
@@ -144,8 +144,10 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if platform.system() == "Linux":
             args.append('--disable-setuid-sandbox')
             args.append('--disable-dev-shm-usage')
-        args.append('--enable-features=' + ','.join(features))
-        args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        if len(features):
+            args.append('--enable-features=' + ','.join(features))
+        if len(ENABLE_BLINK_FEATURES):
+            args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         if task['running_lighthouse']:
             args.append('--headless')
         

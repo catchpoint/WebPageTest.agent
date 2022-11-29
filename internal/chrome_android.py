@@ -19,55 +19,60 @@ from .devtools_browser import DevtoolsBrowser
 from .android_browser import AndroidBrowser
 
 CHROME_COMMAND_LINE_OPTIONS = [
-    '--disable-fre',
-    '--metrics-recording-only',
-    '--disable-background-networking',
-    '--disable-component-update',
-    '--no-default-browser-check',
-    '--no-first-run',
     '--allow-running-insecure-content',
+    '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-breakpad',
     '--disable-client-side-phishing-detection',
-    '--disable-device-discovery-notifications',
+    '--disable-component-update',
     '--disable-default-apps',
     '--disable-domain-reliability',
-    '--disable-background-timer-throttling',
     '--disable-external-intent-requests',
-    '--enable-remote-debugging',
-    '--net-log-capture-mode=IncludeSensitive',
-    '--load-media-router-component-extension=0',
-    '--mute-audio',
+    '--disable-fetching-hints-at-navigation-start',
+    '--disable-fre',
     '--disable-hang-monitor',
+    '--disable-ipc-flooding-protection',
+    '--disable-prompt-on-repost',
+    '--disable-renderer-backgrounding',
+    '--disable-site-isolation-trials',
+    '--disable-sync',
+    '--enable-remote-debugging',
+    '--metrics-recording-only',
+    '--metrics-recording-only',
+    '--mute-audio',
+    '--net-log-capture-mode=IncludeSensitive',
+    '--no-default-browser-check',
+    '--no-first-run',
     '--password-store=basic',
-    '--disable-breakpad',
-    '--dont-require-litepage-redirect-infobar',
-    '--override-https-image-compression-infobar',
-    '--disable-fetching-hints-at-navigation-start'
+    '--use-mock-keychain',
 ]
 
 HOST_RULES = [
     '"MAP cache.pack.google.com 127.0.0.1"',
     '"MAP clients1.google.com 127.0.0.1"',
-    '"MAP update.googleapis.com 127.0.0.1"',
-    '"MAP redirector.gvt1.com 127.0.0.1"',
     '"MAP offlinepages-pa.googleapis.com 127.0.0.1"',
-    '"MAP optimizationguide-pa.googleapis.com 127.0.0.1"'
+    '"MAP optimizationguide-pa.googleapis.com 127.0.0.1"',
+    '"MAP redirector.gvt1.com 127.0.0.1"',
+    '"MAP update.googleapis.com 127.0.0.1"',
 ]
 
 DISABLE_CHROME_FEATURES = [
-    'InterestFeedContentSuggestions',
+    'AutofillServerCommunication',
+    'BackForwardCache',
     'CalculateNativeWinOcclusion',
-    'TranslateUI',
-    'Translate',
+    'HeavyAdPrivacyMitigations',
+    'InterestFeedContentSuggestions',
+    'MediaRouter',
     'OfflinePagesPrefetching',
-    'AutofillServerCommunication'
+    'OptimizationHints',
+    'Translate',
 ]
 
 ENABLE_CHROME_FEATURES = [
-    'SecMetadata'
 ]
 
 ENABLE_BLINK_FEATURES = [
-    'LayoutInstabilityAPI'
 ]
 
 """ Orange page
@@ -151,11 +156,10 @@ class ChromeAndroid(AndroidBrowser, DevtoolsBrowser):
         if 'netlog' in job and job['netlog']:
             self.adb.shell(['rm', '/data/local/tmp/netlog.txt'])
             args.append('--log-net-log=/data/local/tmp/netlog.txt')
-        if 'overrideHosts' in task and task['overrideHosts']:
-            features.append('NetworkService')
-            features.append('NetworkServiceInProcess')
-        args.append('--enable-features=' + ','.join(features))
-        args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
+        if len(features):
+            args.append('--enable-features=' + ','.join(features))
+        if len(ENABLE_BLINK_FEATURES):
+            args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         args.append('--disable-features=' + ','.join(disable_features))
         self.sanitize_shell_args(args)
         command_line = 'chrome ' + ' '.join(args)
