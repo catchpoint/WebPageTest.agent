@@ -158,7 +158,7 @@
   },
   "PWA Studio": {
     "cats": [
-      6
+      108
     ],
     "description": "PWA Studio is a collection of tools that lets developers build complex Progressive Web Applications on top of Magento 2 or Adobe Commerce stores.",
     "icon": "PWA Studio.png",
@@ -384,7 +384,7 @@
       "x-pantheon-styx-hostname": "",
       "x-styx-req-id": ""
     },
-    "icon": "pantheon.svg",
+    "icon": "Pantheon.svg",
     "implies": [
       "PHP",
       "Nginx",
@@ -420,31 +420,6 @@
       "\\bParcelforce\\b"
     ],
     "website": "https://www.parcelforce.com"
-  },
-  "Pardot": {
-    "cats": [
-      32
-    ],
-    "description": "Pardot is a Software-as-a-Service (SaaS) marketing automation platform.",
-    "dns": {
-      "TXT": [
-        "pardot"
-      ]
-    },
-    "headers": {
-      "X-Pardot-LB": "",
-      "X-Pardot-Route": "",
-      "X-Pardot-Rsp": ""
-    },
-    "icon": "Pardot.png",
-    "js": {
-      "piAId": "",
-      "piCId": "",
-      "piHostname": "",
-      "piProtocol": "",
-      "piTracker": ""
-    },
-    "website": "https://www.pardot.com"
   },
   "ParkingCrew": {
     "cats": [
@@ -1159,7 +1134,7 @@
     "icon": "sazito-phoenix.png",
     "implies": [
       "React",
-      "webpack",
+      "Webpack",
       "Node.js"
     ],
     "js": {
@@ -1396,8 +1371,8 @@
       68
     ],
     "description": "Piman is an open-source accessibility UI framework create by Blueplanet Inc.",
-    "icon": "Piman.svg",
     "dom": "button.bpa-btn",
+    "icon": "Piman.svg",
     "oss": true,
     "website": "https://ya-sai.github.io/piman/"
   },
@@ -2417,6 +2392,48 @@
     "scriptSrc": "cdn\\.pricespider\\.com/",
     "website": "https://www.pricespider.com"
   },
+  "PrimeNG": {
+    "cats": [
+      66
+    ],
+    "css": "\\.p-(?:toast|calendar|dialog-mask|menuitem-text)(?:-content)?\\{",
+    "description": "PrimeNG is a rich set of open-source UI Components for Angular.",
+    "icon": "PrimeNG.svg",
+    "oss": true,
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "Angular",
+    "website": "https://www.primefaces.org"
+  },
+  "PrimeReact": {
+    "cats": [
+      66
+    ],
+    "css": "\\.p-(?:toast|calendar|dialog-mask|menuitem-text)(?:-content)?\\{",
+    "description": "PrimeReact is a rich set of open-source UI Components for React.",
+    "icon": "PrimeReact.svg",
+    "oss": true,
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "React",
+    "website": "https://www.primefaces.org"
+  },
+  "PrimeVue": {
+    "cats": [
+      66
+    ],
+    "css": "\\.p-(?:toast|calendar|dialog-mask|menuitem-text)(?:-content)?\\{",
+    "description": "PrimeVue is a rich set of open-source UI Components for Vue.js.",
+    "icon": "PrimeVue.svg",
+    "oss": true,
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "Vue.js",
+    "website": "https://www.primefaces.org"
+  },
   "Primis": {
     "cats": [
       36
@@ -3030,6 +3047,9 @@
       19
     ],
     "icon": "Parcel.png",
+    "implies": [
+      "SWC"
+    ],
     "js": {
       "parcelRequire": ""
     },

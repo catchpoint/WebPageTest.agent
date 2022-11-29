@@ -130,6 +130,26 @@
     ],
     "website": "https://www.nagish.li"
   },
+  "Naive UI": {
+    "cats": [
+      66
+    ],
+    "description": "Naive UI is a Vue.js UI library written in TypeScript, offering more than 80 treeshakable components.",
+    "dom": {
+      "style[cssr-id^='n-']": {
+        "attributes": {
+          "cssr-id": "^n-[a-z-]+$\\;confidence:99"
+        }
+      }
+    },
+    "icon": "Naive UI.svg",
+    "implies": [
+      "Vue.js",
+      "TypeScript"
+    ],
+    "oss": true,
+    "website": "https://www.naiveui.com"
+  },
   "Najva": {
     "cats": [
       32
@@ -228,7 +248,7 @@
       10
     ],
     "description": "Naver Analytics is a Korean based analytics service.",
-    "icon": "Naver.svg",
+    "icon": "Naver Anlytics.svg",
     "meta": {
       "naver-site-verification": ""
     },
@@ -245,7 +265,7 @@
       35
     ],
     "description": "Naver Maps help develop location-based services which provided by Naver.",
-    "icon": "Naver.svg",
+    "icon": "Naver Maps.svg",
     "js": {
       "naver.maps": ""
     },
@@ -546,10 +566,10 @@
     "headers": {
       "x-powered-by": "^Next\\.js ?([0-9.]+)?\\;version:\\1"
     },
-    "icon": "vercel.svg",
+    "icon": "Next.js.svg",
     "implies": [
       "React",
-      "webpack",
+      "Webpack",
       "Node.js"
     ],
     "js": {
@@ -781,7 +801,7 @@
     ],
     "cpe": "cpe:2.3:a:nodejs:node.js:*:*:*:*:*:*:*:*",
     "description": "Node.js is an open-source, cross-platform, JavaScript runtime environment that executes JavaScript code outside a web browser.",
-    "icon": "node.js.png",
+    "icon": "Node.js.svg",
     "website": "http://nodejs.org"
   },
   "NodeBB": {
