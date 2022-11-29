@@ -104,24 +104,32 @@ const Wappalyzer = {
       ) {
         let version = ''
         let confidence = 0
+        let rootPath
 
         detections
-          .filter(({ technology }) => technology)
+          .filter(
+            ({ technology: _technology }) =>
+              _technology && _technology.name === technology.name
+          )
           .forEach(
-            ({ technology: { name }, pattern, version: _version = '' }) => {
-              if (name === technology.name) {
-                confidence = Math.min(100, confidence + pattern.confidence)
-                version =
-                  _version.length > version.length &&
-                  _version.length <= 15 &&
-                  (parseInt(_version, 10) || 0) < 10000 // Ignore long numeric strings like timestamps
-                    ? _version
-                    : version
-              }
+            ({
+              technology: { name },
+              pattern,
+              version: _version = '',
+              rootPath: _rootPath,
+            }) => {
+              confidence = Math.min(100, confidence + pattern.confidence)
+              version =
+                _version.length > version.length &&
+                _version.length <= 15 &&
+                (parseInt(_version, 10) || 0) < 10000 // Ignore long numeric strings like timestamps
+                  ? _version
+                  : version
+              rootPath = rootPath || _rootPath || undefined
             }
           )
 
-        resolved.push({ technology, confidence, version, lastUrl })
+        resolved.push({ technology, confidence, version, rootPath, lastUrl })
       }
 
       return resolved
@@ -152,6 +160,7 @@ const Wappalyzer = {
           },
           confidence,
           version,
+          rootPath,
           lastUrl,
         }) => ({
           name,
@@ -164,6 +173,7 @@ const Wappalyzer = {
           website,
           pricing,
           cpe,
+          rootPath,
           lastUrl,
         })
       )
@@ -244,28 +254,30 @@ const Wappalyzer = {
       done = true
 
       resolved.forEach(({ technology, confidence, lastUrl }) => {
-        technology.implies.forEach(({ name, confidence: _confidence }) => {
-          const implied = Wappalyzer.getTechnology(name)
+        technology.implies.forEach(
+          ({ name, confidence: _confidence, version }) => {
+            const implied = Wappalyzer.getTechnology(name)
 
-          if (!implied) {
-            throw new Error(`Implied technology does not exist: ${name}`)
+            if (!implied) {
+              throw new Error(`Implied technology does not exist: ${name}`)
+            }
+
+            if (
+              resolved.findIndex(
+                ({ technology: { name } }) => name === implied.name
+              ) === -1
+            ) {
+              resolved.push({
+                technology: implied,
+                confidence: Math.min(confidence, _confidence),
+                version: version || '',
+                lastUrl,
+              })
+
+              done = false
+            }
           }
-
-          if (
-            resolved.findIndex(
-              ({ technology: { name } }) => name === implied.name
-            ) === -1
-          ) {
-            resolved.push({
-              technology: implied,
-              confidence: Math.min(confidence, _confidence),
-              version: '',
-              lastUrl,
-            })
-
-            done = false
-          }
-        })
+        )
       })
     } while (resolved.length && !done)
   },
@@ -358,7 +370,7 @@ const Wappalyzer = {
 
       technologies.push({
         name,
-        description,
+        description: description || null,
         categories: cats || [],
         slug: Wappalyzer.slugify(name),
         url: transform(url),
@@ -389,9 +401,10 @@ const Wappalyzer = {
         meta: transform(meta),
         scriptSrc: transform(scriptSrc),
         js: transform(js, true),
-        implies: transform(implies).map(({ value, confidence }) => ({
+        implies: transform(implies).map(({ value, confidence, version }) => ({
           name: value,
           confidence,
+          version,
         })),
         excludes: transform(excludes).map(({ value }) => ({
           name: value,
@@ -537,8 +550,10 @@ const Wappalyzer = {
                     // Escape slashes
                     .replace(/\//g, '\\/')
                     // Optimise quantifiers for long strings
+                    .replace(/\\\+/g, '__escapedPlus__')
                     .replace(/\+/g, '{1,250}')
                     .replace(/\*/g, '{0,250}')
+                    .replace(/__escapedPlus__/g, '\\+')
                 : '',
               'i'
             )

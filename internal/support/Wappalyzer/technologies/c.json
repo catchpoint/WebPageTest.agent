@@ -147,6 +147,35 @@
     },
     "website": "http://dragonflycms.org"
   },
+  "CRM+": {
+    "cats": [
+      53
+    ],
+    "description": "CRM+ is a German CRM software product building on Vtiger with GDPR-compliant extensions and improvements.",
+    "dom": {
+      "div.footer > div.floatRight ": {
+        "text": "Powered by Brainformatik GmbH"
+      }
+    },
+    "icon": "CRM+.png",
+    "implies": [
+      "MariaDB",
+      "amCharts",
+      "Sentry",
+      "Vtiger"
+    ],
+    "pricing": [
+      "mid",
+      "recurring",
+      "poa",
+      "freemium"
+    ],
+    "requires": [
+      "Apache HTTP Server",
+      "PHP"
+    ],
+    "website": "https://www.brainformatik.com"
+  },
   "CS Cart": {
     "cats": [
       6
@@ -272,15 +301,17 @@
     "cats": [
       18
     ],
+    "description": "CakePHP is an open-source web framework. It follows the model–view–controller (MVC) approach and is written in PHP.",
     "cookies": {
       "cakephp": ""
     },
     "cpe": "cpe:2.3:a:cakephp:cakephp:*:*:*:*:*:*:*:*",
-    "icon": "CakePHP.png",
+    "icon": "CakePHP.svg",
     "implies": "PHP",
     "meta": {
       "application-name": "CakePHP"
     },
+    "oss": true,
     "website": "http://cakephp.org"
   },
   "Caldera Forms": {
@@ -359,6 +390,23 @@
     ],
     "saas": true,
     "website": "https://www.callrail.com"
+  },
+  "CallTrackingMetrics": {
+    "cats": [
+      10
+    ],
+    "description": "CallTrackingMetrics is a call tracking and marketing attribution solution for contact centers and agencies.",
+    "icon": "CallTrackingMetrics.svg",
+    "js": {
+      "__ctm.numbers": "",
+      "__ctm_tracked_numbers": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.calltrackingmetrics.com"
   },
   "Callbell": {
     "cats": [
@@ -443,6 +491,28 @@
     "saas": true,
     "website": "https://www.canto.com"
   },
+  "Canvas LMS": {
+    "cats": [
+      21
+    ],
+    "description": "Canvas LMS is a web-based learning management system, or LMS.",
+    "headers": {
+      "x-canvas-meta": "login/canvas"
+    },
+    "icon": "Canvas LMS.svg",
+    "implies": [
+      "Ruby on Rails",
+      "React"
+    ],
+    "js": {
+      "webpackChunkcanvas_lms": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.instructure.com/canvas"
+  },
   "Captch Me": {
     "cats": [
       16,
@@ -461,7 +531,7 @@
     ],
     "description": "Carbon Ads is an ad tech company, that connects advertisers to users through targeted verticals called Circles.",
     "dom": "div#carbonads-container",
-    "icon": "Carbon Ads.png",
+    "icon": "Carbon Ads.svg",
     "js": {
       "_carbonads": "",
       "_carbonads_go": ""
@@ -532,7 +602,7 @@
       "low",
       "recurring"
     ],
-    "requires": "Apache",
+    "requires": "Apache HTTP Server",
     "saas": true,
     "scripts": "\\(\\!section\\s\\|\\|\\ssection\\.tagName\\s\\!\\=\\s\\'SECTION\\'\\)",
     "website": "https://carrd.co"
@@ -812,6 +882,28 @@
     "icon": "CentOS.png",
     "website": "http://centos.org"
   },
+  "Centra": {
+    "cats": [
+      6
+    ],
+    "description": "Centra is the headless ecommerce platform.",
+    "dom":"img[src*='.centracdn.net/']",
+    "excludes": "Magento",
+    "headers": {
+      "Content-Security-Policy": "\\.centra(?:cdn)?\\.(?:com|net)"
+    },
+    "icon": "Centra.svg",
+    "js": {
+      "CENTRA_IMAGE_SIZES": ""
+    },
+    "scripts": "centraCheckoutScript",
+    "saas": true,
+    "pricing": [
+      "recurring",
+      "poa"
+    ],
+    "website": "https://centra.com"
+  },
   "Centminmod": {
     "cats": [
       22
@@ -904,6 +996,24 @@
       "generator": "Chamilo ([\\d.]+)\\;version:\\1"
     },
     "website": "http://www.chamilo.org"
+  },
+  "Channel.io": {
+    "cats": [
+      52,
+      53
+    ],
+    "description": "Channel.io is an all-in-one business communication platform that helps businesses connect with customers.",
+    "icon": "Channel.io.png",
+    "js": {
+      "ChannelIO": ""
+    },
+    "saas": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://channel.io"
   },
   "ChannelAdvisor": {
     "cats": [
@@ -1192,6 +1302,31 @@
     "scriptSrc": "js\\.chilipiper\\.com/marketing\\.js",
     "website": "https://www.chilipiper.com/"
   },
+  "Chimpmatic": {
+    "cats": [
+      87
+    ],
+    "description": "Chimpmatic is a premium Contact Form 7 and Mailchimp integration plugin.",
+    "dom": {
+      "form[class*='chimpmatic']": {
+        "attributes": {
+          "class": "chimpmatic-([\\d\\.]+)\\;version:\\1"
+        }
+      }
+    },
+    "icon": "default.svg",
+    "implies": [
+      "Contact Form 7",
+      "MailChimp"
+    ],
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "website": "https://chimpmatic.com"
+  },
   "Chinese Menu Online": {
     "cats": [
       51,
@@ -1205,31 +1340,6 @@
     ],
     "saas": true,
     "website": "https://www.chinesemenuonline.com"
-  },
-  "Chimpmatic": {
-    "cats": [
-      87
-    ],
-    "description": "Chimpmatic is a premium Contact Form 7 and Mailchimp integration plugin.",
-    "icon": "default.svg",
-    "implies": [
-      "Contact Form 7",
-      "MailChimp"
-    ],
-    "dom": {
-      "form[class*='chimpmatic']": {
-        "attributes": {
-          "class": "chimpmatic-([\\d\\.]+)\\;version:\\1"
-        }
-      }
-    },
-    "saas": true,
-    "pricing": [
-      "low",
-      "recurring"
-    ],
-    "requires": "WordPress",
-    "website": "https://chimpmatic.com"
   },
   "Chitika": {
     "cats": [
@@ -1400,6 +1510,24 @@
     "oss": true,
     "website": "https://ckan.org/"
   },
+  "Clarip": {
+    "cats": [
+      67
+    ],
+    "description": "Clarip is an enterprise data privacy and risk management platform.",
+    "icon": "Clarip.png",
+    "js": {
+      "claripCdnHost": "",
+      "claripHost": "",
+      "pageData.claripConsentJSUrl": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "//cdn\\.clarip\\.com/",
+    "website": "https://www.clarip.com"
+  },
   "Claris FileMaker": {
     "cats": [
       34
@@ -1490,6 +1618,24 @@
     ],
     "website": "https://clearbit.com/reveal"
   },
+  "Clerk": {
+    "cats": [
+      69
+    ],
+    "description": "Clerk is a user management platform.",
+    "icon": "Clerk.svg",
+    "js": {
+      "Clerk.version": "([\\d\\.]+)\\;version:\\1",
+      "Clerk.authenticateWithMetamask": "",
+      "Clerk.openSignIn": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://clerk.dev"
+  },
   "Clerk.io": {
     "cats": [
       76
@@ -1577,11 +1723,13 @@
       32,
       51
     ],
-    "description": "Clickfunnels is an online sales funnel builder that helps businesses market, sell, and deliver their products online.",
+    "description": "ClickFunnels is an online sales funnel builder that helps businesses market, sell, and deliver their products online.",
     "icon": "ClickFunnels.svg",
     "js": {
       "CFAppDomain": "app\\.clickfunnels\\.com",
-      "CFSurveyParticipantID": ""
+      "CFSurveyParticipantID": "",
+      "ClickFunnels": "",
+      "cfAddPolyfill": ""
     },
     "meta": {
       "cf:app_domain:": "app\\.clickfunnels\\.com"
@@ -1927,23 +2075,6 @@
     ],
     "saas": true,
     "website": "https://www.coconstruct.com"
-  },
-  "CoreUI": {
-    "cats": [
-      66
-    ],
-    "description": "CoreUI provides cloud hosting, web and mobile design, animations, wireframes, and UX testing services.",
-    "icon": "CoreUI.svg",
-    "js": {
-      "coreui": ""
-    },
-    "scripts": "webpackJsonp@coreui/coreui",
-    "pricing": [
-      "mid",
-      "recurring"
-    ],
-    "saas": true,
-    "website": "https://coreui.io"
   },
   "CoRover": {
     "cats": [
@@ -2466,6 +2597,26 @@
     "scriptSrc": "\\.conferwith\\.io/",
     "website": "https://conferwith.io"
   },
+  "Congressus": {
+    "cats": [
+      1
+    ],
+    "cookies": {
+      "_gat_congressus_analytics": "",
+      "congressus_session": ""
+    },
+    "description": "Congressus is a Dutch-language online application for member administration, financial management, communication and a linked website with webshop.",
+    "icon": "Congressus.svg",
+    "meta": {
+      "generator": "^Congressus\\s-\\s.+$"
+    },
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "website": "https://congressus.nl"
+  },
   "Conjured": {
     "cats": [
       100
@@ -2479,26 +2630,6 @@
     "saas": true,
     "scriptSrc": "app\\.conjured\\.co/",
     "website": "https://conjured.co"
-  },
-  "Congressus": {
-    "cats": [
-      1
-    ],
-    "description": "Congressus is a Dutch-language online application for member administration, financial management, communication and a linked website with webshop.",
-    "icon": "Congressus.svg",
-    "meta": {
-      "generator": "^Congressus\\s-\\s.+$"
-    },
-    "cookies": {
-      "congressus_session": "",
-      "_gat_congressus_analytics": ""
-    },
-    "pricing": [
-      "recurring",
-      "low"
-    ],
-    "saas": true,
-    "website": "https://congressus.nl"
   },
   "Connectif": {
     "cats": [
@@ -3015,6 +3146,23 @@
     "scriptSrc": "copypoison\\.com/cp\\.js",
     "website": "https://copypoison.com/"
   },
+  "CoreUI": {
+    "cats": [
+      66
+    ],
+    "description": "CoreUI provides cloud hosting, web and mobile design, animations, wireframes, and UX testing services.",
+    "icon": "CoreUI.svg",
+    "js": {
+      "coreui": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scripts": "webpackJsonp@coreui/coreui",
+    "website": "https://coreui.io"
+  },
   "Corebine": {
     "cats": [
       1
@@ -3305,6 +3453,22 @@
     "saas": true,
     "scriptSrc": "client\\.crisp\\.chat/",
     "website": "https://crisp.chat/"
+  },
+  "Crikle": {
+    "cats": [
+      52
+    ],
+    "description": "Crikle is a multichannel customer engagement software.",
+    "icon": "Crikle.svg",
+    "js": {
+      "crikle.contactId": "",
+      "crikle.openConvertWidget": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.crikle.com"
   },
   "Criteo": {
     "cats": [

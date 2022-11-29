@@ -546,11 +546,30 @@
       "<link [^>]*href=(?:\"|')[^\"']*elementor/assets",
       "<link [^>]*href=(?:\"|')[^\"']*uploads/elementor/css"
     ],
-    "icon": "Elementor.png",
+    "icon": "Elementor.svg",
     "js": {
       "elementorFrontend.getElements": ""
     },
     "scriptSrc": "elementor/assets/js/[^/]+\\.js\\?ver=([\\d.]+)$\\;version:\\1",
+    "website": "https://elementor.com"
+  },
+  "Elementor Cloud": {
+    "cats": [
+      88
+    ],
+    "description": "Elementor Cloud is a platform for creating and hosting WordPress websites with Elementor.",
+    "headers": {
+      "x-powered-by": "Elementor Cloud"
+    },
+    "icon": "Elementor.svg",
+    "implies": [
+      "WordPress",
+      "Elementor"
+    ],
+    "pricing": [
+      "recurring",
+      "low"
+    ],
     "website": "https://elementor.com"
   },
   "Elementor Header & Footer Builder": {
@@ -793,6 +812,22 @@
     "saas": true,
     "scriptSrc": "emotivecdn\\.io/",
     "website": "https://emotive.io"
+  },
+  "Empretienda": {
+    "cats": [
+      6
+    ],
+    "description": "Empretienda is a platform that allows you to create and manage your own online store.",
+    "headers": {
+      "set-cookie": "^EMPRETIENDA_SESSION"
+    },
+    "icon": "Empretienda.png",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.empretienda.com"
   },
   "Enable": {
     "cats": [
@@ -1450,7 +1485,7 @@
     "headers": {
       "X-Powered-By": "^Express(?:$|,)"
     },
-    "icon": "Express.png",
+    "icon": "Express.svg",
     "implies": "Node.js",
     "website": "http://expressjs.com"
   },
