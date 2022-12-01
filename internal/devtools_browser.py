@@ -689,9 +689,16 @@ class DevtoolsBrowser(object):
                 needs_mark = True
                 if self.task['combine_steps']:
                     needs_mark = False
-                script = self.prepare_script_for_record(script, needs_mark) #pylint: disable=no-member
+                if self.devtools.execution_context is not None:
+                    # Clear the orange frame as a separate step to make sure it is done in the correct context
+                    clear_script = self.prepare_script_for_record('', needs_mark)
+                    self.devtools.execute_js(clear_script)
+                else:
+                    script = self.prepare_script_for_record(script, needs_mark) #pylint: disable=no-member
                 self.devtools.start_navigating()
-            self.devtools.execute_js(script)
+            self.devtools.execute_js(script, True)
+        elif command['command'] == 'setexecutioncontext':
+            self.devtools.set_execution_context(command['target'])
         elif command['command'] == 'sleep':
             available_sleep = 60 - self.total_sleep
             delay = min(available_sleep, max(0, int(re.search(r'\d+', str(command['target'])).group())))

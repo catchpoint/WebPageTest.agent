@@ -88,6 +88,8 @@ class DevTools(object):
         self.main_thread_blocked = False
         self.stylesheets = {}
         self.headers = {}
+        self.execution_contexts = {}
+        self.execution_context = None
         self.trace_parser = None
         self.prepare()
         self.html_body = False
@@ -564,6 +566,12 @@ class DevTools(object):
         # Add the audit issues to the page data
         if len(self.audit_issues):
             self.task['page_data']['audit_issues'] = self.audit_issues
+        # Add the list of execution contexts
+        contexts = []
+        for id in self.execution_contexts:
+            contexts.append(self.execution_contexts[id])
+        if len(contexts):
+            self.task['page_data']['execution_contexts'] = contexts
         # Process the timeline data
         if self.trace_parser is not None:
             start = monotonic()
@@ -1174,7 +1182,7 @@ class DevTools(object):
             similar = False
         return similar
 
-    def execute_js(self, script):
+    def execute_js(self, script, use_execution_context=False):
         """Run the provided JS in the browser and return the result"""
         if self.must_exit:
             return
@@ -1183,17 +1191,34 @@ class DevTools(object):
             if self.is_webkit:
                 response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
             else:
-                response = self.send_command("Runtime.evaluate",
-                                            {'expression': script,
-                                            'awaitPromise': True,
-                                            'returnByValue': True,
-                                            'timeout': 30000},
-                                            wait=True, timeout=30)
+                params = {'expression': script,
+                          'awaitPromise': True,
+                          'returnByValue': True,
+                          'timeout': 30000}
+                if use_execution_context and self.execution_context is not None:
+                    params['contextId'] = self.execution_context
+                response = self.send_command("Runtime.evaluate", params, wait=True, timeout=30)
             if response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
                 ret = response['result']['result']['value']
         return ret
+
+    def set_execution_context(self, target):
+        """ Set the js execution context by matching id, origin or name """
+        if len(target):
+            parts = target.split('=', 1)
+            if len(parts) == 2:
+                key = parts[0].strip()
+                value = parts[1].strip()
+                if key in ['id', 'name', 'origin'] and len(value):
+                    for id in self.execution_contexts:
+                        context = self.execution_contexts[id]
+                        if key in context and context[key] == value:
+                            self.execution_context = id
+                            break
+        else:
+            self.execution_context = None
 
     def set_header(self, header):
         """Add/modify a header on the outbound requests"""
@@ -1309,6 +1334,7 @@ class DevTools(object):
             self.send_command('Network.enable', {}, target_id=target_id)
             self.send_command('Console.enable', {}, target_id=target_id)
             self.send_command('Log.enable', {}, target_id=target_id)
+            self.send_command('Runtime.enable', {}, target_id=target_id)
             self.send_command('Log.startViolationsReport', {'config': [{'name': 'discouragedAPIUse', 'threshold': -1}]}, target_id=target_id)
             self.send_command('Audits.enable', {}, target_id=target_id)
             self.job['shaper'].apply(target_id=target_id)
@@ -1423,6 +1449,8 @@ class DevTools(object):
                     self.process_css_event(event, msg)
                 elif category == 'Debugger':
                     self.process_debugger_event(event, msg)
+                elif category == 'Runtime':
+                    self.process_runtime_event(event, msg)
                 elif category == 'Target':
                     log_event = False
                     self.process_target_event(event, msg)
@@ -1544,6 +1572,26 @@ class DevTools(object):
         """Handle Debugger.* events"""
         if event == 'paused':
             self.send_command('Debugger.resume', {})
+
+    def process_runtime_event(self, event, msg):
+        """Handle Runtime.* events"""
+        if event == 'executionContextCreated':
+            if 'params' in msg and 'context' in msg['params'] and 'id' in msg['params']['context'] and 'origin':
+                context = msg['params']['context']
+                id = context['id']
+                ctx = {'id': id}
+                if 'origin' in context:
+                    ctx['origin'] = context['origin']
+                if 'name' in context:
+                    ctx['name'] = context['name']
+                self.execution_contexts[id] = ctx
+                logging.debug('Execution context created: %s', json.dumps(context))
+        elif event == 'executionContextDestroyed':
+            if 'params' in msg and 'executionContextId' in msg['params']:
+                id = msg['params']['executionContextId']
+                if id in self.execution_contexts:
+                    del self.execution_contexts[id]
+                    logging.debug('Execution context %d deleted', id)
 
     def process_network_event(self, event, msg, target_id=None):
         """Process Network.* dev tools events"""
