@@ -62,7 +62,6 @@ ENABLE_CHROME_FEATURES = [
 
 DISABLE_CHROME_FEATURES = [
     'AutofillServerCommunication',
-    'BackForwardCache',
     'CalculateNativeWinOcclusion',
     'HeavyAdPrivacyMitigations',
     'InterestFeedContentSuggestions',

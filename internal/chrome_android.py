@@ -59,7 +59,6 @@ HOST_RULES = [
 
 DISABLE_CHROME_FEATURES = [
     'AutofillServerCommunication',
-    'BackForwardCache',
     'CalculateNativeWinOcclusion',
     'HeavyAdPrivacyMitigations',
     'InterestFeedContentSuggestions',
