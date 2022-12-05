@@ -1576,7 +1576,7 @@ class DevTools(object):
     def process_runtime_event(self, event, msg):
         """Handle Runtime.* events"""
         if event == 'executionContextCreated':
-            if 'params' in msg and 'context' in msg['params'] and 'id' in msg['params']['context'] and 'origin':
+            if 'params' in msg and 'context' in msg['params'] and 'id' in msg['params']['context']:
                 context = msg['params']['context']
                 id = context['id']
                 ctx = {'id': id}
