@@ -178,13 +178,13 @@ class Netlog():
                                 key = header[:index].strip(u': ').lower()
                                 value = header[index + 1:].strip(u': ')
                                 if key == u'scheme':
-                                    scheme = unicode(value)
+                                    scheme = str(value)
                                 elif key == u'host':
-                                    origin = unicode(value)
+                                    origin = str(value)
                                 elif key == u'authority':
-                                    origin = unicode(value)
+                                    origin = str(value)
                                 elif key == u'path':
-                                    path = unicode(value)
+                                    path = str(value)
                         except Exception:
                             logging.exception("Error generating url from request headers")
                     if scheme and origin and path:
