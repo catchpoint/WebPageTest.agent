@@ -62,7 +62,7 @@ class Traceroute(object):
         """Run a traceroute on Windows"""
         ret = {}
         last_hop = 0
-        command = ['tracert', '-h', '30', '-w', '500', hostname]
+        command = ['tracert', '-h', '30', '-w', '1000', hostname]
         logging.debug(' '.join(command))
         if (sys.version_info >= (3, 0)):
             out = subprocess.check_output(command, encoding='UTF-8')
@@ -133,7 +133,7 @@ class Traceroute(object):
         last_hop = 0
         ret = {}
         last_hop = 0
-        command = ['traceroute', '-m', '30', '-w', '0.5', hostname]
+        command = ['traceroute', '-m', '30', '-w', '1', hostname]
         logging.debug(' '.join(command))
         if (sys.version_info >= (3, 0)):
             out = subprocess.check_output(command, encoding='UTF-8')
