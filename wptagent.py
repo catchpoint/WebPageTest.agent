@@ -17,7 +17,6 @@ import subprocess
 import sys
 import time
 import traceback
-from internal import os_util
 if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
@@ -135,11 +134,17 @@ class WPTAgent(object):
             try:
                 self.alive()
                 if os.path.isfile(exit_file):
-                    os_util.remove_file(exit_file)
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
                     self.must_exit = True
                     break
                 elif os.path.isfile(shutdown_file):
-                    os_util.remove_file(shutdown_file)
+                    try:
+                        os.remove(exit_file)
+                    except Exception:
+                        pass
                     self.must_exit = True
                     self.needs_shutdown = True
                     break

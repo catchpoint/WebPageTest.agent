@@ -29,7 +29,7 @@ try:
 except BaseException:
     import json
 from .optimization_checks import OptimizationChecks
-from internal import os_util
+
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
@@ -403,18 +403,25 @@ class DevtoolsBrowser(object):
             parser.process()
             # Cleanup intermediate files that are not needed
             if 'debug' not in self.job or not self.job['debug']:
-                os_util.remove_file(netlog)
-                os_util.remove_file(timeline_requests)
-                os_util.remove_file(optimization)
-                os_util.remove_file(coverage)
-                os_util.remove_file(devtools_file)
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(timeline_requests):
+                    os.remove(timeline_requests)
+                if os.path.isfile(optimization):
+                    os.remove(optimization)
+                if os.path.isfile(coverage):
+                    os.remove(coverage)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
             # remove files that might contain sensitive data
             if options['noheaders']:
-                os_util.remove_file(netlog)
-                os_util.remove_file(devtools_file)
+                if os.path.isfile(netlog):
+                    os.remove(netlog)
+                if os.path.isfile(devtools_file):
+                    os.remove(devtools_file)
                 trace_file = path_base + '_trace.json.gz'
-                os_util.remove_file(trace_file) 
-
+                if os.path.isfile(trace_file):
+                    os.remove(trace_file)
             if 'page_data' in parser.result and 'result' in parser.result['page_data']:
                 self.task['page_result'] = parser.result['page_data']['result']
         self.profile_end('dtbrowser.process_devtools_requests')
@@ -912,7 +919,10 @@ class DevtoolsBrowser(object):
             # Delete all the left-over lighthouse assets
             files = glob.glob(os.path.join(task['dir'], 'lighthouse-*'))
             for file_path in files:
-                os_util.remove_file(file_path)
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
             if os.path.isfile(json_file):
                 lh_report = None
                 with io.open(json_file, 'r', encoding='utf-8') as f_in:
@@ -921,8 +931,10 @@ class DevtoolsBrowser(object):
                 with open(json_file, 'rb') as f_in:
                     with gzip.open(json_gzip, 'wb', 7) as f_out:
                         shutil.copyfileobj(f_in, f_out)
-
-                os_util.remove_file(json_file)
+                try:
+                    os.remove(json_file)
+                except Exception:
+                    pass
                 # Extract the audit scores
                 if lh_report is not None:
                     audits = {}
@@ -982,7 +994,7 @@ class DevtoolsBrowser(object):
                     with open(html_file, 'rb') as f_in:
                         with gzip.open(html_gzip, 'wb', 7) as f_out:
                             shutil.copyfileobj(f_in, f_out)
-                    os_util.remove_file(html_file)
+                    os.remove(html_file)
                 except Exception:
                     logging.exception('Error compressing lighthouse report')
         self.profile_end('dtbrowser.run_lighthouse_test')

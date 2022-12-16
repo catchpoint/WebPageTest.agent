@@ -1431,7 +1431,10 @@ class WebPageTest(object):
                     for zipitem in self.needs_zip:
                         logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
                         zip_file.write(zipitem['path'], zipitem['name'])
-                        os_util.remove_file(zipitem['path'])
+                        try:
+                            os.remove(zipitem['path'])
+                        except Exception:
+                            pass
             
             # If we are writing the results directly to GCS, don't post to workdone
             if zip_path is not None and 'Test ID' in self.job and \
@@ -1582,8 +1585,10 @@ class WebPageTest(object):
             with open(task['debug_log'], 'rb') as f_in:
                 with gzip.open(debug_out, 'wb', 7) as f_out:
                     shutil.copyfileobj(f_in, f_out)
-
-            os_util.remove_file(task['debug_log'])
+            try:
+                os.remove(task['debug_log'])
+            except Exception:
+                pass
         if self.job['warmup'] > 0:
             logging.debug('Discarding warmup run')
         else:
@@ -1623,8 +1628,10 @@ class WebPageTest(object):
                         # Delete any video files that may have squeaked by
                         if not self.job['keepvideo'] and filename[-4:] == '.mp4' and \
                                 filename.find('rendered_video') == -1:
-                            os_util.remove_file(filepath)
-
+                            try:
+                                os.remove(filepath)
+                            except Exception:
+                                pass
                         else:
                             self.needs_zip.append({'path': filepath, 'name': filename})
                 # Zip the files
@@ -1634,7 +1641,10 @@ class WebPageTest(object):
                         for zipitem in self.needs_zip:
                             logging.debug('Storing %s (%d bytes)', zipitem['name'], os.path.getsize(zipitem['path']))
                             zip_file.write(zipitem['path'], zipitem['name'])
-                            os_util.remove_file(zipitem['path'])
+                            try:
+                                os.remove(zipitem['path'])
+                            except Exception:
+                                pass
                     self.needs_zip = []
             # Post the workdone event for the task (with the zip attached)
             if 'run' in self.job:

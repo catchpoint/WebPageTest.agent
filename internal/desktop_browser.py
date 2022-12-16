@@ -29,7 +29,7 @@ try:
 except BaseException:
     import json
 from .base_browser import BaseBrowser
-from internal import os_util
+
 SET_ORANGE = "(function() {" \
              "var wptDiv = document.getElementById('wptorange');" \
              "if (!wptDiv) {" \
@@ -751,7 +751,10 @@ class DesktopBrowser(BaseBrowser):
                     self.pcap_thread = threading.Thread(target=self.process_pcap)
                     self.pcap_thread.daemon = True
                     self.pcap_thread.start()
-                    os_util.remove_file(self.pcap_file)
+                    try:
+                        os.remove(self.pcap_file)
+                    except Exception:
+                        pass
 
     def wait_for_processing(self, task):
         """Wait for any background processing threads to finish"""
@@ -761,7 +764,10 @@ class DesktopBrowser(BaseBrowser):
             self.video_processing = None
             logging.debug('Video processing complete')
             if not self.job['keepvideo']:
-                os_util.remove_file(task['video_file'])
+                try:
+                    os.remove(task['video_file'])
+                except Exception:
+                    pass
             self.profile_end('desktop.video_processing')
         if self.pcap_thread is not None:
             logging.debug('Waiting for pcap processing to finish')
