@@ -28,7 +28,7 @@ try:
     import ujson as json
 except BaseException:
     import json
-from internal import os_util
+
 
 class OptimizationChecks(object):
     """Threaded optimization checks"""
@@ -928,7 +928,10 @@ class OptimizationChecks(object):
                                 shutil.copyfileobj(f_in, f_out)
                         if os.path.isfile(out_file):
                             target_size = os.path.getsize(out_file)
-                            os_util.remove_file(out_file)
+                            try:
+                                os.remove(out_file)
+                            except Exception:
+                                pass
                             if target_size is not None:
                                 delta = content_length - target_size
                                 # Only count it if there is at least 1 packet and 10% savings
@@ -1028,7 +1031,10 @@ class OptimizationChecks(object):
                                 subprocess.call(command, shell=True)
                                 if os.path.isfile(jpeg_file):
                                     target_size = os.path.getsize(jpeg_file)
-                                    os_util.remove_file(jpeg_file)
+                                    try:
+                                        os.remove(jpeg_file)
+                                    except Exception:
+                                        pass
                                     delta = content_length - target_size
                                     # Only count it if there is at least 1 packet savings
                                     if target_size > 0 and delta > 1400:
@@ -1099,7 +1105,10 @@ class OptimizationChecks(object):
                                     subprocess.call(command, shell=True)
                                     if os.path.isfile(png_file):
                                         target_size = os.path.getsize(png_file)
-                                        os_util.remove_file(png_file)
+                                        try:
+                                            os.remove(png_file)
+                                        except Exception:
+                                            pass
                                         delta = content_length - target_size
                                         # Only count it if there is at least 1 packet savings
                                         if target_size > 0 and delta > 1400:
