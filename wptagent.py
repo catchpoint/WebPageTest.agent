@@ -990,11 +990,6 @@ def find_browsers(options):
         safari_path = '/Applications/Safari.app/Contents/MacOS/Safari'
         if 'Safari' not in browsers and os.path.isfile(safari_path):
             browsers['Safari'] = {'exe': safari_path, 'type': 'Safari'}
-            # Make sure safaridriver is enabled
-            try:
-                subprocess.call(['sudo', 'safaridriver', '--enable'])
-            except Exception:
-                logging.exception('Error starting safaridriver')
         # Get a list of all of the iOS simulator devices available
         try:
             logging.debug('Scanning for iOS simulator devices...')
