@@ -8,6 +8,7 @@ import logging
 import os
 import platform
 import subprocess
+import sys
 from shutil import rmtree
 import socket
 
@@ -142,7 +143,13 @@ def get_file_version(filename):
 
 def remove_file(_file):
     """ Function to handle removing a single file"""
-    logging.debug("Removing File %s", _file, stacklevel=3)
+    try:
+        if (sys.version_info >= (3, 8)):
+            logging.debug("Removing File %s", _file, stacklevel=3)
+        else:
+            logging.debug("Removing File %s", _file)
+    except Exception:
+        pass
     try:
         if os.path.isfile(_file):
             os.remove(_file)
@@ -151,7 +158,13 @@ def remove_file(_file):
 
 def remove_dir_tree(_dir):
     """ Function to remove a entire directory and the files within"""
-    logging.debug("Removing Folder %s", _dir, stacklevel=3)
+    try:
+        if (sys.version_info >= (3, 8)):
+            logging.debug("Removing Folder %s", _dir, stacklevel=3)
+        else:
+            logging.debug("Removing File %s", _file)
+    except Exception:
+        pass
     try:
         if os.path.isdir(_dir):
             rmtree(_dir)
