@@ -363,11 +363,11 @@ class WebPageTest(object):
             session = requests.Session()
             proxies = {"http": None, "https": None}
             try:
-                response = session.get('http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance', timeout=1, proxies=proxies)
+                response = session.get('http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance', timeout=10, proxies=proxies)
                 if response.status_code == 200:
                     needs_block = True
                 else:
-                    response = session.get('http://169.254.169.254/metadata/instance?api-version=2017-04-02', timeout=1, proxies=proxies)
+                    response = session.get('http://169.254.169.254/metadata/instance?api-version=2017-04-02', timeout=10, proxies=proxies)
                     if response.status_code == 200:
                         needs_block = True
             except Exception:
