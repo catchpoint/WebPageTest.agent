@@ -395,7 +395,7 @@
     ],
     "cpe": "cpe:2.3:a:ektron:ektron_content_management_system:*:*:*:*:*:*:*:*",
     "description": "Ektron CMS is developed on the Microsoft .NET framework and is 100% ASP.NET. In 2015 Ektron merged with EPiServer.",
-    "icon": "optimizely-cms.svg",
+    "icon": "Optimizely.svg",
     "implies": "Microsoft ASP.NET",
     "js": {
       "Ektron": ""
@@ -537,20 +537,24 @@
   },
   "Elementor": {
     "cats": [
-      51
+      51,
+      87
     ],
     "description": "Elementor is a website builder platform for professionals on WordPress.",
-    "html": [
-      "<div class=(?:\"|')[^\"']*elementor",
-      "<section class=(?:\"|')[^\"']*elementor",
-      "<link [^>]*href=(?:\"|')[^\"']*elementor/assets",
-      "<link [^>]*href=(?:\"|')[^\"']*uploads/elementor/css"
-    ],
+    "dom": "link[href*='/wp-content/plugins/elementor/']",
     "icon": "Elementor.svg",
     "js": {
-      "elementorFrontend.getElements": ""
+      "elementorFrontend.getElements": "",
+      "elementorFrontendConfig.version": "([\\d\\.]+)\\;version:\\1"
     },
-    "scriptSrc": "elementor/assets/js/[^/]+\\.js\\?ver=([\\d.]+)$\\;version:\\1",
+    "pricing": [
+      "freemium",
+      "onetime",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "scriptSrc": "/wp-content/plugins/elementor(?:-pro)?/.+frontend-modules\\.min\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://elementor.com"
   },
   "Elementor Cloud": {
@@ -1271,6 +1275,25 @@
       "media\\.ethicalads\\.io"
     ],
     "website": "https://www.ethicalads.io/"
+  },
+  "Eticex": {
+    "cats": [
+      6
+    ],
+    "description": "Eticex is as an ecommerce infrastructure provider that offers ecommerce packages and customisable high-performance ecommerce solutions.",
+    "icon": "Eticex.svg",
+    "implies": [
+      "MySQL",
+      "React",
+      "PHP"
+    ],
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.eticex\\.com/",
+    "website": "https://www.eticex.com"
   },
   "Etix": {
     "cats": [
