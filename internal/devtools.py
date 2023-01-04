@@ -694,8 +694,25 @@ class DevTools(object):
                                     if os.path.exists(body_file_path):
                                         self.netlog_requests[netlog_id]['body_claimed'] = True
                                         found = True
-                                        logging.debug('Matched netlog response body %s for %s', netlog_id, request['url'])
-                                        self.process_response_body(request_id, None, body_file_path)
+                                        logging.debug('Matched netlog response body %s to %s for %s', netlog_id, request_id, request['url'])
+                                        # For text-based responses, ignore any utf-8 decode errors so we can err on the side of getting more text bodies
+                                        errors=None
+                                        try:
+                                            if 'response_headers' in self.netlog_requests[netlog_id]:
+                                                headers = self.extract_headers(self.netlog_requests[netlog_id]['response_headers'])
+                                                content_type = self.get_header_value(headers, 'Content-Type')
+                                                if content_type is not None:
+                                                    content_type = content_type.lower()
+                                                    text_types = ['application/json',
+                                                                  'application/xhtml+xml',
+                                                                  'application/xml',
+                                                                  'application/ld+json',
+                                                                  'application/javascript']
+                                                    if content_type.startswith('text/') or content_type in text_types:
+                                                        errors = 'ignore'
+                                        except Exception:
+                                            logging.exception('Error processing content type for response body')
+                                        self.process_response_body(request_id, None, body_file_path, errors)
                     if not found and len(self.netlog_requests):
                         logging.debug('Unable to match netlog response body for %s', request['url'])
                 except Exception:
@@ -736,7 +753,7 @@ class DevTools(object):
                         if wait:
                             self.process_response_body(request_id, response)
 
-    def process_response_body(self, request_id, response, netlog_body_file=None):
+    def process_response_body(self, request_id, response, netlog_body_file=None, errors=None):
         try:
             request = self.get_request(request_id, True)
             path = os.path.join(self.task['dir'], 'bodies')
@@ -747,7 +764,7 @@ class DevTools(object):
             body = None
             if netlog_body_file is not None:
                 try:
-                    with open(netlog_body_file, 'r', encoding='utf-8') as f:
+                    with open(netlog_body_file, 'r', encoding='utf-8', errors=errors) as f:
                         body = f.read()
                         body = body.encode('utf-8')
                         is_text = True
