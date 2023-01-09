@@ -1420,7 +1420,7 @@ class WebPageTest(object):
                     self.job['testinfo']['steps'] = max_steps
                 json_path = os.path.join(self.workdir, 'testinfo.json')
                 with open(json_path, 'wt') as f_out:
-                    json.dump(self.job['testinfo'], f_out)
+                    json.dump(self.job['testinfo'], f_out, default=lambda o: '')
                 self.needs_zip.append({'path': json_path, 'name': 'testinfo.json'})
 
             # Zip the files
