@@ -803,7 +803,7 @@
     ],
     "description": "Highcharts is a charting library written in pure JavaScript, for adding interactive charts to a website or web application.",
     "html": "<svg[^>]*><desc>Created with Highcharts ([\\d.]*)\\;version:\\1",
-    "icon": "Highcharts.png",
+    "icon": "Highcharts.svg",
     "js": {
       "Highcharts": "",
       "Highcharts.version": "^(.+)$\\;version:\\1"
@@ -828,7 +828,7 @@
       25
     ],
     "html": "<svg[^>]*><desc>Created with Highstock ([\\d.]*)\\;version:\\1",
-    "icon": "Highcharts.png",
+    "icon": "Highcharts.svg",
     "scriptSrc": "highstock[.-]?([\\d\\.]*\\d).*\\.js\\;version:\\1",
     "website": "http://highcharts.com/products/highstock"
   },
@@ -950,6 +950,23 @@
     "saas": true,
     "website": "https://www.homestead.com"
   },
+  "Honeybadger": {
+    "cats": [
+      13
+    ],
+    "description": "Honeybadger provides exception and uptime monitoring to keep your web apps error-free.",
+    "icon": "honey-badger.svg",
+    "js": {
+      "Honeybadger": "",
+      "initHoneyBadger": ""
+    },
+    "pricing": [
+      "payg",
+      "freemium",
+      "recurring"
+    ],
+    "website": "https://www.honeybadger.io"
+  },
   "HostEurope": {
     "cats": [
       88
@@ -1017,6 +1034,10 @@
     "description": "Hostinger is an employee-owned Web hosting provider and internet domain registrar.",
     "dns": {
       "SOA": "\\.(?:dns-parking|hostinger)\\.com"
+    },
+    "headers": {
+      "Platform": "hostinger",
+      "Server": "hcdn"
     },
     "icon": "Hostinger.svg",
     "pricing": [
@@ -1166,7 +1187,9 @@
     "description": "HubSpot is a marketing and sales software that helps companies attract visitors, convert leads, and close customers.",
     "dns": {
       "TXT": [
-        "hubspotemail\\.net"
+        "hubspotemail\\.net",
+        "hubspot-developer-verification",
+        "hubspot-domain-verification"
       ]
     },
     "html": "<!-- Start of Async HubSpot",
