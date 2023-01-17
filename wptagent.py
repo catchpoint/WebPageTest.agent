@@ -267,7 +267,7 @@ class WPTAgent(object):
                             self.wpt.get_bodies(self.task)
                         if self.task['run'] == 1 and not self.task['cached'] and \
                                 self.job['warmup'] <= 0 and \
-                                self.task['error'] is None and \
+                                (self.task['error'] is None or self.task['soft_error']) and \
                                 'lighthouse' in self.job and self.job['lighthouse']:
                             if 'page_result' not in self.task or \
                                     self.task['page_result'] is None or \
