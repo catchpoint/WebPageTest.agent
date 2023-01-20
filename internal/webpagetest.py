@@ -811,6 +811,7 @@ class WebPageTest(object):
                         'done': False,
                         'profile': profile_dir,
                         'error': None,
+                        'soft_error': False,
                         'log_data': True,
                         'activity_time': 3,
                         'combine_steps': False,

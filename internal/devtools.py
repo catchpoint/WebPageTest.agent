@@ -837,7 +837,7 @@ class DevTools(object):
             return
         self.profile_start('get_response_bodies')
         requests = self.get_requests(True)
-        if self.task['error'] is None and requests:
+        if (self.task['error'] is None or self.task['soft_error']) and requests:
             for request_id in requests:
                 self.get_response_body(request_id, True)
         self.profile_end('get_response_bodies')
@@ -1111,12 +1111,14 @@ class DevTools(object):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['soft_error'] = True
                         self.task['page_data']['result'] = 99997
                 elif max_requests > 0 and self.request_count > max_requests:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['soft_error'] = True
                         self.task['page_data']['result'] = 99997
                 elif self.wait_for_script is not None:
                     elapsed_interval = now - last_wait_interval
@@ -1204,7 +1206,7 @@ class DevTools(object):
         if self.must_exit:
             return
         ret = None
-        if self.task['error'] is None and not self.main_thread_blocked:
+        if (self.task['error'] is None or self.task['soft_error']) and not self.main_thread_blocked:
             if self.is_webkit:
                 response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
             else:

@@ -200,6 +200,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
                 DesktopBrowser.stop(self, job, task)
                 if 'error' in task and task['error'] is not None:
                     task['error'] = None
+                    task['soft_error'] = False
                 # try launching the browser with no command-line options to
                 # do any one-time startup initialization
                 if count == 1:
