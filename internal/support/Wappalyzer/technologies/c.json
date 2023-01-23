@@ -332,7 +332,8 @@
   },
   "Caldera Forms": {
     "cats": [
-      87
+      87,
+      110
     ],
     "description": "Caldera Forms is the free WordPress form builder plugin.",
     "dom": {
@@ -1754,6 +1755,20 @@
     ],
     "website": "https://www.cleverbridge.com"
   },
+  "Click & Pledge": {
+    "cats": [
+      111
+    ],
+    "description": "Click & Pledge is an all-in-one digital fundraising platform.",
+    "dom": "a[href*='.clickandpledge.com/']",
+    "icon": "Click & Pledge.png",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.clickandpledge\\.com/",
+    "website": "https://clickandpledge.com"
+  },
   "ClickCease": {
     "cats": [
       16
@@ -2806,7 +2821,8 @@
   },
   "Contact Form 7": {
     "cats": [
-      87
+      87,
+      110
     ],
     "description": "Contact Form 7 is an WordPress plugin which can manage multiple contact forms. The form supports Ajax-powered submitting, CAPTCHA, Akismet spam filtering.",
     "dom": "link[href*='/wp-content/plugins/contact-form-7/']",
@@ -3141,6 +3157,20 @@
     "saas": true,
     "scriptSrc": "cdn\\.conveythis\\.com",
     "website": "https://www.conveythis.com/"
+  },
+  "Conviva": {
+    "cats": [
+      14,
+      103
+    ],
+    "description": "Conviva is a census, continuous measurement and engagement platform for streaming media.",
+    "icon": "conviva.svg",
+    "js": {
+      "Conviva": "",
+      "Conviva.Client": "",
+      "Conviva.Client.version": "^([0-9\\.]+)$\\;version:\\1"
+    },
+    "website": "https://www.conviva.com"
   },
   "Cookie Information": {
     "cats": [
@@ -3673,6 +3703,22 @@
     },
     "scriptSrc": "cdn\\.crobox\\.com",
     "website": "https://crobox.com/"
+  },
+  "Crocoblock JetElements": {
+    "cats": [
+      87
+    ],
+    "description": "Crocoblock JetElements is an addon for Elementor that adds additional customisation options to the page builder.",
+    "icon": "Crocoblock.svg",
+    "js": {
+      "jetElements": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "Elementor",
+    "website": "https://crocoblock.com/plugins/jetelements"
   },
   "Cross Pixel": {
     "cats": [

@@ -599,6 +599,25 @@
     "scriptSrc": "cdn\\.helpdocs\\.io",
     "website": "https://www.helpdocs.io"
   },
+  "Here": {
+    "cats": [
+      35
+    ],
+    "description": "HERE is a PaaS for creating custom maps, visualize location datasets, gather insights and buy and sell location assets.",
+    "dom": "link[href*='//js\\.api\\.here\\.com/']",
+    "icon": "here.svg",
+    "js": {
+      "H.buildInfo": "",
+      "H.geo": "\\;confidence:50",
+      "H.util": "\\;confidence:50"
+    },
+    "pricing": [
+      "freemium",
+      "payg",
+      "recurring"
+    ],
+    "website": "https://www.here.com"
+  },
   "Hermes": {
     "cats": [
       99
@@ -1036,8 +1055,22 @@
       "SOA": "\\.(?:dns-parking|hostinger)\\.com"
     },
     "headers": {
-      "Platform": "hostinger",
-      "Server": "hcdn"
+      "platform": "hostinger"
+    },
+    "icon": "Hostinger.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://www.hostinger.com"
+  },
+  "Hostinger CDN": {
+    "cats": [
+      31
+    ],
+    "description": "Hostinger Content Delivery Network (CDN).",
+    "headers": {
+      "server": "hcdn"
     },
     "icon": "Hostinger.svg",
     "pricing": [
@@ -1347,7 +1380,8 @@
   "HulkApps Form Builder": {
     "cats": [
       73,
-      100
+      100,
+      110
     ],
     "description": "HulkApps Form Builder is an application that creates customizable, job-specific forms for unit needs.",
     "icon": "HulkApps.svg",
@@ -1419,6 +1453,20 @@
     ],
     "saas": true,
     "website": "https://www.hulkapps.com/products/product-reviews-shopify"
+  },
+  "Human Presence": {
+    "cats": [
+      16
+    ],
+    "description": "Human Presence is a bot detection and spam protection software for WordPress and Shopify.",
+    "icon": "human_presence.svg",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "scriptSrc": "/.*\\.humanpresence\\.(?:io|app)/",
+    "website": "https://www.humanpresence.io"
   },
   "Humm": {
     "cats": [
