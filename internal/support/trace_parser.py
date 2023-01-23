@@ -5909,6 +5909,26 @@ BLINK_FEATURES = {
     "4428": "IDNA2008DeviationCharacterInHostnameOfIFrame",
     "4429": "WindowOpenPopupOnMobile",
     "4430": "WindowOpenedAsPopupOnMobile",
+    "4431": "PrivateNetworkAccessIgnoredCrossOriginPreflightError",
+    "4432": "PrivateNetworkAccessIgnoredCrossSitePreflightError",
+    "4433": "LinkRelPrerenderSameOrigin",
+    "4434": "LinkRelPrerenderSameSiteCrossOrigin",
+    "4435": "LinkRelPrerenderCrossSite",
+    "4436": "CSSBackgroundClipBorder",
+    "4437": "CSSBackgroundClipContent",
+    "4438": "CSSBackgroundClipPadding",
+    "4439": "DisableThirdPartySessionStoragePartitioningAfterGeneralPartitioning",
+    "4440": "CSSPseudoHasContainsMixOfValidAndInvalid",
+    "4441": "CSSPseudoIsWhereContainsMixOfValidAndInvalid",
+    "4442": "PrivateNetworkAccessFetchedSubFrame",
+    "4443": "PrivateNetworkAccessFetchedTopFrame",
+    "4444": "DisableThirdPartyStoragePartitioning",
+    "4445": "ServiceWorkerFetchHandlerUpdateAfterInitialization",
+    "4446": "ObsoleteCreateImageBitmapImageOrientationNone",
+    "4447": "WindowManagementPermissionDescriptorUsed",
+    "4448": "WindowPlacementPermissionDescriptorUsed",
+    "4449": "WindowManagementPermissionPolicyParsed",
+    "4450": "WindowPlacementPermissionPolicyParsed",
 }
 
 ##########################################################################
@@ -6605,6 +6625,10 @@ CSS_FEATURES = {
     "737": "CSSPropertyFontVariantPosition",
     "738": "CSSPropertyFontVariantAlternates",
     "739": "CSSPropertyBaselineSource",
+    "740": "CSSAnimationRange",
+    "741": "CSSAnimationRangeStart",
+    "742": "CSSAnimationRangeEnd",
+    "743": "CSSAnimationComposition",
 }
 
 if '__main__' == __name__:
