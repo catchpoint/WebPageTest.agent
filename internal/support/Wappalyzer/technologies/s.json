@@ -151,6 +151,22 @@
     "saas": true,
     "website": "https://www.shemedia.com"
   },
+  "SIDEARM Sports": {
+    "cats": [
+      1
+    ],
+    "description": "SIDEARM Sports provides the software and technology that powers the websites, livestats, and video streaming for athletic programs North America.",
+    "icon": "SIDEARM Sports.png",
+    "implies": "Microsoft ASP.NET",
+    "js": {
+      "sidearmComponents": "",
+      "sidearmsports": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://sidearmsports.com/websites"
+  },
   "SIMsite": {
     "cats": [
       1
@@ -2420,6 +2436,7 @@
     },
     "icon": "Shopify.svg",
     "js": {
+      "SHOPIFY_API_BASE_URL": "",
       "Shopify": "\\;confidence:25",
       "ShopifyAPI": "",
       "ShopifyCustomer": ""
@@ -2554,6 +2571,7 @@
     "excludes": "Shopify",
     "icon": "Shopline.svg",
     "js": {
+      "Shopline": "",
       "shoplytics": ""
     },
     "pricing": [
@@ -2851,11 +2869,11 @@
     "js": {
       "showit.default.siteId": ""
     },
-    "scriptSrc": "lib\\.showit\\.co/engine/([\\d\\.]+)/\\;version:\\1",
     "pricing": [
       "low",
       "recurring"
     ],
+    "scriptSrc": "lib\\.showit\\.co/engine/([\\d\\.]+)/\\;version:\\1",
     "website": "https://showit.co"
   },
   "Shuttle": {
@@ -3470,12 +3488,15 @@
       "img[src*='/~/media/.+\\.ashx']"
     ],
     "icon": "Sitecore.svg",
+    "implies": "Microsoft ASP.NET",
     "pricing": [
       "poa",
       "recurring",
       "high"
     ],
-    "requires": "Microsoft ASP.NET",
+    "probe": {
+      "/layouts/System/VisitorIdentification.aspx": ""
+    },
     "saas": true,
     "website": "https://www.sitecore.com/"
   },
@@ -3483,11 +3504,15 @@
     "cats": [
       1
     ],
+    "cpe": "cpe:2.3:a:progress:sitefinity:*:*:*:*:*:*:*:*",
     "description": "Sitefinity is a content management system (CMS) that you use to create, store, manage, and present content on your website.",
     "icon": "Sitefinity.svg",
     "implies": "Microsoft ASP.NET",
+    "js": {
+      "sfDataIntell": ""
+    },
     "meta": {
-      "generator": "^Sitefinity (.+)$\\;version:\\1"
+      "generator": "^Sitefinity\\s([\\S]{3,9})\\;version:\\1"
     },
     "pricing": [
       "poa"
@@ -3509,6 +3534,23 @@
     "saas": true,
     "scriptSrc": "siteglide\\.js",
     "website": "https://www.siteglide.com"
+  },
+  "Siteimprove": {
+    "cats": [
+      10
+    ],
+    "description": "Siteimprove is a digital analytics and content QA platform.",
+    "icon": "Siteimprove.svg",
+    "js": {
+      "_sz.analytics.heatmap": ""
+    },
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "(?:\\.|//)siteimprove(?:analytics)?\\.com/js/siteanalyze",
+    "website": "https://www.siteimprove.com"
   },
   "Sitepark IES": {
     "cats": [
@@ -3813,6 +3855,9 @@
       "revapi4": "",
       "revapi5": "",
       "revslider_showDoubleJqueryError": ""
+    },
+    "meta": {
+      "generator": "Powered\\sby\\sSlider Revolution\\s([\\d\\.]+)\\;version:\\1"
     },
     "pricing": [
       "low",
@@ -4399,6 +4444,18 @@
     "scriptSrc": "cdn\\.soisy\\.it/",
     "website": "https://www.soisy.it"
   },
+  "SolidJS": {
+    "cats": [
+      12
+    ],
+    "description": "SolidJS is a purely reactive library. It was designed from the ground up with a reactive core. It's influenced by reactive principles developed by previous libraries.",
+    "icon": "SolidJS.svg",
+    "js": {
+      "Solid$$": ""
+    },
+    "oss": true,
+    "website": "https://www.solidjs.com/"
+  },
   "SolidPixels": {
     "cats": [
       1,
@@ -4415,6 +4472,22 @@
       "^https?://cdn\\.solidpixels\\.net/"
     ],
     "website": "https://www.solidpixels.net"
+  },
+  "SolidStart": {
+    "cats": [
+      18,
+      22
+    ],
+    "description": "SolidStart is the Solid app framework.",
+    "icon": "SolidJS.svg",
+    "implies": [
+      "SolidJS"
+    ],
+    "js": {
+      "_$HY": ""
+    },
+    "oss": true,
+    "website": "https://start.solidjs.com"
   },
   "Solodev": {
     "cats": [
@@ -5567,6 +5640,20 @@
     ],
     "saas": true,
     "website": "https://statuscast.com/status-page/"
+  },
+  "Statuspal": {
+    "cats": [
+      13
+    ],
+    "description": "Statuspal is a hosted status page and monitoring software for businesses of all kinds.",
+    "icon": "Statuspal.svg",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "//statuspal\\.io/",
+    "website": "https://statuspal.io"
   },
   "Staytus": {
     "cats": [

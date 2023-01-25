@@ -178,6 +178,23 @@
     "scriptSrc": "\\.valuecommerce\\.com",
     "website": "https://www.valuecommerce.co.jp"
   },
+  "Vanco Payment Solutions": {
+    "cats": [
+      111,
+      41
+    ],
+    "description": "Vanco Payment Solutions provides credit card processing to nonprofits.",
+    "dom": "a[href*='.eservicepayments.com/']",
+    "icon": "Vanco.svg",
+    "pricing": [
+      "payg",
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.eservicepayments\\.com/",
+    "website": "https://www.vancopayments.com"
+  },
   "Vanilla": {
     "cats": [
       2
@@ -667,6 +684,19 @@
     "url": "/sparql",
     "website": "https://virtuoso.openlinksw.com/"
   },
+  "Virtuous": {
+    "cats": [
+      111
+    ],
+    "description": "Virtuous is the responsive fundraising software platform.",
+    "icon": "Virtuous.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.virtuoussoftware\\.com/",
+    "website": "https://virtuous.org"
+  },
   "Virtusize": {
     "cats": [
       76
@@ -823,6 +853,22 @@
     "icon": "vite.svg",
     "oss": true,
     "website": "https://vitejs.dev"
+  },
+  "VitePress": {
+    "cats": [
+      57
+    ],
+    "description": "VitePress is a Vite & Vue Powered Static Site Generator.",
+    "icon": "vite.svg",
+    "implies": [
+      "Vue.js",
+      "Vite"
+    ],
+    "js": {
+      "__VP_HASH_MAP__": ""
+    },
+    "oss": true,
+    "website": "https://vitepress.vuejs.org/"
   },
   "Vitrin.me": {
     "cats": [
