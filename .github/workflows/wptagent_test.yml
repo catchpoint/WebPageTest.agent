@@ -5,9 +5,9 @@ name: Python application
 
 on:
   push:
-    branches: [ master, MoreActions]
+    branches: [ master, patch-2]
   pull_request:
-    branches: [ master, MoreActions]
+    branches: [ master, patch-2]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v3
