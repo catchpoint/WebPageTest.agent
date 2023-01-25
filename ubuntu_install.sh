@@ -17,7 +17,7 @@ curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 
 # Install all of the binary dependencies
 echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
-until sudo apt -y install git curl wget apt-transport-https gnupg2 python python3 python3-pip python3-ujson \
+until sudo apt -y install git curl wget apt-transport-https gnupg2 python3 python3-pip python3-ujson \
         imagemagick dbus-x11 traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools openvpn \
         libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk \
         python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev \
