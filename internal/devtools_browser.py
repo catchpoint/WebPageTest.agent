@@ -836,6 +836,7 @@ class DevtoolsBrowser(object):
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
                        '--enable-error-reporting',
+                       '--legacy-navigation',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--port', str(task['port']),
                        '--output', 'html',
