@@ -837,6 +837,7 @@ class DevtoolsBrowser(object):
                        '--channel', 'wpt',
                        '--enable-error-reporting',
                        '--legacy-navigation',
+                       '--disable-full-page-screenshot',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
                        '--hostname', '127.0.0.1',
                        '--port', str(task['port']),
