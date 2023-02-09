@@ -838,6 +838,7 @@ class DevtoolsBrowser(object):
                        '--enable-error-reporting',
                        '--legacy-navigation',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
+                       '--hostname', '127.0.0.1',
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',
