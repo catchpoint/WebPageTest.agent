@@ -867,7 +867,7 @@ class ProcessTest(object):
                         start = req[start_key] if start_key in req else 0
                         end = req[end_key] if end_key in req else 0
                         ms = req[ms_key] if ms_key in req else 0
-                        if end > 0 and start > 0 and end >= start:
+                        if end > 0 and start >= 0 and end >= start:
                             ms = end - start
                         if ms > 0:
                             if start == 0:
