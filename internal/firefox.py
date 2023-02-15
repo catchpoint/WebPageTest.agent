@@ -78,20 +78,29 @@ class Firefox(DesktopBrowser):
             "content-signature-2.cdn.mozilla.net",
             "aus5.mozilla.org"]
         self.duplicates = []
+        self.profiler_file = None
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.moz_log = os.path.join(task['dir'], 'moz.log')
+        self.profiler_file = '/Users/pmeenan/wptagent/workprofiler.json'
+
         self.log_pos = {}
         self.page = {}
         self.requests = {}
         self.request_count = 0
         self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
+        os.environ["MOZ_PROFILER_SHUTDOWN"] = self.profiler_file
         moz_log_env = 'timestamp,nsHttp:{0:d},nsSocketTransport:{0:d}'\
                       'nsHostResolver:{0:d},pipnss:5'.format(self.log_level)
         os.environ["MOZ_LOG"] = moz_log_env
+        os.environ["MOZ_PROFILER_STARTUP"] = "1"
+        os.environ["MOZ_PROFILER_STARTUP_FEATURES"] = "threads,js,cpu"
+        os.environ["MOZ_PROFILER_STARTUP_FILTERS"] = "GeckoMain,Compositor,Renderer"
         logging.debug('MOZ_LOG = %s', moz_log_env)
+        logging.debug('MOZ_SHUTDOWN = %s', self.profiler_file)
+
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                         'support', 'Firefox', 'profile')
@@ -153,7 +162,13 @@ class Firefox(DesktopBrowser):
             "log": {"level": "error"},
             'env': {
                 "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
-                "MOZ_LOG": os.environ["MOZ_LOG"]
+                "MOZ_LOG": os.environ["MOZ_LOG"],
+                "MOZ_PROFILER_STARTUP": os.environ["MOZ_LOG"],
+                # "MOZ_PROFILER_STARTUP_INTERVALS": "5",
+                "MOZ_PROFILER_STARTUP_FEATURES":  os.environ["MOZ_PROFILER_STARTUP_FEATURES"],
+                "MOZ_PROFILER_STARTUP_FILTERS": os.environ["MOZ_PROFILER_STARTUP_FILTERS"],
+                "MOZ_PROFILER_SHUTDOWN": os.environ["MOZ_PROFILER_SHUTDOWN"],
+                #"MOZ_PROFILER_HELP": "1"
             }
         }
         service_args = ["--marionette-port", "2828"]

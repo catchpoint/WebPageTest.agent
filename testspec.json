@@ -3,8 +3,5 @@
     "axe": 0,
     "wappalyzer": 0,
     "debug": 1,
-    "bwIn": 1600,
-    "bwOut": 768,
-    "latency": 170,
-    "label": "3G Fast"
+    "url": "https://timkadlec.com"
 }
