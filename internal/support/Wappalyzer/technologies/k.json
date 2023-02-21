@@ -347,8 +347,8 @@
       1
     ],
     "cookies": {
-      "CMSPreferredCulture": "",
-      "CMSCookieLevel": ""
+      "CMSCookieLevel": "",
+      "CMSPreferredCulture": ""
     },
     "cpe": "cpe:2.3:a:kentico:kentico_cms:*:*:*:*:*:*:*:*",
     "description": "Kentico CMS is a web content management system for building websites, online stores, intranets, and Web 2.0 community sites.",
@@ -803,6 +803,26 @@
     "icon": "Koa.png",
     "implies": "Node.js",
     "website": "http://koajs.com"
+  },
+  "Koala": {
+    "cats": [
+      10,
+      53
+    ],
+    "description": "Koala is an analytical product with CRM features that helps businesses efficiently identify and track prospects, providing valuable insights and streamlining the sales process.",
+    "icon": "Koala.svg",
+    "js": {
+      "KoalaSDK": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.getkoala\\.com/",
+    "website": "https://getkoala.com/",
+    "xhr": "api\\.getkoala\\.com"
   },
   "Koala Framework": {
     "cats": [

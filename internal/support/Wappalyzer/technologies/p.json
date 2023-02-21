@@ -437,6 +437,21 @@
     "scripts": "var\\slink\\s=\\s'www\\.parkingcrew\\.net'",
     "website": "https://www.parkingcrew.com"
   },
+  "Parmin Cloud": {
+    "cats": [
+      63
+    ],
+    "description": "Parmin Cloud operates in the field of cloud services.",
+    "headers": {
+      "x-powered-by": "^ParminCloud$"
+    },
+    "icon": "Parmin Cloud.svg",
+    "pricing": [
+      "poa",
+      "payg"
+    ],
+    "website": "https://parmin.cloud"
+  },
   "Pars Elecom Portal": {
     "cats": [
       1
@@ -1351,6 +1366,16 @@
     ],
     "website": "https://trypico.com"
   },
+  "Pico CSS": {
+    "cats": [
+      66
+    ],
+    "description": "Pico CSS is a minimal CSS framework for semantic HTML, without using classes.",
+    "dom": "link[href*='/pico.min.css']",
+    "icon": "Pico CSS.svg",
+    "oss": true,
+    "website": "https://picocss.com"
+  },
   "Picreel": {
     "cats": [
       77,
@@ -2101,6 +2126,24 @@
     ],
     "website": "https://www.postaffiliatepro.com"
   },
+  "PostHog": {
+    "cats": [
+      10
+    ],
+    "description": "PostHog is the open-source, all-in-one product analytics platform.",
+    "icon": "PostHog.svg",
+    "js": {
+      "posthog": ""
+    },
+    "oss": true,
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "app\\.posthog\\.com/",
+    "website": "https://posthog.com"
+  },
   "PostNL": {
     "cats": [
       99
@@ -2181,6 +2224,23 @@
     "saas": true,
     "scriptSrc": "sdk\\.postscript\\.io/",
     "website": "https://www.postscript.io"
+  },
+  "Potions": {
+    "cats": [
+      76
+    ],
+    "description": "Potions is a personalisation technology for customising the ecommerce experience for site visitors without the use of cookies.",
+    "icon": "Potions.svg",
+    "js": {
+      "potions.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.get-potions\\.com/",
+    "website": "https://get-potions.com"
   },
   "PowerReviews": {
     "cats": [
@@ -3061,6 +3121,20 @@
     "icon": "Pushnami.svg",
     "scriptSrc": "api\\.pushnami\\.com",
     "website": "https://pushnami.com"
+  },
+  "Pushpay": {
+    "cats": [
+      111
+    ],
+    "description": "Pushpay is a digital giving and engagement platform designed to help churches manage processes related to donations and fundraising.",
+    "dom": "a[href*='//ppay.co/'][target='_blank']",
+    "icon": "Pushpay.svg",
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": "//pushpay\\.com/",
+    "website": "https://pushpay.com"
   },
   "PyScript": {
     "cats": [

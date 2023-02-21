@@ -1554,6 +1554,30 @@
     "scriptSrc": "\\.metrilo\\.com/",
     "website": "https://www.metrilo.com"
   },
+  "MetroUI": {
+    "cats": [
+      66
+    ],
+    "description": "MetroUI is an open-source frontend toolkit inspired by Microsoft Fluent (former Metro) design principles.",
+    "dom": {
+      "link[href*='//cdn.metroui.org.ua/']": {
+        "attributes": {
+          "href": "//cdn\\.metroui\\.org\\.ua/v([\\d\\.]+)/\\;version:\\1"
+        }
+      }
+    },
+    "icon": "default.svg",
+    "js": {
+      "Metro.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://github.com/olton/Metro-UI-CSS"
+  },
   "Mews": {
     "cats": [
       72
@@ -2222,8 +2246,7 @@
     ],
     "scripts": [
       "data-webpack\\;confidence:50",
-      "Container missing\\;confidence:50",
-      "Initialization of sharing external failed\\;confidence:50"
+      "Container initialization failed as it has already been initialized with a different share scope"
     ],
     "website": "https://webpack.js.org/concepts/module-federation/"
   },
@@ -2856,7 +2879,6 @@
       51
     ],
     "description": "MyWebsite Creator is website builder designed for easy editing and fast results.",
-    "dom": "body#dmRoot",
     "icon": "MyWebsite.svg",
     "implies": "Duda",
     "pricing": [
@@ -3004,10 +3026,6 @@
     ],
     "description": "mdBook is a utility to create modern online books from Markdown files.",
     "icon": "mdBook.svg",
-    "implies": [
-      "Rust",
-      "Handlebars"
-    ],
     "oss": true,
     "scripts": "localStorage\\.getItem\\('mdbook-(?:sidebar|theme)'\\)",
     "website": "https://github.com/rust-lang/mdBook"

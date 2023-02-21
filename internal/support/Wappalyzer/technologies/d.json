@@ -616,7 +616,7 @@
     "cats": [
       76
     ],
-    "description": "Depict is am ecommerce personalisation solutionfor fashion.",
+    "description": "Depict is an ecommerce personalisation solution for fashion.",
     "dom": "link[href*='.depict.ai/']",
     "icon": "Depict.svg",
     "pricing": [
@@ -977,7 +977,7 @@
       "DIVI": ""
     },
     "meta": {
-      "generator": "Divi"
+      "generator": "Divi(?:\\sv\\.([\\d\\.]+))?\\;version:\\1"
     },
     "pricing": [
       "low",
@@ -1103,9 +1103,13 @@
       "Webpack"
     ],
     "js": {
+      "__DOCUSAURUS_INSERT_BASEURL_BANNER": "",
+      "docusaurus": "",
       "search.indexName": ""
     },
     "meta": {
+      "docusaurus_locale": "",
+      "docusaurus_tag": "",
       "generator": "^Docusaurus(?: v(.+))?$\\;version:\\1"
     },
     "website": "https://docusaurus.io/"

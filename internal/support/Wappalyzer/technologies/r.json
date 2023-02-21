@@ -361,6 +361,26 @@
     "scriptSrc": "code\\.rateparity\\.com/",
     "website": "https://www.rateparity.com"
   },
+  "Rawabit": {
+    "cats": [
+      51
+    ],
+    "cookies": {
+      "rawabit_session": ""
+    },
+    "description": "Rawabit is a website builder that lets small businesses design landing pages, modify sections, and embed content links using a drag and drop editor.",
+    "icon": "Rawabit.svg",
+    "meta": {
+      "powered-by": "^Rawabit$"
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "website": "https://www.rawabit.me"
+  },
   "Raychat": {
     "cats": [
       52
@@ -1200,6 +1220,57 @@
     "oss": true,
     "website": "https://remix.run/"
   },
+  "Render Better": {
+    "cats": [
+      92,
+      100
+    ],
+    "description": "Render Better is automated site speed and core web vital optimisation platform for Shopify.",
+    "dns": {
+      "CNAME": "\\.renderbetter\\.app"
+    },
+    "icon": "renderbetter.svg",
+    "js": {
+      "renderbetter": ""
+    },
+    "requires": "Shopify",
+    "website": "https://www.renderbetter.com"
+  },
+  "Replicache": {
+    "cats": [
+      12,
+      23
+    ],
+    "description": "Replicache is a JavaScript framework for building high-performance, offline-capable, collaborative web apps.",
+    "headers": {
+      "x-replicache-requestid": ""
+    },
+    "icon": "Replicache.svg",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://replicache.dev/"
+  },
+  "Replit": {
+    "cats": [
+      47
+    ],
+    "description": "Replit is a platform for creating and sharing software.",
+    "headers": {
+      "expect-ct": "\\.repl\\.it/",
+      "replit-cluster": ""
+    },
+    "icon": "Replit.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://replit.com"
+  },
   "Reputon": {
     "cats": [
       90,
@@ -1618,6 +1689,23 @@
     "icon": "RevolverMaps.svg",
     "scriptSrc": "\\.revolvermaps\\.com",
     "website": "https://www.revolvermaps.com"
+  },
+  "Revv": {
+    "cats": [
+      111
+    ],
+    "description": "Revv is a lead optimisation and donation platform.",
+    "icon": "Revv.png",
+    "meta": {
+      "revv-api-domain": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://revv.com"
   },
   "Revy": {
     "cats": [

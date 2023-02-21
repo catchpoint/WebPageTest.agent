@@ -635,6 +635,22 @@
     "url": "mybigcommerce\\.com",
     "website": "http://www.bigcommerce.com"
   },
+  "BigDataCloud IP Geolocation": {
+    "cats": [
+      79
+    ],
+    "description": "BigDataCloud IP Geolocation API provides detailed and accurate locality and security metrics of an IP address.",
+    "icon": "BigDataCloud-IPGeolocation.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "bigdatacloud\\.net/",
+    "website": "https://www.bigdatacloud.com/packages/ip-geolocation",
+    "xhr": "bigdatacloud\\.net/"
+  },
   "BigTree CMS": {
     "cats": [
       1
@@ -2539,6 +2555,9 @@
     ],
     "description": "bdok is a cloud-based platform which provides the capability to create and manage online stores with no technical knowledge.",
     "icon": "bdok.svg",
+    "meta": {
+      "bdok": ""
+    },
     "pricing": [
       "low",
       "recurring"

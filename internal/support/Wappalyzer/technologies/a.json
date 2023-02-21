@@ -5,7 +5,7 @@
     ],
     "html": "<a-scene[^<>]*>",
     "icon": "A-Frame.svg",
-    "implies": "three.js",
+    "implies": "Three.js",
     "js": {
       "AFRAME.version": "^(.+)$\\;version:\\1"
     },
@@ -1535,6 +1535,22 @@
     },
     "website": "http://www.adobe.com/products/golive"
   },
+  "Adobe Portfolio": {
+    "cats": [
+      51
+    ],
+    "description": "Adobe Portfolio is an Adobe platform that allows you to create a web page where you can show your projects, creations, and the services you offer.",
+    "icon": "Adobe Portfolio.svg",
+    "meta": {
+      "twitter:site": "@AdobePortfolio"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://portfolio.adobe.com"
+  },
   "Adobe RoboHelp": {
     "cats": [
       4
@@ -1771,7 +1787,7 @@
       6
     ],
     "headers": {
-      "X-Powered-By": "Afosto SaaS BV"
+      "X-Powered-By": "Afosto SaaS BV\\;version:2.0"
     },
     "icon": "Afosto.svg",
     "website": "http://afosto.com"
@@ -1982,7 +1998,7 @@
       5
     ],
     "description": "Airtable is a low-code platform for building collaborative apps.",
-    "dom": "iframe[scr*='//airtable.com/'], a[href*='//airtable.com/][target='_blank']",
+    "dom": "iframe[scr*='//airtable.com/'], a[href*='//airtable.com/'][target='_blank']",
     "icon": "Airtable.svg",
     "pricing": [
       "freemium",
@@ -2130,6 +2146,24 @@
     },
     "icon": "akka-http.png",
     "website": "http://akka.io"
+  },
+  "Aklamio": {
+    "cats": [
+      94
+    ],
+    "description": "Aklamio is a solution for enterprise level referral marketing and customer incentivisation.",
+    "dom": "a[href*='.aklamio.com/']",
+    "headers": {
+      "content-security-policy": "\\.aklamio\\.com"
+    },
+    "icon": "Aklamio.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.aklamio\\.com/",
+    "website": "https://www.aklamio.com"
   },
   "Aksara CMS": {
     "cats": [
@@ -2351,6 +2385,21 @@
     "scriptSrc": "js/alternc\\.js",
     "website": "https://alternc.com"
   },
+  "AlumnIQ": {
+    "cats": [
+      111
+    ],
+    "cookies": {
+      "alumniq-online-giving": ""
+    },
+    "description": "AlumnIQ is a set of services to manage events, giving, email, volunteers, class agents, and more, all designed to work with your database of record.",
+    "dom": "a[href*='.alumniq.com/giving/to/']",
+    "icon": "AlumnIQ.svg",
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.alumniq.com/platform/"
+  },
   "Amaya": {
     "cats": [
       20
@@ -2360,6 +2409,7 @@
     "meta": {
       "generator": "Amaya(?: V?([\\d.]+[a-z]))?\\;version:\\1"
     },
+    "oss": true,
     "website": "http://www.w3.org/Amaya"
   },
   "Amazon ALB": {
@@ -2725,6 +2775,7 @@
     "icon": "Amplitude.svg",
     "js": {
       "AMPLITUDE_KEY": "",
+      "__AMPLITUDE__": "",
       "amplitudeClient": ""
     },
     "pricing": [
@@ -2830,7 +2881,7 @@
     ],
     "description": "Angie is a drop-in replacement for the Nginx web server aiming to extend the functionality of the original version.",
     "headers": {
-      "server": "^Angie/([\\d\\.]+)$\\;version:\\1"
+      "server": "^Angie(?:/([\\d\\.]+))?$\\;version:\\1"
     },
     "icon": "default.svg",
     "implies": [
@@ -3031,9 +3082,23 @@
     ],
     "website": "https://ipo.antee.cz"
   },
+  "Anthology Encompass": {
+    "cats": [
+      53
+    ],
+    "description": "Anthology Encompass is a constituent engagement management provider or educational institutions that provides modules to help you manage events, websites and content, data, and more.",
+    "dom": "a[href*='.imodules.com/s/']",
+    "icon": "Anthology.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "url": "https.+\\.imodules\\.com/s/",
+    "website": "https://www.anthology.com/products/lifecycle-engagement/alumni-and-advancement/anthology-encompass"
+  },
   "AntiBot.Cloud": {
     "cats": [
-      13
+      16
     ],
     "description": "AntiBot.Cloud is a PHP script and cloud service to protect websites from bots and junk traffic.",
     "meta": {
@@ -3354,6 +3419,25 @@
     "saas": true,
     "scriptSrc": "/apple_business_chat_commerce/.+/apple_message_button_v([\\d\\.]+)\\.js\\;version:\\1",
     "website": "https://developer.apple.com/documentation/businesschat"
+  },
+  "Apple MapKit JS": {
+    "cats": [
+      35
+    ],
+    "description": "Apple MapKit JS lets you embed interactive maps directly into your websites across platforms and operating systems, including iOS and Android.",
+    "headers": {
+      "content-security-policy": "\\.apple-mapkit\\.com"
+    },
+    "icon": "Apple.svg",
+    "js": {
+      "mapkit._tileProvider": ""
+    },
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "scriptSrc": "//cdn\\.apple-mapkit\\.com/mk/([\\d\\.\\w]+)\\;version:\\1",
+    "website": "https://developer.apple.com/maps/web/"
   },
   "Apple Pay": {
     "cats": [
@@ -3685,6 +3769,7 @@
       31
     ],
     "description": "ArvanCloud is a cloud services provider, offering a wide range of incorporated cloud services including CDN, DDoS mitigation, Cloud Managed DNS, Cloud Security, VoD/AoD Streaming, Live Streaming, Cloud Compute, Cloud Object Storage, and PaaS.",
+    "dom": "img[src*='.arvanstorage.com/']",
     "headers": {
       "server": "ArvanCloud"
     },
@@ -3840,7 +3925,7 @@
       },
       "link[href*='/_astro/']": {
         "attributes": {
-          "href": "/_astro/(?:common|index)-[\\d\\w]+\\.css"
+          "href": "/_astro/(?:common|index)(?:-|\\.)[\\d\\w]+\\.css"
         }
       }
     },

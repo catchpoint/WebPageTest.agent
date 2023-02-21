@@ -1290,12 +1290,14 @@
       1
     ],
     "cpe": "cpe:2.3:a:fork-cms:fork_cms:*:*:*:*:*:*:*:*",
+    "description": "Fork CMS is an open-source content management system.",
     "icon": "ForkCMS.png",
     "implies": "Symfony",
     "meta": {
       "generator": "^Fork CMS$"
     },
-    "website": "http://www.fork-cms.com/"
+    "oss": true,
+    "website": "http://www.fork-cms.com"
   },
   "FormAssembly": {
     "cats": [
@@ -1312,6 +1314,22 @@
       "low"
     ],
     "website": "https://www.formassembly.com"
+  },
+  "Formaloo": {
+    "cats": [
+      110
+    ],
+    "description": "Formaloo is a no-code collaboration platform that helps businesses create custom data-driven business applications and internal tools, automate their processes and engage their audience.",
+    "dom": "iframe[src*='//formaloo.net/']",
+    "icon": "Formaloo.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "//formaloo\\.net/",
+    "website": "https://www.formaloo.com"
   },
   "Formidable Form": {
     "cats": [

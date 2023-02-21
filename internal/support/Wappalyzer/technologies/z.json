@@ -127,6 +127,21 @@
     "scriptSrc": "zanox\\.com/scripts/zanox\\.js$",
     "website": "http://zanox.com"
   },
+  "Zeald": {
+    "cats": [
+      6
+    ],
+    "cookies": {
+      "ZES_BACKEND": "zeald"
+    },
+    "description": "Zeald is a full-service website design and digital marketing company.",
+    "icon": "Zeald.png",
+    "pricing": [
+      "poa"
+    ],
+    "requires": "Cart Functionality",
+    "website": "https://www.zeald.com"
+  },
   "Zeleris": {
     "cats": [
       99
