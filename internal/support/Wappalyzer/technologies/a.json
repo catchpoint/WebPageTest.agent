@@ -2802,6 +2802,23 @@
     "scriptSrc": "AnalysysFangzhou_JS_SDK\\.min\\.js\\?v=([\\d.]+)\\;version:\\1",
     "website": "https://ark.analysys.cn"
   },
+  "Analyzee": {
+    "cats": [
+      10
+    ],
+    "description": "Analyzee is an analytics tool that allows you to gain insights into visitor behavior and optimise your website's user experience using heatmaps and other analytics features.",
+    "icon": "Analyzee.svg",
+    "js": {
+      "Analyzee._sessionExtend": "",
+      "analyzee._session": ""
+    },
+    "saas": true,
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "website": "https://analyzee.io"
+  },
   "AndersNoren Baskerville": {
     "cats": [
       80
@@ -2924,6 +2941,7 @@
     "description": "Angular Material is a UI component library for Angular JS developers. Angular Material components assist in constructing attractive, consistent, and functional web pages and web applications.",
     "icon": "AngularJS.svg",
     "implies": "AngularJS",
+    "excludes": "Material Design Lite",
     "js": {
       "ngMaterial": ""
     },
@@ -4343,8 +4361,8 @@
       87,
       92
     ],
-    "description": "Autoptimize is a popular performance plugin for WordPress.",
-    "dom": "link[href*='/wp-content/plugins/autoptimize/']",
+    "description": "Autoptimize is a WordPress plugin that optimises website performance by aggregating, minifying, and compressing HTML, CSS, and JavaScript files.",
+    "dom": "link[href*='/wp-content/plugins/autoptimize/'], link[href*='/wp-content/cache/autoptimize/']",
     "icon": "Autoptimize.png",
     "pricing": [
       "freemium",
@@ -4561,6 +4579,23 @@
     ],
     "saas": true,
     "website": "https://www.azion.com/"
+  },
+  "Azko CMS": {
+    "cats": [
+      1
+    ],
+    "description": "Azko CMS is a content management system developed by Azko (Septeo Group) specifically launched for lawyers in France.",
+    "icon": "Azko CMS.svg",
+    "requires": [
+      "Bootstrap",
+      "Slick"
+    ],
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "//js\\.fw\\.azko\\.fr/",
+    "website": "https://www.azko.fr"
   },
   "Azoya": {
     "cats": [

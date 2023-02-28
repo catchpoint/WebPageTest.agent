@@ -968,9 +968,26 @@
     "scriptSrc": "/assets/themes/perfex/js/global\\.min\\.js(?:\\?v=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://www.perfexcrm.com"
   },
+  "Perfmatters": {
+    "cats": [
+      87,
+      92
+    ],
+    "description": "Perfmatters is a performance optimisation plugin for WordPress websites.",
+    "icon": "Perfmatters.svg",
+    "requires": "WordPress",
+    "saas": true,
+    "scriptSrc": "/wp-content/(?:plugins|cache|uploads)/perfmatters/",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "website": "https://perfmatters.io"
+  },
   "Performance Lab": {
     "cats": [
-      87
+      87,
+      92
     ],
     "description": "Performance plugin from the WordPress Performance Group, which is a collection of standalone performance modules.",
     "icon": "Performance Lab.svg",
@@ -1179,6 +1196,30 @@
       "generator": "^phoenix"
     },
     "website": "https://github.com/Sazito/phoenix/"
+  },
+  "Phoenix Framework": {
+    "cats": [
+      18
+    ],
+    "description": "Phoenix Framework is an open-source web application framework built using the Elixir programming language.",
+    "icon": "Phoenix Framework.svg",
+    "implies": "Elixir",
+    "oss": true,
+    "website": "https://www.phoenixframework.org"
+  },
+  "Phoenix LiveView": {
+    "cats": [
+      18
+    ],
+    "description": "Phoenix LiveView is a library that brings live, interactive, real-time user experiences to your Phoenix applications.",
+    "dom": "div[data-phx-session]",
+    "icon": "Phoenix Framework.svg",
+    "implies": "Phoenix Framework",
+    "js": {
+      "liveSocket.socket": ""
+    },
+    "oss": true,
+    "website": "https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html"
   },
   "Phoenix Site": {
     "cats": [
@@ -3322,6 +3363,9 @@
     ],
     "js": {
       "pma_absolute_uri": ""
+    },
+    "headers": { 
+      "Set-Cookie": "phpMyAdmin_https" 
     },
     "website": "https://www.phpmyadmin.net"
   },
