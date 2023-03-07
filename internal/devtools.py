@@ -895,6 +895,15 @@ class DevTools(object):
                         request['url'] = req['request']['url']
                     if 'request_headers' not in request and 'headers' in req['request']:
                         request['request_headers'] = req['request']['headers']
+                    if 'initialPriority' in req['request']:
+                        request['initialPriority'] = req['request']['initialPriority']
+            # See if we have final priority information
+            if 'priority' in events:
+                priority_data = events['priority'][-1]
+                if 'newPriority' in priority_data:
+                    request['priority'] = priority_data['newPriority']
+            if 'priority' not in request and 'initialPriority' in request:
+                request['priority'] = request['initialPriority']
             # Get the response length from the data events
             if 'finished' in events and 'encodedDataLength' in events['finished']:
                 request['transfer_size'] = events['finished']['encodedDataLength']
@@ -954,6 +963,11 @@ class DevTools(object):
                                 request['request_headers'] = self.extract_headers(netlog_request['request_headers'])
                             if 'response_headers' in netlog_request:
                                 request['response_headers'] = self.extract_headers(netlog_request['response_headers'])
+                            if 'initial_priority' in netlog_request:
+                                request['initialPriority'] = netlog_request['initial_priority']
+                                request['priority'] = netlog_request['initial_priority']
+                            if 'priority' in netlog_request:
+                                request['priority'] = netlog_request['priority']
                             body_file_path = os.path.join(path, netlog_id)
                             if os.path.exists(body_file_path):
                                 request['body'] = body_file_path
