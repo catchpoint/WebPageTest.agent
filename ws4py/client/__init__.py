@@ -264,19 +264,6 @@ class WebSocketBaseClient(WebSocket):
         if self.extra_headers:
             headers.extend(self.extra_headers)
 
-        if not any(x for x in headers if x[0].lower() == 'origin'):
-
-            scheme, url = self.url.split(":", 1)
-            parsed = urlsplit(url, scheme="http")
-            if parsed.hostname:
-                self.host = parsed.hostname
-            else:
-                self.host = 'localhost'
-            origin = scheme + '://' + self.host
-            if parsed.port:
-                origin = origin + ':' + str(parsed.port)
-            headers.append(('Origin', origin))
-
         return headers
 
     @property

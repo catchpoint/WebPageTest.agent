@@ -566,6 +566,12 @@ class NetEm(object):
                                      'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
                                      'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
                                      'dev', 'ifb0'])
+                # Turn off tcp offload acceleration on the interfaces
+                try:
+                    subprocess.call(['sudo', 'ethtool', '-K', self.interface, 'tso', 'off', 'gso', 'off', 'gro', 'off'])
+                    subprocess.call(['sudo', 'ethtool', '-K', self.in_interface, 'tso', 'off', 'gso', 'off', 'gro', 'off'])
+                except Exception:
+                    logging.exception('Error disabling tso on interfaces for traffic shaping')
                 self.reset()
                 ret = True
             else:

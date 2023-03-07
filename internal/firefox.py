@@ -484,12 +484,14 @@ class Firefox(DesktopBrowser):
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Page Load Timeout"
+                        self.task['soft_error'] = True
                         self.task['page_data']['result'] = 99998
                 elif max_requests > 0 and self.request_count > max_requests:
                     done = True
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
+                        self.task['soft_error'] = True
                         self.task['page_data']['result'] = 99997
                 elif self.wait_for_script is not None:
                     elapsed_interval = now - last_wait_interval

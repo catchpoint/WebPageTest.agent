@@ -82,7 +82,7 @@ class DevtoolsBrowser(object):
         if self.devtools is not None:
             # Always navigate to about:blank after finishing in case the tab is
             # remembered across sessions
-            if self.task is not None and self.task['error'] is None:
+            if self.task is not None and (self.task['error'] is None or self.task['soft_error']):
                 self.devtools.send_command('Page.navigate', {'url': 'about:blank'}, wait=True)
             if self.webkit_context is not None:
                 self.devtools.send_command('Automation.closeBrowsingContext', {'handle': self.webkit_context}, wait=True)
@@ -836,7 +836,10 @@ class DevtoolsBrowser(object):
                        '"{0}"'.format(self.job['url']),
                        '--channel', 'wpt',
                        '--enable-error-reporting',
+                       '--legacy-navigation',
+                       '--disable-full-page-screenshot',
                        '--max-wait-for-load', str(int(time_limit * 1000)),
+                       '--hostname', '127.0.0.1',
                        '--port', str(task['port']),
                        '--output', 'html',
                        '--output', 'json',

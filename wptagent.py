@@ -267,7 +267,7 @@ class WPTAgent(object):
                             self.wpt.get_bodies(self.task)
                         if self.task['run'] == 1 and not self.task['cached'] and \
                                 self.job['warmup'] <= 0 and \
-                                self.task['error'] is None and \
+                                (self.task['error'] is None or self.task['soft_error']) and \
                                 'lighthouse' in self.job and self.job['lighthouse']:
                             if 'page_result' not in self.task or \
                                     self.task['page_result'] is None or \
@@ -572,16 +572,16 @@ class WPTAgent(object):
             except Exception:
                 pass
 
-        # Check for Node 14+
-        if self.get_node_version() < 14.0:
+        # Check for Node 16+
+        if self.get_node_version() < 16.0:
             if platform.system() == "Linux":
                 # This only works on debian-based systems
-                logging.debug('Updating Node.js to 14.x')
+                logging.debug('Updating Node.js to 16.x')
                 subprocess.call('sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates', shell=True)
-                subprocess.call('curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -', shell=True)
+                subprocess.call('curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -', shell=True)
                 subprocess.call(['sudo', 'apt-get', 'install', '-y', 'nodejs'])
-            if self.get_node_version() < 12.0:
-                logging.warning("Node.js 12 or newer is required for Lighthouse testing")
+            if self.get_node_version() < 16.0:
+                logging.warning("Node.js 16 or newer is required for Lighthouse testing")
 
         # Check the iOS install
         if self.ios is not None:
