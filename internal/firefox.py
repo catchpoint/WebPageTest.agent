@@ -77,13 +77,15 @@ class Firefox(DesktopBrowser):
             "snippets.cdn.mozilla.net",
             "content-signature-2.cdn.mozilla.net",
             "aus5.mozilla.org"]
+        self.profiler_features = "js,cpu"
+        self.profiler_threads = 'GeckoMain,Compositor,Renderer'
+        self.profiler_buffer = 13_107_200
+        self.profiler_sampling_interval = 1
         self.duplicates = []
-        self.profiler_file = None
 
     def prepare(self, job, task):
         """Prepare the profile/OS for the browser"""
         self.moz_log = os.path.join(task['dir'], 'moz.log')
-        self.profiler_file = '/Users/pmeenan/wptagent/workprofiler.json'
 
         self.log_pos = {}
         self.page = {}
@@ -91,15 +93,10 @@ class Firefox(DesktopBrowser):
         self.request_count = 0
         self.main_request_headers = None
         os.environ["MOZ_LOG_FILE"] = self.moz_log
-        os.environ["MOZ_PROFILER_SHUTDOWN"] = self.profiler_file
         moz_log_env = 'timestamp,nsHttp:{0:d},nsSocketTransport:{0:d}'\
                       'nsHostResolver:{0:d},pipnss:5'.format(self.log_level)
         os.environ["MOZ_LOG"] = moz_log_env
-        os.environ["MOZ_PROFILER_STARTUP"] = "1"
-        os.environ["MOZ_PROFILER_STARTUP_FEATURES"] = "threads,js,cpu"
-        os.environ["MOZ_PROFILER_STARTUP_FILTERS"] = "GeckoMain,Compositor,Renderer"
         logging.debug('MOZ_LOG = %s', moz_log_env)
-        logging.debug('MOZ_SHUTDOWN = %s', self.profiler_file)
 
         DesktopBrowser.prepare(self, job, task)
         profile_template = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -162,13 +159,7 @@ class Firefox(DesktopBrowser):
             "log": {"level": "error"},
             'env': {
                 "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
-                "MOZ_LOG": os.environ["MOZ_LOG"],
-                "MOZ_PROFILER_STARTUP": os.environ["MOZ_LOG"],
-                # "MOZ_PROFILER_STARTUP_INTERVALS": "5",
-                "MOZ_PROFILER_STARTUP_FEATURES":  os.environ["MOZ_PROFILER_STARTUP_FEATURES"],
-                "MOZ_PROFILER_STARTUP_FILTERS": os.environ["MOZ_PROFILER_STARTUP_FILTERS"],
-                "MOZ_PROFILER_SHUTDOWN": os.environ["MOZ_PROFILER_SHUTDOWN"],
-                #"MOZ_PROFILER_HELP": "1"
+                "MOZ_LOG": os.environ["MOZ_LOG"]
             }
         }
         service_args = ["--marionette-port", "2828"]
@@ -290,6 +281,36 @@ class Firefox(DesktopBrowser):
                 self.driver.execute_script(script)
             except Exception:
                 logging.exception("Error setting pref")
+            finally:
+                self.driver.set_context(self.driver.CONTEXT_CONTENT)
+
+    def start_profiler(self, task):
+        """Start our profiler"""
+        if self.driver is not None:
+            try:
+                feature_string = self.profiler_features.split(',')
+                threads_string = self.profiler_threads.split(',')
+
+                script = f"Services.profiler.StartProfiler({self.profiler_buffer},{self.profiler_sampling_interval},{feature_string},{threads_string});"
+                logging.debug(script)
+                self.driver.set_context(self.driver.CONTEXT_CHROME)
+                self.driver.execute_script(script)
+            except Exception:
+                logging.exception("Error starting profiler")
+            finally:
+                self.driver.set_context(self.driver.CONTEXT_CONTENT)
+
+    def stop_profiler(self, task):
+        """Stop the profiler"""
+        if self.driver is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_profiler.json')
+            try:
+                script = f"Services.profiler.dumpProfileToFile('{path}')"
+                logging.debug(script)
+                self.driver.set_context(self.driver.CONTEXT_CHROME)
+                self.driver.execute_script(script)
+            except Exception:
+                logging.exception("Error stopping profiler")
             finally:
                 self.driver.set_context(self.driver.CONTEXT_CONTENT)
 
@@ -803,6 +824,8 @@ class Firefox(DesktopBrowser):
         if self.page_loaded is not None:
             self.page_loaded = now
         DesktopBrowser.on_start_recording(self, task)
+        # Start the profiler
+        self.start_profiler(self)
         logging.debug('Starting measurement')
         task['start_time'] = datetime.utcnow()
 
@@ -821,6 +844,8 @@ class Firefox(DesktopBrowser):
             else:
                 screen_shot = os.path.join(task['dir'], task['prefix'] + '_screen.jpg')
                 self.grab_screenshot(screen_shot, png=False, resize=600)
+        # Stop profiler
+        self.stop_profiler(task)
         # Collect end of test data from the browser
         self.collect_browser_metrics(task)
         # Write out the long tasks
