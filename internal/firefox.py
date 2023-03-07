@@ -78,7 +78,7 @@ class Firefox(DesktopBrowser):
             "content-signature-2.cdn.mozilla.net",
             "aus5.mozilla.org"]
         self.profiler_features = "js,cpu"
-        self.profiler_threads = 'GeckoMain,Compositor,Renderer'
+        self.profiler_threads = 'GeckoMain,Compositor,Renderer,DOM Worker'
         self.profiler_buffer = 13_107_200
         self.profiler_sampling_interval = 1
         self.duplicates = []
