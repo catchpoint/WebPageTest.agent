@@ -197,8 +197,24 @@ class FirefoxLogParser(object):
         elif 'current_channel' in self.http and  msg['message'].startswith('uri='):
             match = re.search(r'^uri=(?P<url>[^ \r\n]+)', msg['message'])
             if match:
-                self.http['channels'][self.http['current_channel']] = \
-                        match.groupdict().get('url')
+                self.http['channels'][self.http['current_channel']] = {'url': match.groupdict().get('url'),
+                                                                        'priority': 0}
+        # request priority
+        #  D/nsHttp nsHttpChannel::SetPriority 14aba4a00 p=-1
+        elif msg['message'].startswith('nsHttpChannel::SetPriority '):
+            match = re.search(r'^nsHttpChannel::SetPriority '
+                            r'(?P<channel>[\w\d]+) p=(?P<priority>[\w\d\-+]+)',
+                            msg['message'])
+            if match:
+                channel = match.groupdict().get('channel')
+                self.http['channels'][channel]['priority'] = \
+                        match.groupdict().get('priority')
+                if self.http['channels'][channel].get('trans_id'):
+                    trans_id = self.http['channels'][channel]['trans_id']
+                    # existing trans so let's look at the requests to set priority
+                    if trans_id in self.http['requests']:
+                        self.http['requests'][trans_id]['priority'] = match.groupdict().get('priority')
+
         # V/nsHttp Creating nsHttpTransaction @0x7f88bb130400
         elif msg['message'].startswith('Creating nsHttpTransaction '):
             match = re.search(r'^Creating nsHttpTransaction @(?P<id>[\w\d]+)', msg['message'])
@@ -212,13 +228,15 @@ class FirefoxLogParser(object):
             if match:
                 channel = match.groupdict().get('channel')
                 if channel in self.http['channels']:
-                    url = self.http['channels'][channel]
-                    del self.http['channels'][channel]
+                    url = self.http['channels'][channel]['url']
+                    priority = self.http['channels'][channel]['priority']
                     if 'creating_trans_id' in self.http:
                         trans_id = self.http['creating_trans_id']
                         del self.http['creating_trans_id']
                     else:
                         trans_id = match.groupdict().get('id')
+                    # connect the trans id with the channel so if priority changes we can track
+                    self.http['channels'][channel]['trans_id'] = trans_id
                     # If there is already an existing transaction with the same ID,
                     # move it to a unique ID.
                     if trans_id in self.http['requests']:
@@ -232,6 +250,7 @@ class FirefoxLogParser(object):
                                                        'response_headers': [],
                                                        'status': None,
                                                        'bytes_in': 0,
+                                                       'priority': priority,
                                                        'chunks': []}
         # D/nsHttp nsHttpTransaction::Init [this=c138c00 caps=21]
         elif msg['message'].startswith('nsHttpTransaction::Init '):

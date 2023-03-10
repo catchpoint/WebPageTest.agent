@@ -1276,6 +1276,8 @@ class Firefox(DesktopBrowser):
                                             log_request['start']) * 1000.0))
         if 'bytes_in' in log_request:
             request['bytesIn'] = log_request['bytes_in']
+        if 'priority' in log_request:
+            request['priority'] = log_request['priority']
         if 'chunks' in log_request and len(log_request['chunks']):
             request['chunks'] = []
             for chunk in log_request['chunks']:
