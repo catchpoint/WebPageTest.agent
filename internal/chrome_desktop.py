@@ -148,7 +148,7 @@ class ChromeDesktop(DesktopBrowser, DevtoolsBrowser):
         if len(ENABLE_BLINK_FEATURES):
             args.append('--enable-blink-features=' + ','.join(ENABLE_BLINK_FEATURES))
         if task['running_lighthouse']:
-            args.append('--headless')
+            args.append('--headless=new')
         
         if 'extensions' in job:
             extensions = job['extensions'].split(',')
