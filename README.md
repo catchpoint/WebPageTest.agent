@@ -70,6 +70,7 @@ There are separate lines of development under different licenses (pull requests 
 * `--ec2`: Load config settings from EC2 user data.
 * `--gce`: Load config settings from GCE user data.
 * `--log`: Log critical errors to the given file.
+* `--rsyslog`: Log to a given IP address' syslog via UDP on the default port '514'.
 * `--noidle`: Doesn't wait for system idle at any point.
 
 * `--healthcheckport`: HTTP Health check port (defaults to 8889). Set to 0 to disable. Returns 200 if the agent is running and communicating with the server, 503 otherwise.

@@ -17,6 +17,10 @@ import subprocess
 import sys
 import time
 import traceback
+
+from internal import os_util
+from internal.logging_filter import LoggingFilter
+
 if (sys.version_info >= (3, 0)):
     GZIP_TEXT = 'wt'
 else:
@@ -28,7 +32,7 @@ except BaseException:
 
 class WPTAgent(object):
     """Main agent workflow"""
-    def __init__(self, options, browsers):
+    def __init__(self, options, browsers, log_filter):
         from internal.browsers import Browsers
         from internal.webpagetest import WebPageTest
         from internal.traffic_shaping import TrafficShaper
@@ -44,7 +48,7 @@ class WPTAgent(object):
         self.task = None
         self.xvfb = None
         self.root_path = os.path.abspath(os.path.dirname(__file__))
-        self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
+        self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"), log_filter)
         self.persistent_work_dir = self.wpt.get_persistent_dir()
         self.adb = Adb(self.options, self.persistent_work_dir) if self.options.android else None
         self.ios = iOSDevice(self.options.device) if self.options.iOS else None
@@ -115,7 +119,7 @@ class WPTAgent(object):
                 logging.error("Unable to start the health check server")
                 return
             self.wpt.health_check_server = self.health_check_server
-    
+
         # If we are using a pubsub scription, start the listening thread
         subscriber = None
         streaming_pull_future = None
@@ -1081,6 +1085,8 @@ def main():
                         help="Watchdog file to update when successfully connected.")
     parser.add_argument('--log',
                         help="Log critical errors to the given file.")
+    parser.add_argument('--rsyslog',
+                        help="Log to a given IP address' syslog via UDP on the default port '514'.")
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
@@ -1225,6 +1231,20 @@ def main():
     logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
                         datefmt="%H:%M:%S")
 
+    log_filter = None
+    if options.rsyslog and platform.system() == "Linux":
+        address = (options.rsyslog, logging.handlers.SYSLOG_UDP_PORT)
+        syslog_handler = logging.handlers.SysLogHandler(address)
+
+        location = '' if options.location is None else options.location
+        agent_name = os_util.pc_name() if options.name is None else options.name
+        log_filter = LoggingFilter(location, agent_name)
+        syslog_handler.addFilter(log_filter)
+
+        formatter = logging.Formatter("wptagent %(location)s %(agent_name)s %(test_id)s: %(message)s")
+        syslog_handler.setFormatter(formatter)
+        logging.getLogger().addHandler(syslog_handler)
+
     if options.log:
         err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
                                                        backupCount=5, delay=True)
@@ -1252,7 +1272,7 @@ def main():
     if options.collectversion and platform.system() == "Windows":
         get_browser_versions(browsers)
 
-    agent = WPTAgent(options, browsers)
+    agent = WPTAgent(options, browsers, log_filter)
     if agent.startup(browsers):
         # Create a work directory relative to where we are running
         logging.critical("Running agent, hit Ctrl+C to exit")

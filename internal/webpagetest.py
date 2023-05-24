@@ -56,7 +56,7 @@ DEFAULT_JPEG_QUALITY = 30
 class WebPageTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
-    def __init__(self, options, workdir):
+    def __init__(self, options, workdir, log_filter):
         import requests
         self.fetch_queue = multiprocessing.JoinableQueue()
         self.fetch_result_queue = multiprocessing.JoinableQueue()
@@ -78,6 +78,7 @@ class WebPageTest(object):
         self.log_formatter = logging.Formatter(fmt="%(asctime)s.%(msecs)03d - %(message)s",
                                                datefmt="%H:%M:%S")
         self.log_handler = None
+        self.log_filter = log_filter
         # Configurable options
         self.work_servers = []
         self.needs_zip = []
@@ -488,6 +489,12 @@ class WebPageTest(object):
         self.raw_job = dict(test_json)
         if job is not None:
             try:
+                if self.log_filter:
+                    if 'saas_test_id' in job:
+                        self.log_filter.set_test_id(job['saas_test_id'])
+                    else:
+                        self.log_filter.set_test_id(job['Test ID'])
+
                 logging.debug("Job: %s", json.dumps(job))
                 # set some default options
                 job['agent_version'] = self.version
@@ -749,6 +756,7 @@ class WebPageTest(object):
         """Tell the server that we have started the test. Used when the queueing isn't handled directly by the server responsible for a test"""
         if 'work_server' in job and 'Test ID' in job:
             try:
+                logging.info("Test started")
                 url = job['work_server'] + 'started.php?id=' + quote_plus(job['Test ID'])
                 proxies = {"http": None, "https": None}
                 self.session.get(url, timeout=30, proxies=proxies)
