@@ -563,9 +563,20 @@ class NetEm(object):
                     subprocess.call(['sudo', 'tc', 'qdisc', 'add', 'dev', self.interface,
                                      'ingress'])
                     subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
-                                     'ffff:', 'protocol', 'ip', 'u32', 'match', 'u32', '0', '0',
+                                     'ffff:', 'protocol', 'ip', 'prio', '2', 'u32', 'match', 'u32', '0', '0',
                                      'flowid', '1:1', 'action', 'mirred', 'egress', 'redirect',
                                      'dev', 'ifb0'])
+                    subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
+                                     'ffff:', 'protocol', 'ip', 'prio', '1',
+                                     'u32', 'match', 'ip', 'protocol', '17', '0xff',
+                                     'match', 'ip', 'dport', '514', '0xffff',
+                                     'flowid', '1:1', 'action', 'pass'])
+                    subprocess.call(['sudo', 'tc', 'filter', 'add', 'dev', self.interface, 'parent',
+                                     'ffff:', 'protocol', 'ip', 'prio', '1',
+                                     'u32', 'match', 'ip', 'protocol', '6', '0xff',
+                                     'match', 'ip', 'dport', '22', '0xffff',
+                                     'match', 'ip', 'sport', '22', '0xffff',
+                                     'flowid', '1:1', 'action', 'pass'])
                 # Turn off tcp offload acceleration on the interfaces
                 try:
                     subprocess.call(['sudo', 'ethtool', '-K', self.interface, 'tso', 'off', 'gso', 'off', 'gro', 'off'])
