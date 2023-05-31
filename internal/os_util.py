@@ -60,6 +60,7 @@ def flush_dns():
         subprocess.call(['sudo', 'service', 'dnsmasq', 'restart'])
         subprocess.call(['sudo', 'rndc', 'restart'])
         subprocess.call(['sudo', 'systemd-resolve', '--flush-caches'])
+        subprocess.call(['sudo', 'resolvectl', 'flush-caches'])
 
 # pylint: disable=E0611,E0401
 def run_elevated(command, args, wait=True):
