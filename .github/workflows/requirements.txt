@@ -14,5 +14,6 @@ wsaccel
 ujson
 future
 brotli
+xvfbwrapper
 google-cloud-storage
 google-cloud-pubsub
