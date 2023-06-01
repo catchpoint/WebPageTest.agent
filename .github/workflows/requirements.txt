@@ -11,8 +11,8 @@ monotonic
 tornado
 fonttools
 wsaccel
-xvfbwrapper
 ujson
-selenium
+future
+brotli
 google-cloud-storage
 google-cloud-pubsub
