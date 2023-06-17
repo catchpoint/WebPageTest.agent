@@ -2,7 +2,7 @@
 
 To run the agent, simply specify a few environment variables with docker:
 
-- `SERVER_URL`: will be passed as `--server` (note: it must end with '/work/')
+- `SERVER_URL`: will be passed as `--server` (note: it must end with `/work/`)
 - `LOCATION`: will be passed as `--location`
 - `KEY`: will be passed as `--key`
 - `NAME`: will be passed as `--name` (optional)
@@ -24,7 +24,7 @@ sudo modprobe ifb numifbs=1
 Also, the container needs `NET_ADMIN` capabilities, so run the container with 
 `--cap-add=NET_ADMIN`.
 
-To disable traffic-shaping, pass SHAPER="none".
+To disable traffic-shaping, pass `SHAPER="none"`.
 
 ## Container Disk Space Fills Up Quickly
 
