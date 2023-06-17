@@ -38,7 +38,7 @@ jobs:
 
     - name: Analysing the code with pylint
       run: |
-       find -name "*.py" -not -path "./ws4py/*" -exec pylint {} --errors-only \;
+       git ls-files --cached -z -- '*.php' ':!:tests/' | xargs --null -L 1 -- pylint --errors-only
 
     - name: Test with pytest
       run: |
