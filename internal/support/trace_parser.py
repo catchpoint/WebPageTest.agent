@@ -6059,6 +6059,24 @@ BLINK_FEATURES = {
     "4578": "LongAnimationFrameRequested",
     "4579": "FedCmLoginHint",
     "4580": "FedCmRpContext",
+    "4581": "EventTimingArtificialPointerupOrClick",
+    "4582": "AbortSignalAny",
+    "4583": "FedCmIdpSigninStatusApi",
+    "4584": "FedCmIdpSigninStatusJsApi",
+    "4585": "ExecCommand",
+    "4586": "WebGPUQueueSubmit",
+    "4587": "WebGPUCanvasContextGetCurrentTexture",
+    "4588": "EditContext",
+    "4589": "ServiceWorkerStaticRouter_RegisterRouter",
+    "4590": "ServiceWorkerStaticRouter_Evaluate",
+    "4591": "ClientHintsUAFormFactor",
+    "4592": "URLSearchParamsHasFnBehaviourDiverged",
+    "4593": "URLSearchParamsDeleteFnBehaviourDiverged",
+    "4594": "TextWrapPretty",
+    "4595": "TextWrapPrettyFail",
+    "4596": "ContainerQueryEvalUnknown",
+    "4597": "EventTimingPresentationPromiseResolvedAfterReport",
+    "4598": "GetCoalescedEventsInInsecureContext",
 }
 
 ##########################################################################
@@ -6779,6 +6797,8 @@ CSS_FEATURES = {
     "761": "CSSPropertyScrollStartTarget",
     "762": "CSSPropertyTimelineScope",
     "763": "CSSPropertyScrollbarColor",
+    "764": "CSSPropertyWordBoundaryDetection",
+    "765": "CSSPropertyPositionFallbackBounds",
 }
 
 if '__main__' == __name__:
