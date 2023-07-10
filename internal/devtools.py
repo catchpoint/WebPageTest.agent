@@ -1247,7 +1247,7 @@ class DevTools(object):
                 if key in ['id', 'name', 'origin'] and len(value):
                     for id in self.execution_contexts:
                         context = self.execution_contexts[id]
-                        if key in context and context[key] == value:
+                        if key in context and str(context[key]) == str(value):
                             self.execution_context = id
                             break
         else:
