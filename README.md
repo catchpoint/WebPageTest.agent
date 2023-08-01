@@ -141,37 +141,6 @@ The test result is written as JSON to `stdout`. If a server, location, and key a
 - `--testruns`: Number of runs to test. Defaults to 1.
 - `--testrv`: Include repeat view (defaults to only testing first view)
 
-### Running the container
-
-The `Dokerfile`` has multi-stage definition:
-* **production**: Default stage, produce a image without debug features;
-* **debug**: When running the produced image the wptagent script will wait for a debug to.attach
-
-arguments can be passed at build time:
-* **TIMEZONE**: to set the timezone inside the container
-* **
-
-To build the production container
-```sh
-docker build --tag wptagent .
-```
-To build the debug container
-```sh
-docker build --target debug --tag wptagent-debug .
-```
-
-The entrypoint is `docker\linux-headless\entrypoint.sh` that has some of the above parameters as default: `--xvfb`, `--dockerized`, `-vvvv`.
-Mandatory parameters are required via environment variables:
-* **SERVER_URL**: corresponding to `--server` parameter;
-* **LOCATION**: corresponding to `--location` parameter.
-
-Additional parameters can be passed. A typical run in debug mode looks like this
-
-```sh
-docker run --network="host" -e SERVER_URL=http://127.0.0.1:80/work/ -e LOCATION=Test wptagent-debug --key 123456789
-```
-
-where `-vvvv` and `--key` are optional parameters passed to the wptagent script.
 ## Supported features
 
 The following [Script Commands](https://docs.webpagetest.org/scripting/) are supported on Windows, Linux, Mac, and Android:

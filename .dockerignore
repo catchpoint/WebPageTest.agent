@@ -9,6 +9,7 @@ docs
 test
 
 # unused script and files
+README.md
 alive.bat
 browsers.ini.sample
 centos_install.sh

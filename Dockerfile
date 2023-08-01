@@ -18,15 +18,7 @@ FROM ubuntu:22.04 as production
 ARG TIMEZONE=UTC
 
 ### UPDATE ###
-RUN apt update
-
-### COPYING ENTIRE DIR TO LOCAL DOCKER /wptagent ###
-# see .dockerignore for filterd out folders
-COPY / /wptagent
-
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
-
-### UPDATE ###
 RUN apt update 
 
 ### INSTALL APT-GET LIBS ###
@@ -39,22 +31,28 @@ RUN ln -fs /usr/share/zoneinfo/$TIMEZONE /etc/localtime && DEBIAN_FRONTEND=nonin
     python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev \
     libtool libvorbis-dev pkg-config texi2html libtext-unidecode-perl python3-numpy python3-scipy perl \
     adb ethtool nodejs cmake git-core libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget \
-    ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans ffmpeg npm sudo curl
+    ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans ffmpeg npm sudo curl xvfb
 
 ### UPDATE FONT CACHE ###
 RUN fc-cache -f -v
-
-### UPGRADING PIP AND INSTALLING REQUIRED PACKAGES ###
-RUN python3 -m pip install --upgrade --user pip && \
-    python3 -m pip install --user -r /wptagent/.github/workflows/requirements.txt 
 
 ### INSTALLING LIGHTHOUSE FROM NPM ###
 RUN npm install -g lighthouse
 
 ### INSTALLING CHROME BROWSER ###
-RUN curl -o google-chrome-stable_current_amd64.deb  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt install -y /google-chrome-stable_current_amd64.deb && rm /google-chrome-stable_current_amd64.deb
+RUN curl -o /tmp/google-chrome-stable_current_amd64.deb  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt install -y /tmp/google-chrome-stable_current_amd64.deb && rm /tmp/google-chrome-stable_current_amd64.deb
 
+### UPGRADING PIP AND INSTALLING REQUIRED PACKAGES ###
+COPY /.github/workflows/requirements.txt /tmp/agent_requirements.txt
+RUN python3 -m pip install --upgrade --user pip && \
+    python3 -m pip install --user -r /tmp/agent_requirements.txt && \
+    rm /tmp/agent_requirements.txt
+
+### COPYING ENTIRE DIR TO LOCAL DOCKER /wptagent ###
+# see .dockerignore for filterd out folders
+# source copy last so we don't need to rebuild all the other layers 
+COPY / /wptagent
 WORKDIR /wptagent
 
 ENTRYPOINT ["/bin/sh", "/wptagent/docker/linux-headless/entrypoint.sh"]
@@ -62,10 +60,11 @@ ENTRYPOINT ["/bin/sh", "/wptagent/docker/linux-headless/entrypoint.sh"]
 ### DEBUG CONTAINER ###
 FROM production as debug
 
+### INSTALLING DEBUG DEPENDENCIES ###
 RUN pip install debugpy
 
+### COPY DEBUG AGENT AND MOVE REAL ONE ###
 RUN mv wptagent.py wptagent_starter.py
-
 COPY wptagent_debug.py wptagent.py
 
 ### SETTING PRODUCTION BUILD AS DEFAULT ###
