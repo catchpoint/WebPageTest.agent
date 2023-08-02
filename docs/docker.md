@@ -7,16 +7,23 @@ The `Dockerfile` has multi-stage definition:
 ## Build the Image
 
 Arguments can be passed at build time:
-* **TIMEZONE**: to set the timezone inside the container
+* **TIMEZONE**: to set the timezone inside the container. Default `UTC.`
 
-To build the production container
+To build the production container with UTC timezone
 ```bash
 docker build --tag wptagent .
 ```
+
+changing the timezone at build time
+```bash
+docker build --build-arg TIMEZONE=EST .
+```
+
 To build the debug container
 ```bash
 docker build --target debug --tag wptagent-debug .
 ```
+
 ## Prerequisites to use traffic shaping in docker
 **Experimental**: Running the agent with traffic shaping is experimental. It might
 have influence on the host system network. Running multiple agents on the
