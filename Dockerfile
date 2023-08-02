@@ -23,7 +23,7 @@ RUN apt update
 
 ### INSTALL APT-GET LIBS ###
 # DEBIAN_FRONTEND prevents interactive prompts while installing
-# set default timezone before end to avoid user interaction for tzdata package
+# set default timezone beforehand to avoid user interaction for tzdata package
 RUN ln -fs /usr/share/zoneinfo/$TIMEZONE /etc/localtime && DEBIAN_FRONTEND=noninteractive apt install -y \
     python3 python3-pip python3-ujson \
     imagemagick dbus-x11 traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools openvpn \
