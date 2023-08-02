@@ -1,8 +1,8 @@
 # Docker Linux Headless Agent
 
-The `Dokerfile` has multi-stage definition:
+The `Dockerfile` has multi-stage definition:
 * **production**: Default stage, produce a image without debug features;
-* **debug**: When running the produced image the wptagent script will wait for a debug to.attach
+* **debug**: When running the produced image the wptagent script will wait for a debugger to.attach
 
 ## Build the Image
 
