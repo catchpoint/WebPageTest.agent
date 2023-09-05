@@ -8,6 +8,7 @@
 import atexit
 import logging
 import logging.handlers
+from internal.rfc5424logging import Rfc5424SysLogHandler, logging_context
 import os
 import platform
 import gzip
@@ -1058,6 +1059,64 @@ def get_browser_versions(browsers):
             browsers[browser]['version'] = get_file_version(exe)
 
 
+# Constant used for --loglevel command line parameter mapping
+# Limited on purpose to python logging levels to allow easily to change the
+# handler if needed.
+LOG_LEVEL_MAPPING = {
+    "critical": logging.CRITICAL,
+    "error": logging.ERROR,
+    "warning": logging.WARNING,
+    "info": logging.INFO,
+    "debug": logging.DEBUG
+}
+
+def setup_logging(verbosity=0, logging_level=None, log_file=None):
+    """Setup logging according to passed command line values"""
+
+    # logging_level has priority over other parameters.
+    # When specified the logging to file will be the only allowed type of logging.
+    # Must be used in conjunction with log_file.
+    if logging_level != None and log_file != None:
+        logger = logging.getLogger()
+        logger.setLevel(LOG_LEVEL_MAPPING[logging_level])
+        handler = Rfc5424SysLogHandler( \
+            address=None, \
+            socktype=None, \
+            framing=None, \
+            msg_as_utf8=True, \
+            appname="wptagent", \
+            # Currently used just for versioning
+            enterprise_id="1", \
+            utc_timestamp=True, \
+            stream=open(log_file, "a+", encoding="utf-8") \
+            )
+
+        logger.addHandler(handler)
+        logger.debug("Rfc5424SysLogHandler initialized", extra=logging_context().as_extra({"msg_as_utf8": True}))
+    else:
+        # Set log level and legacy format
+        basic_log_level = logging.CRITICAL
+        if verbosity == None:
+            pass # default critical
+        elif verbosity == 1:
+            basic_log_level = logging.ERROR
+        elif verbosity == 2:
+            basic_log_level = logging.WARNING
+        elif verbosity == 3:
+            basic_log_level = logging.INFO
+        elif verbosity >= 4:
+            basic_log_level = logging.DEBUG
+        logging.basicConfig(level=basic_log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
+                            datefmt="%H:%M:%S")
+
+        # If file is specified without logging_level legacy behavior is to add
+        # a self rotating file with just errors level or above.
+        if log_file:
+            err_log = logging.handlers.RotatingFileHandler(log_file, maxBytes=1000000,
+                                                        backupCount=5, delay=True)
+            err_log.setLevel(logging.ERROR)
+            logging.getLogger().addHandler(err_log)
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -1069,7 +1128,7 @@ def main():
     parser.add_argument('--name', help="Agent name (for the work directory).")
     parser.add_argument('--exit', type=int, default=0,
                         help='Exit after the specified number of minutes.\n'
-                        '    Useful for running in a shell script that does some maintenence\n'
+                        '    Useful for running in a shell script that does some maintenance\n'
                         '    or updates periodically (like hourly).')
     parser.add_argument('--dockerized', action='store_true', default=False,
                         help="Agent is running in a docker container.")
@@ -1080,7 +1139,17 @@ def main():
     parser.add_argument('--alive',
                         help="Watchdog file to update when successfully connected.")
     parser.add_argument('--log',
-                        help="Log critical errors to the given file.")
+                        help="Output the logs to the given file."
+                         "When used in conjunction with --loglevel option, the log entries will be in rfc5424 format "
+                         "Using UTC timestamps."
+                         "For backward compatibility if --loglevel is not specified only critical errors will be logged "
+                         "to the file with the historic non standard format")
+    parser.add_argument('--loglevel',
+                        help="Must be used in conjunction with --log otherwise takes no effect."
+                        "Controls the log level of the rfc5424 logging."
+                        "When specified no other logging will be enabled.",
+                        type=str.lower,
+                        choices=LOG_LEVEL_MAPPING.keys())
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
@@ -1213,23 +1282,7 @@ def main():
         exit(1)
 
     # Set up logging
-    log_level = logging.CRITICAL
-    if options.verbose == 1:
-        log_level = logging.ERROR
-    elif options.verbose == 2:
-        log_level = logging.WARNING
-    elif options.verbose == 3:
-        log_level = logging.INFO
-    elif options.verbose >= 4:
-        log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
-                        datefmt="%H:%M:%S")
-
-    if options.log:
-        err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
-                                                       backupCount=5, delay=True)
-        err_log.setLevel(logging.ERROR)
-        logging.getLogger().addHandler(err_log)
+    setup_logging(options.verbose, options.loglevel, options.log)
 
     if options.ec2 or options.gce:
         upgrade_pip_modules()
