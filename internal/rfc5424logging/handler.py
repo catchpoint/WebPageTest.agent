@@ -8,7 +8,7 @@ from logging import Handler
 
 from pytz import utc
 
-from rfc5424logging import transport
+from . import transport
 
 NILVALUE = '-'
 
@@ -106,6 +106,7 @@ class Rfc5424SysLogHandler(Handler):
             tls_client_key=None,
             tls_key_password=None,
             stream=None,
+            file_name=None
     ):
         """
         Returns a new instance of the Rfc5424SysLogHandler class intended to communicate with
@@ -191,6 +192,10 @@ class Rfc5424SysLogHandler(Handler):
             stream (io.BufferedIOBase, file, io.TextIOBase):
                 Optionally a stream object to send the message to. See https://docs.python.org/3/library/io.html
                 for details.
+            file_name:
+                Optionally a file where to log in utf8 format. The file is assumed to be rotated by an external service
+                so eventually is reopened if the file_name point to a different file on each write.
+                Useful on UNIX systems.
         """
         super(Rfc5424SysLogHandler, self).__init__()
 
@@ -215,6 +220,7 @@ class Rfc5424SysLogHandler(Handler):
         self.tls_client_key = tls_client_key
         self.tls_key_password = tls_key_password
         self.stream = stream
+        self.file_name = file_name
         self.transport = None
 
         from tzlocal import get_localzone
@@ -231,7 +237,9 @@ class Rfc5424SysLogHandler(Handler):
         self._setup_transport()
 
     def _setup_transport(self):
-        if self.stream is not None:
+        if self.file_name is not None:
+            self.transport = transport.RotatedFileTransport(self.file_name)
+        elif self.stream is not None:
             self.transport = transport.StreamTransport(self.stream)
         elif isinstance(self.address, str):
             self.transport = transport.UnixSocketTransport(self.address, self.socktype)

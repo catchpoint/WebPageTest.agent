@@ -1088,7 +1088,7 @@ def setup_logging(verbosity=0, logging_level=None, log_file=None):
             # Currently used just for versioning
             enterprise_id="1", \
             utc_timestamp=True, \
-            stream=open(log_file, "a+", encoding="utf-8") \
+            file_name=log_file \
             )
 
         logger.addHandler(handler)

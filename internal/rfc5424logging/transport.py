@@ -2,6 +2,8 @@ import io
 import socket
 import ssl
 import sys
+import os
+from stat import ST_DEV, ST_INO
 
 if sys.version_info.major == 3:
     text_stream_types = io.TextIOBase
@@ -200,3 +202,47 @@ class StreamTransport:
     def close(self):
         # Closing the stream is left up to the user.
         pass
+
+
+class RotatedFileTransport(StreamTransport):
+    """Transport that allow an external process to rotate the file used as transport"""
+
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.identifier = None
+        StreamTransport.__init__(self, self._start())
+
+    def _start(self):
+        """
+        Stat the transport opening the file and storing its stats.
+        """
+        stream = open(self.file_name, "a+", encoding="utf-8")
+
+        # using fileno instead of _makeId in case in being rotated just now
+        file_stats = os.fstat(stream.fileno())
+        self.identifier = (file_stats[ST_DEV], file_stats[ST_INO])
+        return stream
+
+    def _makeId(self):
+        try:
+            file_stats = os.stat(self.file_name)
+            return (file_stats[ST_DEV], file_stats[ST_INO])
+        except FileNotFoundError:
+            return None
+
+    def _reopenIfRotated(self):
+        """
+        If the stats of the file changed, reopens it.
+        """
+        if self.identifier != self._makeId():
+            if self.stream is not None:
+                self.close()
+                self.stream = self._start()
+
+    def transmit(self, syslog_msg):
+        self._reopenIfRotated()
+        StreamTransport.transmit(self, syslog_msg)
+
+    def close(self):
+        self.stream.flush()
+        self.stream.close()
