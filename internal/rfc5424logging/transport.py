@@ -154,7 +154,7 @@ class UnixSocketTransport:
             socket_types = [self.socket_type]
 
         for type_ in socket_types:
-            # Syslog server may be unavailable during handler initialisation.
+            # Syslog server may be unavailable during handler initialization
             # So we ignore connection errors
             try:
                 self.socket = socket.socket(socket.AF_UNIX, type_)
@@ -214,7 +214,7 @@ class RotatedFileTransport(StreamTransport):
 
     def _start(self):
         """
-        Stat the transport opening the file and storing its stats.
+        Start opening the file and storing its stats as ID.
         """
         stream = open(self.file_name, "a+", encoding="utf-8")
 
