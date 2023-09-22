@@ -17,3 +17,5 @@ brotli
 xvfbwrapper
 google-cloud-storage
 google-cloud-pubsub
+pytz
+tzlocal
