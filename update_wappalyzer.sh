@@ -1,5 +1,5 @@
 #!/bin/bash
-git clone --depth 1 -b master https://github.com/wappalyzer/wappalyzer.git wappalyzer
+git clone --depth 1 -b master https://github.com/HTTPArchive/wappalyzer.git wappalyzer
 rm internal/support/Wappalyzer/technologies/*.json
 rm internal/support/Wappalyzer/*.json
 rm internal/support/Wappalyzer/wappalyzer.js
