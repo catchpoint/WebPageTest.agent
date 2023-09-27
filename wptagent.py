@@ -489,6 +489,7 @@ class WPTAgent(object):
 
         # Optional imports
         self.requires('fontTools', 'fonttools')
+        self.requires('pytz')
         self.requires('tzlocal')
 
         # Try patching ws4py with a faster lib
