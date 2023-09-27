@@ -8,7 +8,6 @@
 import atexit
 import logging
 import logging.handlers
-from internal.rfc5424logging import Rfc5424SysLogHandler, logging_context
 import os
 import platform
 import gzip
@@ -490,6 +489,8 @@ class WPTAgent(object):
 
         # Optional imports
         self.requires('fontTools', 'fonttools')
+        self.requires('pytz')
+        self.requires('tzlocal')
 
         # Try patching ws4py with a faster lib
         try:
@@ -1091,6 +1092,7 @@ def setup_logging(verbosity=0, log_format=None, log_file=None):
             logging.getLogger().addHandler(err_log)
     else:
         if log_format == "syslog" and log_file is not None:
+            from internal.rfc5424logging import Rfc5424SysLogHandler, logging_context
             logger = logging.getLogger()
             logger.setLevel(basic_log_level)
             handler = Rfc5424SysLogHandler( \
