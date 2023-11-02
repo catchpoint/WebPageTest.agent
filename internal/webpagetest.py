@@ -574,8 +574,11 @@ class WebPageTest(object):
                     job['location'] = self.options.location
                 if self.scheduler_node is not None and 'saas_test_id' in job:
                     job['saas_node_id'] = self.scheduler_node
+                if self.scheduler_node is not None and 'instant_test_id' in job:
+                    job['saas_node_id'] = self.scheduler_node
+                    
                 # For CLI tests, write out the raw job file
-                if self.options.testurl or self.options.testspec or 'saas_test_id' in job:
+                if self.options.testurl or self.options.testspec or 'saas_test_id' in job or 'intant_test_id' in job:
                     if not os.path.isdir(self.workdir):
                         os.makedirs(self.workdir)
                     job_path = os.path.join(self.workdir, 'job.json')
@@ -954,6 +957,17 @@ class WebPageTest(object):
                         task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
                     else:
                         task['page_data']['saas_device_type_id'] = 0
+                # Pass-through the Instant test fields
+                if 'instant_test_id' in job:
+                    task['page_data']['instant_test_id'] = job['instant_test_id']
+                    if 'saas_node_id' in job:
+                        task['page_data']['saas_node_id'] = job['saas_node_id']
+                    if 'saas_device_type_id' in job:
+                        task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
+                    else:
+                        task['page_data']['saas_device_type_id'] = 0
+                    if 'instant_division_id' in job:
+                        task['page_data']['instant_division_id'] = job['instant_division_id']
                 self.test_run_count += 1
         if task is None and self.job is not None:
             self.upload_test_result()
