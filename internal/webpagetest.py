@@ -578,7 +578,7 @@ class WebPageTest(object):
                     job['saas_node_id'] = self.scheduler_node
                     
                 # For CLI tests, write out the raw job file
-                if self.options.testurl or self.options.testspec or 'saas_test_id' in job or 'intant_test_id' in job:
+                if self.options.testurl or self.options.testspec or 'saas_test_id' in job or 'instant_test_id' in job:
                     if not os.path.isdir(self.workdir):
                         os.makedirs(self.workdir)
                     job_path = os.path.join(self.workdir, 'job.json')
