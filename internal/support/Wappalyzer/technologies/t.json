@@ -114,6 +114,23 @@
     ],
     "website": "https://www.thgingenuity.com"
   },
+  "THRON": {
+    "cats": [
+      95
+    ],
+    "description": "THRON is a digital asset management platform that provides a centralised hub for storing, organising, and distributing digital assets like images, videos, and documents.",
+    "dom": "link[href*='.thron.com/'], img[src*='.thron.com/']",
+    "icon": "THRON.png",
+    "js": {
+      "THRONPlayer": "",
+      "thronHlsJs": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.thron.com"
+  },
   "TN Express Web": {
     "cats": [
       1
@@ -199,7 +216,7 @@
     "icon": "TWiki.png",
     "implies": "Perl",
     "scriptSrc": "(?:TWikiJavascripts|twikilib(?:\\.min)?\\.js)",
-    "website": "http://twiki.org"
+    "website": "https://twiki.org"
   },
   "TYPO3 CMS": {
     "cats": [
@@ -207,17 +224,16 @@
     ],
     "cpe": "cpe:2.3:a:typo3:typo3:*:*:*:*:*:*:*:*",
     "description": "TYPO3 is a free and open-source Web content management system written in PHP.",
-    "html": [
-      "<link[^>]+ href=\"/?typo3(?:conf|temp)/",
-      "<img[^>]+ src=\"/?typo3(?:conf|temp)/",
-      "<!--\n\tThis website is powered by TYPO3"
-    ],
+    "dom": "link[href*='typo3conf'], link[href*='typo3temp'], img[src*='typo3conf'], img[src*='typo3temp']",
     "icon": "TYPO3.svg",
     "implies": "PHP",
     "meta": {
       "generator": "TYPO3\\s+(?:CMS\\s+)?(?:[\\d.]+)?(?:\\s+CMS)?"
     },
     "oss": true,
+    "probe": {
+      "/typo3/sysext/core/Resources/Public/Images/typo3_orange.svg": ""
+    },
     "scriptSrc": "^/?typo3(?:conf|temp)/",
     "url": "/typo3/",
     "website": "https://typo3.org/"
@@ -307,6 +323,9 @@
     "cats": [
       36
     ],
+    "cookies": {
+      "taboola_session_id": ""
+    },
     "description": "Taboola is a content discovery & native advertising platform for publishers and advertisers.",
     "dom": {
       "link[href*='.taboola.com']": {
@@ -317,8 +336,8 @@
     },
     "icon": "Taboola.svg",
     "js": {
+      "TRCImpl.global": "",
       "_taboola": "",
-      "_taboolaNetworkMode": "",
       "taboola_view_id": ""
     },
     "pricing": [
@@ -395,6 +414,26 @@
     "scriptSrc": "\\.tagboard\\.com/",
     "website": "https://tagboard.com"
   },
+  "Tagembed": {
+    "cats": [
+      96,
+      5
+    ],
+    "description": "Tagembed is a social media aggregator that collects and displays engaging user-generated content from any social media network such as Instagram, Facebook, Twitter, Youtube, Tiktok, Google Reviews, Airbnb, and 18+ networks.",
+    "dom": "script[data-src*='widget.tagembed.com/']",
+    "icon": "Tagembed.svg",
+    "js": {
+      "TagembedWidget": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "//widget\\.tagembed\\.com/",
+    "website": "https://tagembed.com"
+  },
   "Taggbox": {
     "cats": [
       5
@@ -429,7 +468,7 @@
     "js": {
       "taigaConfig": ""
     },
-    "website": "http://taiga.io"
+    "website": "https://taiga.io"
   },
   "Tail": {
     "cats": [
@@ -556,7 +595,7 @@
     ],
     "html": "<link [^>]*href=\"http://tamago\\.temonalab\\.com",
     "icon": "Tamago.png",
-    "website": "http://tamago.temonalab.com"
+    "website": "https://tamago.temonalab.com"
   },
   "Tamara": {
     "cats": [
@@ -623,6 +662,23 @@
     "scriptSrc": "cdn\\.tapcart\\.com/",
     "website": "https://tapcart.com"
   },
+  "Tapfiliate": {
+    "cats": [
+      71
+    ],
+    "description": "Tapfiliate is a cloud-based affiliate marketing software that helps businesses to create, track, and optimise their own affiliate marketing programs.",
+    "icon": "Tapfiliate.svg",
+    "js": {
+      "TapfiliateObject": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.tapfiliate\\.com/",
+    "website": "https://tapfiliate.com"
+  },
   "Target2Sell": {
     "cats": [
       76
@@ -658,7 +714,7 @@
     ],
     "saas": true,
     "scriptSrc": "//embed\\.tawk\\.to",
-    "website": "http://tawk.to"
+    "website": "https://tawk.to"
   },
   "Teachable": {
     "cats": [
@@ -714,7 +770,7 @@
       "^(?:https?:)?//tags\\.tiqcdn\\.com/",
       "/tealium/utag\\.js$"
     ],
-    "website": "http://tealium.com"
+    "website": "https://tealium.com"
   },
   "Tealium AudienceStream": {
     "cats": [
@@ -738,6 +794,23 @@
     "dom": "script#__tealiumGDPRecScript,div#__tealiumGDPRecModal",
     "icon": "Tealium.png",
     "website": "https://docs.tealium.com/platforms/getting-started/consent-management"
+  },
+  "TeamBrain": {
+    "cats": [
+      5
+    ],
+    "description": "TeamBrain is a knowledge management solution which allows to use a self-learning dynamic FAQ on a website or widget on the bottom right of any page.",
+    "dom": "link[href*='//teambrain.app/']",
+    "icon": "TeamBrain.png",
+    "js": {
+      "TeamBrainExternalApp": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.teambrain.io"
   },
   "TeamCity": {
     "cats": [
@@ -815,7 +888,7 @@
     "js": {
       "Telescope": ""
     },
-    "website": "http://telescopeapp.org"
+    "website": "https://telescopeapp.org"
   },
   "Tencent Analytics (腾讯分析)": {
     "cats": [
@@ -871,7 +944,7 @@
       "Server": "Tengine"
     },
     "icon": "Tengine.png",
-    "website": "http://tengine.taobao.org"
+    "website": "https://tengine.taobao.org"
   },
   "Termly": {
     "cats": [
@@ -956,7 +1029,7 @@
     "meta": {
       "generator": "Textpattern"
     },
-    "website": "http://textpattern.com"
+    "website": "https://textpattern.com"
   },
   "The Arena Group": {
     "cats": [
@@ -969,6 +1042,22 @@
     },
     "saas": true,
     "website": "https://thearenagroup.net"
+  },
+  "The Church Co": {
+    "cats": [
+      51
+    ],
+    "description": "The Church Co is a church-focused website development platform that provides tools and features specifically designed to support the growth and online presence of churches and religious organisations.",
+    "icon": "The Church Co.png",
+    "meta": {
+      "generator": "^THECHURCHCO\\s([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://thechurchco.com"
   },
   "The Events Calendar": {
     "cats": [
@@ -1106,7 +1195,7 @@
       "PHP",
       "Symfony"
     ],
-    "website": "http://thelia.net"
+    "website": "https://thelia.net"
   },
   "Theme Freesia Edge": {
     "cats": [
@@ -1567,6 +1656,67 @@
     "scriptSrc": "thix\\.ttsep\\.com/",
     "website": "https://www.thesistesting.com"
   },
+  "ThimPress Course Review": {
+    "cats": [
+      87
+    ],
+    "description": "Course Review is a WordPress plugin by ThimPress. Course Review gives students the opportunity to evaluate and provide feedback in order to improve the course.",
+    "dom": "link[href*='/wp-content/plugins/learnpress-course-review/']",
+    "icon": "ThimPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/learnpress-course-review"
+  },
+  "ThimPress Course Wishlist": {
+    "cats": [
+      87
+    ],
+    "description": "Course Wishlist is a WordPress plugin by ThimPress. Course Wishlist bring wishlist feature for LearnPress.",
+    "dom": "link[href*='/wp-content/plugins/learnpress-wishlist/']",
+    "icon": "ThimPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": [
+      "WordPress",
+      "ThimPress LearnPress"
+    ],
+    "website": "https://wordpress.org/plugins/learnpress-wishlist"
+  },
+  "ThimPress Gradebook": {
+    "cats": [
+      87
+    ],
+    "description": "Gradebook is a WordPress plugin by ThimPress. Gradebook add-on for LearnPress makes it easier to track the students learning progress and result.",
+    "dom": "link[href*='/wp-content/plugins/learnpress-gradebook/']",
+    "icon": "ThimPress.svg",
+    "pricing": [
+      "onetime"
+    ],
+    "requires": [
+      "WordPress",
+      "ThimPress LearnPress"
+    ],
+    "website": "https://thimpress.com/product/gradebook-add-on-for-learnpress"
+  },
+  "ThimPress LearnPress": {
+    "cats": [
+      87,
+      21
+    ],
+    "description": "LearnPress is a WordPress LMS plugin by ThimPress.",
+    "dom": "link[href*='/wp-content/plugins/learnpress/']",
+    "icon": "ThimPress.svg",
+    "pricing": [
+      "freemium",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/learnpress/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://wordpress.org/plugins/learnpress"
+  },
   "Thimatic": {
     "cats": [
       90,
@@ -1627,7 +1777,7 @@
     "icon": "ThinkPHP.png",
     "implies": "PHP",
     "oss": true,
-    "website": "http://www.thinkphp.cn"
+    "website": "https://www.thinkphp.cn"
   },
   "Thinkific": {
     "cats": [
@@ -1663,6 +1813,21 @@
     "saas": true,
     "scriptSrc": "\\.online-metrix\\.net",
     "website": "https://risk.lexisnexis.com/products/threatmetrix"
+  },
+  "Three.js": {
+    "cats": [
+      25
+    ],
+    "description": "Three.js is a cross-browser JavaScript library and application programming interface used to create and display animated 3D computer graphics in a web browser using WebGL.",
+    "dom": "canvas[data-engine*='three.js']",
+    "icon": "Three.js.svg",
+    "js": {
+      "THREE.REVISION": "^(.+)$\\;version:\\1",
+      "__THREE__": "^(.+)$\\;version:\\1"
+    },
+    "oss": true,
+    "scriptSrc": "three(?:\\.min)?\\.js",
+    "website": "https://threejs.org"
   },
   "Threekit": {
     "cats": [
@@ -1834,7 +1999,7 @@
       "generator": "^TiddlyWiki$",
       "tiddlywiki-version": "^(.+)$\\;version:\\1"
     },
-    "website": "http://tiddlywiki.com"
+    "website": "https://tiddlywiki.com"
   },
   "Tidio": {
     "cats": [
@@ -1870,6 +2035,20 @@
     "saas": true,
     "website": "https://www.tiendanube.com"
   },
+  "Tiiny Host": {
+    "cats": [
+      62
+    ],
+    "description": "Tiiny Host is a web hosting service for static sites with support for custom domains, SSL, password protection, and built-in analytics.",
+    "icon": "Tiiny Host.png",
+    "pricing": [
+      "low",
+      "recurring",
+      "freemium"
+    ],
+    "scriptSrc": "(?://|\\.)tiiny\\.(?:host|site)/",
+    "website": "https://tiiny.host"
+  },
   "TikTok Pixel": {
     "cats": [
       10
@@ -1902,7 +2081,23 @@
       "generator": "^Tiki"
     },
     "scriptSrc": "(?:/|_)tiki",
-    "website": "http://tiki.org"
+    "website": "https://tiki.org"
+  },
+  "Tiktak Pro": {
+    "cats": [
+      6
+    ],
+    "description": "Tiktak Pro is an all-in-one ecommerce platform from Tunisia.",
+    "icon": "Tiktak Pro.svg",
+    "meta": {
+      "author": "^tiktak-themes$"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://tiktakpro.tn"
   },
   "Tilda": {
     "cats": [
@@ -1950,7 +2145,7 @@
       "Timeplot": ""
     },
     "scriptSrc": "timeplot.*\\.js",
-    "website": "http://www.simile-widgets.org/timeplot/"
+    "website": "https://www.simile-widgets.org/timeplot/"
   },
   "Timify": {
     "cats": [
@@ -1992,6 +2187,25 @@
     },
     "scriptSrc": "/tiny_?mce(?:\\.min)?\\.js",
     "website": "https://www.tiny.cloud/tinymce/"
+  },
+  "Tinybird": {
+    "cats": [
+      10
+    ],
+    "description": "Tinybird is a cloud-native data processing platform that allows developers and data teams to build real-time data pipelines and perform complex data transformations and analysis at scale.",
+    "icon": "Tinybird.svg",
+    "js": {
+      "Tinybird": ""
+    },
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "\\.tinybird.co/js/index\\.js"
+    ],
+    "website": "https://www.tinybird.co/"
   },
   "Tippy.js": {
     "cats": [
@@ -2036,6 +2250,18 @@
     "saas": true,
     "website": "https://www.tiqets.com/affiliate"
   },
+  "Tistory": {
+    "cats": [
+      1,
+      11
+    ],
+    "description": "Tistory is a South Korean blog-publishing service that allows private or multi-user blogs.",
+    "icon": "Tistory.svg",
+    "js": {
+      "TistoryBlog": ""
+    },
+    "website": "https://tistory.com"
+  },
   "Titan": {
     "cats": [
       36
@@ -2045,7 +2271,26 @@
       "titan": "",
       "titanEnabled": ""
     },
-    "website": "http://titan360.com"
+    "website": "https://titan360.com"
+  },
+  "Tolt": {
+    "cats": [
+      71
+    ],
+    "description": "Tolt is an affiliate marketing software designed for SaaS startups.",
+    "icon": "Tolt.svg",
+    "js": {
+      "toltAPI": "\\.tolt\\.io/",
+      "tolt_referral": "",
+      "toltio": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.tolt\\.io/",
+    "website": "https://tolt.io"
   },
   "TomTom Maps": {
     "cats": [
@@ -2072,7 +2317,7 @@
     "meta": {
       "generator": "TomatoCart"
     },
-    "website": "http://tomatocart.com"
+    "website": "https://tomatocart.com"
   },
   "TornadoServer": {
     "cats": [
@@ -2082,7 +2327,7 @@
       "Server": "TornadoServer(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "TornadoServer.png",
-    "website": "http://tornadoweb.org"
+    "website": "https://tornadoweb.org"
   },
   "TotalCode": {
     "cats": [
@@ -2092,7 +2337,7 @@
       "X-Powered-By": "^TotalCode$"
     },
     "icon": "TotalCode.png",
-    "website": "http://www.totalcode.com"
+    "website": "https://www.totalcode.com"
   },
   "Totango": {
     "cats": [
@@ -2167,7 +2412,7 @@
     ],
     "icon": "Trac.png",
     "implies": "Python",
-    "website": "http://trac.edgewall.org"
+    "website": "https://trac.edgewall.org"
   },
   "TrackJs": {
     "cats": [
@@ -2180,7 +2425,7 @@
       "trackJs": ""
     },
     "scriptSrc": "cdn\\.trackjs\\.com",
-    "website": "http://trackjs.com"
+    "website": "https://trackjs.com"
   },
   "Trackify X": {
     "cats": [
@@ -2272,7 +2517,7 @@
       "poa"
     ],
     "saas": true,
-    "website": "http://www.transcend.io"
+    "website": "https://www.transcend.io"
   },
   "Transcy": {
     "cats": [
@@ -2414,10 +2659,11 @@
   },
   "Triggerbee": {
     "cats": [
-      76
+      76,
+      10
     ],
     "description": "Triggerbee is an onsite personalisation platform that lets you use customer and behavioral data to build and launch personalised campaigns.",
-    "icon": "Triggerbee.png",
+    "icon": "Triggerbee.svg",
     "js": {
       "triggerbee": ""
     },
@@ -2426,6 +2672,7 @@
       "recurring"
     ],
     "saas": true,
+    "scriptSrc": "t\\.myvisitors\\.se",
     "website": "https://triggerbee.com"
   },
   "Trinity Audio": {
@@ -2575,6 +2822,18 @@
     "scriptSrc": "cdn\\.nexternal\\.com/",
     "website": "https://www.truecommerce.com"
   },
+  "Truepush": {
+    "cats": [
+      32
+    ],
+    "description": "Truepush is web-based push notification service available for PWA, AMP, WordPress, and Shopify.",
+    "icon": "truepush.svg",
+    "js": {
+      "truepush": "",
+      "truepushVersionInfo.key": "v([\\d\\.]+)\\;version:\\1"
+    },
+    "website": "https://www.truepush.com"
+  },
   "Trumba": {
     "cats": [
       72
@@ -2613,7 +2872,7 @@
     "description": "TrustArc provides software and services to help corporations update their privacy management processes so they comply with government laws and best practices.",
     "icon": "TrustArc.svg",
     "scriptSrc": "consent\\.trustarc\\.com",
-    "website": "http://trustarc.com"
+    "website": "https://trustarc.com"
   },
   "TrustYou": {
     "cats": [
@@ -2645,20 +2904,21 @@
     "scriptSrc": "widgets\\.trustedshops\\.com/",
     "website": "https://www.trustedshops.co.uk"
   },
-  "Trustindex Google Reviews": {
+  "Trustindex": {
     "cats": [
-      87,
       90
     ],
-    "description": "Google Reviews s a premium plugin that can help you to embed reviews on your site by Trustindex.",
-    "dom": "link[href*='/wp-content/plugins/widget-google-reviews/']",
+    "description": "Trustindex is a review management tool that helps businesses effectively manage and monitor customer reviews.",
+    "dom": "link[href*='.trustindex.io/']",
     "icon": "Trustindex.svg",
+    "js": {
+      "Trustindex": ""
+    },
     "pricing": [
-      "onetime"
+      "low",
+      "recurring"
     ],
-    "requires": "WordPress",
     "saas": true,
-    "scriptSrc": "/wp-content/plugins/widget-google-reviews/",
     "website": "https://www.trustindex.io"
   },
   "Trustpilot": {
@@ -2740,7 +3000,7 @@
     "html": "<iframe src=\"[^>]+tumblr\\.com",
     "icon": "Tumblr.png",
     "url": "^https?://(?:www\\.)?[^/]+\\.tumblr\\.com/",
-    "website": "http://www.tumblr.com"
+    "website": "https://www.tumblr.com"
   },
   "Turbo": {
     "cats": [
@@ -3059,7 +3319,18 @@
       "X-Powered-CMS": "Twilight CMS"
     },
     "icon": "Twilight CMS.png",
-    "website": "http://www.twilightcms.com"
+    "website": "https://www.twilightcms.com"
+  },
+  "Twilio Authy": {
+    "cats": [
+      69
+    ],
+    "description": "Twilio Authy provides Two-factor authentication (2FA) adds an additional layer of protection beyond passwords.",
+    "icon": "twilio_authy.svg",
+    "js": {
+      "Authy": ""
+    },
+    "website": "https://authy.com"
   },
   "TwistPHP": {
     "cats": [
@@ -3070,7 +3341,7 @@
     },
     "icon": "TwistPHP.png",
     "implies": "PHP",
-    "website": "http://twistphp.com"
+    "website": "https://twistphp.com"
   },
   "TwistedWeb": {
     "cats": [
@@ -3081,7 +3352,7 @@
     },
     "icon": "TwistedWeb.png",
     "oss": true,
-    "website": "http://twistedmatrix.com/trac/wiki/TwistedWeb"
+    "website": "https://twistedmatrix.com/trac/wiki/TwistedWeb"
   },
   "Twitch Player": {
     "cats": [
@@ -3102,7 +3373,7 @@
     "description": "Twitter is a 'microblogging' system that allows you to send and receive short posts called tweets.",
     "icon": "Twitter.svg",
     "scriptSrc": "//platform\\.twitter\\.com/widgets\\.js",
-    "website": "http://twitter.com"
+    "website": "https://twitter.com"
   },
   "Twitter Ads": {
     "cats": [
@@ -3189,7 +3460,7 @@
       "generator": "typepad"
     },
     "url": "typepad\\.com",
-    "website": "http://www.typepad.com"
+    "website": "https://www.typepad.com"
   },
   "TypeScript": {
     "cats": [
@@ -3214,7 +3485,7 @@
       "generator": "Typecho( [\\d.]+)?\\;version:\\1"
     },
     "url": "/admin/login\\.php?referer=http%3A%2F%2F",
-    "website": "http://typecho.org/"
+    "website": "https://typecho.org/"
   },
   "Typeform": {
     "cats": [
@@ -3251,7 +3522,7 @@
       "recurring"
     ],
     "scriptSrc": "use\\.typekit\\.com",
-    "website": "http://typekit.com"
+    "website": "https://typekit.com"
   },
   "Typof": {
     "cats": [
@@ -3316,20 +3587,6 @@
     "scriptSrc": "\\.adsrvr\\.org/",
     "website": "https://www.thetradedesk.com",
     "xhr": "adsvr\\.org"
-  },
-  "three.js": {
-    "cats": [
-      25
-    ],
-    "description": "Three.js is a cross-browser JavaScript library and application programming interface used to create and display animated 3D computer graphics in a web browser using WebGL.",
-    "icon": "three.js.png",
-    "js": {
-      "THREE.REVISION": "^(.+)$\\;version:\\1",
-      "__THREE__": "^(.+)$\\;version:\\1"
-    },
-    "oss": true,
-    "scriptSrc": "three(?:\\.min)?\\.js",
-    "website": "https://threejs.org"
   },
   "thttpd": {
     "cats": [

@@ -11,7 +11,17 @@
     "html": "<!--[^>]+W3 Total Cache",
     "icon": "W3 Total Cache.png",
     "requires": "WordPress",
-    "website": "http://www.w3-edge.com/wordpress-plugins/w3-total-cache"
+    "website": "https://www.w3-edge.com/wordpress-plugins/w3-total-cache"
+  },
+  "W3.CSS": {
+    "cats": [
+      66
+    ],
+    "description": "W3.CSS is a CSS framework developed by the World Wide Web Consortium (W3C), the main international standards organisation for the World Wide Web.",
+    "dom": "link[href*='/w3.css']",
+    "icon": "W3.CSS.svg",
+    "oss": true,
+    "website": "https://www.w3schools.com/w3css/"
   },
   "W3Counter": {
     "cats": [
@@ -19,7 +29,7 @@
     ],
     "icon": "W3Counter.png",
     "scriptSrc": "w3counter\\.com/tracker\\.js",
-    "website": "http://www.w3counter.com"
+    "website": "https://www.w3counter.com"
   },
   "WEBDEV": {
     "cats": [
@@ -51,6 +61,19 @@
     ],
     "saas": true,
     "website": "https://webxpay.com"
+  },
+  "WEBrick": {
+    "cats": [
+      22
+    ],
+    "cpe": "cpe:2.3:a:ruby-lang:webrick:*:*:*:*:*:*:*:*",
+    "description": "WEBrick is a lightweight HTTP server library in Ruby, included in the standard library, primarily used for local development and testing of Ruby web applications.",
+    "headers": {
+      "Server": "^WEBrick/([\\d\\.]+)\\;version:\\1"
+    },
+    "icon": "Ruby.png",
+    "oss": true,
+    "website": "https://docs.ruby-lang.org/en/2.4.0/WEBrick.html"
   },
   "WEN Themes Education Hub": {
     "cats": [
@@ -99,7 +122,20 @@
       "low",
       "recurring"
     ],
-    "website": "http://www.whmcs.com"
+    "website": "https://www.whmcs.com"
+  },
+  "WP Automatic": {
+    "cats": [
+      87
+    ],
+    "description": "WP Automatic is a WordPress plugin that automates the process of creating posts on your WordPress site by automatically fetching content from various sources like RSS feeds, Amazon, eBay, ClickBank, and more.",
+    "icon": "WP Automatic.png",
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/wp-automatic/",
+    "website": "https://wpautomatic.com"
   },
   "WP Engine": {
     "cats": [
@@ -135,6 +171,16 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/cache/wpfc-minified/",
     "website": "https://www.wpfastestcache.com"
+  },
+  "WP Featherlight": {
+    "cats": [
+      87
+    ],
+    "description": "WP Featherlight is a WordPress lightbox plugin for adding a minimal, high-performance, responsive jQuery lightbox to your WordPress website.",
+    "icon": "WP_Featherlight.png",
+    "requires": "WordPress",
+    "scriptSrc": "/wpFeatherlight\\.pkgd\\.min\\.js",
+    "website": "https://wordpress.org/plugins/wp-featherlight"
   },
   "WP Google Map Plugin": {
     "cats": [
@@ -175,6 +221,17 @@
     "scriptSrc": "/wp-content/plugins/wp-job-openings/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://wpjobopenings.com"
   },
+  "WP Live Visitor Counter": {
+    "cats": [
+      87,
+      5
+    ],
+    "description": "WP Live Visitor Counter is a WordPress plugin that displays the number of online visitors on a website in real-time.",
+    "dom": "link[href*='/wp-content/plugins/wp-visitors-widget/']",
+    "icon": "default.svg",
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/wp-visitors-widget/"
+  },
   "WP Maintenance Mode": {
     "cats": [
       87
@@ -188,6 +245,21 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/wp-maintenance-mode/.+wpmm\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://github.com/andrianvaleanu/WP-Maintenance-Mode"
+  },
+  "WP Portfolio": {
+    "cats": [
+      87
+    ],
+    "description": "WP Portfolio is a premium standalone WordPress plugin designed for creating and showcasing portfolios.",
+    "icon": "WP Portfolio.svg",
+    "pricing": [
+      "mid",
+      "recurring",
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/astra-portfolio/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://wpportfolio.net"
   },
   "WP Puzzle Basic": {
     "cats": [
@@ -298,6 +370,7 @@
     ],
     "description": "WP-Statistics is a WordPress plugin which allows you to know your website statistics.",
     "dom": "link[href*='/wp-content/plugins/wp-statistics/']",
+    "html": "<!-- Analytics by WP-Statistics v([\\d\\.]+)\\;version:\\1",
     "icon": "WP-Statistics.svg",
     "js": {
       "WP_Statistics_http": "",
@@ -345,6 +418,28 @@
     "scriptSrc": "/wp-content/plugins/wpforms(?:-lite)?/.+(?:frontend\\.min|wpforms)\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://wpforms.com"
   },
+  "WPML": {
+    "cats": [
+      87,
+      89
+    ],
+    "cookies": {
+      "wp-wpml_current_language": ""
+    },
+    "description": "WPML plugin makes it possible to build and run fully multilingual WordPress sites.",
+    "icon": "WPML.svg",
+    "meta": {
+      "generator": "^WPML\\sver\\:([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/sitepress-multilingual-cms/",
+    "website": "https://wpml.org/"
+  },
   "WPMU DEV Smush": {
     "cats": [
       87
@@ -359,6 +454,18 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/plugins/wp-smushit(?:-pro)?/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://wpmudev.com/project/wp-smush-pro"
+  },
+  "WPS Visitor Counter": {
+    "cats": [
+      87
+    ],
+    "description": "WPS Visitor Counter is a plugin for WordPress that counts the number of visitors to a website.",
+    "icon": "WPS Visitor Counter.png",
+    "js": {
+      "wpspagevisit": ""
+    },
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/wps-visitor-counter/"
   },
   "Wagtail": {
     "cats": [
@@ -427,6 +534,24 @@
     "scriptSrc": "getwair\\.com",
     "website": "https://getwair.com"
   },
+  "Waitlist": {
+    "cats": [
+      5
+    ],
+    "description": "Waitlist is a web-based tool that helps businesses to create a waitlist for their product or service.",
+    "icon": "Waitlist.svg",
+    "js": {
+      "gw_backend_url": "//api\\.getwaitlist\\.com/",
+      "gw_waitlist_name": ""
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "website": "https://www.getwaitlist.com"
+  },
   "Wakav Performance Monitoring": {
     "cats": [
       78
@@ -479,7 +604,62 @@
     },
     "icon": "Warp.png",
     "implies": "Haskell",
-    "website": "http://www.stackage.org/package/warp"
+    "website": "https://www.stackage.org/package/warp"
+  },
+  "Wask": {
+    "cats": [
+      10
+    ],
+    "description": "Wask is a platform that offers businesses a dedicated library code to analyse website visitors, track visitor behaviour, monitor website events, and gather retention cohort data effectively.",
+    "icon": "Wask.svg",
+    "js": {
+      "wask_analytics": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.wask.co"
+  },
+  "Waveform": {
+    "cats": [
+      5
+    ],
+    "description": "Waveform is a media player that supports various media formats, including audio, video, Youtube, and Vimeo, and includes a waveform visualisation feature, utilising Web Audio API and HTML5 Canvas technologies.",
+    "icon": "Waveme.svg",
+    "js": {
+      "Waveform": ""
+    },
+    "requires": "WordPress",
+    "website": "https://music.flatfull.com/waveme/about/"
+  },
+  "Waveme": {
+    "cats": [
+      80
+    ],
+    "description": "Waveme is a WordPress theme that is suitable for individuals or businesses involved in the music industry, such as music producers, record labels, artist managers, or independent artists.",
+    "dom": "link[href*='/wp-content/themes/waveme/']",
+    "icon": "Waveme.svg",
+    "implies": [
+      "Gutenberg",
+      "Waveform"
+    ],
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "website": "https://music.flatfull.com/waveme/about/"
+  },
+  "WayForPay": {
+    "cats": [
+      41
+    ],
+    "description": "WayForPay is a payment processing service provider based in Europe.",
+    "dom": "form[action*='secure.wayforpay.com']",
+    "icon": "WayForPay.svg",
+    "scriptSrc": "secure\\.wayforpay\\.com",
+    "website": "https://wayforpay.com"
   },
   "Wazimo": {
     "cats": [
@@ -491,6 +671,23 @@
       "wz.mmConfig.buildVersion": ""
     },
     "website": "https://wazimo.com"
+  },
+  "WeWeb": {
+    "cats": [
+      51
+    ],
+    "description": "WeWeb is a no-code front-end builder that allows customers to build on-top of any back-end.",
+    "icon": "WeWeb.svg",
+    "js": {
+      "wwg_designInfo.wewebPreviewURL": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.weweb.io"
   },
   "Weaver Xtreme": {
     "cats": [
@@ -558,6 +755,17 @@
     "requires": "WordPress",
     "website": "https://wp.stories.google"
   },
+  "Web Wiz Forums": {
+    "cats": [
+      2
+    ],
+    "description": "Web Wiz Forums is a web-based forum software that enables developers to create and manage online discussion boards or forums for engaging user interactions and community building.",
+    "implies": "Microsoft ASP.NET",
+    "meta": {
+      "generator": "^Web\\sWiz\\sForums(?:\\s([\\d\\.]+))?$\\;version:\\1"
+    },
+    "website": "https://www.webwizforums.com"
+  },
   "Web2py": {
     "cats": [
       18
@@ -574,7 +782,7 @@
       "generator": "^Web2py"
     },
     "scriptSrc": "web2py\\.js",
-    "website": "http://web2py.com"
+    "website": "https://web2py.com"
   },
   "WebAssembly": {
     "cats": [
@@ -585,7 +793,12 @@
       "Content-Type": "application/wasm"
     },
     "icon": "WebAssembly.svg",
+    "js": {
+      "wasmBinary": "",
+      "wasmBinaryFile": ""
+    },
     "oss": true,
+    "scriptSrc": "/wasm_exec\\.js",
     "website": "https://webassembly.org/"
   },
   "WebEngage": {
@@ -643,7 +856,7 @@
     "meta": {
       "generator": "^WebGUI ([\\d.]+)\\;version:\\1"
     },
-    "website": "http://www.webgui.org"
+    "website": "https://www.webgui.org"
   },
   "WebHostUK": {
     "cats": [
@@ -716,7 +929,26 @@
     "meta": {
       "generator": "Incomedia WebSite X5 (\\w+ [\\d.]+)\\;version:\\1"
     },
-    "website": "http://websitex5.com"
+    "website": "https://websitex5.com"
+  },
+  "WebToffee Stripe Payment Plugin for WooCommerce": {
+    "cats": [
+      87
+    ],
+    "description": "WebToffee Stripe Payment Plugin for WooCommerce is a software add-on that allows online retailers using the WooCommerce ecommerce platform to accept payments through the Stripe payment gateway.",
+    "dom": "link[href*='/wp-content/plugins/payment-gateway-stripe-and-woocommerce-integration/']",
+    "icon": "WebToffee.svg",
+    "implies": [
+      "Stripe",
+      "WooCommerce"
+    ],
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "requires": "WordPress",
+    "saas": true,
+    "website": "https://www.webtoffee.com/product/woocommerce-stripe-payment-gateway/"
   },
   "WebZi": {
     "cats": [
@@ -738,6 +970,46 @@
     "saas": true,
     "scriptSrc": "//webzi\\.ir/",
     "website": "https://webzi.ir"
+  },
+  "Webasyst Shop-Script": {
+    "cats": [
+      6
+    ],
+    "description": "Webasyst Shop-Script is a feature-rich PHP ecommerce framework and shopping cart solution.",
+    "icon": "Webasyst Shop-Script.svg",
+    "implies": [
+      "PHP",
+      "MySQL"
+    ],
+    "js": {
+      "shopOrdercallConfigStaticUrl": "/wa-apps/",
+      "shop_cityselect.lib": "/wa-apps/"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.shop-script.com"
+  },
+  "Webeyez": {
+    "cats": [
+      10
+    ],
+    "description": "Webeyez is an ecommerce monitoring and analytics solution designed to assist teams in identifying, alerting, prioritising, and resolving operational and technical issues for revenue recovery.",
+    "icon": "Webeyez.png",
+    "js": {
+      "___WEBEYEZ_CACHE": "",
+      "___WEBEYEZ_REGISTER_ERROR": "",
+      "webeyez_wzPageEntryKey": "",
+      "webeyezstartAll": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "website": "https://www.webeyez.com"
   },
   "Webflow": {
     "cats": [
@@ -798,7 +1070,7 @@
       "webix": ""
     },
     "scriptSrc": "\\bwebix\\.js",
-    "website": "http://webix.com"
+    "website": "https://webix.com"
   },
   "Weblication": {
     "cats": [
@@ -866,6 +1138,23 @@
     "oss": true,
     "website": "https://www.webmin.com"
   },
+  "Webolytics": {
+    "cats": [
+      10,
+      71
+    ],
+    "description": "Webolytics is an open API platform designed to track return on advertising spend.",
+    "icon": "Webolytics.svg",
+    "js": {
+      "webolytics_site_tag": "",
+      "webolytics_webhook_call": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.webolytics.com"
+  },
   "Webpack": {
     "cats": [
       19
@@ -918,7 +1207,7 @@
     "meta": {
       "generator": "WebsPlanet"
     },
-    "website": "http://websplanet.com"
+    "website": "https://websplanet.com"
   },
   "Websale": {
     "cats": [
@@ -928,7 +1217,7 @@
       "websale_ac": ""
     },
     "icon": "Websale.png",
-    "website": "http://websale.de"
+    "website": "https://websale.de"
   },
   "Website Creator": {
     "cats": [
@@ -958,7 +1247,7 @@
     "meta": {
       "generator": "WebsiteBaker"
     },
-    "website": "http://websitebaker2.org/en/home.php"
+    "website": "https://websitebaker2.org/en/home.php"
   },
   "WebsiteBuilder": {
     "cats": [
@@ -997,7 +1286,7 @@
       "WTOptimize": "",
       "WebTrends": ""
     },
-    "website": "http://worldwide.webtrends.com"
+    "website": "https://worldwide.webtrends.com"
   },
   "Webx": {
     "cats": [
@@ -1262,7 +1551,7 @@
     "meta": {
       "generator": "WikkaWiki"
     },
-    "website": "http://wikkawiki.org"
+    "website": "https://wikkawiki.org"
   },
   "WildJar": {
     "cats": [
@@ -1288,7 +1577,7 @@
       "Server": "\\bWinCE\\b"
     },
     "icon": "Microsoft.svg",
-    "website": "http://microsoft.com"
+    "website": "https://microsoft.com"
   },
   "Windows Server": {
     "cats": [
@@ -1299,7 +1588,26 @@
       "Server": "Win32|Win64"
     },
     "icon": "WindowsServer.png",
-    "website": "http://microsoft.com/windowsserver"
+    "website": "https://microsoft.com/windowsserver"
+  },
+  "WineDirect": {
+    "cats": [
+      6
+    ],
+    "description": "WineDirect is an all-in-one ecommerce and POS (Point of Sale) platform that is specifically designed for wineries and wine retailers.",
+    "icon": "WineDirect.svg",
+    "js": {
+      "vin65.checkout": "",
+      "vin65remote": ""
+    },
+    "meta": {
+      "generator": "^WineDirect\\sEcommerce"
+    },
+    "pricing": [
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://www.winedirect.com"
   },
   "Wink": {
     "cats": [
@@ -1312,7 +1620,7 @@
       "wink.version": "^(.+)$\\;version:\\1"
     },
     "scriptSrc": "(?:_base/js/base|wink).*\\.js",
-    "website": "http://winktoolkit.org"
+    "website": "https://winktoolkit.org"
   },
   "Winstone Servlet Container": {
     "cats": [
@@ -1322,7 +1630,7 @@
       "Server": "Winstone Servlet (?:Container|Engine) v?([\\d.]+)?\\;version:\\1",
       "X-Powered-By": "Winstone(?:\\/([\\d.]+))?\\;version:\\1"
     },
-    "website": "http://winstone.sourceforge.net"
+    "website": "https://winstone.sourceforge.net"
   },
   "Wirecard": {
     "cats": [
@@ -1520,7 +1828,7 @@
     "html": "(?:<a href=\"[^>]+wolfcms\\.org[^>]+>Wolf CMS(?:</a>)? inside|Thank you for using <a[^>]+>Wolf CMS)",
     "icon": "Wolf CMS.png",
     "implies": "PHP",
-    "website": "http://www.wolfcms.org"
+    "website": "https://www.wolfcms.org"
   },
   "Woltlab Community Framework": {
     "cats": [
@@ -1529,7 +1837,7 @@
     "icon": "Woltlab Community Framework.png",
     "implies": "PHP",
     "scriptSrc": "WCF\\..*\\.js",
-    "website": "http://www.woltlab.com"
+    "website": "https://www.woltlab.com"
   },
   "WooCommerce": {
     "cats": [
@@ -1631,13 +1939,28 @@
     "scriptSrc": "/wp-content/plugins/woocommerce-gateway-stripe/",
     "website": "https://woocommerce.com/products/stripe"
   },
+  "WooCommerce Subscriptions": {
+    "cats": [
+      87
+    ],
+    "description": "WooCommerce Subscriptions primarily allows you to create and sell subscription products from your WooCommerce shop.",
+    "dom": "link[href*='/wp-content/plugins/woocommerce-subscriptions/']",
+    "icon": "WooCommerce.svg",
+    "implies": "WooCommerce",
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://woocommerce.com/products/woocommerce-subscriptions"
+  },
   "Woopra": {
     "cats": [
       10
     ],
     "icon": "Woopra.png",
     "scriptSrc": "static\\.woopra\\.com",
-    "website": "http://www.woopra.com"
+    "website": "https://www.woopra.com"
   },
   "Woostify": {
     "cats": [
@@ -1744,6 +2067,32 @@
     "scriptSrc": "/wp-content/themes/default/",
     "website": "https://wordpress.org/themes/default"
   },
+  "WordPress Multisite": {
+    "cats": [
+      88
+    ],
+    "description": "A multisite network is a collection of sites that all share the same WordPress installation core files. ",
+    "dom": {
+      "figure[style*='wp-content/uploads']": {
+        "attributes": {
+          "style": "wp-content/uploads/sites/\\d+"
+        }
+      },
+      "img[src*='wp-content/uploads'], img[srcset*='wp-content/uploads'], source[srcset*='wp-content/uploads']": {
+        "attributes": {
+          "src": "wp-content/uploads/sites/\\d+",
+          "srcset": "wp-content/uploads/sites/\\d+"
+        }
+      },
+      "style": {
+        "text": "wp-content/uploads/sites/\\d+"
+      }
+    },
+    "icon": "WordPress.svg",
+    "oss": true,
+    "requires": "WordPress",
+    "website": "https://wordpress.org/documentation/article/create-a-network/"
+  },
   "WordPress Super Cache": {
     "cats": [
       23,
@@ -1756,7 +2105,7 @@
     "html": "<!--[^>]+WP-Super-Cache",
     "icon": "wp_super_cache.png",
     "requires": "WordPress",
-    "website": "http://z9.io/wp-super-cache/"
+    "website": "https://z9.io/wp-super-cache/"
   },
   "WordPress VIP": {
     "cats": [
@@ -2013,7 +2362,7 @@
     "implies": "jQuery",
     "oss": true,
     "scriptSrc": "/jquery\\.wysibb\\.min\\.js",
-    "website": "http://wysibb.com"
+    "website": "https://wysibb.com"
   },
   "wBuy": {
     "cats": [
@@ -2028,6 +2377,22 @@
     "saas": true,
     "scriptSrc": "\\.sistemawbuy\\.com\\.br/",
     "website": "https://www.wbuy.com.br"
+  },
+  "wap.store": {
+    "cats": [
+      6
+    ],
+    "description": "The wap.store provides a range of services for ecommerce businesses, including a platform, a marketplace hub, and a digital agency.",
+    "icon": "wap.store.svg",
+    "implies": "MySQL",
+    "js": {
+      "WapStore.categoria": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.wapstore.com.br"
   },
   "web-vitals": {
     "cats": [
@@ -2054,7 +2419,7 @@
       "DC.title": "webEdition",
       "generator": "webEdition"
     },
-    "website": "http://webedition.de/en"
+    "website": "https://webedition.de/en"
   },
   "wisyCMS": {
     "cats": [

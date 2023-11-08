@@ -25,6 +25,23 @@
     "scriptSrc": "widgets\\.q4app\\.com/widgets/q4\\.cookiemonster\\.([\\d\\.]+)\\.min\\.js\\;version:\\1",
     "website": "https://q4mobile.github.io/q4widgets-jquery-ui/doc_html/q4.cookieMonster.html"
   },
+  "QUIC.cloud": {
+    "cats": [
+      92,
+      23,
+      31
+    ],
+    "description": "QUIC.cloud is a content delivery network (CDN) and optimisation service that uses the QUIC protocol, a next-generation internet transport protocol developed by Google, to deliver content faster and more securely over the internet.",
+    "dns": {
+      "SOA": "\\.quicns\\.(?:net|com)"
+    },
+    "icon": "QUIC.cloud.svg",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://www.quic.cloud"
+  },
   "Qgiv": {
     "cats": [
       111
@@ -241,7 +258,7 @@
     "icon": "question2answer.png",
     "implies": "PHP",
     "scriptSrc": "\\./qa-content/qa-page\\.js\\?([0-9.]+)\\;version:\\1",
-    "website": "http://www.question2answer.org"
+    "website": "https://www.question2answer.org"
   },
   "Queue-it": {
     "cats": [
@@ -270,7 +287,7 @@
     "meta": {
       "generator": "Quick\\.CMS(?: v([\\d.]+))?\\;version:\\1"
     },
-    "website": "http://opensolution.org"
+    "website": "https://opensolution.org"
   },
   "Quick.Cart": {
     "cats": [
@@ -281,7 +298,7 @@
     "meta": {
       "generator": "Quick\\.Cart(?: v([\\d.]+))?\\;version:\\1"
     },
-    "website": "http://opensolution.org"
+    "website": "https://opensolution.org"
   },
   "QuickSell": {
     "cats": [
@@ -297,12 +314,29 @@
     "scriptSrc": "\\.quicksell\\.co/",
     "website": "https://quicksell.co"
   },
+  "Quickbutik": {
+    "cats": [
+      6
+    ],
+    "description": "Quickbutik is an all-in-one ecommerce platform from Sweden.",
+    "icon": "Quickbutik.svg",
+    "meta": {
+      "author": "^Quickbutik$"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.quickbutik\\.com/",
+    "website": "https://quickbutik.com"
+  },
   "Quicklink": {
     "cats": [
       59,
       92
     ],
-    "description": "Quicklink is a JS library which aims to be a drop-in solution for sites to prefetch links based on what is in the user's viewport",
+    "description": "Quicklink is a JS library which aims to be a drop-in solution for sites to prefetch links based on what is in the user's viewport.",
     "icon": "Quicklink.svg",
     "js": {
       "drupalSettings.quicklink": "",
@@ -329,11 +363,40 @@
       24
     ],
     "description": "Quill is a free open-source WYSIWYG editor.",
+    "dom": {
+      "div[class*='ql-editor'], div[class*='quill']": {
+        "exists": ""
+      },
+      "link[href*='cdn.quilljs.com/']": {
+        "attributes": {
+          "href": "cdn\\.quilljs\\.com/([\\d\\.]+)/\\;version:\\1"
+        }
+      }
+    },
     "icon": "Quill.svg",
     "js": {
       "Quill": ""
     },
-    "website": "http://quilljs.com"
+    "website": "https://quilljs.com"
+  },
+  "Quintype": {
+    "cats": [
+      1
+    ],
+    "cookies": {
+      "qtype-session": ""
+    },
+    "description": "Quintype is a digital publishing platform that provides content management, audience engagement, and monetisation solutions for digital media organisations.",
+    "headers": {
+      "link": "fea\\.assettype\\.com/quintype-ace"
+    },
+    "icon": "Quintype.svg",
+    "pricing": [
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.quintype.com"
   },
   "Quora Pixel": {
     "cats": [

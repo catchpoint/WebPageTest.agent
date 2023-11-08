@@ -1,4 +1,17 @@
 {
+  "K-Sup": {
+    "cats": [
+      1
+    ],
+    "description": "K-Sup is an open-source CMS/portal solution dedicated to higher education and research created by Kosmos Education.",
+    "icon": "Kosmos.svg",
+    "implies": "Java",
+    "meta": {
+      "generator": "^K-Sup \\(([\\d.R]+)\\)$\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://www.ksup.org/"
+  },
   "K2": {
     "cats": [
       19
@@ -10,6 +23,21 @@
       "K2RatingURL": ""
     },
     "website": "https://getk2.org"
+  },
+  "KAMAR": {
+    "cats": [
+      21
+    ],
+    "description": "KAMAR is a Student Management System utilised by secondary schools.",
+    "icon": "KAMAR.svg",
+    "js": {
+      "KAMAR.has_address_ben_found": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://kamar.nz"
   },
   "KISSmetrics": {
     "cats": [
@@ -93,6 +121,23 @@
     "oss": true,
     "scriptSrc": "katex(@|/)[0-9.]+(?:/dist)?/katex(?:\\.min)?\\.(mjs|js|css)\\;version:\\1",
     "website": "https://katex.org/"
+  },
+  "Kadence WP Blocks": {
+    "cats": [
+      87
+    ],
+    "description": "Kadence WP Blocks is a plugin for WordPress that provides a collection of custom blocks for the Gutenberg editor, allowing users to create custom layouts and designs for their website without needing to know how to code.",
+    "dom": "link[href*='/wp-content/plugins/kadence-blocks/']",
+    "icon": "Kadence WP.svg",
+    "implies": "Gutenberg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/plugins/kadence-blocks/dist/.+/kb-form-block\\.min\\.js(?:\\?ver=([\\d\\.]+))?\\;version:\\1",
+    "website": "https://www.kadencewp.com/kadence-blocks/"
   },
   "Kadence WP Kadence": {
     "cats": [
@@ -237,6 +282,28 @@
     "scriptSrc": "cdn\\.mykamva\\.ir",
     "website": "https://kamva.ir"
   },
+  "Kapix Studio": {
+    "cats": [
+      51
+    ],
+    "description": "Kapix Studio is a no-code platform that lets anyone build web apps without writing any code.",
+    "icon": "Kapix.svg",
+    "implies": [
+      "Vite",
+      "TypeScript"
+    ],
+    "js": {
+      "__INITIAL_STATE__": "KapixNoCode",
+      "kapixVersion": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://studio.kapix.fr"
+  },
   "Kapture CRM": {
     "cats": [
       52,
@@ -270,13 +337,33 @@
     "scriptSrc": "karma\\.mdpcdn\\.com",
     "website": "https://karma-runner.github.io"
   },
+  "Karte": {
+    "cats": [
+      74,
+      76
+    ],
+    "description": "Karte is a customer engagement and marketing automation platform that enables businesses to understand their customers, deliver personalised experiences, and optimise marketing strategies.",
+    "icon": "Karte.png",
+    "js": {
+      "__KARTE_REWRITE_ADMIN_CONFIG": "",
+      "__karte_live": "",
+      "__karte_loaded": "",
+      "__karte_tracker": ""
+    },
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://karte.io"
+  },
   "Kartra": {
     "cats": [
       32
     ],
     "description": "Kartra is an online business platform that offers marketing and sales tools.",
     "dom": "form[action*='app.kartra.com']",
-    "icon": "Kartra.png",
+    "icon": "Kartra.svg",
     "js": {
       "init_kartra_tracking": "",
       "kartra_tracking_loaded": ""
@@ -288,6 +375,24 @@
     "saas": true,
     "scriptSrc": "app\\.kartra\\.com",
     "website": "https://home.kartra.com"
+  },
+  "Kasada": {
+    "cats": [
+      16
+    ],
+    "cookies": {
+      "KP_UIDz": ""
+    },
+    "description": "Kasada is a cybersecurity company that provides a platform to protect websites and web applications from bot attacks and malicious activities.",
+    "icon": "Kasada.svg",
+    "js": {
+      "KPSDK.configure": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.kasada.io"
   },
   "Keap": {
     "cats": [
@@ -317,6 +422,19 @@
     ],
     "website": "https://www.keendelivery.com"
   },
+  "Keen-Slider": {
+    "cats": [
+      59
+    ],
+    "description": "Keen-Slider is a free library agnostic touch slider with native touch/swipe behavior.",
+    "dom": "div.keen-slider, div.keen-slider__slide",
+    "icon": "keen-slider.svg",
+    "js": {
+      "KeenSlider": ""
+    },
+    "oss": true,
+    "website": "https://keen-slider.io"
+  },
   "Kemal": {
     "cats": [
       18,
@@ -326,7 +444,7 @@
       "X-Powered-By": "Kemal"
     },
     "icon": "kemalcr.png",
-    "website": "http://kemalcr.com"
+    "website": "https://kemalcr.com"
   },
   "Kendo UI": {
     "cats": [
@@ -347,8 +465,8 @@
       1
     ],
     "cookies": {
-      "CMSPreferredCulture": "",
-      "CMSCookieLevel": ""
+      "CMSCookieLevel": "",
+      "CMSPreferredCulture": ""
     },
     "cpe": "cpe:2.3:a:kentico:kentico_cms:*:*:*:*:*:*:*:*",
     "description": "Kentico CMS is a web content management system for building websites, online stores, intranets, and Web 2.0 community sites.",
@@ -367,7 +485,7 @@
       "/CMSPages/GetResource\\.ashx",
       "/kentico\\.resource"
     ],
-    "website": "http://www.kentico.com"
+    "website": "https://www.kentico.com"
   },
   "Keptify": {
     "cats": [
@@ -447,7 +565,7 @@
       "Server": "^keycdn-engine$"
     },
     "icon": "KeyCDN.png",
-    "website": "http://www.keycdn.com"
+    "website": "https://www.keycdn.com"
   },
   "Keybase": {
     "cats": [
@@ -485,14 +603,14 @@
       "Elasticsearch"
     ],
     "url": "kibana#/dashboard/",
-    "website": "http://www.elastic.co/products/kibana"
+    "website": "https://www.elastic.co/products/kibana"
   },
   "Kibo Commerce": {
     "cats": [
       6
     ],
     "description": "Kibo Commerce is a enterprise ecommerce platform  that offers a cloud-based, end-to-end commerce solution for retailers and branded manufacturers.",
-    "icon": "Kibo.png",
+    "icon": "Kibo.svg",
     "pricing": [
       "poa"
     ],
@@ -505,26 +623,39 @@
       74
     ],
     "description": "Kibo Personalization is a omnichannel personalisation software powered by machine learning to deliver individualized customer experiences and powered by Monetate and Certona.",
-    "icon": "Kibo.png",
+    "icon": "Kibo.svg",
     "js": {
       "BaynoteAPI": "",
       "BaynoteJSVersion": "",
       "certona.recommendations": "",
-      "certonaRecommendations": "",
-      "monetate": "",
-      "monetateQ": "",
-      "monetateT": ""
+      "certonaRecommendations": ""
     },
     "pricing": [
       "poa"
     ],
     "saas": true,
     "scriptSrc": [
-      "\\.monetate\\.net",
       "\\.baynote\\.net",
       "\\.certona\\.net"
     ],
     "website": "https://kibocommerce.com/personalization-software"
+  },
+  "Kicksite": {
+    "cats": [
+      53
+    ],
+    "description": "Kicksite is a gym and martial arts member management software with attendance tracking, automated billing, free texting, lead capture forms and more.",
+    "icon": "Kicksite.png",
+    "cookies": {
+      "_kicksite_session": ""
+    },
+    "dom":"iframe[src*='.kicksite.net/']",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://kicksite.com"
   },
   "Kiliba": {
     "cats": [
@@ -714,6 +845,7 @@
     "description": "Klevu is a highly advanced AI-Powered search solution for ecommerce platforms.",
     "icon": "Klevu.png",
     "js": {
+      "klevu.version": "([\\d\\.]+)\\;version:\\1",
       "klevu_apiKey": "",
       "klevu_layout": "",
       "klevu_sessionId": ""
@@ -760,6 +892,20 @@
     "scriptSrc": "analytics\\.klickly\\.com/pixel\\.js\\?v=([\\d\\.]+)\\;version:\\1",
     "website": "https://www.klickly.com"
   },
+  "Knak": {
+    "cats": [
+      75
+    ],
+    "description": "Knak is a platform that provides customisable email and landing page templates to simplify the creation of visually appealing marketing campaigns.",
+    "dom": "img[src*='.knak.io/']",
+    "icon": "Knak.svg",
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://knak.com"
+  },
   "Knockout.js": {
     "cats": [
       12
@@ -770,12 +916,12 @@
       "ko.version": "^(.+)$\\;version:\\1"
     },
     "oss": true,
-    "website": "http://knockoutjs.com"
+    "website": "https://knockoutjs.com"
   },
   "Ko-fi": {
     "cats": [
       5,
-      41
+      111
     ],
     "description": "Ko-fi is an online platform that helps content creators get the financial support.",
     "dom": "a[href*='ko-fi.com/'][target='_blank']",
@@ -802,7 +948,27 @@
     },
     "icon": "Koa.png",
     "implies": "Node.js",
-    "website": "http://koajs.com"
+    "website": "https://koajs.com"
+  },
+  "Koala": {
+    "cats": [
+      10,
+      53
+    ],
+    "description": "Koala is an analytical product with CRM features that helps businesses efficiently identify and track prospects, providing valuable insights and streamlining the sales process.",
+    "icon": "Koala.svg",
+    "js": {
+      "KoalaSDK": ""
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.getkoala\\.com/",
+    "website": "https://getkoala.com/",
+    "xhr": "api\\.getkoala\\.com"
   },
   "Koala Framework": {
     "cats": [
@@ -815,7 +981,7 @@
     "meta": {
       "generator": "^Koala Web Framework CMS"
     },
-    "website": "http://koala-framework.org"
+    "website": "https://koala-framework.org"
   },
   "KobiMaster": {
     "cats": [
@@ -862,7 +1028,7 @@
     },
     "icon": "Kohana.png",
     "implies": "PHP",
-    "website": "http://kohanaframework.org"
+    "website": "https://kohanaframework.org"
   },
   "Koken": {
     "cats": [
@@ -884,7 +1050,7 @@
       "generator": "Koken ([\\d.]+)\\;version:\\1"
     },
     "scriptSrc": "koken(?:\\.js\\?([\\d.]+)|/storage)\\;version:\\1",
-    "website": "http://koken.me"
+    "website": "https://koken.me"
   },
   "Komodo CMS": {
     "cats": [
@@ -895,7 +1061,7 @@
     "meta": {
       "generator": "^Komodo CMS"
     },
-    "website": "http://www.komodocms.com"
+    "website": "https://www.komodocms.com"
   },
   "Konduto": {
     "cats": [
@@ -958,7 +1124,7 @@
     "meta": {
       "generator": "Koobi"
     },
-    "website": "http://dream4.de/cms"
+    "website": "https://dream4.de/cms"
   },
   "Kooboo CMS": {
     "cats": [
@@ -970,7 +1136,7 @@
     "icon": "Kooboo CMS.png",
     "implies": "Microsoft ASP.NET",
     "scriptSrc": "/Kooboo",
-    "website": "http://kooboo.com"
+    "website": "https://kooboo.com"
   },
   "Kooomo": {
     "cats": [
@@ -1000,7 +1166,7 @@
     ],
     "icon": "Kotisivukone.png",
     "scriptSrc": "kotisivukone(?:\\.min)?\\.js",
-    "website": "http://www.kotisivukone.fi"
+    "website": "https://www.kotisivukone.fi"
   },
   "Kotlin": {
     "cats": [
@@ -1055,6 +1221,20 @@
     "dom": "[ng-app='kubernetesDashboard']",
     "icon": "Kubernetes.svg",
     "website": "https://kubernetes.io/"
+  },
+  "Kudobuzz": {
+    "cats": [
+      90
+    ],
+    "description": "Kudobuzz is a tool for collecting and managing customer reviews.",
+    "icon": "kudobuzz.svg",
+    "implies": [
+      "Svelte"
+    ],
+    "js": {
+      "Kudos.apiServer": "api\\.kudobuzz\\.com"
+    },
+    "website": "https://kudobuzz.com/"
   },
   "KueskiPay": {
     "cats": [

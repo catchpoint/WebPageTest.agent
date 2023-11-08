@@ -83,7 +83,7 @@
     },
     "icon": "HHVM.png",
     "implies": "PHP\\;confidence:75",
-    "website": "http://hhvm.com"
+    "website": "https://hhvm.com"
   },
   "HP Compact Server": {
     "cats": [
@@ -93,7 +93,7 @@
       "Server": "HP_Compact_Server(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "HP.svg",
-    "website": "http://hp.com"
+    "website": "https://hp.com"
   },
   "HP iLO": {
     "cats": [
@@ -106,7 +106,7 @@
       "Server": "HP-iLO-Server(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "HP.svg",
-    "website": "http://hp.com"
+    "website": "https://hp.com"
   },
   "HSTS": {
     "cats": [
@@ -152,7 +152,7 @@
     "description": "Haddock is a tool for automatically generating documentation from annotated Haskell source code.",
     "html": "<p>Produced by <a href=\"http://www\\.haskell\\.org/haddock/\">Haddock</a> version ([0-9.]+)</p>\\;version:\\1",
     "scriptSrc": "haddock-util\\.js",
-    "website": "http://www.haskell.org/haddock/"
+    "website": "https://www.haskell.org/haddock/"
   },
   "Halo": {
     "cats": [
@@ -198,14 +198,15 @@
     ],
     "cpe": "cpe:2.3:a:handlebars.js_project:handlebars.js:*:*:*:*:*:*:*:*",
     "description": "Handlebars is a JavaScript library used to create reusable webpage templates.",
-    "html": "<[^>]*type=[^>]text\\/x-handlebars-template",
-    "icon": "Handlebars.png",
+    "dom": "script[type='text/x-handlebars-template']",
+    "icon": "Handlebars.svg",
     "js": {
       "Handlebars": "",
       "Handlebars.VERSION": "^(.+)$\\;version:\\1"
     },
+    "oss": true,
     "scriptSrc": "handlebars(?:\\.runtime)?(?:-v([\\d.]+?))?(?:\\.min)?\\.js\\;version:\\1",
-    "website": "http://handlebarsjs.com"
+    "website": "https://handlebarsjs.com"
   },
   "Handtalk": {
     "cats": [
@@ -349,12 +350,29 @@
     "url": "^https?://[^/]+\\.(?:hashnode)\\.dev",
     "website": "https://hashnode.com/"
   },
+  "Hashtag Labs": {
+    "cats": [
+      36
+    ],
+    "description": "Hashtag Labs is a full-service digital ad operations company.",
+    "dom": "link[href*='//htlbid.com']",
+    "icon": "Hashtag Labs.svg",
+    "js": {
+      "htlbid.cmd": ""
+    },
+    "pricing": [
+      "high",
+      "recurring",
+      "payg"
+    ],
+    "website": "https://hashtag-labs.com"
+  },
   "Haskell": {
     "cats": [
       27
     ],
     "icon": "Haskell.png",
-    "website": "http://wiki.haskell.org/Haskell"
+    "website": "https://wiki.haskell.org/Haskell"
   },
   "Hatena Blog": {
     "cats": [
@@ -381,7 +399,21 @@
       "head.browser.name": ""
     },
     "scriptSrc": "head\\.(?:core|load)(?:\\.min)?\\.js",
-    "website": "http://headjs.com"
+    "website": "https://headjs.com"
+  },
+  "Header Bidding Ai": {
+    "cats": [
+      36
+    ],
+    "description": "Header Bidding Ai is a provider of an automated and managed header bidding solution. Header bidding cutting-edge technique where publishers offer their ad inventory to many ad exchanges.",
+    "icon": "Header Bidding Ai.svg",
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.headerbidding\\.ai/",
+    "website": "https://headerbidding.ai"
   },
   "Headless UI": {
     "cats": [
@@ -530,7 +562,7 @@
     ],
     "saas": true,
     "scriptSrc": "\\.?hellobar\\.(?:com|js)",
-    "website": "http://hellobar.com"
+    "website": "https://hellobar.com"
   },
   "Hello Elementor": {
     "cats": [
@@ -714,6 +746,7 @@
       "SOA": "\\.hetzner\\.com"
     },
     "headers": {
+      "Server": "HeRay",
       "X-Powered-By": "Hetzner"
     },
     "icon": "Hetzner.svg",
@@ -798,7 +831,25 @@
       "Server": "Hiawatha v([\\d.]+)\\;version:\\1"
     },
     "icon": "Hiawatha.png",
-    "website": "http://hiawatha-webserver.org"
+    "website": "https://hiawatha-webserver.org"
+  },
+  "HighLevel": {
+    "cats": [
+      32,
+      53
+    ],
+    "description": "HighLevel is an all-in-one marketing and automation platform designed for marketing agencies and small businesses to manage CRM, marketing campaigns, sales funnels, appointment scheduling, and more.",
+    "icon": "HighLevel.svg",
+    "js": {
+      "leadConnector.chatWidget": ""
+    },
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.leadconnectorhq\\.com/",
+    "website": "https://www.gohighlevel.com"
   },
   "HighStore": {
     "cats": [
@@ -820,7 +871,7 @@
     "cats": [
       25
     ],
-    "description": "Highcharts is a charting library written in pure JavaScript, for adding interactive charts to a website or web application.",
+    "description": "Highcharts is a charting library written in pure JavaScript, for adding interactive charts to a website or web application. Highcharts meets accessibility standards and works with Python, Angular, React, iOS, Android, and more.",
     "html": "<svg[^>]*><desc>Created with Highcharts ([\\d.]*)\\;version:\\1",
     "icon": "Highcharts.svg",
     "js": {
@@ -849,7 +900,7 @@
     "html": "<svg[^>]*><desc>Created with Highstock ([\\d.]*)\\;version:\\1",
     "icon": "Highcharts.svg",
     "scriptSrc": "highstock[.-]?([\\d\\.]*\\d).*\\.js\\;version:\\1",
-    "website": "http://highcharts.com/products/highstock"
+    "website": "https://highcharts.com/products/highstock"
   },
   "HikeOrders": {
     "cats": [
@@ -870,7 +921,7 @@
     "meta": {
       "generator": "hinzacms"
     },
-    "website": "http://hinzaco.com"
+    "website": "https://hinzaco.com"
   },
   "Hireology": {
     "cats": [
@@ -886,6 +937,27 @@
     "saas": true,
     "url": "sites\\.hireology\\.com/",
     "website": "https://hireology.com"
+  },
+  "Hirschmann HiOS": {
+    "cats": [
+      28
+    ],
+    "cpe": "cpe:2.3:o:belden:hirschmann_hios:*:*:*:*:*:*:*:*",
+    "description": "Hirschmann HiOS is an operating system for industrial network equipment.",
+    "dom": {
+      "div": {
+        "text": "(HiSecOS-|HiOS-.+-)(\\d+\\.\\d+\\.\\d+)\\;version:\\2"
+      },
+      "h2": {
+        "text": "(HiSecOS-|HiOS-.+-)(\\d+\\.\\d+\\.\\d+)\\;version:\\2"
+      }
+    },
+    "icon": "hirschmann_OS.png",
+    "requires": [
+      "Java",
+      "Google Web Toolkit"
+    ],
+    "website": "https://hirschmann.com/"
   },
   "Histats": {
     "cats": [
@@ -912,6 +984,21 @@
       "/history(@|/)([\\d.]+)(?:/[a-z]+)?/history(?:(.production|.development))?(?:.min)?\\.js\\;version:\\2"
     ],
     "website": "https://github.com/ReactTraining/history"
+  },
+  "HockeyStack": {
+    "cats": [
+      10
+    ],
+    "description": "HockeyStack is a San Francisco-based analytics and attribution tool for B2B companies.",
+    "icon": "HockeyStack.svg",
+    "js": {
+      "HockeyStack": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://hockeystack.com"
   },
   "Hoefler&Co": {
     "cats": [
@@ -985,6 +1072,18 @@
       "recurring"
     ],
     "website": "https://www.honeybadger.io"
+  },
+  "Hono": {
+    "cats": [
+      18
+    ],
+    "description": "Hono is a small, simple, and ultrafast web framework for the Edge.",
+    "headers": {
+      "X-Powered-By": "Hono"
+    },
+    "icon": "Hono.png",
+    "oss": true,
+    "website": "https://hono.dev"
   },
   "HostEurope": {
     "cats": [
@@ -1079,6 +1178,24 @@
     ],
     "website": "https://www.hostinger.com"
   },
+  "Hostinger Website Builder": {
+    "cats": [
+      51
+    ],
+    "description": "Hostinger Website Builder is a web-based platform that allows users to create and design websites without needing to write code or have extensive technical knowledge.",
+    "icon": "Hostinger.svg",
+    "implies": "Vue.js",
+    "meta": {
+      "generator": "Hostinger Website Builder"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "userapp\\.zyrosite\\.com/",
+    "website": "https://www.hostinger.com"
+  },
   "Hostiq": {
     "cats": [
       88
@@ -1136,7 +1253,7 @@
     "meta": {
       "generator": "Hotaru CMS"
     },
-    "website": "http://hotarucms.org"
+    "website": "https://hotarucms.org"
   },
   "Hotjar": {
     "cats": [
@@ -1309,6 +1426,23 @@
     "requires": "WordPress",
     "website": "https://wordpress.org/plugins/leadin/"
   },
+  "Hubalz": {
+    "cats": [
+      10
+    ],
+    "description": "Hubalz is an all-in-one analytics and marketing tool.",
+    "icon": "Hubalz.png",
+    "js": {
+      "Hubalz.getClickDetails": "",
+      "hubalz_script.noInputTracking": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.hubalz.com"
+  },
   "Huberway": {
     "cats": [
       1
@@ -1342,6 +1476,24 @@
     "scriptSrc": "analytics\\.huberway\\.com/pixel/",
     "website": "https://www.huberway.com/analytics-software"
   },
+  "Huddle": {
+    "cats": [
+      21
+    ],
+    "description": "Huddle is a digital product agency based in Amsterdam, Netherlands, specialising in developing and designing custom software solutions for startups and enterprises, including e-learning products, community platforms, and mobile applications.",
+    "dom": "link[href*='.thehuddle.nl/']",
+    "icon": "Huddle.svg",
+    "js": {
+      "HuddleEvent": "",
+      "HuddleUser": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.thehuddle.nl"
+  },
   "Hugo": {
     "cats": [
       57
@@ -1360,7 +1512,7 @@
       "generator": "Hugo ([\\d.]+)?\\;version:\\1"
     },
     "oss": true,
-    "website": "http://gohugo.io"
+    "website": "https://gohugo.io"
   },
   "HulkApps Age Verification": {
     "cats": [
@@ -1519,6 +1671,22 @@
     "scriptSrc": "\\.hushly\\.com/",
     "website": "https://www.hushly.com"
   },
+  "Hydra-Shield": {
+    "cats": [
+      64
+    ],
+    "description": "Hydra-Shield is an anti-DDoS protection reverse proxy that filters and mitigates malicious traffic to safeguard servers from distributed denial-of-service attacks.",
+    "headers": {
+      "server": "^Hydra-Shield\\sV([\\d\\.]+)$\\;version:\\1"
+    },
+    "icon": "Hydra-Shield.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://hydra-shield.fr"
+  },
   "Hydrogen": {
     "cats": [
       12
@@ -1605,6 +1773,20 @@
     "implies": "Sass",
     "oss": true,
     "website": "https://www.hypestylecss.xyz"
+  },
+  "Hyros": {
+    "cats": [
+      10
+    ],
+    "description": "Hyros is a marketing analytics and optimisation platform.",
+    "icon": "Hyros.svg",
+    "pricing": [
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "scriptSrc": "/v1/lst/universal-script\\?ph\\=",
+    "website": "https://hyros.com"
   },
   "Hyva Themes": {
     "cats": [
