@@ -854,7 +854,12 @@ class DevtoolsBrowser(object):
             else:
                 cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu']) if 'throttle_cpu' in self.job else '1'
                 if self.job['dtShaper']:
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    if self.options.android or ('mobile' in self.job and self.job['mobile']):
+                        # 1.6Mbps down, 750Kbps up, 150ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    else:
+                        # 10Mbps, 40ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '40', '--throttling.downloadThroughputKbps', '1024', '--throttling.uploadThroughputKbps', '1024', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 elif 'throttle_cpu_requested' in self.job and self.job['throttle_cpu_requested'] > 1:
                     command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 else:
