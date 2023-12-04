@@ -221,8 +221,14 @@ class ProcessTest(object):
                                         value = int(value)
                                     elif re.match(r'^[0-9]*\.[0-9]+$', value):
                                         value = float(value)
-                                page_data[name] = value
-                                page_data['custom'].append(name)
+                                if name == 'test_result':
+                                    # Only use a custom value for a test result if it is explicitly set
+                                    if value:
+                                        page_data['result'] = value
+                                        page_data['custom'].append('result')
+                                else:
+                                    page_data[name] = value
+                                    page_data['custom'].append(name)
                             except Exception:
                                 logging.exception('Error processing custom metric %s', name)
         except Exception:
