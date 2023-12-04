@@ -74,7 +74,7 @@
       "Server": "Unix"
     },
     "icon": "UNIX.png",
-    "website": "http://unix.org"
+    "website": "https://unix.org"
   },
   "UPS": {
     "cats": [
@@ -121,7 +121,7 @@
     "icon": "Ubercart.png",
     "implies": "Drupal",
     "scriptSrc": "uc_cart/uc_cart_block\\.js",
-    "website": "http://www.ubercart.org"
+    "website": "https://www.ubercart.org"
   },
   "Ubiliz": {
     "cats": [
@@ -152,7 +152,7 @@
       "X-Powered-By": "Ubuntu"
     },
     "icon": "Ubuntu.svg",
-    "website": "http://www.ubuntu.com/server"
+    "website": "https://www.ubuntu.com/server"
   },
   "Ueeshop": {
     "cats": [
@@ -169,6 +169,45 @@
     ],
     "saas": true,
     "website": "https://www.ueeshop.com"
+  },
+  "Ultimate Addons for Elementor": {
+    "cats": [
+      87
+    ],
+    "description": "Ultimate Addons for Elementor is a plugin that adds new widgets and modules to the Elementor page builder for WordPress, providing additional design options and functionality.",
+    "dom": {
+      "link[href*='/wp-content/plugins/ultimate-elementor/']": {
+        "attributes": {
+          "href": "/wp-content/plugins/ultimate-elementor/.+\\.css(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
+        }
+      }
+    },
+    "icon": "Ultimate Addons for Elementor.svg",
+    "implies": "Elementor",
+    "js": {
+      "uael_particles_script.particles_url": "/wp-content/plugins/ultimate-elementor/"
+    },
+    "pricing": [
+      "onetime",
+      "low",
+      "recurring"
+    ],
+    "requires": "WordPress",
+    "website": "https://ultimateelementor.com"
+  },
+  "Ultimate Bulletin Board": {
+    "cats": [
+      2
+    ],
+    "description": "Ultimate Bulletin Board is an internet forum software designed for online communities, offering features such as user registration, thread organisation, moderation tools, search functionality, and customisable design options to facilitate discussions and community engagement.",
+    "implies": "PHP",
+    "meta": {
+      "generator": "^UBB\\.threads\\s([\\d\\.]+)$\\;version:\\1"
+    },
+    "pricing": [
+      "onetime"
+    ],
+    "website": "https://www.ubbcentral.com"
   },
   "Ultimate GDPR & CCPA": {
     "cats": [
@@ -211,7 +250,7 @@
     },
     "scriptSrc": "cgi-bin\\/UCJavaScript\\?",
     "url": "/cgi-bin/UCEditor\\?",
-    "website": "http://ultracart.com"
+    "website": "https://ultracart.com"
   },
   "Umami": {
     "cats": [
@@ -230,15 +269,22 @@
     "cats": [
       1
     ],
+    "cookies": {
+      "merchello": "\\;version:7"
+    },
     "description": "Umbraco is an open-source Microsoft ASP.NET based content management system.",
-    "dom": "script[src*='/UmbracoForms/']",
+    "dom": [
+      "script[src*='/UmbracoForms/']",
+      "a[data-udi^='umb://']"
+    ],
     "headers": {
       "X-Umbraco-Version": "^(.+)$\\;version:\\1"
     },
-    "icon": "Umbraco.png",
+    "icon": "Umbraco.svg",
     "implies": "Microsoft ASP.NET",
     "js": {
-      "UC_IMAGE_SERVICE|ITEM_INFO_SERVICE": "",
+      "ITEM_INFO_SERVICE": "",
+      "UC_IMAGE_SERVICE": "",
       "UC_ITEM_INFO_SERVICE": "",
       "UC_SETTINGS": "",
       "Umbraco": ""
@@ -269,6 +315,7 @@
       "g_umi.version": "([\\d\\.]+)\\;version:\\1"
     },
     "oss": true,
+    "scriptSrc": "/umi(\\.[\\w\\d]{8})?\\.js",
     "website": "https://umijs.org"
   },
   "Umso": {
@@ -286,6 +333,27 @@
     "scripts": "isPriorBlockingEnabled\\;confidence:75",
     "website": "https://www.umso.com"
   },
+  "Unas": {
+    "cats": [
+      6
+    ],
+    "cookies": {
+      "UnasID": "",
+      "UnasServiceProxyID": ""
+    },
+    "description": "Unas is an all-in-one ecommerce platform from Hungary.",
+    "icon": "Unas.svg",
+    "js": {
+      "UNAS.shop": "",
+      "unas_shop_url": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://unas.hu"
+  },
   "Unbounce": {
     "cats": [
       20,
@@ -297,7 +365,7 @@
     },
     "icon": "Unbounce.png",
     "scriptSrc": "ubembed\\.com",
-    "website": "http://unbounce.com"
+    "website": "https://unbounce.com"
   },
   "Unbxd": {
     "cats": [
@@ -332,7 +400,7 @@
       "_.restArguments": ""
     },
     "scriptSrc": "underscore.*\\.js(?:\\?ver=([\\d.]+))?\\;version:\\1",
-    "website": "http://underscorejs.org"
+    "website": "https://underscorejs.org"
   },
   "Understrap": {
     "cats": [
@@ -350,6 +418,18 @@
     "requires": "WordPress",
     "scriptSrc": "wp-content/themes/understrap(?:[masterchild-]+)?(?:[masterchild-]+)?/",
     "website": "https://understrap.com"
+  },
+  "UniFi OS": {
+    "cats": [
+      28
+    ],
+    "description": "UniFi OS is the operating system for UniFi products, which provides a user interface.",
+    "icon": "UniFi_OS.png",
+    "js": {
+      "unifiConstant.VERSION": "^([\\d+\\.]+)$\\;version:\\1"
+    },
+    "requires": "AngularJS",
+    "website": "https://www.ui.com/"
   },
   "Uniconsent": {
     "cats": [
@@ -440,6 +520,19 @@
     "saas": true,
     "scriptSrc": "www\\.upsellit\\.com/",
     "website": "https://us.upsellit.com"
+  },
+  "UpSolution Zephyr": {
+    "cats": [
+      80
+    ],
+    "description": "Zephyr is a WordPress theme developed by UpSolution, a software development company based in Ukraine that specialises in creating themes and plugins for WordPress.",
+    "icon": "UpSolution.png",
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/Zephyr/.+us\\.theme\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
+    "website": "https://zephyr.us-themes.com"
   },
   "Upfluence": {
     "cats": [
@@ -600,6 +693,19 @@
     "saas": true,
     "website": "https://uscreen.tv/"
   },
+  "User Accessibility": {
+    "cats": [
+      68
+    ],
+    "description": "User Accessibility is a solution incorporating automated site scanning and machine learning for future updates, while utilising JS to conform to WECAG standards for improved website and application accessibility.",
+    "icon": "User Accessibility.svg",
+    "pricing": [
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "//system\\.user-a\\.co\\.il/",
+    "website": "https://user-a.co.il"
+  },
   "UserLike": {
     "cats": [
       52
@@ -622,7 +728,7 @@
       "//userlike-cdn-widgets\\.",
       "api\\.userlike\\.com"
     ],
-    "website": "http://userlike.com"
+    "website": "https://userlike.com"
   },
   "UserReport": {
     "cats": [
@@ -648,7 +754,7 @@
     "js": {
       "_usrp": ""
     },
-    "website": "http://www.userrules.com"
+    "website": "https://www.userrules.com"
   },
   "UserVoice": {
     "cats": [
@@ -666,7 +772,7 @@
     ],
     "saas": true,
     "scriptSrc": "\\.uservoice\\.com/",
-    "website": "http://uservoice.com"
+    "website": "https://uservoice.com"
   },
   "UserWay": {
     "cats": [
@@ -769,7 +875,7 @@
       "Ushahidi": ""
     },
     "scriptSrc": "/js/ushahidi\\.js$",
-    "website": "http://www.ushahidi.com"
+    "website": "https://www.ushahidi.com"
   },
   "Usizy": {
     "cats": [
@@ -798,6 +904,26 @@
     "implies": "Python",
     "oss": true,
     "website": "https://www.uvicorn.org/"
+  },
+  "Uvodo": {
+    "cats": [
+      6
+    ],
+    "description": "Uvodo is an ecommerce platform built with React, PHP, and MySQL, offering local and global payment integration, robust selling tools, and no additional expenses.",
+    "icon": "Uvodo.svg",
+    "implies": [
+      "MySQL",
+      "PHP",
+      "React"
+    ],
+    "pricing": [
+      "freemium",
+      "recurring",
+      "low"
+    ],
+    "saas": true,
+    "scriptSrc": "cdn\\.uvo\\.do/",
+    "website": "https://uvodo.com"
   },
   "uKnowva": {
     "cats": [
@@ -831,6 +957,22 @@
     ],
     "saas": true,
     "website": "https://ulogin.ru"
+  },
+  "uMarketingSuite": {
+    "cats": [
+      10,
+      76
+    ],
+    "description": "uMarketingSuite is a set of diverse features that together form a full marketing suite for the Umbraco platform.",
+    "icon": "uMarketingSuite.svg",
+    "implies": "Umbraco",
+    "js": {
+      "uMarketingSuite": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.umarketingsuite.com"
   },
   "uPlot": {
     "cats": [

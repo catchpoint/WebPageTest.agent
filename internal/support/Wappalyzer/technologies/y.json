@@ -54,7 +54,7 @@
     "description": "UIDoc is a Node.js application used at build time to generate API documentation.",
     "html": "(?:<html[^>]* yuilibrary\\.com/rdf/[\\d.]+/yui\\.rdf|<body[^>]+class=\"yui3-skin-sam)",
     "icon": "Yahoo.svg",
-    "website": "http://developer.yahoo.com/yui/yuidoc"
+    "website": "https://developer.yahoo.com/yui/yuidoc"
   },
   "YaBB": {
     "cats": [
@@ -62,7 +62,7 @@
     ],
     "html": "Powered by <a href=\"[^>]+yabbforum",
     "icon": "YaBB.png",
-    "website": "http://www.yabbforum.com"
+    "website": "https://www.yabbforum.com"
   },
   "Yahoo Advertising": {
     "cats": [
@@ -94,7 +94,7 @@
     "js": {
       "YStore": ""
     },
-    "website": "http://smallbusiness.yahoo.com/ecommerce"
+    "website": "https://smallbusiness.yahoo.com/ecommerce"
   },
   "Yahoo! Tag Manager": {
     "cats": [
@@ -114,7 +114,7 @@
       "YWA": ""
     },
     "scriptSrc": "d\\.yimg\\.com/mi/ywa\\.js",
-    "website": "http://web.analytics.yahoo.com"
+    "website": "https://web.analytics.yahoo.com"
   },
   "YalinHost": {
     "cats": [
@@ -162,6 +162,23 @@
     "scriptSrc": "cdn\\.yampi\\.io/",
     "website": "https://www.yampi.com.br/loja-virtual"
   },
+  "Yandex SmartCaptcha": {
+    "cats": [
+      16
+    ],
+    "description": "Yandex SmartCaptcha is a service for verifying queries to identify user requests and block bots.",
+    "dom": "div#smartcaptcha-status",
+    "headers": {
+      "x-yandex-captcha": ""
+    },
+    "icon": "yandex_smartcaptcha.svg",
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://cloud.yandex.com/en/services/smartcaptcha"
+  },
   "Yandex.Cloud": {
     "cats": [
       62
@@ -196,7 +213,7 @@
       "yandex_partner_id": ""
     },
     "scriptSrc": "https?://an\\.yandex\\.ru/",
-    "website": "http://partner.yandex.com"
+    "website": "https://partner.yandex.com"
   },
   "Yandex.Messenger": {
     "cats": [
@@ -227,17 +244,55 @@
       "mc\\.yandex\\.ru/metrika/(?:tag|watch)\\.js",
       "cdn\\.jsdelivr\\.net/npm/yandex\\-metrica\\-watch/watch\\.js"
     ],
-    "website": "http://metrika.yandex.com"
+    "website": "https://metrika.yandex.com"
+  },
+  "Yapla": {
+    "cats": [
+      111
+    ],
+    "description": "Yapla is a web-based software platform that provides event management and fundraising solutions for non-profit organisations, associations, and event planners.",
+    "dom": "a[href*='\\.yapla\\.com/'][target='_blank']",
+    "icon": "Yapla.png",
+    "js": {
+      "yaplaConsent.cookieName": "yapla-consent"
+    },
+    "meta": {
+      "generator": "^Yapla\\sv([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.yapla.com"
   },
   "Yaws": {
     "cats": [
       22
     ],
+    "description": "Yaws (Yet Another Web Server) is an open-source web server designed to deliver dynamic content efficiently. It was developed by Claes (klacke) Wikström and is written in Erlang, a functional programming language.",
     "headers": {
       "Server": "Yaws(?: ([\\d.]+))?\\;version:\\1"
     },
     "icon": "Yaws.png",
-    "website": "http://yaws.hyber.org"
+    "oss": true,
+    "website": "https://github.com/erlyaws/yaws"
+  },
+  "Ycode": {
+    "cats": [
+      51
+    ],
+    "description": "Ycode is a no-code development platform that allows users to create web and mobile applications without any coding skills.",
+    "dom": "link[href*='.ycodeapp.com/']",
+    "icon": "Ycode.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.ycode.com"
   },
   "Yektanet": {
     "cats": [
@@ -266,7 +321,7 @@
       }
     },
     "icon": "Yelp.svg",
-    "website": "http://yelp.com"
+    "website": "https://yelp.com"
   },
   "Yelp Review Badge": {
     "cats": [
@@ -282,7 +337,7 @@
     },
     "icon": "Yelp.svg",
     "scriptSrc": "yelp\\.com/biz_badge_js",
-    "website": "http://yelp.com"
+    "website": "https://yelp.com"
   },
   "Yepcomm": {
     "cats": [
@@ -310,13 +365,19 @@
   },
   "Yext": {
     "cats": [
-      29
+      29,
+      19
     ],
-    "description": "Yext is a hosted search-as-a-service platform.",
+    "description": "Yext is a technology company that provides a cloud-based platform for managing digital knowledge and online reputation.",
     "dom": "form.yxt-SearchBar-form",
     "icon": "Yext.svg",
     "js": {
-      "ANSWERS._analyticsReporterService._baseUrl": "\\.yext-pixel\\.com"
+      "ANSWERS._analyticsReporterService._baseUrl": "\\.yext-pixel\\.com",
+      "Yext.BaseUrl": "",
+      "YextAnalyticsObject": "",
+      "yext.analytics": "",
+      "yextAnalyticsEnabled": "",
+      "yext_analytics": ""
     },
     "pricing": [
       "high",
@@ -348,7 +409,7 @@
     ],
     "icon": "Yieldlab.png",
     "scriptSrc": "^https?://(?:[^/]+\\.)?yieldlab\\.net/",
-    "website": "http://yieldlab.de"
+    "website": "https://yieldlab.de"
   },
   "Yii": {
     "cats": [
@@ -522,9 +583,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": [
-      "cdn\\.swellrewards\\.com/"
-    ],
+    "scriptSrc": "cdn(?:-loyalty)?\\.(?:swellrewards|yotpo)\\.com/",
     "website": "https://www.yotpo.com/platform/loyalty/"
   },
   "Yotpo Reviews": {
@@ -542,9 +601,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": [
-      "\\.yotpo\\.com/"
-    ],
+    "scriptSrc": "(?!cdn-loyalty)\\.yotpo\\.com/",
     "website": "https://www.yotpo.com/platform/reviews/"
   },
   "Yotpo SMSBump": {
@@ -645,7 +702,7 @@
       "type=\"application/opensearchdescription\\+xml\" title=\"YouTrack\"/>"
     ],
     "icon": "YouTrack.png",
-    "website": "http://www.jetbrains.com/youtrack/"
+    "website": "https://www.jetbrains.com/youtrack/"
   },
   "YouTube": {
     "cats": [
@@ -655,7 +712,19 @@
     "html": "<(?:param|embed|iframe)[^>]+youtube(?:-nocookie)?\\.com/(?:v|embed)",
     "icon": "YouTube.png",
     "scriptSrc": "\\.youtube\\.com/",
-    "website": "http://www.youtube.com"
+    "website": "https://www.youtube.com"
+  },
+  "YunoHost": {
+    "cats": [
+      28
+    ],
+    "cpe": "cpe:2.3:o:yunohost:yunohost:*:*:*:*:*:*:*:*",
+    "description": "YunoHost is a server operating system that is free and open-source, allowing users to host their own web applications, email services, and other online tools. It is based on Debian GNU/Linux.",
+    "icon": "YunoHost.svg",
+    "implies": "Debian",
+    "oss": true,
+    "scriptSrc": "/ynh_portal\\.js",
+    "website": "https://yunohost.org"
   },
   "yellow.ai": {
     "cats": [

@@ -1,4 +1,19 @@
 {
+  "OTYS": {
+    "cats": [
+      101
+    ],
+    "description": "OTYS is a Dutch company that specialises in providing recruitment and staffing agencies with software solutions to manage their workflows, including applicant tracking systems, job board integrations, and candidate sourcing tools.",
+    "icon": "OTYS.svg",
+    "js": {
+      "OTYS.siteId": "",
+      "otysSelect": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.otys.nl"
+  },
   "OVHcloud": {
     "cats": [
       62,
@@ -260,7 +275,7 @@
       "generator": "OctoberCMS"
     },
     "oss": true,
-    "website": "http://octobercms.com"
+    "website": "https://octobercms.com"
   },
   "Octopress": {
     "cats": [
@@ -274,7 +289,7 @@
       "generator": "Octopress"
     },
     "scriptSrc": "/octopress\\.js",
-    "website": "http://octopress.org"
+    "website": "https://octopress.org"
   },
   "Ocuco FitMix": {
     "cats": [
@@ -293,25 +308,26 @@
   },
   "Odoo": {
     "cats": [
-      1,
-      6
+      1
     ],
     "cpe": "cpe:2.3:a:odoo:odoo:*:*:*:*:*:*:*:*",
     "description": "Odoo is business management software which includes CRM, ecommerce, billing, accounting, manufacturing, warehouse, project management, and inventory management.",
     "html": "<link[^>]* href=[^>]+/web/css/(?:web\\.assets_common/|website\\.assets_frontend/)\\;confidence:25",
-    "icon": "Odoo.png",
+    "icon": "Odoo.svg",
     "implies": [
       "Python",
       "PostgreSQL",
-      "Node.js",
       "Less"
     ],
+    "js": {
+      "odoo.session_info": ""
+    },
     "meta": {
       "generator": "Odoo"
     },
     "oss": true,
     "scriptSrc": "/web/js/(?:web\\.assets_common/|website\\.assets_frontend/)\\;confidence:25",
-    "website": "http://odoo.com"
+    "website": "https://odoo.com"
   },
   "Oh Dear": {
     "cats": [
@@ -417,8 +433,9 @@
     "cats": [
       1
     ],
-    "cpe": "cpe:2.3:a:omeka:omeka:*:*:*:*:*:*:*:*:*",
+    "cpe": "cpe:2.3:a:omeka:omeka:*:*:*:*:*:*:*:*",
     "description": "Omeka is a free Content Management System (CMS) used by archives, historical societies, libraries, museums, and individual researchers for publishing digital collections.",
+    "dom": "link[rel*='stylesheet'][href*='css/myomeka.css'], link[rel*='stylesheet'][href*='/omeka/plugins/'], footer > p > a[href*='//omeka.org']",
     "icon": "Omeka.png",
     "js": {
       "Omeka": ""
@@ -625,7 +642,7 @@
     "js": {
       "BWEUM": ""
     },
-    "website": "http://www.oneapm.com"
+    "website": "https://www.oneapm.com"
   },
   "OneAll": {
     "cats": [
@@ -724,7 +741,7 @@
     "js": {
       "OneStat_Pageview": ""
     },
-    "website": "http://www.onestat.com"
+    "website": "https://www.onestat.com"
   },
   "OneTrust": {
     "cats": [
@@ -734,9 +751,6 @@
       "OptanonConsent": ""
     },
     "description": "OneTrust is a cloud-based data privacy management compliance platform.",
-    "dns": {
-      "TXT": "onetrust-domain-verification="
-    },
     "icon": "OneTrust.svg",
     "scriptSrc": [
       "cdn\\.cookielaw\\.org",
@@ -745,7 +759,7 @@
       "cdn\\.cookielaw\\.org",
       "optanon\\.blob\\.core\\.windows\\.net"
     ],
-    "website": "http://www.onetrust.com"
+    "website": "https://www.onetrust.com"
   },
   "Oney": {
     "cats": [
@@ -844,7 +858,7 @@
       "author": "open-classifieds\\.com",
       "copyright": "Open Classifieds ?([0-9.]+)?\\;version:\\1"
     },
-    "website": "http://open-classifieds.com"
+    "website": "https://open-classifieds.com"
   },
   "Open Graph": {
     "cats": [
@@ -870,7 +884,7 @@
     "meta": {
       "generator": "Open Journal Systems(?: ([\\d.]+))?\\;version:\\1"
     },
-    "website": "http://pkp.sfu.ca/ojs"
+    "website": "https://pkp.sfu.ca/ojs"
   },
   "Open Web Analytics": {
     "cats": [
@@ -884,7 +898,7 @@
       "owa_baseUrl": "",
       "owa_cmds": ""
     },
-    "website": "http://www.openwebanalytics.com"
+    "website": "https://www.openwebanalytics.com"
   },
   "Open eShop": {
     "cats": [
@@ -896,7 +910,7 @@
       "author": "open-eshop\\.com",
       "copyright": "Open eShop ?([0-9.]+)?\\;version:\\1"
     },
-    "website": "http://open-eshop.com/"
+    "website": "https://open-eshop.com/"
   },
   "Open-Xchange App Suite": {
     "cats": [
@@ -930,6 +944,19 @@
     "oss": true,
     "website": "https://man.openbsd.org/httpd.8"
   },
+  "OpenCV": {
+    "cats": [
+      59
+    ],
+    "description": "OpenCV (Open Source Computer Vision Library) is an open source computer vision and machine learning software library.",
+    "icon": "OpenCV.svg",
+    "implies": "WebAssembly",
+    "js": {
+      "opencvIsReady": ""
+    },
+    "oss": true,
+    "website": "https://opencv.org"
+  },
   "OpenCart": {
     "cats": [
       6
@@ -938,9 +965,15 @@
       "OCSESSID": ""
     },
     "cpe": "cpe:2.3:a:opencart:opencart:*:*:*:*:*:*:*:*",
-    "icon": "OpenCart.png",
-    "implies": "PHP",
-    "website": "http://www.opencart.com"
+    "description": "OpenCart is a free and open-source ecommerce platform used for creating and managing online stores. It is written in PHP and uses a MySQL database to store information.",
+    "dom": "link[href*='catalog/view/theme/rgen-opencart/']",
+    "icon": "OpenCart.svg",
+    "implies": [
+      "PHP",
+      "MySQL"
+    ],
+    "oss": true,
+    "website": "https://www.opencart.com"
   },
   "OpenCities": {
     "cats": [
@@ -966,7 +999,7 @@
     "implies": "Java",
     "oss": true,
     "scriptSrc": "opencms",
-    "website": "http://www.opencms.org"
+    "website": "https://www.opencms.org"
   },
   "OpenElement": {
     "cats": [
@@ -983,7 +1016,7 @@
       "generator": "openElement\\s\\(([\\d\\.]+)\\)\\;version:\\1"
     },
     "oss": true,
-    "website": "http://openelement.uk"
+    "website": "https://openelement.uk"
   },
   "OpenGSE": {
     "cats": [
@@ -995,7 +1028,7 @@
     },
     "icon": "Google.svg",
     "implies": "Java",
-    "website": "http://code.google.com/p/opengse"
+    "website": "https://code.google.com/p/opengse"
   },
   "OpenGrok": {
     "cats": [
@@ -1009,18 +1042,19 @@
     "meta": {
       "generator": "OpenGrok(?: v?([\\d.]+))?\\;version:\\1"
     },
-    "website": "http://hub.opensolaris.org/bin/view/Project+opengrok/WebHome"
+    "website": "https://hub.opensolaris.org/bin/view/Project+opengrok/WebHome"
   },
   "OpenLayers": {
     "cats": [
       35
     ],
     "description": "OpenLayers is an open-source JavaScript library for displaying map data in web browser.",
-    "icon": "OpenLayers.png",
+    "icon": "OpenLayers.svg",
     "js": {
       "OpenLayers.VERSION_NUMBER": "([\\d.]+)\\;version:\\1",
       "ol.CanvasMap": ""
     },
+    "oss": true,
     "scriptSrc": "openlayers",
     "website": "https://openlayers.org"
   },
@@ -1035,7 +1069,7 @@
     "meta": {
       "generator": "OpenNemas"
     },
-    "website": "http://www.opennemas.com"
+    "website": "https://www.opennemas.com"
   },
   "OpenPay": {
     "cats": [
@@ -1059,7 +1093,7 @@
     "implies": [
       "Nginx"
     ],
-    "website": "http://openresty.org"
+    "website": "https://openresty.org"
   },
   "OpenSSL": {
     "cats": [
@@ -1071,7 +1105,7 @@
       "Server": "OpenSSL(?:/([\\d.]+[a-z]?))?\\;version:\\1"
     },
     "icon": "OpenSSL.png",
-    "website": "http://openssl.org"
+    "website": "https://openssl.org"
   },
   "OpenStreetMap": {
     "cats": [
@@ -1082,6 +1116,19 @@
     "icon": "OpenStreetMap.svg",
     "oss": true,
     "website": "https://www.openstreetmap.org"
+  },
+  "OpenSwoole": {
+    "cats": [
+      18
+    ],
+    "description": "OpenSwoole is a high-performance, asynchronous, event-driven, coroutine-based PHP framework.",
+    "headers": {
+      "Server": "OpenSwoole(?:/([\\d.]+))?\\;version:\\1"
+    },
+    "icon": "OpenSwoole.svg",
+    "implies": "PHP",
+    "oss": true,
+    "website": "https://openswoole.com"
   },
   "OpenTable": {
     "cats": [
@@ -1105,7 +1152,7 @@
     "html": "<!--[^>]+published by Open Text Web Solutions",
     "icon": "OpenText Web Solutions.png",
     "implies": "Microsoft ASP.NET",
-    "website": "http://websolutions.opentext.com"
+    "website": "https://websolutions.opentext.com"
   },
   "OpenUI5": {
     "cats": [
@@ -1116,7 +1163,7 @@
       "sap.ui.version": "^(.+)$\\;version:\\1"
     },
     "scriptSrc": "sap-ui-core\\.js",
-    "website": "http://openui5.org/"
+    "website": "https://openui5.org/"
   },
   "OpenWeb": {
     "cats": [
@@ -1152,7 +1199,7 @@
       "https?://[^/]*\\.openx\\.net",
       "https?://[^/]*\\.servedbyopenx\\.com"
     ],
-    "website": "http://openx.com"
+    "website": "https://openx.com"
   },
   "OperateBeyond": {
     "cats": [
@@ -1165,6 +1212,17 @@
     ],
     "scriptSrc": "//dealer-cdn\\.com/",
     "website": "https://operatebeyond.com/dealer-websites-marketing"
+  },
+  "Opigno LMS": {
+    "cats": [
+      21
+    ],
+    "description": "Opigno LMS is an open-source Learning Management System (LMS) based on Drupal, designed for creating and delivering online courses and educational content.",
+    "icon": "Opigno LMS.svg",
+    "oss": true,
+    "requires": "Drupal",
+    "scripts": "opigno_(?:commerce|wtp_app|scorm|learning_path)",
+    "website": "https://www.opigno.org"
   },
   "OpinionLab": {
     "cats": [
@@ -1266,11 +1324,15 @@
     },
     "cpe": "cpe:2.3:a:episerver:episerver:*:*:*:*:*:*:*:*",
     "description": "Optimizely Content Management (formerly EPiServer) is digital content, ecommerce, and marketing management solution designed for editors and marketers.",
+    "dom": "link[href*='/EPiServer.Forms/']",
     "headers": {
       "content-security-policy": "\\.episerver\\.net"
     },
     "icon": "Optimizely.svg",
     "implies": "Microsoft ASP.NET",
+    "js": {
+      "epi.EPiServer": ""
+    },
     "meta": {
       "generator": "EPiServer"
     },
@@ -1353,7 +1415,7 @@
       "Server": "Oracle[- ]Application[- ]Server(?: Containers for J2EE)?(?:[- ](\\d[\\da-z./]+))?\\;version:\\1"
     },
     "icon": "Oracle.svg",
-    "website": "http://www.oracle.com/technetwork/middleware/ias/overview/index.html"
+    "website": "https://www.oracle.com/technetwork/middleware/ias/overview/index.html"
   },
   "Oracle BlueKai": {
     "cats": [
@@ -1384,7 +1446,7 @@
     },
     "icon": "Oracle.svg",
     "saas": true,
-    "website": "http://www.oracle.com/applications/customer-experience/commerce/products/commerce-platform/index.html"
+    "website": "https://www.oracle.com/applications/customer-experience/commerce/products/commerce-platform/index.html"
   },
   "Oracle Commerce Cloud": {
     "cats": [
@@ -1396,17 +1458,19 @@
       "OracleCommerceCloud-Version": "^(.+)$\\;version:\\1"
     },
     "icon": "Oracle.svg",
-    "website": "http://cloud.oracle.com/commerce-cloud"
+    "website": "https://cloud.oracle.com/commerce-cloud"
   },
   "Oracle Dynamic Monitoring Service": {
     "cats": [
       19
     ],
+    "description": "Oracle Dynamic Monitoring Service is a feature of Oracle WebLogic Server that provides real-time monitoring and diagnostic capabilities for Java applications running on the WebLogic Server.",
     "headers": {
       "x-oracle-dms-ecid": ""
     },
     "icon": "Oracle.svg",
-    "website": "http://oracle.com"
+    "implies": "Oracle WebLogic Server",
+    "website": "https://oracle.com"
   },
   "Oracle HTTP Server": {
     "cats": [
@@ -1417,7 +1481,7 @@
       "Server": "Oracle-HTTP-Server(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "Oracle.svg",
-    "website": "http://oracle.com"
+    "website": "https://oracle.com"
   },
   "Oracle Infinity": {
     "cats": [
@@ -1450,13 +1514,24 @@
     "scriptSrc": "service\\.maxymiser\\.net",
     "website": "https://www.oracle.com/uk/cx/marketing/personalization-testing"
   },
+  "Oracle Moat Measurement": {
+    "cats": [
+      10
+    ],
+    "description": "Oracle Moat delivers solutions that are critical to measuring advertising effectiveness, including verification and attention, reach, and frequency as well as sales lift measurement.",
+    "icon": "Oracle.svg",
+    "scriptSrc": [
+      "moatads\\.com"
+    ],
+    "website": "https://www.oracle.com/cx/advertising/measurement/"
+  },
   "Oracle Recommendations On Demand": {
     "cats": [
       10
     ],
     "icon": "Oracle.svg",
     "scriptSrc": "atgsvcs.+atgsvcs\\.js",
-    "website": "http://www.oracle.com/us/products/applications/commerce/recommendations-on-demand/index.html"
+    "website": "https://www.oracle.com/us/products/applications/commerce/recommendations-on-demand/index.html"
   },
   "Oracle Web Cache": {
     "cats": [
@@ -1468,7 +1543,20 @@
       "Server": "Oracle(?:AS)?[- ]Web[- ]Cache(?:[- /]([\\da-z./]+))?\\;version:\\1"
     },
     "icon": "Oracle.svg",
-    "website": "http://oracle.com"
+    "website": "https://oracle.com"
+  },
+  "Oracle WebLogic Server": {
+    "cats": [
+      22
+    ],
+    "cpe": "cpe:2.3:a:bea:weblogic_server:*:*:*:*:*:*:*:*",
+    "description": "Oracle WebLogic Server is a Java-based application server that provides a platform for developing, deploying, and running enterprise-level Java applications.",
+    "icon": "Oracle.svg",
+    "implies": "Java",
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.oracle.com/java/weblogic/"
   },
   "Orankl": {
     "cats": [
@@ -1558,6 +1646,24 @@
     ],
     "saas": true,
     "website": "https://apps.shopify.com/order-deadline"
+  },
+  "OrderCast": {
+    "cats": [
+      6
+    ],
+    "description": "OrderCast is a B2B ecommerce platform focused on streamlining wholesale operations, offering SKU management, order handling, and customisable online store features for improved customer experience.",
+    "icon": "OrderCast.svg",
+    "implies": [
+      "Python",
+      "React"
+    ],
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "url": "\\.(?:eu|us1)\\.ordercast\\.io/",
+    "website": "https://www.ordercast.io"
   },
   "OrderLogic app": {
     "cats": [
@@ -1663,10 +1769,7 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": [
-      "cookieconsent\\.min\\.js",
-      "cmp\\.osano\\.com/"
-    ],
+    "scriptSrc": "cmp\\.osano\\.com/",
     "website": "https://www.osano.com"
   },
   "Osterreichische Post": {
@@ -1756,7 +1859,7 @@
       "IsOwaPremiumBrowser": ""
     },
     "url": "/owa/auth/log(?:on|off)\\.aspx",
-    "website": "http://help.outlook.com"
+    "website": "https://help.outlook.com"
   },
   "Oxatis": {
     "cats": [
@@ -1863,7 +1966,7 @@
       "PHP",
       "MySQL"
     ],
-    "website": "http://osticket.com"
+    "website": "https://osticket.com"
   },
   "otrs": {
     "cats": [

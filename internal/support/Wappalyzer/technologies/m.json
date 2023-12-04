@@ -39,7 +39,7 @@
       "X-Powered-By": "MATORI.NET"
     },
     "implies": "OpenResty",
-    "website": "http://matori.net"
+    "website": "https://matori.net"
   },
   "MDBootstrap": {
     "cats": [
@@ -47,12 +47,30 @@
     ],
     "description": "MDBootstrap (Material Design for Bootstrap) is a complete UI package that can be integrated with other frameworks such as Angular, React, Vue, etc. It is used to design a fully responsive and mobile-friendly layout using various components, plugins, animation.",
     "icon": "MDBootstrap.png",
+    "implies": "Bootstrap",
     "js": {
       "mdb.ScrollSpy": ""
     },
     "oss": true,
     "scriptSrc": "(?:/mdbootstrap/([\\d\\.]+)/)?js/mdb\\.min\\.js\\;version:\\1",
     "website": "https://mdbootstrap.com"
+  },
+  "MDBootstrap WP theme": {
+    "cats": [
+      80
+    ],
+    "description": "MDBootstrap WP theme is a WordPress theme built on top of the MDBootstrap front-end UI library. It provides a set of pre-designed layouts, widgets, and components that can be easily customised and integrated into WordPress websites.",
+    "dom": {
+      "link[href*='/wp-content/themes/mdbootstrap']": {
+        "attributes": {
+          "href": "/wp-content/themes/mdbootstrap(?:\\d+)?/.+\\.css(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
+        }
+      }
+    },
+    "icon": "MDBootstrap.png",
+    "implies": "MDBootstrap",
+    "requires": "WordPress",
+    "website": "https://mdbgo.com/docs/projects/wordpress/"
   },
   "MDS Brand": {
     "cats": [
@@ -257,7 +275,25 @@
       "setMRefURL": ""
     },
     "scriptSrc": "^https?://(?:ads-by|pixel)\\.madadsmedia\\.com/",
-    "website": "http://madadsmedia.com"
+    "website": "https://madadsmedia.com"
+  },
+  "MadCap Software": {
+    "cats": [
+      96
+    ],
+    "description": "MadCap Software is a company that specialises in creating software tools for technical writers to author and publish various types of content, including user manuals, online help systems, and knowledge bases.",
+    "icon": "MadCap Software.svg",
+    "js": {
+      "MadCap.Accessibility": "",
+      "MadCap.DEBUG": ""
+    },
+    "pricing": [
+      "poa",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.madcapsoftware.com"
   },
   "Magazord": {
     "cats": [
@@ -319,7 +355,7 @@
     },
     "oss": true,
     "probe": {
-      "/magento_version": ""
+      "/magento_version": "magento"
     },
     "scriptSrc": [
       "js/mage",
@@ -334,7 +370,6 @@
       19
     ],
     "description": "Magewire is a Laravel Livewire port for Magento 2.",
-    "icon": "default.svg",
     "implies": [
       "Laravel",
       "Livewire"
@@ -363,6 +398,21 @@
     "scriptSrc": "\\.magisto\\.com/",
     "website": "https://www.magisto.com"
   },
+  "Magixite": {
+    "cats": [
+      68
+    ],
+    "description": "Magixite offers the Web Content Accessibility Guidelines (WCAG), a set of guidelines and requirements designed to help designers and developers improve the accessibility of web content, ensuring it can be effectively used by individuals with disabilities.",
+    "icon": "Magixite.png",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "acc\\.magixite\\.com/",
+    "website": "https://acc.magixite.com"
+  },
   "MailChimp": {
     "cats": [
       32,
@@ -375,10 +425,8 @@
         "spf\\.mandrillapp\\.com"
       ]
     },
+    "dom": "form#mc-embedded-subscribe-form, form[name*='mc-embedded-subscribe-form']",
     "html": [
-      "<form [^>]*data-mailchimp-url",
-      "<form [^>]*id=\"mc-embedded-subscribe-form\"",
-      "<form [^>]*name=\"mc-embedded-subscribe-form\"",
       "<input [^>]*id=\"mc-email\"\\;confidence:20",
       "<!-- Begin MailChimp Signup Form -->"
     ],
@@ -394,7 +442,8 @@
       "cdn-images\\.mailchimp\\.com/[^>]*\\.css",
       "chimpstatic\\.com/mcjs-connected"
     ],
-    "website": "http://mailchimp.com"
+    "url": "^https?://(?:www\\.)?mailchi\\.mp",
+    "website": "https://mailchimp.com"
   },
   "MailChimp for WooCommerce": {
     "cats": [
@@ -520,7 +569,7 @@
       "/mailman\\d+/static/.+\\.js",
       "/static/(?:hyperkitty|django-mailman3)/.+\\.js"
     ],
-    "website": "http://list.org"
+    "website": "https://list.org"
   },
   "Mailmunch": {
     "cats": [
@@ -617,7 +666,7 @@
     "meta": {
       "generator": "Mambo"
     },
-    "website": "http://mambo-foundation.org"
+    "website": "https://mambo-foundation.org"
   },
   "Mangeznotez": {
     "cats": [
@@ -634,13 +683,14 @@
   },
   "Mantine": {
     "cats": [
-      59
+      66
     ],
-    "description": "Mantine is a React components library.",
+    "description": "Mantine is an open-source UI framework and component library for React.",
     "dom": "style[data-emotion='mantine-global'], style[data-emotion='mantine']",
     "icon": "Mantine.svg",
     "implies": "TypeScript",
     "oss": true,
+    "requires": "React",
     "website": "https://mantine.dev"
   },
   "MantisBT": {
@@ -648,10 +698,13 @@
       13
     ],
     "cpe": "cpe:2.3:a:mantisbt:mantisbt:*:*:*:*:*:*:*:*",
-    "html": "<img[^>]+ alt=\"Powered by Mantis Bugtracker",
+    "description": "MantisBT is an open-source, web-based issue tracking system written in PHP with a MySQL database backend, designed to facilitate bug tracking and project management for software development teams.",
+    "dom": "link[rel='stylesheet'][href*='/css/ace-mantis.css']",
     "icon": "MantisBT.png",
-    "implies": "PHP",
-    "website": "http://www.mantisbt.org"
+    "implies": "MySQL",
+    "oss": true,
+    "requires": "PHP",
+    "website": "https://www.mantisbt.org"
   },
   "ManyChat": {
     "cats": [
@@ -708,6 +761,19 @@
     "oss": true,
     "scriptSrc": "mapbox-gl\\.js",
     "website": "https://github.com/mapbox/mapbox-gl-js"
+  },
+  "Mapbox.js": {
+    "cats": [
+      35
+    ],
+    "description": "Mapbox.js is a JavaScript library provided by Mapbox for working with interactive maps and geospatial data.",
+    "dom": "link[href*='api.mapbox.com/']",
+    "icon": "Mapbox.svg",
+    "implies": "Leaflet",
+    "oss": true,
+    "scriptSrc": "api\\.mapbox\\.com/mapbox\\.js/v([\\d\\.]+)/\\;version:\\1",
+    "scripts": "api\\.mapbox\\.com/mapbox\\.js/v([\\d\\.]+)/\\;version:\\1",
+    "website": "https://github.com/mapbox/mapbox.js"
   },
   "Mapp": {
     "cats": [
@@ -1029,11 +1095,12 @@
     "cats": [
       66
     ],
-    "description": "Materialize CSS is a css framework which is used to create responsive websites.",
-    "html": "<link[^>]* href=\"[^\"]*materialize(?:\\.min)?\\.css",
-    "icon": "Materialize CSS.png",
-    "scriptSrc": "materialize(?:\\.min)?\\.js",
-    "website": "http://materializecss.com"
+    "description": "Materialize CSS is a front-end framework that helps developers create responsive and mobile-first web applications. It is based on Google's Material Design guidelines.",
+    "dom": "link[href*='/materialize.min.css']",
+    "icon": "Materialize CSS.svg",
+    "oss": true,
+    "scriptSrc": "([\\d\\.]+)/.*/materialize\\.min\\.js\\;version:\\1",
+    "website": "https://materializecss.com"
   },
   "MathJax": {
     "cats": [
@@ -1114,10 +1181,25 @@
     "description": "Mautic is a free and open-source marketing automation tool for Content Management, Social Media, Email Marketing, and can be used for the integration of social networks, campaign management, forms, questionnaires, reports, etc.",
     "icon": "mautic.svg",
     "js": {
+      "MauticFormValidations": "",
+      "MauticSDK": "",
       "MauticTrackingObject": ""
     },
     "scriptSrc": "[^a-z]mtc.*\\.js",
     "website": "https://www.mautic.org/"
+  },
+  "Mavo": {
+    "cats": [
+      59
+    ],
+    "description": "Mavo is a JavaScript library that enables web developers to turn regular HTML into reactive web applications without the need for writing custom JavaScript.",
+    "icon": "default.svg",
+    "js": {
+      "Mavo": "",
+      "Mavo.version": "v([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://mavo.io"
   },
   "MaxCDN": {
     "cats": [
@@ -1129,7 +1211,7 @@
       "X-CDN-Forward": "^maxcdn$"
     },
     "icon": "MaxCDN.png",
-    "website": "http://www.maxcdn.com"
+    "website": "https://www.maxcdn.com"
   },
   "MaxMind": {
     "cats": [
@@ -1160,7 +1242,7 @@
     "meta": {
       "generator": "MaxSite CMS"
     },
-    "website": "http://max-3000.com"
+    "website": "https://max-3000.com"
   },
   "Maxemail": {
     "cats": [
@@ -1243,7 +1325,7 @@
       "mejs": "",
       "mejs.version": "^(.+)$\\;version:\\1"
     },
-    "website": "http://www.mediaelementjs.com"
+    "website": "https://www.mediaelementjs.com"
   },
   "MediaWiki": {
     "cats": [
@@ -1303,7 +1385,7 @@
     ],
     "html": "(?:<iframe id=\"meebo-iframe\"|Meebo\\('domReady'\\))",
     "icon": "Meebo.png",
-    "website": "http://www.meebo.com"
+    "website": "https://www.meebo.com"
   },
   "Meeting Scheduler": {
     "cats": [
@@ -1554,6 +1636,30 @@
     "scriptSrc": "\\.metrilo\\.com/",
     "website": "https://www.metrilo.com"
   },
+  "MetroUI": {
+    "cats": [
+      66
+    ],
+    "description": "MetroUI is an open-source frontend toolkit inspired by Microsoft Fluent (former Metro) design principles.",
+    "dom": {
+      "link[href*='//cdn.metroui.org.ua/']": {
+        "attributes": {
+          "href": "//cdn\\.metroui\\.org\\.ua/v([\\d\\.]+)/\\;version:\\1"
+        }
+      }
+    },
+    "icon": "default.svg",
+    "js": {
+      "Metro.version": "^([\\d\\.]+)$\\;version:\\1"
+    },
+    "oss": true,
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "website": "https://github.com/olton/Metro-UI-CSS"
+  },
   "Mews": {
     "cats": [
       72
@@ -1669,6 +1775,23 @@
     "oss": true,
     "website": "https://github.com/AzureAD/microsoft-authentication-library-for-js"
   },
+  "Microsoft Azure Maps": {
+    "cats": [
+      35,
+      79
+    ],
+    "description": "Microsoft Azure Maps is a cloud-based mapping and geospatial platform provided by Microsoft.",
+    "icon": "Microsoft.svg",
+    "implies": "Azure",
+    "meta": {
+      "enabled-features": "GEOJSON_AZURE_MAPS"
+    },
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "website": "https://azure.microsoft.com/en-us/products/azure-maps/"
+  },
   "Microsoft Clarity": {
     "cats": [
       10
@@ -1721,11 +1844,14 @@
     "cats": [
       22
     ],
+    "description": "Microsoft HTTPAPI is a kernel-mode HTTP driver in the Windows operating system responsible for handling HTTP requests and responses with efficiency, scalability, and security.",
     "headers": {
       "Server": "Microsoft-HTTPAPI(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "Microsoft.svg",
-    "website": "http://microsoft.com"
+    "oss": false,
+    "saas": false,
+    "website": "https://learn.microsoft.com/en-us/windows/win32/http/http-api-start-page"
   },
   "Microsoft PowerPoint": {
     "cats": [
@@ -1828,6 +1954,28 @@
     "scriptSrc": "\\.miestro\\.com",
     "website": "https://miestro.com"
   },
+  "Mighty Network": {
+    "cats": [
+      2,
+      21
+    ],
+    "description": "Mighty Networks is a platform that facilitates the creation and management of online communities, offering customisable websites, discussion forums, member profiles, events, courses, and multimedia content sharing for individuals and organisations.",
+    "icon": "Mighty Network.svg",
+    "implies": [
+      "Ruby on Rails",
+      "Ruby"
+    ],
+    "js": {
+      "Mighty.BroadcastBotApp": ""
+    },
+    "pricing": [
+      "low",
+      "recurring",
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.mightynetworks.com"
+  },
   "Milestone CMS": {
     "cats": [
       1
@@ -1916,7 +2064,7 @@
     "scriptSrc": [
       "//minero\\.cc/lib/minero(?:-miner|-hidden)?\\.min\\.js"
     ],
-    "website": "http://minero.cc/"
+    "website": "https://minero.cc/"
   },
   "MiniServ": {
     "cats": [
@@ -1940,6 +2088,24 @@
     },
     "scriptSrc": "mint/\\?js",
     "website": "https://haveamint.com"
+  },
+  "Mintlify": {
+    "cats": [
+      57,
+      4
+    ],
+    "description": "Mintlify is a platform that enables developers to create and maintain documentation for their projects using Markdown format and automatically generate and deploy static websites via a continuous integration and deployment system.",
+    "icon": "Mintlify.svg",
+    "js": {
+      "__NEXT_DATA__.props.pageProps.favicons.browserconfig": "mintlify\\..+\\.amazonaws\\.com"
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://mintlify.com"
   },
   "Miso": {
     "cats": [
@@ -2004,7 +2170,7 @@
       "mivaJS.Store_Code": ""
     },
     "scriptSrc": "mvga\\.js",
-    "website": "http://www.miva.com"
+    "website": "https://www.miva.com"
   },
   "Mixin": {
     "cats": [
@@ -2062,10 +2228,11 @@
     ],
     "description": "MkDocs is a static site generator, used for building project documentation.",
     "icon": "mkdocs.png",
+    "implies": "Python",
     "meta": {
       "generator": "^mkdocs-([\\d.]+)\\;version:\\1"
     },
-    "website": "http://www.mkdocs.org/"
+    "website": "https://www.mkdocs.org/"
   },
   "MoEngage": {
     "cats": [
@@ -2086,17 +2253,6 @@
     "saas": true,
     "scriptSrc": "cdn\\.moengage\\.\\w+",
     "website": "https://www.moengage.com"
-  },
-  "Moat": {
-    "cats": [
-      10
-    ],
-    "description": "Moat is a digital ad analytics tool.",
-    "icon": "Moat.svg",
-    "scriptSrc": [
-      "moatads\\.com"
-    ],
-    "website": "https://moat.com/"
   },
   "MobX": {
     "cats": [
@@ -2209,7 +2365,7 @@
     "meta": {
       "generator": "\\(c\\) by modified eCommerce Shopsoftware ------ http://www\\.modified-shop\\.org"
     },
-    "website": "http://www.modified-shop.org/"
+    "website": "https://www.modified-shop.org/"
   },
   "Module Federation": {
     "cats": [
@@ -2222,8 +2378,7 @@
     ],
     "scripts": [
       "data-webpack\\;confidence:50",
-      "Container missing\\;confidence:50",
-      "Initialization of sharing external failed\\;confidence:50"
+      "Container initialization failed as it has already been initialized with a different share scope"
     ],
     "website": "https://webpack.js.org/concepts/module-federation/"
   },
@@ -2265,7 +2420,7 @@
     },
     "icon": "Mojolicious.png",
     "implies": "Perl",
-    "website": "http://mojolicio.us"
+    "website": "https://mojolicio.us"
   },
   "Mokka": {
     "cats": [
@@ -2299,7 +2454,7 @@
     "html": "<img[^>]+\\.mollom\\.com",
     "icon": "Mollom.png",
     "scriptSrc": "mollom(?:\\.min)?\\.js",
-    "website": "http://mollom.com"
+    "website": "https://mollom.com"
   },
   "Moment Timezone": {
     "cats": [
@@ -2308,7 +2463,7 @@
     "icon": "Moment.js.svg",
     "implies": "Moment.js",
     "scriptSrc": "moment-timezone(?:-data)?(?:\\.min)?\\.js",
-    "website": "http://momentjs.com/timezone/"
+    "website": "https://momentjs.com/timezone/"
   },
   "Moment.js": {
     "cats": [
@@ -2357,7 +2512,7 @@
     "meta": {
       "generator": "Mondo Shop"
     },
-    "website": "http://mondo-media.de"
+    "website": "https://mondo-media.de"
   },
   "Moneris": {
     "cats": [
@@ -2394,6 +2549,25 @@
     "scriptSrc": "/wp-content/plugins/woocommerce-gateway-moneris/",
     "website": "https://wordpress.org/plugins/wc-moneris-payment-gateway"
   },
+  "Monetate": {
+    "cats": [
+      74,
+      76
+    ],
+    "description": "Monetate is a company that specializes in providing personalisation and customer experience optimisation solutions to businesses.",
+    "icon": "Monetate.svg",
+    "js": {
+      "monetate": "",
+      "monetateQ": "",
+      "monetateT": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.monetate\\.net",
+    "website": "https://monetate.com"
+  },
   "MongoDB": {
     "cats": [
       34
@@ -2401,7 +2575,7 @@
     "cpe": "cpe:2.3:a:mongodb:mongodb:*:*:*:*:*:*:*:*",
     "description": "MongoDB is a document-oriented NoSQL database used for high volume data storage.",
     "icon": "MongoDB.png",
-    "website": "http://www.mongodb.org"
+    "website": "https://www.mongodb.org"
   },
   "Mongrel": {
     "cats": [
@@ -2413,7 +2587,7 @@
     },
     "icon": "Mongrel.png",
     "implies": "Ruby",
-    "website": "http://mongrel2.org"
+    "website": "https://mongrel2.org"
   },
   "Monkey HTTP Server": {
     "cats": [
@@ -2423,7 +2597,7 @@
       "Server": "Monkey/?([\\d.]+)?\\;version:\\1"
     },
     "icon": "Monkey HTTP Server.png",
-    "website": "http://monkey-project.com"
+    "website": "https://monkey-project.com"
   },
   "Mono": {
     "cats": [
@@ -2434,7 +2608,7 @@
       "X-Powered-By": "Mono"
     },
     "icon": "Mono.png",
-    "website": "http://mono-project.com"
+    "website": "https://mono-project.com"
   },
   "Mono.net": {
     "cats": [
@@ -2518,7 +2692,7 @@
     "meta": {
       "keywords": "^moodle"
     },
-    "website": "http://moodle.org"
+    "website": "https://moodle.org"
   },
   "Moon": {
     "cats": [
@@ -2573,6 +2747,20 @@
     "scriptSrc": "\\.moshimo\\.com/af/",
     "website": "https://af.moshimo.com"
   },
+  "Motherhost": {
+    "cats": [
+      88
+    ],
+    "description": "Motherhost is a web hosting company based in India that offers a range of hosting services, including shared hosting, VPS hosting, dedicated servers, and cloud hosting.",
+    "headers": {
+      "platform": "^motherhost$"
+    },
+    "icon": "Motherhost.svg",
+    "pricing": [
+      "recurring"
+    ],
+    "website": "https://www.motherhost.com"
+  },
   "MotoCMS": {
     "cats": [
       1
@@ -2585,7 +2773,7 @@
       "jQuery"
     ],
     "scriptSrc": "/mt-includes/js/website(?:assets)?\\.(?:min)?\\.js",
-    "website": "http://motocms.com"
+    "website": "https://motocms.com"
   },
   "Mouse Flow": {
     "cats": [
@@ -2624,7 +2812,7 @@
     "meta": {
       "generator": "Movable Type"
     },
-    "website": "http://movabletype.org"
+    "website": "https://movabletype.org"
   },
   "Mozard Suite": {
     "cats": [
@@ -2635,7 +2823,7 @@
       "author": "Mozard"
     },
     "url": "/mozard/!suite",
-    "website": "http://mozard.nl"
+    "website": "https://mozard.nl"
   },
   "Mulberry": {
     "cats": [
@@ -2671,7 +2859,7 @@
       "poa"
     ],
     "saas": true,
-    "website": "http://www.getmura.com"
+    "website": "https://www.getmura.com"
   },
   "Mustache": {
     "cats": [
@@ -2748,7 +2936,7 @@
     ],
     "icon": "MyBlogLog.png",
     "scriptSrc": "pub\\.mybloglog\\.com",
-    "website": "http://www.mybloglog.com"
+    "website": "https://www.mybloglog.com"
   },
   "MyCashFlow": {
     "cats": [
@@ -2812,7 +3000,7 @@
     "cpe": "cpe:2.3:a:mysql:mysql:*:*:*:*:*:*:*:*",
     "description": "MySQL is an open-source relational database management system.",
     "icon": "MySQL.svg",
-    "website": "http://mysql.com"
+    "website": "https://mysql.com"
   },
   "MySiteNow": {
     "cats": [
@@ -2856,7 +3044,6 @@
       51
     ],
     "description": "MyWebsite Creator is website builder designed for easy editing and fast results.",
-    "dom": "body#dmRoot",
     "icon": "MyWebsite.svg",
     "implies": "Duda",
     "pricing": [
@@ -2912,7 +3099,7 @@
     "meta": {
       "generator": "Mynetcap"
     },
-    "website": "http://www.netcap-creation.fr"
+    "website": "https://www.netcap-creation.fr"
   },
   "Mysitefy": {
     "cats": [
@@ -2991,12 +3178,14 @@
     "cats": [
       59
     ],
+    "description": "Math.js a JavaScript library that provides a comprehensive set of mathematical functions and capabilities for performing complex calculations and operations in web applications.",
     "icon": "math.js.png",
     "js": {
       "mathjs": ""
     },
+    "oss": true,
     "scriptSrc": "math(?:\\.min)?\\.js",
-    "website": "http://mathjs.org"
+    "website": "https://mathjs.org"
   },
   "mdBook": {
     "cats": [
@@ -3004,10 +3193,6 @@
     ],
     "description": "mdBook is a utility to create modern online books from Markdown files.",
     "icon": "mdBook.svg",
-    "implies": [
-      "Rust",
-      "Handlebars"
-    ],
     "oss": true,
     "scripts": "localStorage\\.getItem\\('mdbook-(?:sidebar|theme)'\\)",
     "website": "https://github.com/rust-lang/mdBook"
@@ -3051,7 +3236,7 @@
       "Server": "mini_httpd(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "mini_httpd.png",
-    "website": "http://acme.com/software/mini_httpd"
+    "website": "https://acme.com/software/mini_httpd"
   },
   "mirrAR": {
     "cats": [
@@ -3089,7 +3274,7 @@
     },
     "icon": "Apache.svg",
     "implies": "Apache HTTP Server",
-    "website": "http://pam.sourceforge.net/mod_auth_pam"
+    "website": "https://pam.sourceforge.net/mod_auth_pam"
   },
   "mod_dav": {
     "cats": [
@@ -3101,7 +3286,7 @@
     },
     "icon": "Apache.svg",
     "implies": "Apache HTTP Server",
-    "website": "http://webdav.org/mod_dav"
+    "website": "https://webdav.org/mod_dav"
   },
   "mod_fastcgi": {
     "cats": [
@@ -3113,7 +3298,7 @@
     },
     "icon": "Apache.svg",
     "implies": "Apache HTTP Server",
-    "website": "http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html"
+    "website": "https://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html"
   },
   "mod_jk": {
     "cats": [
@@ -3128,7 +3313,7 @@
       "Apache Tomcat",
       "Apache HTTP Server"
     ],
-    "website": "http://tomcat.apache.org/tomcat-3.3-doc/mod_jk-howto.html"
+    "website": "https://tomcat.apache.org/tomcat-3.3-doc/mod_jk-howto.html"
   },
   "mod_perl": {
     "cats": [
@@ -3144,7 +3329,7 @@
       "Perl",
       "Apache HTTP Server"
     ],
-    "website": "http://perl.apache.org"
+    "website": "https://perl.apache.org"
   },
   "mod_python": {
     "cats": [
@@ -3160,7 +3345,7 @@
       "Python",
       "Apache HTTP Server"
     ],
-    "website": "http://www.modpython.org"
+    "website": "https://www.modpython.org"
   },
   "mod_rack": {
     "cats": [
@@ -3176,7 +3361,7 @@
       "Ruby on Rails\\;confidence:50",
       "Apache HTTP Server"
     ],
-    "website": "http://phusionpassenger.com"
+    "website": "https://phusionpassenger.com"
   },
   "mod_rails": {
     "cats": [
@@ -3192,7 +3377,7 @@
       "Ruby on Rails\\;confidence:50",
       "Apache HTTP Server"
     ],
-    "website": "http://phusionpassenger.com"
+    "website": "https://phusionpassenger.com"
   },
   "mod_ssl": {
     "cats": [
@@ -3205,7 +3390,7 @@
     },
     "icon": "mod_ssl.png",
     "implies": "Apache HTTP Server",
-    "website": "http://modssl.org"
+    "website": "https://modssl.org"
   },
   "mod_wsgi": {
     "cats": [

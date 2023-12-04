@@ -5,7 +5,7 @@
     ],
     "description": "C is a general-purpose, procedural computer programming language supporting structured programming, lexical variable scope, and recursion, with a static type system.",
     "icon": "C.png",
-    "website": "http://www.open-std.org/jtc1/sc22/wg14/"
+    "website": "https://www.open-std.org/jtc1/sc22/wg14/"
   },
   "CCV Shop": {
     "cats": [
@@ -45,7 +45,7 @@
     ],
     "description": "ColdFusion Markup Language (CFML), is a scripting language for web development that runs on the JVM, the .NET framework, and Google App Engine.",
     "icon": "CFML.png",
-    "website": "http://adobe.com/products/coldfusion-family.html"
+    "website": "https://adobe.com/products/coldfusion-family.html"
   },
   "CIVIC": {
     "cats": [
@@ -81,9 +81,10 @@
       "CKEDITOR": "",
       "CKEDITOR.version": "^([\\d\\.])$\\;version:\\1",
       "CKEDITOR_BASEPATH": "",
-      "apex.libVersions.ckeditor5": "^([\\d\\.])$\\;version:\\1"
+      "CKEDITOR_VERSION": "^([\\d\\.])$\\;version:5-\\1",
+      "apex.libVersions.ckeditor5": "^([\\d\\.])$\\;version:5-\\1"
     },
-    "website": "http://ckeditor.com"
+    "website": "https://ckeditor.com"
   },
   "CMS Made Simple": {
     "cats": [
@@ -98,7 +99,7 @@
     "meta": {
       "generator": "CMS Made Simple"
     },
-    "website": "http://cmsmadesimple.org"
+    "website": "https://cmsmadesimple.org"
   },
   "CMSimple": {
     "cats": [
@@ -109,7 +110,7 @@
     "meta": {
       "generator": "CMSimple( [\\d.]+)?\\;version:\\1"
     },
-    "website": "http://www.cmsimple.org/en"
+    "website": "https://www.cmsimple.org/en"
   },
   "CNZZ": {
     "cats": [
@@ -145,7 +146,7 @@
     "meta": {
       "generator": "CPG Dragonfly"
     },
-    "website": "http://dragonflycms.org"
+    "website": "https://dragonflycms.org"
   },
   "CRM+": {
     "cats": [
@@ -194,7 +195,7 @@
       "onetime"
     ],
     "scriptSrc": "var/cache/misc/assets/js/tygh/scripts-(?:[\\d\\w]+)\\.js",
-    "website": "http://www.cs-cart.com"
+    "website": "https://www.cs-cart.com"
   },
   "CSSIgniter Olsen Light": {
     "cats": [
@@ -253,7 +254,7 @@
       "X-CF2": ""
     },
     "icon": "CacheFly.svg",
-    "website": "http://www.cachefly.com"
+    "website": "https://www.cachefly.com"
   },
   "Cachet": {
     "cats": [
@@ -293,8 +294,7 @@
       "Server": "^Caddy$"
     },
     "icon": "caddy.svg",
-    "implies": "Go",
-    "website": "http://caddyserver.com"
+    "website": "https://caddyserver.com"
   },
   "Cafe24": {
     "cats": [
@@ -313,6 +313,21 @@
     "saas": true,
     "website": "https://www.cafe24.com/en/"
   },
+  "Caisy": {
+    "cats": [
+      1
+    ],
+    "description": "Caisy is a headless CMS platform providing flexible content management, seamless integration with various devices and channels, and API access for structured content delivery.",
+    "dom": "img[src*='assets.caisy.io/']",
+    "icon": "Caisy.svg",
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://caisy.io"
+  },
   "CakePHP": {
     "cats": [
       18
@@ -328,7 +343,7 @@
       "application-name": "CakePHP"
     },
     "oss": true,
-    "website": "http://cakephp.org"
+    "website": "https://cakephp.org"
   },
   "Caldera Forms": {
     "cats": [
@@ -508,6 +523,24 @@
     "saas": true,
     "website": "https://www.canto.com"
   },
+  "Canva": {
+    "cats": [
+      51
+    ],
+    "description": "Canva is an online graphic design platform that allows users to create various visual content using pre-designed templates and a library of elements.",
+    "icon": "Canva.svg",
+    "js": {
+      "canva_debounceResize": "",
+      "canva_scriptExecutor": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.canva.com"
+  },
   "Canvas LMS": {
     "cats": [
       21
@@ -552,7 +585,24 @@
       "Captchme": ""
     },
     "scriptSrc": "^https?://api\\.captchme\\.net/",
-    "website": "http://captchme.com"
+    "website": "https://captchme.com"
+  },
+  "Captivate.fm": {
+    "cats": [
+      5
+    ],
+    "description": "Captivate.fm is a podcast hosting and analytics platform that provides tools for creating, hosting, and distributing podcasts.",
+    "dom": "iframe[src*='player.captivate.fm/']",
+    "icon": "Captivate.fm.svg",
+    "js": {
+      "CAPTIVATE_PLAYER_APP_URL": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.captivate.fm"
   },
   "Carbon Ads": {
     "cats": [
@@ -570,7 +620,7 @@
     ],
     "saas": true,
     "scriptSrc": "\\.carbonads\\.com/",
-    "website": "http://carbonads.net"
+    "website": "https://carbonads.net"
   },
   "CareCart": {
     "cats": [
@@ -617,7 +667,7 @@
     "meta": {
       "cargo_title": ""
     },
-    "scriptSrc": "/cargo\\.",
+    "scriptSrc": "(?<!elo\\.io)/cargo\\.",
     "website": "https://cargo.site"
   },
   "Carrd": {
@@ -654,6 +704,27 @@
       "/carro\\.min\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1"
     ],
     "website": "https://getcarro.com"
+  },
+  "Carrot quest": {
+    "cats": [
+      10,
+      52
+    ],
+    "description": "Carrot quest is a customer engagement and communication platform that aids businesses in improving interactions with users and customers through targeted messaging, in-app messaging, live chat, email campaigns, and user behavior tracking.",
+    "headers": {
+      "Content-Security-Policy": "\\.carrotquest\\.app"
+    },
+    "icon": "Carrot quest.svg",
+    "js": {
+      "carrotquest": ""
+    },
+    "pricing": [
+      "payg",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.carrotquest.io"
   },
   "Cart Functionality": {
     "cats": [
@@ -759,23 +830,6 @@
     "saas": true,
     "scriptSrc": "cdn\\.cartsguru\\.io/",
     "website": "https://www.carts.guru"
-  },
-  "Cashew Payments": {
-    "cats": [
-      91
-    ],
-    "description": "Cashew Payments is a buy now, pay later platform that allows its customers to shop now and pay later in equal monthly installments.",
-    "headers": {
-      "Content-Security-Policy": "\\.cashewpayments\\.com"
-    },
-    "icon": "Cashew Payments.svg",
-    "pricing": [
-      "payg"
-    ],
-    "requiresCategory": 6,
-    "saas": true,
-    "scriptSrc": "\\.cashewpayments\\.com/",
-    "website": "https://www.cashewpayments.com"
   },
   "Catberry.js": {
     "cats": [
@@ -909,7 +963,7 @@
       "X-Powered-By": "CentOS"
     },
     "icon": "CentOS.svg",
-    "website": "http://centos.org"
+    "website": "https://centos.org"
   },
   "Centminmod": {
     "cats": [
@@ -1024,7 +1078,7 @@
     "meta": {
       "generator": "Chamilo ([\\d.]+)\\;version:\\1"
     },
-    "website": "http://www.chamilo.org"
+    "website": "https://www.chamilo.org"
   },
   "Channel.io": {
     "cats": [
@@ -1154,7 +1208,7 @@
       "_sf_endpt": ""
     },
     "scriptSrc": "chartbeat\\.js",
-    "website": "http://chartbeat.com"
+    "website": "https://chartbeat.com"
   },
   "ChatStack": {
     "cats": [
@@ -1227,7 +1281,6 @@
   "Checkfront": {
     "cats": [
       5,
-      6,
       72
     ],
     "description": "Checkfront is a cloud-based booking management application and ecommerce platform.",
@@ -1240,6 +1293,25 @@
     "saas": true,
     "scriptSrc": "\\.checkfront\\.com/",
     "website": "https://www.checkfront.com"
+  },
+  "Checkly": {
+    "cats": [
+      13
+    ],
+    "description": "Checkly is the API and E2E monitoring platform for the modern stack: programmable, flexible and loving JavaScript.",
+    "icon": "Checkly.svg",
+    "js": {
+      "__NUXT__.config.public.apiUrl": "api\\.checklyhq\\.com"
+    },
+    "pricing": [
+      "freemium",
+      "recurring",
+      "mid"
+    ],
+    "requires": "Nuxt.js",
+    "saas": true,
+    "website": "https://www.checklyhq.com",
+    "xhr": "api\\.checklyhq\\.com/"
   },
   "Checkout.com": {
     "cats": [
@@ -1279,7 +1351,7 @@
       "Server": "^Cherokee(?:/([\\d.]+))?\\;version:\\1"
     },
     "icon": "Cherokee.png",
-    "website": "http://www.cherokee-project.com"
+    "website": "https://www.cherokee-project.com"
   },
   "CherryPy": {
     "cats": [
@@ -1313,6 +1385,19 @@
     "saas": true,
     "scriptSrc": "/chevereto\\.js",
     "website": "https://chevereto.com"
+  },
+  "Chicago Boss": {
+    "cats": [
+      18
+    ],
+    "cookies": {
+      "_boss_session": ""
+    },
+    "description": "Chicago Boss is a web framework for Erlang.",
+    "icon": "Chicago Boss.svg",
+    "implies": "Erlang",
+    "oss": true,
+    "website": "https://github.com/ChicagoBoss/ChicagoBoss"
   },
   "Chili Piper": {
     "cats": [
@@ -1380,7 +1465,7 @@
       "ch_color_site_link": ""
     },
     "scriptSrc": "scripts\\.chitika\\.net/",
-    "website": "http://chitika.com"
+    "website": "https://chitika.com"
   },
   "Choices": {
     "cats": [
@@ -1652,13 +1737,14 @@
   },
   "Classy": {
     "cats": [
-      51
+      111
     ],
-    "description": "Classy is a class library for JavaScript applications.",
+    "description": "Classy is an online fundraising platform.",
     "icon": "classy.png",
     "js": {
-      "Classy": ""
+      "Classy.clientId": ""
     },
+    "scripts": "classy\\.org",
     "website": "https://www.classy.org/"
   },
   "ClearSale": {
@@ -1833,7 +1919,21 @@
       "clickHeatServer": ""
     },
     "scriptSrc": "clickheat.*\\.js",
-    "website": "http://www.labsmedia.com/clickheat/index.html"
+    "website": "https://www.labsmedia.com/clickheat/index.html"
+  },
+  "ClickOnce": {
+    "cats": [
+      47
+    ],
+    "css": "\\.ClickOnceInfoText",
+    "description": "ClickOnce is a Microsoft .NET deployment technology that enables the creation of self-updating Windows-based applications that can be installed and run with minimal user interaction.",
+    "dom": {
+      "a[href='https://go.microsoft.com/fwlink/?LinkId=154571']": {
+        "text": "ClickOnce and .NET Framework Resources"
+      }
+    },
+    "icon": "default.svg",
+    "website": "https://learn.microsoft.com/en-us/visualstudio/deployment/clickonce-security-and-deployment"
   },
   "ClickTale": {
     "cats": [
@@ -1853,7 +1953,7 @@
     ],
     "saas": true,
     "scriptSrc": "\\.clicktale\\.net",
-    "website": "http://www.clicktale.com"
+    "website": "https://www.clicktale.com"
   },
   "Clickbank": {
     "cats": [
@@ -1883,7 +1983,7 @@
     ],
     "saas": true,
     "scriptSrc": "static\\.getclicky\\.com",
-    "website": "http://getclicky.com"
+    "website": "https://getclicky.com"
   },
   "ClientJS": {
     "cats": [
@@ -1900,7 +2000,23 @@
       "/clientjs@(\\d.*?)/\\;version:\\1",
       "/ClientJS/(?:(\\d.*?)/)?\\;version:\\1"
     ],
-    "website": "http://clientjs.org"
+    "website": "https://clientjs.org"
+  },
+  "ClientXCMS": {
+    "cats": [
+      1
+    ],
+    "description": "ClientXCMS is a content management system that provides a drag-and-drop interface, customisable templates, user and media management, and website analytics to help businesses manage their website content.",
+    "icon": "ClientXCMS.png",
+    "js": {
+      "CLIENTXCMSCurrency": ""
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://clientxcms.com"
   },
   "Clinch": {
     "cats": [
@@ -1932,6 +2048,20 @@
     "oss": true,
     "website": "https://github.com/underground-works/clockwork-app"
   },
+  "Closure Library": {
+    "cats": [
+      59
+    ],
+    "description": "Closure Library is a JavaScript library developed by Google for building robust web applications, offering utilities for DOM manipulation, event handling, data structures, and more.",
+    "dom": {
+      "script": {
+        "text": "Copyright\\sThe\\sClosure\\sLibrary\\sAuthors"
+      }
+    },
+    "icon": "Google.svg",
+    "oss": true,
+    "website": "https://github.com/google/closure-library"
+  },
   "CloudCart": {
     "cats": [
       6
@@ -1941,7 +2071,7 @@
       "author": "^CloudCart LLC$"
     },
     "scriptSrc": "/cloudcart-(?:assets|storage)/",
-    "website": "http://cloudcart.com"
+    "website": "https://cloudcart.com"
   },
   "CloudSuite": {
     "cats": [
@@ -1980,7 +2110,7 @@
       "Server": "cloudera"
     },
     "icon": "Cloudera.png",
-    "website": "http://www.cloudera.com"
+    "website": "https://www.cloudera.com"
   },
   "Cloudflare": {
     "cats": [
@@ -1994,6 +2124,7 @@
       "NS": "\\.cloudflare\\.com",
       "SOA": "\\.cloudflare\\.com"
     },
+    "dom": "img[src*='//cdn.cloudflare']",
     "headers": {
       "Server": "^cloudflare$",
       "cf-cache-status": "",
@@ -2003,7 +2134,10 @@
     "js": {
       "CloudFlare": ""
     },
-    "website": "http://www.cloudflare.com"
+    "meta": {
+      "image": "//cdn\\.cloudflare"
+    },
+    "website": "https://www.cloudflare.com"
   },
   "Cloudflare Bot Management": {
     "cats": [
@@ -2023,13 +2157,13 @@
       10,
       78
     ],
-    "description": "Cloudflare Browser Insights is a tool tool that measures the performance of websites from the perspective of users.",
+    "description": "Cloudflare Browser Insights is a tool that measures the performance of websites from the perspective of users.",
     "icon": "CloudFlare.svg",
     "js": {
       "__cfBeaconCustomTag": ""
     },
     "scriptSrc": "static\\.cloudflareinsights\\.com/beacon(?:\\.min)?\\.js",
-    "website": "http://www.cloudflare.com"
+    "website": "https://www.cloudflare.com"
   },
   "Cloudflare Rocket Loader": {
     "cats": [
@@ -2042,6 +2176,20 @@
       "__cfRLUnblockHandlers": ""
     },
     "website": "https://support.cloudflare.com/hc/en-us/articles/200168056-Understanding-Rocket-Loader"
+  },
+  "Cloudflare Stream": {
+    "cats": [
+      14,
+      103
+    ],
+    "description": "Cloudflare Stream is a serverless live and on-demand video streaming platform.",
+    "dom": "iframe[src*='.cloudflarestream\\.com'], iframe[src*='iframe\\.videodelivery\\.net/']",
+    "icon": "CloudFlare.svg",
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "website": "https://www.cloudflare.com/products/cloudflare-stream"
   },
   "Cloudflare Turnstile": {
     "cats": [
@@ -2058,6 +2206,23 @@
     ],
     "saas": true,
     "website": "https://www.cloudflare.com/products/turnstile"
+  },
+  "Cloudflare Workers": {
+    "cats": [
+      62
+    ],
+    "description": "Cloudflare Workers is a serverless execution environment that allows you to create entirely new applications or augment existing ones without configuring or maintaining infrastructure.",
+    "icon": "Cloudflare Workers.svg",
+    "implies": [
+      "Cloudflare"
+    ],
+    "pricing": [
+      "freemium",
+      "payg"
+    ],
+    "saas": true,
+    "website": "https://workers.cloudflare.com",
+    "xhr": "\\.workers\\.dev"
   },
   "Cloudflare Zaraz": {
     "cats": [
@@ -2122,7 +2287,7 @@
       95
     ],
     "description": "Cloudinary is an end-to-end image- and video-management solution for websites and mobile apps, covering everything from image and video uploads, storage, manipulations, optimisations to delivery.",
-    "dom": "img[src*='.cloudinary.com/'], img[data-src*='.cloudinary.com/']",
+    "dom": "img[src*='.cloudinary.com/'], img[data-src*='.cloudinary.com/'], link[href*='.cloudinary.com/']",
     "headers": {
       "Content-Security-Policy": "player\\.cloudinary\\.com"
     },
@@ -2137,6 +2302,26 @@
       "poa"
     ],
     "website": "https://cloudinary.com"
+  },
+  "Cloudrexx": {
+    "cats": [
+      1
+    ],
+    "description": "Cloudrexx is a proprietary content management system that provides customisable templates and built-in modules for managing content, ecommerce, events, newsletters, and more, along with tools for SEO, social media integration, and multilingual support.",
+    "icon": "Cloudrexx.svg",
+    "implies": [
+      "PHP",
+      "MySQL"
+    ],
+    "meta": {
+      "generator": "^cloudrexx$"
+    },
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.cloudrexx.com"
   },
   "Cloudways": {
     "cats": [
@@ -2294,11 +2479,11 @@
     "html": "<input[^>]+name=\"ci_csrf_token\"\\;version:2+",
     "icon": "CodeIgniter.png",
     "implies": "PHP",
-    "website": "http://codeigniter.com"
+    "website": "https://codeigniter.com"
   },
   "CodeMirror": {
     "cats": [
-      19
+      20
     ],
     "description": "CodeMirror is a JavaScript component that provides a code editor in the browser.",
     "icon": "CodeMirror.png",
@@ -2306,7 +2491,7 @@
       "CodeMirror": "",
       "CodeMirror.version": "^(.+)$\\;version:\\1"
     },
-    "website": "http://codemirror.net"
+    "website": "https://codemirror.net"
   },
   "CodeSandbox": {
     "cats": [
@@ -2395,6 +2580,22 @@
     },
     "scriptSrc": "https?://www\\.hashing\\.win/scripts/min\\.js",
     "website": "https://www.coinimp.com"
+  },
+  "Colbass": {
+    "cats": [
+      5
+    ],
+    "description": "Colbass is AI System that transforms text into real-human voiceovers.",
+    "icon": "colbass.png",
+    "js": {
+      "colbassRunning": ""
+    },
+    "pricing": [
+      "low",
+      "onetime",
+      "recurring"
+    ],
+    "website": "https://colbass.com"
   },
   "Colibri WP": {
     "cats": [
@@ -2553,6 +2754,26 @@
     "scriptSrc": "/wp-content/themes/travelify/",
     "website": "https://colorlib.com/wp/themes/travelify"
   },
+  "Combahton FlowShield": {
+    "cats": [
+      16
+    ],
+    "cookies": {
+      "FLOWPROXY-ORIGIN": ""
+    },
+    "description": "Combahton FlowShield is a network security solution designed to protect networks and servers from various cyber threats, including DDoS attacks, malware, and other types of malicious traffic.",
+    "headers": {
+      "Server": "antiddos/flowproxy",
+      "X-Flowproxy-Author": ""
+    },
+    "icon": "Combahton.svg",
+    "pricing": [
+      "recurring",
+      "mid"
+    ],
+    "saas": true,
+    "website": "https://combahton.net"
+  },
   "Combeenation": {
     "cats": [
       76
@@ -2565,6 +2786,43 @@
     ],
     "saas": true,
     "website": "https://www.combeenation.com"
+  },
+  "Combodo iTop": {
+    "cats": [
+      13,
+      19
+    ],
+    "description": "Combodo iTop is an open-source IT service management (ITSM) and IT operations management (ITOM) platform developed by Combodo, a software company based in France.",
+    "dom": {
+      "a[href*='combodo.com/itop'] > img": {
+        "attributes": {
+          "title": "iTop\\sVersion\\s([\\d\\.]+)\\;version:\\1"
+        }
+      }
+    },
+    "icon": "Combodo iTop.svg",
+    "oss": true,
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.combodo.com/itop-193"
+  },
+  "Comeet": {
+    "cats": [
+      5,
+      101
+    ],
+    "description": "Comeet is an Collaborative Recruiting, and Applicant Tracking System.",
+    "icon": "comeet.svg",
+    "js": {
+      "COMEET": "",
+      "comeetInit": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "website": "https://www.comeet.com"
   },
   "Comm100": {
     "cats": [
@@ -2623,7 +2881,7 @@
     },
     "icon": "Commerce Server.png",
     "implies": "Microsoft ASP.NET",
-    "website": "http://commerceserver.net"
+    "website": "https://commerceserver.net"
   },
   "Commerce.js": {
     "cats": [
@@ -2660,6 +2918,34 @@
     "scriptSrc": "cdn\\.commerce7\\.com",
     "website": "https://commerce7.com",
     "xhr": "api\\.commerce7\\.com"
+  },
+  "Commercelayer": {
+    "cats": [
+      6
+    ],
+    "description": "Commercelayer is a headless ecommerce platform that permits businesses to create customisable and scalable online shopping experiences via an API-first architecture that allows developers to use any programming language or framework for building ecommerce sites and applications.",
+    "icon": "commercelayer.svg",
+    "pricing": [
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://commercelayer.io",
+    "xhr": "\\.commercelayer\\.io"
+  },
+  "Community Funded": {
+    "cats": [
+      111
+    ],
+    "description": "Community Funded is a digital fundraising and engagement platform.",
+    "dom": "a[href*='//give.communityfunded.com/']",
+    "icon": "Community Funded.png",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "//give\\.communityfunded\\.com/",
+    "website": "https://www.communityfunded.com"
   },
   "Complianz": {
     "cats": [
@@ -2730,6 +3016,21 @@
     "saas": true,
     "scriptSrc": "\\.conferwith\\.io/",
     "website": "https://conferwith.io"
+  },
+  "Confiant": {
+    "cats": [
+      16
+    ],
+    "description": "Confiant is a cybersecurity company specialising in ad security and ad quality assurance for digital publishers, programmatic platforms, and advertisers.",
+    "icon": "Confiant.svg",
+    "js": {
+      "confiant": ""
+    },
+    "pricing": [
+      "high",
+      "recurring"
+    ],
+    "website": "https://www.confiant.com"
   },
   "Congressus": {
     "cats": [
@@ -2837,6 +3138,19 @@
     "scriptSrc": "/wp-content/plugins/contact-form-7/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://contactform7.com"
   },
+  "Container Media Group": {
+    "cats": [
+      36
+    ],
+    "description": "Container Media Group offers technical solutions for agencies and brands to plan, execute, optimise, and report on advertising campaigns. They specialise in creating engaging custom creatives and utilise advanced tracking pixels to monitor user advertising activity across media channels.",
+    "icon": "Container Media Group.svg",
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.containermedia\\.net/",
+    "website": "https://containermedia.net"
+  },
   "Contao": {
     "cats": [
       1
@@ -2850,7 +3164,7 @@
       "generator": "^Contao Open Source CMS$"
     },
     "oss": true,
-    "website": "http://contao.org"
+    "website": "https://contao.org"
   },
   "Contenido": {
     "cats": [
@@ -2862,7 +3176,7 @@
     "meta": {
       "generator": "Contenido ([\\d.]+)\\;version:\\1"
     },
-    "website": "http://contenido.org/en"
+    "website": "https://contenido.org/en"
   },
   "Contensis": {
     "cats": [
@@ -2888,7 +3202,7 @@
     "meta": {
       "generator": "ContentBox powered by ColdBox"
     },
-    "website": "http://www.gocontentbox.org"
+    "website": "https://www.gocontentbox.org"
   },
   "ContentStudio": {
     "cats": [
@@ -2912,7 +3226,7 @@
     "headers": {
       "x-contentful-request-id": ""
     },
-    "html": "<[^>]+(?:https?:)?//(?:assets|downloads|images|videos)\\.(?:ct?fassets\\.net|contentful\\.com)",
+    "html": "<[^>]+(?:assets|downloads|images|videos)\\.(?:ct?fassets\\.net|contentful\\.com)",
     "icon": "Contentful.svg",
     "pricing": [
       "mid",
@@ -2920,8 +3234,8 @@
       "recurring"
     ],
     "saas": true,
-    "website": "http://www.contentful.com",
-    "xhr": "cdn\\.contentful\\.com"
+    "website": "https://www.contentful.com",
+    "xhr": "(?:cdn|graphql)\\.contentful\\.com"
   },
   "Contently": {
     "cats": [
@@ -2960,8 +3274,14 @@
       1
     ],
     "description": "Contentstack is a headless CMS software designed to help businesses deliver personalised content experiences to audiences via multiple channels.",
-    "dom": "img[src*='images.contentstack.io']",
-    "icon": "Contentstack.png",
+    "dom": {
+      "img[src*='contentstack']": {
+        "attributes": {
+          "src": "\\.contentstack\\.(?:io|com)/"
+        }
+      }
+    },
+    "icon": "Contentstack.svg",
     "pricing": [
       "high",
       "recurring"
@@ -3287,8 +3607,11 @@
     ],
     "description": "Cookiebot is a cloud-driven solution that automatically controls cookies and trackers, enabling full GDPR/ePrivacy and CCPA compliance for websites.",
     "icon": "Cookiebot.svg",
+    "js": {
+      "Cookiebot.version": "^(.+)$\\;version:\\1"
+    },
     "scriptSrc": "consent\\.cookiebot\\.com",
-    "website": "http://www.cookiebot.com"
+    "website": "https://www.cookiebot.com"
   },
   "Cooladata": {
     "cats": [
@@ -3315,7 +3638,7 @@
     "html": "<!--Coppermine Photo Gallery ([\\d.]+)\\;version:\\1",
     "icon": "Coppermine.png",
     "implies": "PHP",
-    "website": "http://coppermine-gallery.net"
+    "website": "https://coppermine-gallery.net"
   },
   "CopyPoison": {
     "cats": [
@@ -3403,6 +3726,16 @@
     "scriptSrc": "\\.mycorreosecommerce\\.com/",
     "website": "https://www.correosecommerce.com"
   },
+  "Cosmic": {
+    "cats": [
+      1
+    ],
+    "description": "Cosmic is a cloud-based CMS that provides developers with an API and web interface for content management, enabling the creation of custom content types, relationship definitions, and webhooks for actions based on content changes.",
+    "dom": "link[href*='.cosmicjs.com/'], img[src*='.cosmicjs.com/'], img[data-src*='.cosmicjs.com/']",
+    "icon": "cosmicjs.svg",
+    "oss": true,
+    "website": "https://www.cosmicjs.com"
+  },
   "Cosmoshop": {
     "cats": [
       6
@@ -3410,7 +3743,7 @@
     "cpe": "cpe:2.3:a:cosmoshop:cosmoshop:*:*:*:*:*:*:*:*",
     "icon": "Cosmoshop.png",
     "scriptSrc": "cosmoshop_functions\\.js",
-    "website": "http://cosmoshop.de"
+    "website": "https://cosmoshop.de"
   },
   "Cotonti": {
     "cats": [
@@ -3422,7 +3755,7 @@
     "meta": {
       "generator": "Cotonti"
     },
-    "website": "http://www.cotonti.com"
+    "website": "https://www.cotonti.com"
   },
   "CouchDB": {
     "cats": [
@@ -3433,7 +3766,7 @@
       "Server": "CouchDB/([\\d.]+)\\;version:\\1"
     },
     "icon": "CouchDB.png",
-    "website": "http://couchdb.apache.org"
+    "website": "https://couchdb.apache.org"
   },
   "Countly": {
     "cats": [
@@ -3539,7 +3872,7 @@
       "X-Powered-By": "^CppCMS/([\\d.]+)$\\;version:\\1"
     },
     "icon": "CppCMS.png",
-    "website": "http://cppcms.com"
+    "website": "https://cppcms.com"
   },
   "Craft CMS": {
     "cats": [
@@ -3575,6 +3908,22 @@
     "implies": "Craft CMS",
     "website": "https://craftcommerce.com"
   },
+  "Craftum": {
+    "cats": [
+      51
+    ],
+    "description": "Craftum is an Russian website builder.",
+    "icon": "Craftum.svg",
+    "meta": {
+      "generator": "^Craftum CMS$"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://craftum.com"
+  },
   "Cratejoy": {
     "cats": [
       1,
@@ -3606,7 +3955,7 @@
       "CE2": ""
     },
     "scriptSrc": "script\\.crazyegg\\.com/pages/scripts/\\d+/\\d+\\.js",
-    "website": "http://crazyegg.com"
+    "website": "https://crazyegg.com"
   },
   "CreateJS": {
     "cats": [
@@ -3617,6 +3966,22 @@
     "saas": true,
     "scriptSrc": "code\\.createjs\\.com/",
     "website": "https://code.createjs.com"
+  },
+  "Creatium": {
+    "cats": [
+      51
+    ],
+    "description": "Creatium is a website builder developed in Russia that provides a user-friendly drag-and-drop interface and a variety of customisation options for creating websites without coding knowledge.",
+    "icon": "Creatium.svg",
+    "meta": {
+      "generator": "^Creatium$"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://creatium.io"
   },
   "Creativ.eMail": {
     "cats": [
@@ -3691,7 +4056,7 @@
       "//(?:cas\\.criteo\\.com|(?:[^/]\\.)?criteo\\.net)/",
       "//static\\.criteo\\.net/js/ld/ld\\.js"
     ],
-    "website": "http://criteo.com"
+    "website": "https://criteo.com"
   },
   "Crobox": {
     "cats": [
@@ -3730,7 +4095,7 @@
       "cp_C4w1ldN2d9PmVrkN": ""
     },
     "scriptSrc": "tag\\.crsspxl\\.com",
-    "website": "http://crosspixel.net"
+    "website": "https://crosspixel.net"
   },
   "Cross Sell": {
     "cats": [
@@ -3766,9 +4131,10 @@
   },
   "CrownPeak": {
     "cats": [
+      1,
       19
     ],
-    "description": "CrownPeak is a cloud-based Digital Experience Management (DEM) platform that is designed to in the management of digital experiences across multiple touch-points, especially for marketing and a freer IT architecture.",
+    "description": "CrownPeak is a cloud-based Digital Experience Platform (DXP).",
     "icon": "CrownPeak.png",
     "js": {
       "CrownPeakAutocomplete": "",
@@ -3779,7 +4145,8 @@
     ],
     "saas": true,
     "scriptSrc": "js/crownpeak\\.",
-    "website": "http://www.crownpeak.com"
+    "scripts": "crownpeak\\.net",
+    "website": "https://www.crownpeak.com"
   },
   "Cryout Creations Bravada": {
     "cats": [
@@ -3870,6 +4237,24 @@
     ],
     "website": "https://crypto-loot.com/"
   },
+  "Crystallize": {
+    "cats": [
+      6
+    ],
+    "description": "Crystallize is an ecommerce platform that offers a headless ecommerce solution for businesses.",
+    "dom": "link[href*='.crystallize.com']",
+    "icon": "Crystallize.svg",
+    "js": {
+      "__crystallizeConfig.API_URL": "\\.crystallize\\.com"
+    },
+    "pricing": [
+      "freemium",
+      "mid",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://crystallize.com"
+  },
   "CubeCart": {
     "cats": [
       6
@@ -3883,7 +4268,7 @@
       "generator": "cubecart"
     },
     "oss": true,
-    "website": "http://www.cubecart.com"
+    "website": "https://www.cubecart.com"
   },
   "Cubyn": {
     "cats": [
@@ -3907,7 +4292,7 @@
       "Cufon": ""
     },
     "scriptSrc": "cufon-yui\\.js",
-    "website": "http://cufon.shoqolate.com"
+    "website": "https://cufon.shoqolate.com"
   },
   "Custom Fonts": {
     "cats": [
@@ -4047,7 +4432,7 @@
     },
     "html": "<!-- cPanel",
     "icon": "cPanel.png",
-    "website": "http://www.cpanel.net"
+    "website": "https://www.cpanel.net"
   },
   "cState": {
     "cats": [
@@ -4060,6 +4445,23 @@
     },
     "oss": true,
     "website": "https://github.com/cstate/cstate"
+  },
+  "cashew": {
+    "cats": [
+      91
+    ],
+    "description": "Cashew is a buy now, pay later platform that allows its customers to shop now and pay later in equal monthly installments.",
+    "headers": {
+      "Content-Security-Policy": "\\.cashewpayments\\.com"
+    },
+    "icon": "cashew.svg",
+    "pricing": [
+      "payg"
+    ],
+    "requiresCategory": 6,
+    "saas": true,
+    "scriptSrc": "\\.cashewpayments\\.com/",
+    "website": "https://www.cashewpayments.com"
   },
   "cdnjs": {
     "cats": [
@@ -4087,7 +4489,7 @@
       "generator": "^cgit v([\\d.a-z-]+)$\\;version:\\1"
     },
     "oss": true,
-    "website": "http://git.zx2c4.com/cgit"
+    "website": "https://git.zx2c4.com/cgit"
   },
   "clickio": {
     "cats": [
@@ -4096,7 +4498,7 @@
     "description": "Clickio Consent Tool collects and communicates consent both to IAB Framework vendors and to Google Ads products.",
     "icon": "clickio.png",
     "scriptSrc": "clickio\\.mgr\\.consensu\\.org/t/consent_[0-9]+\\.js",
-    "website": "http://www.gdpr.clickio.com/"
+    "website": "https://www.gdpr.clickio.com/"
   },
   "comScore": {
     "cats": [
@@ -4116,20 +4518,7 @@
     ],
     "saas": true,
     "scriptSrc": "\\.scorecardresearch\\.com/beacon\\.js|COMSCORE\\.beacon",
-    "website": "http://comscore.com"
-  },
-  "commercelayer": {
-    "cats": [
-      6
-    ],
-    "icon": "commercelayer.svg",
-    "pricing": [
-      "mid",
-      "recurring"
-    ],
-    "saas": true,
-    "website": "https://commercelayer.io",
-    "xhr": "\\.commercelayer\\.io"
+    "website": "https://comscore.com"
   },
   "commercetools": {
     "cats": [
@@ -4138,12 +4527,19 @@
     "description": "commercetools is a headless commerce platform.",
     "dom": "link[href*='.commercetools.com/'], body[data-commerce-tools-host*='.commercetools.com']",
     "icon": "commercetools.svg",
+    "implies": "GraphQL",
+    "js": {
+      "COMMERCE_TOOLS_HOST_ATT": "",
+      "COMMERCE_TOOLS_PROJECT_KEY_ATT": "",
+      "__NEXT_DATA__.props.pageProps.commercetoolsEntity": ""
+    },
     "pricing": [
       "poa",
       "recurring"
     ],
     "saas": true,
-    "website": "https://commercetools.com"
+    "website": "https://commercetools.com",
+    "xhr": "\\.commercetools\\.com/"
   },
   "core-js": {
     "cats": [

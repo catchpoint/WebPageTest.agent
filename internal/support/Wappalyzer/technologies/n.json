@@ -58,7 +58,7 @@
       "nv.version": "^(.+)$\\;confidence:0\\;version:\\1"
     },
     "scriptSrc": "nv\\.d3(?:\\.min)?\\.js",
-    "website": "http://nvd3.org"
+    "website": "https://nvd3.org"
   },
   "Nacelle": {
     "cats": [
@@ -71,7 +71,9 @@
       }
     },
     "icon": "Nacelle.svg",
+    "implies": "GraphQL",
     "js": {
+      "__NEXT_DATA__.props.pageProps.page.nacelleEntryId": "",
       "nacelleEventData": ""
     },
     "pricing": [
@@ -79,7 +81,8 @@
       "recurring"
     ],
     "saas": true,
-    "website": "https://nacelle.com"
+    "website": "https://nacelle.com",
+    "xhr": "storefront\\.api\\.nacelle\\.com"
   },
   "NagaCommerce": {
     "cats": [
@@ -291,6 +294,23 @@
     "scriptSrc": "rua-api\\.ncloud\\.com/",
     "website": "https://analytics.naver.com"
   },
+  "Navidium Shipping Protection": {
+    "cats": [
+      5
+    ],
+    "description": "Navidium is a shipping insurance company that covers packages that are lost, stolen, or damaged in transit. Navidium Shipping Protection is an optional shipping protection service where, in the event of an incident (the order is damaged, lost, or stolen during transit), we will immediately re-ship any damaged, lost, or stolen products.",
+    "icon": "Navidium.svg",
+    "js": {
+      "nvdShop": "\\.myshopify\\.com"
+    },
+    "pricing": [
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "^.*/navidium-extension-checker\\.js$",
+    "website": "https://navidiumapp.com"
+  },
   "Neat A/B testing": {
     "cats": [
       74,
@@ -385,7 +405,7 @@
       "NS_VER": ""
     },
     "icon": "NetSuite.png",
-    "website": "http://netsuite.com"
+    "website": "https://netsuite.com"
   },
   "Netcore Cloud": {
     "cats": [
@@ -402,6 +422,23 @@
     "scriptSrc": "\\.netcoresmartech\\.com/",
     "website": "https://netcorecloud.com"
   },
+  "Netdeal": {
+    "cats": [
+      32
+    ],
+    "description": "Netdeal is a marketing automation platform.",
+    "icon": "Netdeal.svg",
+    "js": {
+      "NetdealBuildNumber": "",
+      "NetdealJs.paywall": "",
+      "netdealStartSession": ""
+    },
+    "pricing": [
+      "poa"
+    ],
+    "saas": true,
+    "website": "https://www.netdeal.com.br"
+  },
   "Netlify": {
     "cats": [
       62,
@@ -413,9 +450,25 @@
       "X-NF-Request-ID": ""
     },
     "icon": "Netlify.svg",
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring",
+      "poa"
+    ],
     "url": "^https?://[^/]+\\.netlify\\.(?:com|app)/",
     "website": "https://www.netlify.com/",
     "xhr": "cdn\\.netlify\\.com"
+  },
+  "Netlify Forms": {
+    "cats": [
+      110
+    ],
+    "description": "Netlify Forms is a serverless form handling solution for static websites.",
+    "dom": "form[data-netlify]",
+    "icon": "Netlify.svg",
+    "implies": "Netlify",
+    "website": "https://www.netlify.com/products/forms"
   },
   "Neto": {
     "cats": [
@@ -592,8 +645,10 @@
   },
   "Next.js": {
     "cats": [
+      12,
       18,
-      22
+      22,
+      57
     ],
     "cpe": "cpe:2.3:a:zeit:next.js:*:*:*:*:*:*:*:*",
     "description": "Next.js is a React framework for developing single page Javascript applications.",
@@ -637,6 +692,9 @@
       "<!-- <meta name=\"NextGEN\" version=\"([\\d.]+)\" /> -->\\;version:\\1"
     ],
     "icon": "NextGEN Gallery.png",
+    "js": {
+      "nextgen_lightbox_settings.static_path": "/wp-content/plugins/nextgen-gallery/"
+    },
     "requires": "WordPress",
     "scriptSrc": "/nextgen-gallery/js/",
     "website": "https://www.imagely.com/wordpress-gallery-plugin"
@@ -725,6 +783,24 @@
     "scriptSrc": "(?:api|sdk)\\.nextsale\\.io/",
     "website": "https://nextsale.io"
   },
+  "NexusPHP": {
+    "cats": [
+      1
+    ],
+    "cpe": "cpe:2.3:a:nexusphp:nexusphp:*:*:*:*:*:*:*:*",
+    "description": "NexusPHP is an open-sourced private tracker script written in PHP.",
+    "icon": "NexusPHP.png",
+    "implies": [
+      "PHP",
+      "MySQL",
+      "Redis"
+    ],
+    "meta": {
+      "generator": "^NexusPHP$"
+    },
+    "oss": true,
+    "website": "https://nexusphp.org"
+  },
   "NexusPIPE": {
     "cats": [
       16
@@ -741,15 +817,14 @@
       22,
       64
     ],
-    "cpe": "cpe:2.3:a:nginx:nginx:*:*:*:*:*:*:*:*",
+    "cpe": "cpe:2.3:a:f5:nginx:*:*:*:*:*:*:*:*",
     "description": "Nginx is a web server that can also be used as a reverse proxy, load balancer, mail proxy and HTTP cache.",
     "headers": {
       "Server": "nginx(?:/([\\d.]+))?\\;version:\\1",
       "X-Fastcgi-Cache": ""
     },
     "icon": "Nginx.svg",
-    "implies": "C",
-    "website": "http://nginx.org/en"
+    "website": "https://nginx.org/en"
   },
   "Niagahoster": {
     "cats": [
@@ -871,7 +946,7 @@
     "cpe": "cpe:2.3:a:nodejs:node.js:*:*:*:*:*:*:*:*",
     "description": "Node.js is an open-source, cross-platform, JavaScript runtime environment that executes JavaScript code outside a web browser.",
     "icon": "Node.js.svg",
-    "website": "http://nodejs.org"
+    "website": "https://nodejs.org"
   },
   "NodeBB": {
     "cats": [
@@ -906,6 +981,24 @@
     ],
     "saas": true,
     "website": "https://nodeping.com"
+  },
+  "Nogin": {
+    "cats": [
+      19
+    ],
+    "description": "Nogin is a platform operating as Commerce-as-a-Service (CaaS), offering cloud-based ecommerce functionalities and infrastructure for seamless integration and development of ecommerce solutions.",
+    "icon": "Nogin.png",
+    "js": {
+      "nogin.wishlist": ""
+    },
+    "pricing": [
+      "high",
+      "recurring",
+      "poa"
+    ],
+    "requiresCategory": 6,
+    "scriptSrc": "\\.nogin\\.com/",
+    "website": "https://www.nogin.com"
   },
   "Noibu": {
     "cats": [
@@ -1087,12 +1180,13 @@
       "Node.js"
     ],
     "js": {
-      "$nuxt": ""
+      "$nuxt": "",
+      "useNuxtApp": ""
     },
     "scriptSrc": [
       "/_nuxt/"
     ],
-    "website": "https://nuxtjs.org"
+    "website": "https://nuxt.com"
   },
   "nghttpx - HTTP/2 proxy": {
     "cats": [
@@ -1118,7 +1212,7 @@
       "generator": "^nopCommerce$"
     },
     "oss": true,
-    "website": "http://www.nopcommerce.com"
+    "website": "https://www.nopcommerce.com"
   },
   "nopStation": {
     "cats": [
@@ -1131,7 +1225,7 @@
     "requires": [
       "nopCommerce"
     ],
-    "website": "http://www.nop-station.com"
+    "website": "https://www.nop-station.com"
   },
   "novomind iSHOP": {
     "cats": [

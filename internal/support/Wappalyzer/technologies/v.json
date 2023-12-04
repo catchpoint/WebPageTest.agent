@@ -44,7 +44,7 @@
     "js": {
       "vivvo": ""
     },
-    "website": "http://vivvo.net"
+    "website": "https://vivvo.net"
   },
   "VK Pixel": {
     "cats": [
@@ -74,7 +74,7 @@
     "icon": "VP-ASP.png",
     "implies": "Microsoft ASP.NET",
     "scriptSrc": "vs350\\.js",
-    "website": "http://www.vpasp.com"
+    "website": "https://www.vpasp.com"
   },
   "VTEX": {
     "cats": [
@@ -100,7 +100,6 @@
       "payg"
     ],
     "saas": true,
-    "scriptSrc": "io\\.vtex\\.com\\.br",
     "website": "https://vtex.com/"
   },
   "VWO": {
@@ -206,7 +205,28 @@
     "html": "<body id=\"(?:DiscussionsPage|vanilla)",
     "icon": "Vanilla.png",
     "implies": "PHP",
-    "website": "http://vanillaforums.org"
+    "website": "https://vanillaforums.org"
+  },
+  "Vant": {
+    "cats": [
+      66
+    ],
+    "description": "Vant is a lightweight, customisable Vue UI library for mobile web apps.",
+    "dom": {
+      "link[href*='/npm/vant']": {
+        "attributes": {
+          "href": "cdn\\.jsdelivr\\.net/npm/vant@([\\d\\.]+)/\\;version:\\1"
+        }
+      }
+    },
+    "icon": "Vant.png",
+    "implies": "TypeScript",
+    "js": {
+      "vant.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "oss": true,
+    "requires": "Vue.js",
+    "website": "https://github.com/youzan/vant"
   },
   "Varbase": {
     "cats": [
@@ -240,7 +260,7 @@
     "cats": [
       23
     ],
-    "cpe": "cpe:2.3:a:varnish-software:varnich_cache:*:*:*:*:*:*:*:*",
+    "cpe": "cpe:2.3:a:varnish-software:varnish_cache:*:*:*:*:*:*:*:*",
     "description": "Varnish is a reverse caching proxy.",
     "headers": {
       "Via": "varnish(?: \\(Varnish/([\\d.]+)\\))?\\;version:\\1",
@@ -251,7 +271,7 @@
       "X-Varnish-Hostname": ""
     },
     "icon": "Varnish.svg",
-    "website": "http://www.varnish-cache.org"
+    "website": "https://www.varnish-cache.org"
   },
   "Ve Global": {
     "cats": [
@@ -263,6 +283,37 @@
       "veTagData.appsServicesUrl": "\\.veinteractive\\.com"
     },
     "website": "https://ve.com"
+  },
+  "Vectary": {
+    "cats": [
+      105
+    ],
+    "description": "Vectary is fully-featured 3D modeling tool with photorealistic real-time rendering, augmented reality, interactions and animations.",
+    "dom": "iframe[src*='app.vectary.com/']",
+    "icon": "vectary.svg",
+    "pricing": [
+      "low",
+      "freemium",
+      "recurring"
+    ],
+    "website": "https://www.vectary.com"
+  },
+  "Vendre": {
+    "cats": [
+      6
+    ],
+    "description": "Vendre is a module-based ecommerce system where you choose which functions your organisation needs.",
+    "icon": "Vendre.png",
+    "js": {
+      "VendreMap.maps_loaded": "",
+      "vendre_config": ""
+    },
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://vendre.io"
   },
   "Venmo": {
     "cats": [
@@ -289,6 +340,21 @@
     ],
     "website": "https://ventraip.com.au"
   },
+  "VentryShield": {
+    "cats": [
+      16
+    ],
+    "cookies": {
+      "ventryshield_pre": ""
+    },
+    "description": "VentryShield offers DDoS Protected VPS and Web Hosting.",
+    "headers": {
+      "x-ventryshield-cache-status": "no-cache",
+      "x-ventryshield-sid": ""
+    },
+    "icon": "ventry_shield.png",
+    "website": "https://ventryshield.net"
+  },
   "Veoxa": {
     "cats": [
       36
@@ -299,7 +365,7 @@
       "VuVeoxaContent": ""
     },
     "scriptSrc": "tracking\\.veoxa\\.com",
-    "website": "http://veoxa.com"
+    "website": "https://veoxa.com"
   },
   "Vercel": {
     "cats": [
@@ -335,7 +401,10 @@
     "requires": [
       "Vercel"
     ],
-    "scriptSrc": "/va/script\\.js",
+    "scriptSrc": [
+      "/va/script\\.js",
+      "/_vercel/insights/script\\.js"
+    ],
     "website": "https://vercel.com/analytics"
   },
   "Verifone 2Checkout": {
@@ -413,12 +482,67 @@
     "saas": true,
     "website": "https://verloop.io/"
   },
+  "VerticalScope": {
+    "cats": [
+      36
+    ],
+    "description": "VerticalScope is a Canadian-based technology company that owns and operates a network of online communities and discussion forums focused on a variety of interests and hobbies, such as cars, pets, sports, and technology. VerticalScope generates revenue primarily through advertising, including banner ads, sponsored content, and affiliate marketing.",
+    "dom": {
+      "footer > div": {
+        "text": "VerticalScope Inc\\."
+      }
+    },
+    "icon": "VerticalScope.svg",
+    "pricing": [
+      "payg"
+    ],
+    "website": "https://www.verticalscope.com"
+  },
+  "Very Good Security": {
+    "cats": [
+      16
+    ],
+    "description": "Very Good Security (VGS) is a data security and compliance platform that enables developers to securely handle sensitive data by encrypting, tokenising, and transmitting it through an intermediary service.",
+    "headers": {
+      "Content-Security-Policy": "\\.verygoodvault\\.com"
+    },
+    "icon": "Very Good Security.svg",
+    "js": {
+      "VGSCollect": ""
+    },
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "js\\.verygoodvault\\.com/",
+    "website": "https://www.verygoodsecurity.com"
+  },
+  "Vev": {
+    "cats": [
+      51
+    ],
+    "description": "Vev is a cloud-based design and publishing platform that enables users to create interactive digital content without coding, using a drag-and-drop interface and built-in templates and integrations.",
+    "icon": "Vev.svg",
+    "js": {
+      "vev.App.compare": "",
+      "vev.DEFAULT_APP_STATE": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.vev\\.design/",
+    "website": "https://www.vev.design"
+  },
   "ViaBill": {
     "cats": [
       91
     ],
     "description": "ViaBill is a cloud-based payment management solution designed to help small to midsize retailers and webshops.",
-    "icon": "ViaBill.png",
+    "icon": "ViaBill.svg",
     "js": {
       "viabillOptions.state.subscriptions": "",
       "viabillPricetagInternal.conf.productsByLocale": ""
@@ -500,7 +624,7 @@
       "zencdn\\.net/c/video\\.js",
       "cdnjs\\.cloudflare\\.com\\/ajax\\/libs\\/video\\.js\\/([\\d\\.]+)\\/\\;version:\\1"
     ],
-    "website": "http://videojs.com"
+    "website": "https://videojs.com"
   },
   "Vigbo": {
     "cats": [
@@ -538,7 +662,7 @@
     ],
     "html": "<[^>]+=\"vgn-?ext",
     "icon": "Vignette.png",
-    "website": "http://www.vignette.com"
+    "website": "https://www.vignette.com"
   },
   "Vimeo": {
     "cats": [
@@ -552,7 +676,7 @@
       "VimeoPlayer": ""
     },
     "saas": true,
-    "website": "http://vimeo.com"
+    "website": "https://vimeo.com"
   },
   "Vimeo OTT": {
     "cats": [
@@ -572,6 +696,23 @@
     "saas": true,
     "website": "https://vimeo.com/ott",
     "xhr": "api\\.vhx\\.tv"
+  },
+  "Viqeo": {
+    "cats": [
+      14
+    ],
+    "description": "Viqeo is a short video platform to make media and ecommerce more visual and interesting.",
+    "icon": "Viqeo.svg",
+    "js": {
+      "VIQEO": ""
+    },
+    "pricing": [
+      "freemium",
+      "low",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://viqeo.tv"
   },
   "Viral Loops": {
     "cats": [
@@ -668,7 +809,7 @@
     "html": "<div id=\"vmMainPage",
     "icon": "VirtueMart.png",
     "implies": "Joomla",
-    "website": "http://virtuemart.net"
+    "website": "https://virtuemart.net"
   },
   "Virtuoso": {
     "cats": [
@@ -728,7 +869,7 @@
       41
     ],
     "description": "Visa facilitates electronic funds transfers throughout the world, most commonly through Visa-branded credit cards, debit cards and prepaid cards.",
-    "icon": "visa.png",
+    "icon": "Visa.svg",
     "scriptSrc": "secure\\.checkout\\.visa\\.com",
     "website": "https://checkout.visa.com"
   },
@@ -770,6 +911,22 @@
       "recurring"
     ],
     "website": "https://visualcomposer.com"
+  },
+  "Visual Portfolio": {
+    "cats": [
+      87
+    ],
+    "description": "Visual Portfolio is a plugin with a robust set of features, designed to help you create galleries that effectively display your creative projects.",
+    "icon": "Visual Portfolio.svg",
+    "js": {
+      "VPData.screenSizes": "",
+      "VPData.version": "([\\d\\.]+)\\;version:\\1"
+    },
+    "pricing": [
+      "onetime"
+    ],
+    "requires": "WordPress",
+    "website": "https://visualportfolio.co"
   },
   "Visual Quiz Builder": {
     "cats": [
@@ -850,7 +1007,11 @@
       19
     ],
     "description": "Vite is a rapid development tool for modern web projects.",
+    "dom": "script#vite-legacy-polyfill, script#vite-legacy-entry",
     "icon": "vite.svg",
+    "js": {
+      "__vite_is_modern_browser": ""
+    },
     "oss": true,
     "website": "https://vitejs.dev"
   },
@@ -906,6 +1067,30 @@
     "saas": true,
     "scriptSrc": "\\.vizury\\.com",
     "website": "https://www.vizury.com"
+  },
+  "Vnda": {
+    "cats": [
+      6
+    ],
+    "description": "Vnda is a omnichannel ecommerce platform.",
+    "icon": "Vnda.svg",
+    "implies": [
+      "Node.js",
+      "Amazon Web Services"
+    ],
+    "js": {
+      "Vnda.loadCartPopup": "",
+      "vnda.checkout": ""
+    },
+    "meta": {
+      "image": "cdn\\.vnda\\.com\\.br/"
+    },
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "website": "https://www.vnda.com.br"
   },
   "Vntana": {
     "cats": [
@@ -1117,6 +1302,30 @@
     "oss": true,
     "website": "https://vuetifyjs.com"
   },
+  "Vuex": {
+    "cats": [
+      59
+    ],
+    "description": "Vuex is a state management pattern + library for Vue.js applications.",
+    "icon": "vue.svg",
+    "implies": "Vue.js",
+    "js": {
+      "Vuex.version": "(.*)\\;version:\\1"
+    },
+    "oss": true,
+    "website": "https://vuex.vuejs.org/"
+  },
+  "Vultr": {
+    "cats": [
+      62
+    ],
+    "description": "Vultr is a cloud computing service provider.",
+    "dns": {
+      "NS": "\\.vultr\\.com"
+    },
+    "icon": "Vultr.svg",
+    "website": "https://www.vultr.com"
+  },
   "Vuukle": {
     "cats": [
       15
@@ -1127,6 +1336,20 @@
       "VUUKLE_CONFIG": ""
     },
     "website": "https://vuukle.com"
+  },
+  "v4Guard Checkpoint": {
+    "cats": [
+      16
+    ],
+    "description": "Checkpoint is a product of v4Guard that verifies website users and prevents fraudulent access to sensitive areas, by checking for any use of anonymisation services with a captcha-like widget.",
+    "icon": "v4Guard.svg",
+    "pricing": [
+      "poa",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": "\\.v4guard\\.io/checkpoint",
+    "website": "https://v4guard.io"
   },
   "vBulletin": {
     "cats": [
@@ -1184,7 +1407,7 @@
       "designer": "vibecommerce",
       "generator": "vibecommerce"
     },
-    "website": "http://vibecommerce.com.br"
+    "website": "https://vibecommerce.com.br"
   },
   "vxe-table": {
     "cats": [
