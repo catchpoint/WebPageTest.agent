@@ -1152,6 +1152,8 @@ def main():
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
     parser.add_argument('--har', action='store_true', default=False,
                         help="Generate a per-run HAR file as part of the test result (defaults to False).")
+    parser.add_argument('--maxcpuscale', type=int, default=2,
+                        help='Maximum scaling to apply to CPU throttle based on host benchmark (defaults to 2).')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
