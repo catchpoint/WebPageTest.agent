@@ -399,7 +399,6 @@
     ],
     "css": "--made-with-panda",
     "description": "Panda is a styling engine that generates styling primitives to author atomic CSS and recipes in a type-safe and readable manner.",
-    "icon": "PandaCSS.svg",
     "oss": true,
     "website": "https://panda-css.com/"
   },
@@ -3380,20 +3379,6 @@
     "oss": true,
     "website": "https://github.com/mroderick/PubSubJS"
   },
-  "Public CMS": {
-    "cats": [
-      1
-    ],
-    "cookies": {
-      "PUBLICCMS_USER": ""
-    },
-    "headers": {
-      "X-Powered-PublicCMS": "^(.+)$\\;version:\\1"
-    },
-    "icon": "Public CMS.png",
-    "implies": "Java",
-    "website": "https://www.publiccms.com"
-  },
   "PubTech": {
     "cats": [
       67
@@ -3407,6 +3392,20 @@
       "pubtech-cmp-v(.+?)(?:-esm)?\\.js;version:\\1"
     ],
     "website": "https://www.pubtech.ai/"
+  },
+  "Public CMS": {
+    "cats": [
+      1
+    ],
+    "cookies": {
+      "PUBLICCMS_USER": ""
+    },
+    "headers": {
+      "X-Powered-PublicCMS": "^(.+)$\\;version:\\1"
+    },
+    "icon": "Public CMS.png",
+    "implies": "Java",
+    "website": "https://www.publiccms.com"
   },
   "Pulse Secure": {
     "cats": [

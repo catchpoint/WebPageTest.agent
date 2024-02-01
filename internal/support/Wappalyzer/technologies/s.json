@@ -795,8 +795,8 @@
     ],
     "description": "Salla is an ecommerce platform specifically tailored to serve businesses and customers in Saudi Arabia.",
     "headers": {
-      "x-powered-by": "^Salla$",
-      "X-Frame-Options": "\\.salla\\.sa"
+      "X-Frame-Options": "\\.salla\\.sa",
+      "x-powered-by": "^Salla$"
     },
     "icon": "Salla.svg",
     "js": {
@@ -2310,9 +2310,9 @@
     "js": {
       "ShopifyPay.apiHost": ""
     },
-    "requires": "Shopify",
     "scriptSrc": [
-      "cdn\\.shopify\\.com/shopifycloud/shopify_pay/"
+      "cdn\\.shopify\\.com/shopifycloud/shopify_pay/",
+      "cdn\\.shopify\\.com/shopifycloud/shopify-js/shop-pay-payment-request\\.js"
     ],
     "website": "https://shop.app"
   },
@@ -2327,7 +2327,6 @@
       "Affirm",
       "Shop Pay"
     ],
-    "requires": "Shopify",
     "website": "https://shoppay.affirm.com"
   },
   "ShopBase": {
@@ -7082,7 +7081,7 @@
     ],
     "description": "Swiper is a JavaScript library that creates modern touch sliders with hardware-accelerated transitions.",
     "dom": [
-      "div[data-swiper-slide-index]", 
+      "div[data-swiper-slide-index]",
       "swiper-container",
       "swiper-slide",
       "div.swiper-wrapper",
