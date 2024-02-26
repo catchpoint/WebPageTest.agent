@@ -306,7 +306,7 @@ class OptimizationChecks(object):
                         '.dsa.dnsv1.com.cn'],
             'Transparent Edge': ['.edge2befaster.io',
                                  '.edge2befaster.net',
-                                 '.edgetcdn.io,
+                                 '.edgetcdn.io',
                                  '.edgetcdn.net'],
             'TRBCDN': ['.trbcdn.net'],
             'Twitter': ['.twimg.com'],
