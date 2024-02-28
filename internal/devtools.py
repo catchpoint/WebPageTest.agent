@@ -1239,7 +1239,7 @@ class DevTools(object):
 
     def set_execution_context(self, target):
         """ Set the js execution context by matching id, origin or name """
-        if len(target):
+        if target is not None and len(target):
             parts = target.split('=', 1)
             if len(parts) == 2:
                 key = parts[0].strip()
@@ -1247,7 +1247,7 @@ class DevTools(object):
                 if key in ['id', 'name', 'origin'] and len(value):
                     for id in self.execution_contexts:
                         context = self.execution_contexts[id]
-                        if key in context and context[key] == value:
+                        if key in context and str(context[key]) == str(value):
                             self.execution_context = id
                             break
         else:

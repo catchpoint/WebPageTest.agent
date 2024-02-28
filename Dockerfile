@@ -17,7 +17,7 @@
 ###     Recommend to install with "docker build <GITHUB-REPO-LINK> -t TAGNAME",
 ###     grabs the latest copy of WPT and build time on average takes 10 minutes. 
 
-FROM ubuntu
+FROM ubuntu:22.04
 
 ### PREVENTs INTERACTIVE PROMPTS WHILE INSTALLING ###
 ARG DEBIAN_FRONTEND=noninteractive
@@ -30,11 +30,23 @@ RUN apt-get update
 # RUN apt-get install -y git
 # RUN git clone -b dockerfile https://github.com/sammeboy635/wptagent.git
 
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+
 ### UPDATE ###
 RUN apt-get update 
 
 ### INSTALL APT-GET LIBS ###
-RUN xargs -a /wptagent/.github/workflows/docker-apt-get.txt apt-get install --no-install-recommends --yes; exit 0
+RUN apt-get install -y \
+    python3 python3-pip python3-ujson \
+    imagemagick dbus-x11 traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools openvpn \
+    libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk \
+    python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev \
+    libtool libvorbis-dev pkg-config texi2html libtext-unidecode-perl python3-numpy python3-scipy perl \
+    adb ethtool nodejs cmake git-core libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget \
+    ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans ffmpeg npm
+
+### Update the font cache
+RUN fc-cache -f -v
 
 ### UPGRADING PIP AND INSTALLING REQUIRED PACKAGES ###
 RUN python3 -m pip install --upgrade --user pip && \

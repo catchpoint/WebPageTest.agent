@@ -15,35 +15,30 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.6.8
-      uses: actions/setup-python@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
       with:
-        python-version: "3.6.8"
+        python-version: '3.10'
         cache: 'pip'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        sudo apt-get install python3-psutil
-        sudo apt-get install python3-xvfbwrapper
-        sudo apt-get install python3-dnspython
-        sudo apt-get install python3-monotonic
-        sudo apt-get install python3-tornado
-        sudo apt-get install python3-fonttools
-        sudo apt-get install python3-wsaccel
-        sudo apt-get install pylint
+    - name: Install apt dependencies
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: pylint apt-transport-https xserver-xorg-video-dummy xvfb gnupg2 python3-ujson imagemagick dbus-x11 traceroute software-properties-common psmisc libnss3-tools iproute2 net-tools openvpn libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev libtool libvorbis-dev pkg-config texi2html libtext-unidecode-perl python3-numpy python3-scipy perl adb ethtool nodejs cmake libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans
+        version: 1.0
 
-    - name: Install/Cache pip dependencies
-      run: pip install -r .github/workflows/requirements.txt
+    - name: Install pip dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install -r .github/workflows/requirements.txt
 
     - name: Analysing the code with pylint
       run: |
        find -name "*.py" -not -path "./ws4py/*" -exec pylint {} --errors-only \;
-    
 
     - name: Test with pytest
       run: |
