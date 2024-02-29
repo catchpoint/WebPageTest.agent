@@ -29,7 +29,7 @@ sudo dbus-uuidgen --ensure
 sudo fc-cache -f -v
 
 # Install the python modules
-until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel brotli fonttools selenium future usbmuxwrapper
+until sudo pip3 install dnspython monotonic pillow psutil requests tornado wsaccel brotli fonttools selenium future usbmuxwrapper pytz tzlocal
 do
     sleep 1
 done

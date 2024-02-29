@@ -1,0 +1,2 @@
+# Ensure that linux files have lf endings even when working on windows
+*.sh text eol=lf

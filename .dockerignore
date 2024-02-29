@@ -1,1 +1,19 @@
+# hidden unused files
 .git
+.vscode
+.gitignore
+.travis.yml
+
+# unused folders
+docs
+test
+
+# unused script and files
+README.md
+alive.bat
+browsers.ini.sample
+centos_install.sh
+ios_install.sh
+ubuntu_install.sh
+windows_install.ps1
+windows_post_reboot.ps1
