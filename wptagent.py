@@ -583,9 +583,9 @@ class WPTAgent(object):
             if self.get_node_version() < 16.0:
                 logging.warning("Node.js 16 or newer is required for Lighthouse testing")
 
-        # Force lighthouse 11.5.0
-        if self.get_lighthouse_version() != '11.5.0':
-            subprocess.call(['sudo', 'npm', 'i', '-g', 'lighthouse@11.5.0'])
+        # Force lighthouse 11.4.0
+        if self.get_lighthouse_version() != '11.4.0':
+            subprocess.call(['sudo', 'npm', 'i', '-g', 'lighthouse@11.4.0'])
 
         # Check the iOS install
         if self.ios is not None:
