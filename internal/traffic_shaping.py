@@ -18,6 +18,7 @@ class TrafficShaper(object):
         shaper_name = options.shaper
         self.support_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "support")
         self.shaper = None
+        self.options = options
         plat = platform.system()
         if shaper_name is None and plat == "Linux":
             shaper_name = 'netem'
@@ -98,13 +99,20 @@ class TrafficShaper(object):
         if 'shaperLimit' in job:
             shaperLimit = self._to_int(job['shaperLimit'])
         if self.shaper is not None:
-            # If a lighthouse test is running, force the Lighthouse 3G profile:
+            # If a lighthouse test is running, force the Lighthouse 3G profile for mobile
+            # or 4G for desktop:
             # https://github.com/GoogleChrome/lighthouse/blob/master/docs/throttling.md
-            # 1.6Mbps down, 750Kbps up, 150ms RTT
             if task['running_lighthouse'] and not job['lighthouse_throttle']:
-                rtt = 150
-                in_bps = 1600000
-                out_bps = 750000
+                if self.options.android or ('mobile' in job and job['mobile']):
+                    # 1.6Mbps down, 750Kbps up, 150ms RTT
+                    rtt = 150
+                    in_bps = 1600000
+                    out_bps = 750000
+                else:
+                    # 10Mbps, 40ms RTT
+                    rtt = 40
+                    in_bps = 10240000
+                    out_bps = 10240000
                 plr = .0
                 shaperLimit = 0
             logging.debug('Configuring traffic shaping: %d/%d - %d ms, %0.2f%% plr, %d tc-qdisc limit',
