@@ -625,7 +625,7 @@ class WebPageTest(object):
 
     def get_test(self, browsers):
         """Get a job from the server"""
-        if self.is_rebooting or self.is_dead or self.options.pubsub:
+        if self.is_rebooting or self.is_dead or self.options.pubsub or self.options.beanstalk:
             return
         import requests
         proxies = {"http": None, "https": None}
@@ -1523,6 +1523,30 @@ class WebPageTest(object):
                         futures.wait([publisher_future], return_when=futures.ALL_COMPLETED)
                     except Exception:
                         logging.exception('Error sending job to pubsub completed queue')
+            elif self.options.beanstalk:
+                import greenstalk
+                import zlib
+                if 'beanstalk_retry_queue' in self.job and 'success' in self.job and not self.job['success']:
+                    try:
+                        logging.debug('Sending test to retry queue: %s', self.job['beanstalk_retry_queue'])
+                        beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, use=self.job['beanstalk_retry_queue'])
+                        job_str = json.dumps(self.raw_job)
+                        raw = zlib.compress(job_str.encode(), 9)
+                        beanstalk.put(raw)
+                    except Exception:
+                        logging.exception('Error sending job to retry queue')
+                elif 'beanstalk_completed_queue' in self.job and self.job.get('success'):
+                    try:
+                        logging.debug('Sending test to completed queue: %s', self.job['beanstalk_completed_queue'])
+                        beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, use=self.job['beanstalk_completed_queue'])
+                        if 'results' in self.job:
+                            self.raw_job['results'] = self.job['results']
+                        job_str = json.dumps(self.raw_job)
+                        raw = zlib.compress(job_str.encode(), 9)
+                        beanstalk.put(raw)
+                    except Exception:
+                        logging.exception('Error sending job to completed queue')
+
         self.raw_job = None
         self.needs_zip = []
         # Clean up the work directory
