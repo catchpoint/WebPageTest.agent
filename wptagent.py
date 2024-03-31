@@ -41,6 +41,8 @@ class WPTAgent(object):
         self.health_check_server = None
         self.message_server = None
         self.job = None
+        self.beanstalk_job = None
+        self.beanstalk = None
         self.task = None
         self.xvfb = None
         self.root_path = os.path.abspath(os.path.dirname(__file__))
@@ -176,9 +178,12 @@ class WPTAgent(object):
                                 self.job = self.wpt.process_job_json(test_json)
                             except Exception:
                                 logging.exception('Error processing test options')
+                        elif self.options.beanstalk:
+                            self.get_beanstalk_job()
                         else:
                             self.job = self.wpt.get_test(self.browsers.browsers)
                         self.run_job()
+                        self.job_done()
                     elif self.options.exit > 0 and self.browsers.should_exit():
                         self.must_exit = True
                     if self.job is not None:
@@ -216,6 +221,29 @@ class WPTAgent(object):
         if self.needs_shutdown:
             if platform.system() == "Linux":
                 subprocess.call(['sudo', 'poweroff'])
+
+    def job_done(self):
+        if self.beanstalk_job is not None:
+            try:
+                self.beanstalk.delete(self.beanstalk_job)
+            except Exception:
+                logging.exception("Error deleting beanstalk job")
+
+    def get_beanstalk_job(self):
+        self.beanstalk_job = None
+        try:
+            import greenstalk
+            import zlib
+            if self.beanstalk is None:
+                self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl')
+            self.beanstalk_job = self.beanstalk.reserve(30)
+            raw = self.beanstalk_job.body
+            test_json = json.loads(zlib.decompress(raw).decode())
+            self.job = self.wpt.process_job_json(test_json)
+        except greenstalk.TimedOutError:
+            pass
+        except Exception:
+            logging.exception("Error getting beanstalk job")
 
     def pubsub_callback(self, message):
         """Pubsub callback for jobs"""
@@ -1174,6 +1202,8 @@ def main():
                         help='Polling interval for work (defaults to 5 seconds).')
     parser.add_argument('--pubsub',
                         help="PubSub subscription path (i.e. projects/xxx/subscriptions/queue-yyy).")
+    parser.add_argument('--beanstalk',
+                        help="Beanstalk queue server IP for work queues (default port of 11300).")
 
     # Traffic-shaping options (defaults to host-based)
     parser.add_argument('--shaper', help='Override default traffic shaper. '
