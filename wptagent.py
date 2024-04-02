@@ -13,6 +13,7 @@ import platform
 import gzip
 import re
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -45,6 +46,7 @@ class WPTAgent(object):
         self.beanstalk = None
         self.task = None
         self.xvfb = None
+        self.hostname = socket.gethostname()
         self.root_path = os.path.abspath(os.path.dirname(__file__))
         self.wpt = WebPageTest(options, os.path.join(self.root_path, "work"))
         self.persistent_work_dir = self.wpt.get_persistent_dir()
@@ -235,15 +237,19 @@ class WPTAgent(object):
             import greenstalk
             import zlib
             if self.beanstalk is None:
-                self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl', use='failed')
+                self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl', use='alive')
             self.beanstalk_job = self.beanstalk.reserve(30)
             stats = self.beanstalk.stats_job(self.beanstalk_job)
             if stats and 'timeouts' in stats and stats['timeouts'] >= 3:
                 # put it in the failed queue
+                self.beanstalk.use('failed')
                 self.beanstalk.put(self.beanstalk_job.body)
                 self.beanstalk.delete(self.beanstalk_job)
                 self.beanstalk_job = None
+                self.beanstalk.use('alive')
             else:
+                message = {'n': self.hostname, 't': time.time()}
+                self.beanstalk.put(json.dumps(message).encode())
                 raw = self.beanstalk_job.body
                 test_json = json.loads(zlib.decompress(raw).decode())
                 self.job = self.wpt.process_job_json(test_json)
