@@ -237,9 +237,14 @@ class WPTAgent(object):
             if self.beanstalk is None:
                 self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl')
             self.beanstalk_job = self.beanstalk.reserve(30)
-            raw = self.beanstalk_job.body
-            test_json = json.loads(zlib.decompress(raw).decode())
-            self.job = self.wpt.process_job_json(test_json)
+            stats = self.beanstalk.stats_job(self.beanstalk_job)
+            if stats and 'timeouts' in stats and stats['timeouts'] >= 3:
+                self.beanstalk.delete(self.beanstalk_job)
+                self.beanstalk_job = None
+            else:
+                raw = self.beanstalk_job.body
+                test_json = json.loads(zlib.decompress(raw).decode())
+                self.job = self.wpt.process_job_json(test_json)
         except greenstalk.TimedOutError:
             pass
         except Exception:
