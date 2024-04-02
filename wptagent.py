@@ -235,10 +235,12 @@ class WPTAgent(object):
             import greenstalk
             import zlib
             if self.beanstalk is None:
-                self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl')
+                self.beanstalk = greenstalk.Client((self.options.beanstalk, 11300), encoding=None, watch='crawl', use='failed')
             self.beanstalk_job = self.beanstalk.reserve(30)
             stats = self.beanstalk.stats_job(self.beanstalk_job)
             if stats and 'timeouts' in stats and stats['timeouts'] >= 3:
+                # put it in the failed queue
+                self.beanstalk.put(self.beanstalk_job.body)
                 self.beanstalk.delete(self.beanstalk_job)
                 self.beanstalk_job = None
             else:
