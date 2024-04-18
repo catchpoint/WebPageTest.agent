@@ -489,6 +489,8 @@ class WPTAgent(object):
 
         # Optional imports
         self.requires('fontTools', 'fonttools')
+        self.requires('pytz')
+        self.requires('tzlocal')
 
         # Try patching ws4py with a faster lib
         try:
@@ -1100,7 +1102,7 @@ def main():
     parser.add_argument('--name', help="Agent name (for the work directory).")
     parser.add_argument('--exit', type=int, default=0,
                         help='Exit after the specified number of minutes.\n'
-                        '    Useful for running in a shell script that does some maintenence\n'
+                        '    Useful for running in a shell script that does some maintenance\n'
                         '    or updates periodically (like hourly).')
     parser.add_argument('--dockerized', action='store_true', default=False,
                         help="Agent is running in a docker container.")
@@ -1111,7 +1113,15 @@ def main():
     parser.add_argument('--alive',
                         help="Watchdog file to update when successfully connected.")
     parser.add_argument('--log',
-                        help="Log critical errors to the given file.")
+                        help="Output the logs to the given file."
+                         "For backward compatibility if --logformat is not specified only critical errors will be logged "
+                         "to the file with the legacy non standardized format")
+    parser.add_argument('--logformat',
+                        help="Change the log level format when using '--log' option."
+                        "When this option is specified will only print to the file specified with '--log'."
+                        "When this parameter is used verbosity will also take effect.",
+                        type=str.lower,
+                        choices=LOG_FORMATS)
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
@@ -1119,6 +1129,8 @@ def main():
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
     parser.add_argument('--har', action='store_true', default=False,
                         help="Generate a per-run HAR file as part of the test result (defaults to False).")
+    parser.add_argument('--maxcpuscale', type=int, default=2,
+                        help='Maximum scaling to apply to CPU throttle based on host benchmark (defaults to 2).')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -1247,23 +1259,7 @@ def main():
         exit(1)
 
     # Set up logging
-    log_level = logging.CRITICAL
-    if options.verbose == 1:
-        log_level = logging.ERROR
-    elif options.verbose == 2:
-        log_level = logging.WARNING
-    elif options.verbose == 3:
-        log_level = logging.INFO
-    elif options.verbose >= 4:
-        log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
-                        datefmt="%H:%M:%S")
-
-    if options.log:
-        err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
-                                                       backupCount=5, delay=True)
-        err_log.setLevel(logging.ERROR)
-        logging.getLogger().addHandler(err_log)
+    setup_logging(options.verbose, options.logformat, options.log)
 
     if options.ec2 or options.gce:
         upgrade_pip_modules()

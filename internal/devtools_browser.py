@@ -854,7 +854,12 @@ class DevtoolsBrowser(object):
             else:
                 cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu']) if 'throttle_cpu' in self.job else '1'
                 if self.job['dtShaper']:
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    if self.options.android or ('mobile' in self.job and self.job['mobile']):
+                        # 1.6Mbps down, 750Kbps up, 150ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '750', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    else:
+                        # 10Mbps, 40ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '40', '--throttling.downloadThroughputKbps', '10240', '--throttling.uploadThroughputKbps', '10240', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 elif 'throttle_cpu_requested' in self.job and self.job['throttle_cpu_requested'] > 1:
                     command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 else:
@@ -874,7 +879,7 @@ class DevtoolsBrowser(object):
                 command.extend(['--screenEmulation.disabled'])
             if 'user_agent_string' in self.job:
                 sanitized_user_agent = re.sub(r'[^a-zA-Z0-9_\-.;:/()\[\] ]+', '', self.job['user_agent_string'])
-                command.append('--chrome-flags="--user-agent=\'{0}\'"'.format(sanitized_user_agent))
+                command.extend(['--emulatedUserAgent', "'" + sanitized_user_agent + "'"])
             if len(task['block']):
                 for pattern in task['block']:
                     pattern = "'" + pattern.replace("'", "'\\''") + "'"
