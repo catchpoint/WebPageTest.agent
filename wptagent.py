@@ -585,6 +585,10 @@ class WPTAgent(object):
             if self.get_node_version() < 16.0:
                 logging.warning("Node.js 16 or newer is required for Lighthouse testing")
 
+        # Force lighthouse 11.4.0
+        if self.get_lighthouse_version() != '11.4.0':
+            subprocess.call(['sudo', 'npm', 'i', '-g', 'lighthouse@11.4.0'])
+
         # Check the iOS install
         if self.ios is not None:
             ret = self.requires('usbmuxwrapper') and ret
@@ -623,6 +627,20 @@ class WPTAgent(object):
                 version = float(matches.group(1))
         except Exception:
             pass
+        return version
+
+    def get_lighthouse_version(self):
+        """Get the installed version of lighthouse"""
+        version = None
+        try:
+            if sys.version_info >= (3, 0):
+                stdout = subprocess.check_output(['lighthouse', '--version'], encoding='UTF-8')
+            else:
+                stdout = subprocess.check_output(['lighthouse', '--version'])
+            version = stdout.strip()
+        except Exception:
+            pass
+
         return version
 
     def update_windows_certificates(self):
