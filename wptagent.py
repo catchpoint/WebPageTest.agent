@@ -1073,6 +1073,61 @@ def fix_selenium_version():
     run_elevated(sys.executable, f'-m pip install selenium=={version}')
 
 
+# Constant used for --logformat command line parameter mapping
+LOG_FORMATS = ["syslog"]
+
+def setup_logging(verbosity=0, log_format=None, log_file=None):
+    """Setup logging according to passed command line values"""
+
+    # Set log level and legacy format
+    basic_log_level = logging.CRITICAL
+    if verbosity is None:
+        pass # default critical
+    elif verbosity == 1:
+        basic_log_level = logging.ERROR
+    elif verbosity == 2:
+        basic_log_level = logging.WARNING
+    elif verbosity == 3:
+        basic_log_level = logging.INFO
+    elif verbosity >= 4:
+        basic_log_level = logging.DEBUG
+
+    if log_format is None:
+        # legacy behavior
+        logging.basicConfig(level=basic_log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
+                            datefmt="%H:%M:%S")
+
+        # If file is specified add self rotating file with just errors level or above.
+        if log_file is not None:
+            err_log = logging.handlers.RotatingFileHandler(log_file, maxBytes=1000000,
+                                                        backupCount=5, delay=True)
+            err_log.setLevel(logging.ERROR)
+            logging.getLogger().addHandler(err_log)
+    else:
+        if log_format == "syslog" and log_file is not None:
+            from internal.rfc5424logging import Rfc5424SysLogHandler, logging_context
+            logger = logging.getLogger()
+            logger.setLevel(basic_log_level)
+            handler = Rfc5424SysLogHandler( \
+                address=None, \
+                socktype=None, \
+                framing=None, \
+                msg_as_utf8=True, \
+                appname="wptagent", \
+                # Currently used just for versioning
+                enterprise_id="1", \
+                utc_timestamp=True, \
+                file_name=log_file \
+                )
+
+            logger.addHandler(handler)
+            logger.debug("Rfc5424SysLogHandler initialized", extra=logging_context().as_extra({"msg_as_utf8": True}))
+        else:
+            # used default loggger
+            logging.critical("log_file must be specified if log_format is used.")
+            exit(1)
+
+
 def main():
     """Startup and initialization"""
     import argparse
