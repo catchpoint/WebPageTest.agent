@@ -1127,7 +1127,6 @@ def setup_logging(verbosity=0, log_format=None, log_file=None):
             logging.critical("log_file must be specified if log_format is used.")
             exit(1)
 
-
 def main():
     """Startup and initialization"""
     import argparse
