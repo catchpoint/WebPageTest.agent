@@ -261,20 +261,12 @@ class Firefox(DesktopBrowser):
         """Set a Firefox pref at runtime"""
         if self.driver is not None:
             try:
-                script = 'const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");'
-                script += 'Services.prefs.'
-                if isinstance(value, bool):
-                    script += 'setBoolPref'
-                elif isinstance(value, (str, unicode)):
-                    script += 'setStringPref'
-                else:
-                    script += 'setIntPref'
-                script += '({0}, {1});'.format(json.dumps(key), json.dumps(value))
-                logging.debug(script)
+                script = 'const { Preferences } = ChromeUtils.importESModule("resource://gre/modules/Preferences.sys.mjs");'
+                script += f'Preferences.set({json.dumps(key)}, {json.dumps(value)});'
                 self.driver.set_context(self.driver.CONTEXT_CHROME)
                 self.driver.execute_script(script)
-            except Exception:
-                logging.exception("Error setting pref")
+            except Exception as err:
+                logging.exception("Error setting pref %s => %s: %s", key, value, err)
             finally:
                 self.driver.set_context(self.driver.CONTEXT_CONTENT)
 

@@ -489,6 +489,8 @@ class WPTAgent(object):
 
         # Optional imports
         self.requires('fontTools', 'fonttools')
+        self.requires('pytz')
+        self.requires('tzlocal')
 
         # Try patching ws4py with a faster lib
         try:
@@ -1076,6 +1078,73 @@ def get_browser_versions(browsers):
             browsers[browser]['version'] = get_file_version(exe)
 
 
+def fix_selenium_version():
+    """
+    On older python versions we are going to force selenium version 3.141.0, 
+    newer versions are going to use 4.8.3
+    """
+    from internal.os_util import run_elevated
+    version = '4.8.3'
+    if sys.version_info[1] == 6:
+        version = '3.141.0'
+
+    run_elevated(sys.executable, f'-m pip install selenium=={version}')
+
+
+# Constant used for --logformat command line parameter mapping
+LOG_FORMATS = ["syslog"]
+
+def setup_logging(verbosity=0, log_format=None, log_file=None):
+    """Setup logging according to passed command line values"""
+
+    # Set log level and legacy format
+    basic_log_level = logging.CRITICAL
+    if verbosity is None:
+        pass # default critical
+    elif verbosity == 1:
+        basic_log_level = logging.ERROR
+    elif verbosity == 2:
+        basic_log_level = logging.WARNING
+    elif verbosity == 3:
+        basic_log_level = logging.INFO
+    elif verbosity >= 4:
+        basic_log_level = logging.DEBUG
+
+    if log_format is None:
+        # legacy behavior
+        logging.basicConfig(level=basic_log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
+                            datefmt="%H:%M:%S")
+
+        # If file is specified add self rotating file with just errors level or above.
+        if log_file is not None:
+            err_log = logging.handlers.RotatingFileHandler(log_file, maxBytes=1000000,
+                                                        backupCount=5, delay=True)
+            err_log.setLevel(logging.ERROR)
+            logging.getLogger().addHandler(err_log)
+    else:
+        if log_format == "syslog" and log_file is not None:
+            from internal.rfc5424logging import Rfc5424SysLogHandler, logging_context
+            logger = logging.getLogger()
+            logger.setLevel(basic_log_level)
+            handler = Rfc5424SysLogHandler( \
+                address=None, \
+                socktype=None, \
+                framing=None, \
+                msg_as_utf8=True, \
+                appname="wptagent", \
+                # Currently used just for versioning
+                enterprise_id="1", \
+                utc_timestamp=True, \
+                file_name=log_file \
+                )
+
+            logger.addHandler(handler)
+            logger.debug("Rfc5424SysLogHandler initialized", extra=logging_context().as_extra({"msg_as_utf8": True}))
+        else:
+            # used default loggger
+            logging.critical("log_file must be specified if log_format is used.")
+            exit(1)
+
 def main():
     """Startup and initialization"""
     import argparse
@@ -1087,7 +1156,7 @@ def main():
     parser.add_argument('--name', help="Agent name (for the work directory).")
     parser.add_argument('--exit', type=int, default=0,
                         help='Exit after the specified number of minutes.\n'
-                        '    Useful for running in a shell script that does some maintenence\n'
+                        '    Useful for running in a shell script that does some maintenance\n'
                         '    or updates periodically (like hourly).')
     parser.add_argument('--dockerized', action='store_true', default=False,
                         help="Agent is running in a docker container.")
@@ -1098,7 +1167,15 @@ def main():
     parser.add_argument('--alive',
                         help="Watchdog file to update when successfully connected.")
     parser.add_argument('--log',
-                        help="Log critical errors to the given file.")
+                        help="Output the logs to the given file."
+                         "For backward compatibility if --logformat is not specified only critical errors will be logged "
+                         "to the file with the legacy non standardized format")
+    parser.add_argument('--logformat',
+                        help="Change the log level format when using '--log' option."
+                        "When this option is specified will only print to the file specified with '--log'."
+                        "When this parameter is used verbosity will also take effect.",
+                        type=str.lower,
+                        choices=LOG_FORMATS)
     parser.add_argument('--noidle', action='store_true', default=False,
                         help="Do not wait for system idle at any point.")
     parser.add_argument('--collectversion', action='store_true', default=False,
@@ -1106,6 +1183,8 @@ def main():
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
     parser.add_argument('--har', action='store_true', default=False,
                         help="Generate a per-run HAR file as part of the test result (defaults to False).")
+    parser.add_argument('--maxcpuscale', type=int, default=2,
+                        help='Maximum scaling to apply to CPU throttle based on host benchmark (defaults to 2).')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -1221,6 +1300,9 @@ def main():
             logging.critical("Requires python 2.7")
             exit(1)
 
+    # Make sure we are using a compatible selenium version
+    fix_selenium_version()
+
     if options.list:
         from internal.ios_device import iOSDevice
         ios = iOSDevice()
@@ -1231,23 +1313,7 @@ def main():
         exit(1)
 
     # Set up logging
-    log_level = logging.CRITICAL
-    if options.verbose == 1:
-        log_level = logging.ERROR
-    elif options.verbose == 2:
-        log_level = logging.WARNING
-    elif options.verbose == 3:
-        log_level = logging.INFO
-    elif options.verbose >= 4:
-        log_level = logging.DEBUG
-    logging.basicConfig(level=log_level, format="%(asctime)s.%(msecs)03d - %(message)s",
-                        datefmt="%H:%M:%S")
-
-    if options.log:
-        err_log = logging.handlers.RotatingFileHandler(options.log, maxBytes=1000000,
-                                                       backupCount=5, delay=True)
-        err_log.setLevel(logging.ERROR)
-        logging.getLogger().addHandler(err_log)
+    setup_logging(options.verbose, options.logformat, options.log)
 
     if options.ec2 or options.gce:
         upgrade_pip_modules()
