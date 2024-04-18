@@ -69,6 +69,13 @@ DISABLE_CHROME_FEATURES = [
     'OfflinePagesPrefetching',
     'OptimizationHints',
     'Translate',
+    # Disable noisy Edge features
+    'msAutofillEdgeCoupons',
+    'msShoppingTrigger',
+    'msEdgeShoppingUI',
+    'msEntityExtraction',
+    'msEntityExtractionProactive',
+    'msWebAssist',
 ]
 
 ENABLE_BLINK_FEATURES = [
