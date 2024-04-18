@@ -1060,19 +1060,6 @@ def get_browser_versions(browsers):
             browsers[browser]['version'] = get_file_version(exe)
 
 
-def fix_selenium_version():
-    """
-    On older python versions we are going to force selenium version 3.141.0, 
-    newer versions are going to use 4.8.3
-    """
-    from internal.os_util import run_elevated
-    version = '4.8.3'
-    if sys.version_info[1] == 6:
-        version = '3.141.0'
-
-    run_elevated(sys.executable, f'-m pip install selenium=={version}')
-
-
 # Constant used for --logformat command line parameter mapping
 LOG_FORMATS = ["syslog"]
 
@@ -1281,9 +1268,6 @@ def main():
         elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
             logging.critical("Requires python 2.7")
             exit(1)
-
-    # Make sure we are using a compatible selenium version
-    fix_selenium_version()
 
     if options.list:
         from internal.ios_device import iOSDevice
