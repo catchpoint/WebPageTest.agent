@@ -30,6 +30,11 @@ except BaseException:
     import json
 from .optimization_checks import OptimizationChecks
 
+KeyModifiers = {
+  "ALT": 1,
+  "CTRL": 2,
+  "SHIFT": 8
+}
 
 class DevtoolsBrowser(object):
     """Devtools Browser base"""
@@ -765,7 +770,13 @@ class DevtoolsBrowser(object):
         elif command['command'] == 'type':
             self.devtools.type_text(command['target'])
         elif command['command'] == 'keypress':
-            self.devtools.keypress(command['target'])
+            modifier = 0
+            value = command['value']
+            if value is not None:
+                keyModifier = value.upper()
+                if keyModifier in KeyModifiers.keys():
+                    modifier = KeyModifiers[keyModifier]
+            self.devtools.keypress(command['target'], modifier)
         elif command['command'] == 'waitfor':
             try:
                 self.devtools.wait_for_script = command['target'] if command['target'] else None
