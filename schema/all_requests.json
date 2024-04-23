@@ -1,0 +1,114 @@
+[
+    {
+        "name": "date",
+        "type": "DATE",
+        "mode": "REQUIRED",
+        "description": "YYYY-MM-DD format of the HTTP Archive monthly crawl"
+    },
+    {
+        "name": "client",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Test environment: desktop or mobile"
+    },
+    {
+        "name": "page",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The URL of the page being tested"
+    },
+    {
+        "name": "is_root_page",
+        "type": "BOOLEAN",
+        "mode": "NULLABLE",
+        "description": "Whether the page is the root of the origin."
+    },
+    {
+        "name": "root_page",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The URL of the root page being tested"
+    },
+    {
+        "name": "url",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The URL of the request"
+    },
+    {
+        "name": "is_main_document",
+        "type": "BOOLEAN",
+        "mode": "REQUIRED",
+        "description": "Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects"
+    },
+    {
+        "name": "type",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Simplified description of the type of resource (script, html, css, text, other, etc)"
+    },
+    {
+        "name": "index",
+        "type": "INTEGER",
+        "mode": "NULLABLE",
+        "description": "The sequential 0-based index of the request"
+    },
+    {
+        "name": "payload",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded WebPageTest result data for this request"
+    },
+    {
+        "name": "summary",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded summarization of request data"
+    },
+    {
+        "name": "request_headers",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "Request headers",
+        "fields": [
+            {
+                "name": "name",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Request header name"
+            },
+            {
+                "name": "value",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Request header value"
+            }
+        ]
+    },
+    {
+        "name": "response_headers",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "Response headers",
+        "fields": [
+            {
+                "name": "name",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Response header name"
+            },
+            {
+                "name": "value",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Response header value"
+            }
+        ]
+    },
+    {
+        "name": "response_body",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Text-based response body"
+    }
+]

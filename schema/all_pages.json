@@ -1,0 +1,126 @@
+[
+    {
+        "name": "date",
+        "type": "DATE",
+        "mode": "REQUIRED",
+        "description": "YYYY-MM-DD format of the HTTP Archive monthly crawl"
+    },
+    {
+        "name": "client",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "Test environment: desktop or mobile"
+    },
+    {
+        "name": "page",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The URL of the page being tested"
+    },
+    {
+        "name": "is_root_page",
+        "type": "BOOLEAN",
+        "mode": "REQUIRED",
+        "description": "Whether the page is the root of the origin"
+    },
+    {
+        "name": "root_page",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "The URL of the root page being tested, the origin followed by /"
+    },
+    {
+        "name": "rank",
+        "type": "INTEGER",
+        "mode": "NULLABLE",
+        "description": "Site popularity rank, from CrUX"
+    },
+    {
+        "name": "wptid",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "ID of the WebPageTest results"
+    },
+    {
+        "name": "payload",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded WebPageTest results for the page"
+    },
+    {
+        "name": "summary",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded summarization of the page-level data"
+    },
+    {
+        "name": "custom_metrics",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded test results of the custom metrics"
+    },
+    {
+        "name": "lighthouse",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "JSON-encoded Lighthouse report"
+    },
+    {
+        "name": "features",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "Blink features detected at runtime (see https://chromestatus.com/features)",
+        "fields": [
+            {
+                "name": "feature",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Blink feature name"
+            },
+            {
+                "name": "id",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Blink feature ID"
+            },
+            {
+                "name": "type",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Blink feature type (css, default)"
+            }
+        ]
+    },
+    {
+        "name": "technologies",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "Technologies detected at runtime (see https://www.wappalyzer.com/)",
+        "fields": [
+            {
+                "name": "technology",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "Name of the detected technology"
+            },
+            {
+                "name": "categories",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "List of categories to which this technology belongs"
+            },
+            {
+                "name": "info",
+                "type": "STRING",
+                "mode": "REPEATED",
+                "description": "Additional metadata about the detected technology, ie version number"
+            }
+        ]
+    },
+    {
+        "name": "metadata",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "Additional metadata about the test"
+    }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "page",
+    "type": "STRING"
+  },
+  {
+    "name": "url",
+    "type": "STRING"
+  },
+  {
+    "name": "payload",
+    "type": "STRING"
+  }
+]

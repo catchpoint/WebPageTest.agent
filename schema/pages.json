@@ -1,0 +1,10 @@
+[
+  {
+    "name": "url",
+    "type": "STRING"
+  },
+  {
+    "name": "payload",
+    "type": "STRING"
+  }
+]

@@ -1,0 +1,358 @@
+[
+  {
+    "name": "pageid",
+    "type": "INTEGER"
+  },
+  {
+    "name": "createDate",
+    "type": "INTEGER"
+  },
+  {
+    "name": "archive",
+    "type": "STRING"
+  },
+  {
+    "name": "label",
+    "type": "STRING"
+  },
+  {
+    "name": "crawlid",
+    "type": "INTEGER"
+  },
+  {
+    "name": "wptid",
+    "type": "STRING"
+  },
+  {
+    "name": "wptrun",
+    "type": "INTEGER"
+  },
+  {
+    "name": "url",
+    "type": "STRING"
+  },
+  {
+    "name": "urlShort",
+    "type": "STRING"
+  },
+  {
+    "name": "urlhash",
+    "type": "INTEGER"
+  },
+  {
+    "name": "cdn",
+    "type": "STRING"
+  },
+  {
+    "name": "startedDateTime",
+    "type": "INTEGER"
+  },
+  {
+    "name": "TTFB",
+    "type": "INTEGER"
+  },
+  {
+    "name": "renderStart",
+    "type": "INTEGER"
+  },
+  {
+    "name": "onContentLoaded",
+    "type": "INTEGER"
+  },
+  {
+    "name": "onLoad",
+    "type": "INTEGER"
+  },
+  {
+    "name": "fullyLoaded",
+    "type": "INTEGER"
+  },
+  {
+    "name": "visualComplete",
+    "type": "INTEGER"
+  },
+  {
+    "name": "PageSpeed",
+    "type": "INTEGER"
+  },
+  {
+    "name": "SpeedIndex",
+    "type": "INTEGER"
+  },
+  {
+    "name": "rank",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqTotal",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqHtml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqJS",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqCSS",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqImg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqGif",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqJpg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqPng",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqFont",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqFlash",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqJson",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqOther",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesTotal",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesHtml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesJS",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesCSS",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesImg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesGif",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesJpg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesPng",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesFont",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesFlash",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesJson",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesOther",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesHtmlDoc",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numDomains",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxDomainReqs",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numRedirects",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numErrors",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numGlibs",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numHttps",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numCompressed",
+    "type": "INTEGER"
+  },
+  {
+    "name": "numDomElements",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxageNull",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxage0",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxage1",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxage30",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxage365",
+    "type": "INTEGER"
+  },
+  {
+    "name": "maxageMore",
+    "type": "INTEGER"
+  },
+  {
+    "name": "gzipTotal",
+    "type": "INTEGER"
+  },
+  {
+    "name": "gzipSavings",
+    "type": "INTEGER"
+  },
+  {
+    "name": "_connections",
+    "type": "INTEGER"
+  },
+  {
+    "name": "_adult_site",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "avg_dom_depth",
+    "type": "INTEGER"
+  },
+  {
+    "name": "document_height",
+    "type": "INTEGER"
+  },
+  {
+    "name": "document_width",
+    "type": "INTEGER"
+  },
+  {
+    "name": "localstorage_size",
+    "type": "INTEGER"
+  },
+  {
+    "name": "sessionstorage_size",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_iframes",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts",
+    "type": "INTEGER"
+  },
+  {
+    "name": "doctype",
+    "type": "STRING"
+  },
+  {
+    "name": "meta_viewport",
+    "type": "STRING"
+  },
+  {
+    "name": "reqAudio",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqVideo",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqText",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqXml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqWebp",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqSvg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesAudio",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesVideo",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesText",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesXml",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesWebp",
+    "type": "INTEGER"
+  },
+  {
+    "name": "bytesSvg",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts_async",
+    "type": "INTEGER"
+  },
+  {
+    "name": "num_scripts_sync",
+    "type": "INTEGER"
+  },
+  {
+    "name": "usertiming",
+    "type": "INTEGER"
+  },
+  {
+    "name": "metadata",
+    "type": "STRING"
+  }
+]

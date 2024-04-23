@@ -1,0 +1,246 @@
+[
+  {
+    "name": "requestid",
+    "type": "INTEGER"
+  },
+  {
+    "name": "pageid",
+    "type": "INTEGER"
+  },
+  {
+    "name": "startedDateTime",
+    "type": "INTEGER"
+  },
+  {
+    "name": "time",
+    "type": "INTEGER"
+  },
+  {
+    "name": "method",
+    "type": "STRING"
+  },
+  {
+    "name": "url",
+    "type": "STRING"
+  },
+  {
+    "name": "urlShort",
+    "type": "STRING"
+  },
+  {
+    "name": "redirectUrl",
+    "type": "STRING"
+  },
+  {
+    "name": "firstReq",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "firstHtml",
+    "type": "BOOLEAN"
+  },
+  {
+    "name": "reqHttpVersion",
+    "type": "STRING"
+  },
+  {
+    "name": "reqHeadersSize",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqBodySize",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqCookieLen",
+    "type": "INTEGER"
+  },
+  {
+    "name": "reqOtherHeaders",
+    "type": "STRING"
+  },
+  {
+    "name": "status",
+    "type": "INTEGER"
+  },
+  {
+    "name": "respHttpVersion",
+    "type": "STRING"
+  },
+  {
+    "name": "respHeadersSize",
+    "type": "INTEGER"
+  },
+  {
+    "name": "respBodySize",
+    "type": "INTEGER"
+  },
+  {
+    "name": "respSize",
+    "type": "INTEGER"
+  },
+  {
+    "name": "respCookieLen",
+    "type": "INTEGER"
+  },
+  {
+    "name": "expAge",
+    "type": "INTEGER"
+  },
+  {
+    "name": "mimeType",
+    "type": "STRING"
+  },
+  {
+    "name": "respOtherHeaders",
+    "type": "STRING"
+  },
+  {
+    "name": "req_accept",
+    "type": "STRING"
+  },
+  {
+    "name": "req_accept_charset",
+    "type": "STRING"
+  },
+  {
+    "name": "req_accept_encoding",
+    "type": "STRING"
+  },
+  {
+    "name": "req_accept_language",
+    "type": "STRING"
+  },
+  {
+    "name": "req_connection",
+    "type": "STRING"
+  },
+  {
+    "name": "req_host",
+    "type": "STRING"
+  },
+  {
+    "name": "req_if_modified_since",
+    "type": "STRING"
+  },
+  {
+    "name": "req_if_none_match",
+    "type": "STRING"
+  },
+  {
+    "name": "req_referer",
+    "type": "STRING"
+  },
+  {
+    "name": "req_user_agent",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_accept_ranges",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_age",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_cache_control",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_connection",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_content_encoding",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_content_language",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_content_length",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_content_location",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_content_type",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_date",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_etag",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_expires",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_keep_alive",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_last_modified",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_location",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_pragma",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_server",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_transfer_encoding",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_vary",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_via",
+    "type": "STRING"
+  },
+  {
+    "name": "resp_x_powered_by",
+    "type": "STRING"
+  },
+  {
+    "name": "_cdn_provider",
+    "type": "STRING"
+  },
+  {
+    "name": "_gzip_save",
+    "type": "INTEGER"
+  },
+  {
+    "name": "crawlid",
+    "type": "INTEGER"
+  },
+  {
+    "name": "type",
+    "type": "STRING"
+  },
+  {
+    "name": "ext",
+    "type": "STRING"
+  },
+  {
+    "name": "format",
+    "type": "STRING"
+  }
+]

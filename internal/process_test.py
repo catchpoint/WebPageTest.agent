@@ -851,7 +851,6 @@ class ProcessTest(object):
                 with gzip.open(metrics_file, GZIP_READ_TEXT) as f:
                     audits = json.load(f)
                     if audits:
-                        logging.debug(audits)
                         for name in audits:
                             page_data['lighthouse.{}'.format(name)] = audits[name]
         except Exception:
@@ -1012,6 +1011,7 @@ class ProcessTest(object):
                 json.dump(har, f)
             
             # Upload the HAR to GCS for "successful" tests
+            har_filename = os.path.basename(har_file)
             if 'gcs_har_upload' in self.job and \
                     'bucket' in self.job['gcs_har_upload'] and \
                     'path' in self.job['gcs_har_upload'] and \
@@ -1023,6 +1023,7 @@ class ProcessTest(object):
                     bucket = client.get_bucket(self.job['gcs_har_upload']['bucket'])
                     prefix = '' if self.prefix == '1' else '_' + self.prefix
                     gcs_path = os.path.join(self.job['gcs_har_upload']['path'], self.task['id'] + prefix + '.har.gz')
+                    har_filename = gcs_path
                     blob = bucket.blob(gcs_path)
                     if not blob.exists():
                         blob.upload_from_filename(filename=har_file)
@@ -1030,12 +1031,69 @@ class ProcessTest(object):
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
             
+            if 'bq_datastore' in self.job:
+                self.upload_bigquery(har, har_filename, self.job['bq_datastore'])
+            
             # Delete the local HAR file if it was only supposed to be uploaded
             if not self.options.har:
                 os.unlink(har_file)
 
         except Exception:
             logging.exception('Error generating HAR')
+
+    def upload_bigquery(self, har, file_name, datastore):
+        """ Upload the processed HAR data to bigquery """
+        logging.debug('Processing HAR for BigQuery...')
+        try:
+            from HTTPArchive import httparchive
+            pages = httparchive.get_page(file_name, har)
+            page_data_file = os.path.join(self.task['dir'], self.prefix + '_bq_page_data.json')
+            with open(page_data_file, 'wt', encoding='utf-8') as f:
+                for page in pages:
+                    json.dump(page, f)
+                    f.write("\n")
+            requests = httparchive.get_requests(file_name, har)
+            requests_file = os.path.join(self.task['dir'], self.prefix + '_bq_requests.json')
+            with open(requests_file, 'wt', encoding='utf-8') as f:
+                for request in requests:
+                    json.dump(request, f)
+                    f.write("\n")
+            if pages and requests and os.path.exists(page_data_file) and os.path.exists(requests_file):
+                from google.cloud import bigquery
+                client = bigquery.Client()
+                schema_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), os.pardir, 'schema'))
+                page_job = None
+                with open(os.path.join(schema_path, 'all_pages.json'), 'rt', encoding='utf-8') as f:
+                    pages_schema = json.load(f)
+                    page_job = self.bq_upload_file(client, page_data_file, datastore + '.pages', pages_schema)
+                requests_job = None
+                with open(os.path.join(schema_path, 'all_requests.json'), 'rt', encoding='utf-8') as f:
+                    requests_schema = json.load(f)
+                    requests_job = self.bq_upload_file(client, requests_file, datastore + '.requests', requests_schema)
+                # Wait for the uploads to complete
+                if page_job is not None:
+                    page_job.result()
+                if requests_job is not None:
+                    requests_job.result()
+                client.close()
+            if os.path.exists(page_data_file):
+                os.unlink(page_data_file)
+            if os.path.exists(requests_file):
+                os.unlink(requests_file)
+        except Exception:
+            logging.exception('Error uploading to bigquery')
+
+    def bq_upload_file(self, client, file, table_id, schema):
+        """ Batch Upload the given file to the provided BigQuery table """
+        from google.cloud import bigquery
+        job = None
+        logging.debug('Uploading %s to BigQuery table %s', file, table_id)
+        job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema)
+
+        with open(file, "rb") as source_file:
+            job = client.load_table_from_file(source_file, table_id, job_config=job_config)
+
+        return job
 
     def get_har_page_data(self):
         """Transform the page_data into HAR format"""
