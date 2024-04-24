@@ -1,0 +1,71 @@
+syntax = "proto2";
+
+// Maps to httparchive.all.pages schema
+message PageRecord {
+
+  // Individual blink feature (used for "features")
+  message Feature {
+    // Blink feature name
+    optional string feature = 1;
+
+    // Blink feature ID
+    optional string id = 2;
+
+    // Blink feature type (css, default)
+    optional string type = 3;
+  }
+
+  // Individual Wappalyzer Technology (used for "technologies")
+  message Technology {
+    // Name of the detected technology
+    optional string technology = 1;
+
+    // List of categories to which this technology belongs
+    repeated string categories = 2;
+
+    // Additional metadata about the detected technology, ie version number
+    repeated string info = 3;
+  }
+
+  // number of days since the Unix epoch
+  required int32 date = 1;
+
+  // Test environment: desktop or mobile
+  required string client = 2;
+
+  // The URL of the page being tested
+  required string page = 3;
+
+  // Whether the page is the root of the origin
+  required bool is_root_page = 4;
+
+  // The URL of the root page being tested, the origin followed by /
+  required string root_page = 5;
+
+  // Site popularity rank, from CrUX
+  optional int32 rank = 6;
+
+  // ID of the WebPageTest results
+  optional string wptid = 7;
+
+  // JSON-encoded WebPageTest results for the page
+  optional string payload = 8;
+
+  // JSON-encoded summarization of the page-level data
+  optional string summary = 9;
+
+  // JSON-encoded test results of the custom metrics
+  optional string custom_metrics = 10;
+
+  // JSON-encoded Lighthouse report
+  optional string lighthouse = 11;
+
+  // Blink features detected at runtime (see https://chromestatus.com/features)
+  repeated Feature features = 12;
+
+  // Technologies detected at runtime (see https://www.wappalyzer.com/)
+  repeated Technology technologies = 13;
+
+  // Additional metadata about the test
+  optional string metadata = 14;
+}

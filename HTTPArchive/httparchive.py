@@ -448,7 +448,7 @@ def from_json(file_name, string):
 
 
 def json_exceeds_max_content_size(data: Union[Dict, str], typ, wptid):
-    max_content_size = constants.MaxContentSize.FILE_LOADS.value
+    max_content_size = constants.MaxContentSize.STREAMING_INSERTS.value
     if isinstance(data, dict):
         payload = to_json(data)
     else:
@@ -462,3 +462,61 @@ def json_exceeds_max_content_size(data: Union[Dict, str], typ, wptid):
             f"payload size ({size}) exceeds the maximum content size of {max_content_size} bytes."
         )
     return oversized
+
+def get_parsed_css(file_name, har):
+    """Extracts the parsed CSS custom metric from the HAR."""
+
+    if not har:
+        return None
+
+    date, client = utils.date_and_client_from_file_name(file_name)
+    page = har.get("log").get("pages")[0]
+    page_url = page.get("_URL")
+
+    if not page_url:
+        logging.warning("Skipping parsed CSS, no page URL")
+        return None
+
+    metadata = page.get("_metadata")
+    if metadata:
+        page_url = metadata.get("tested_url", page_url)
+
+    is_root_page = True
+    if metadata:
+        is_root_page = metadata.get("crawl_depth") == 0
+
+    custom_metric = page.get("_parsed_css")
+
+    if not custom_metric:
+        logging.warning("No parsed CSS data for page %s", page_url)
+        return None
+
+    parsed_css = []
+
+    for entry in custom_metric:
+        url = entry.get("url")
+        ast = entry.get("ast")
+
+        if url == 'inline':
+            # Skip inline styles for now. They're special.
+            continue
+
+        try:
+            ast_json = to_json(ast)
+        except Exception:
+            logging.warning(
+                'Unable to stringify parsed CSS to JSON for "%s".'
+                % page_url
+            )
+            continue
+
+        parsed_css.append({
+            "date": date,
+            "client": client,
+            "page": page_url,
+            "is_root_page": is_root_page,
+            "url": url,
+            "css": ast_json
+        })
+
+    return parsed_css
