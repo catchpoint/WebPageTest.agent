@@ -281,6 +281,8 @@ class HarJsonToSummary:
                 #   re.findall(r"\d+", response_headers['resp_expires'][0])[0]).timestamp()
                 exp_age = end_date - start_date
             except Exception:
+                pass
+                """
                 logging.warning(
                     f"Could not parse dates. "
                     f"start=(resp_date:{response_headers.get('resp_date')},"
@@ -289,6 +291,7 @@ class HarJsonToSummary:
                     f"status_info:{status_info}",
                     exc_info=True,
                 )
+                """
 
         ret_request.update({"expAge": int(max(exp_age, 0))})
 

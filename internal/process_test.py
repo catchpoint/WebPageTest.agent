@@ -1103,6 +1103,71 @@ class ProcessTest(object):
                 row.technologies.append(tech)
         return row.SerializeToString()
 
+    def create_request_row(self, request):
+        """ Create a serialized protobuf of a single page row """
+        from google.protobuf import descriptor_pb2
+        from schema import all_requests_pb2
+
+        row = all_requests_pb2.RequestRecord()
+
+        row.date = self.bigquery_date(request['date'])
+        row.client = request['client']
+        row.page = request['page']
+        if 'is_root_page' in request and request['is_root_page'] is not None:
+            row.is_root_page = request['is_root_page']
+        row.root_page = request['root_page']
+        if 'url' in request and request['url']:
+            row.url = request['url']
+        if 'is_main_document' in request and request['is_main_document'] is not None:
+            row.is_main_document = request['is_main_document']
+        if 'type' in request and request['type']:
+            row.type = request['type']
+        if 'index' in request and request['index'] is not None:
+            row.index = request['index']
+        if 'payload' in request and request['payload']:
+            row.payload = request['payload']
+        if 'summary' in request and request['summary']:
+            row.summary = request['summary']
+        if 'request_headers' in request and request['request_headers'] is not None and len(request['request_headers']):
+            for header in request['request_headers']:
+                head = all_requests_pb2.RequestRecord.Header()
+                if 'name' in header and header['name']:
+                    head.name = header['name']
+                if 'value' in header and header['value']:
+                    head.value = header['value']
+                row.request_headers.append(head)
+        if 'response_headers' in request and request['response_headers'] is not None and len(request['response_headers']):
+            for header in request['response_headers']:
+                head = all_requests_pb2.RequestRecord.Header()
+                if 'name' in header and header['name']:
+                    head.name = header['name']
+                if 'value' in header and header['value']:
+                    head.value = header['value']
+                row.response_headers.append(head)
+        if 'response_body' in request and request['response_body']:
+            row.response_body = request['response_body']
+
+        return row.SerializeToString()
+
+    def create_parsed_css_row(self, parsed_css):
+        """ Create a serialized protobuf of a single parsed_css row """
+        from google.protobuf import descriptor_pb2
+        from schema import all_parsed_css_pb2
+
+        row = all_parsed_css_pb2.CSSRecord()
+
+        row.date = self.bigquery_date(parsed_css['date'])
+        row.client = parsed_css['client']
+        row.page = parsed_css['page']
+        if 'is_root_page' in parsed_css and parsed_css['is_root_page'] is not None:
+            row.is_root_page = parsed_css['is_root_page']
+        if 'url' in parsed_css and parsed_css['url']:
+            row.url = parsed_css['url']
+        if 'css' in parsed_css and parsed_css['css']:
+            row.css = parsed_css['css']
+
+        return row.SerializeToString()
+
     def bigquery_write(self, write_client, datastore, rows, table):
         """ Upload one of the tables of the processed HAR data to bigquery """
         logging.debug('Writing BigQuery data for "%s" ...', table)
@@ -1111,7 +1176,7 @@ class ProcessTest(object):
         try:
             from google.protobuf import descriptor_pb2
             from google.cloud.bigquery_storage_v1 import types, writer
-            from schema import all_pages_pb2
+            from schema import all_pages_pb2, all_requests_pb2, all_parsed_css_pb2
 
             project_id, dataset_id = datastore.split('.')
             parent = write_client.table_path(project_id, dataset_id, table)
@@ -1129,6 +1194,10 @@ class ProcessTest(object):
             proto_descriptor = descriptor_pb2.DescriptorProto()
             if table == 'pages':
                 all_pages_pb2.PageRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            elif table == 'requests':
+                all_requests_pb2.RequestRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            elif table == 'parsed_css':
+                all_parsed_css_pb2.CSSRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
             proto_schema.proto_descriptor = proto_descriptor
             proto_data = types.AppendRowsRequest.ProtoData()
             proto_data.writer_schema = proto_schema
@@ -1136,19 +1205,27 @@ class ProcessTest(object):
 
             append_rows_stream = writer.AppendRowsStream(write_client, request_template)
 
-            # Add the actual rows
-            proto_rows = types.ProtoRows()
-            if table == 'pages':
-                for row in rows:
+            # Write each row as a separate request because of the 10 MB/request limit
+            responses = []
+            for row in rows:
+                # Add the actual rows
+                proto_rows = types.ProtoRows()
+                if table == 'pages':
                     proto_rows.serialized_rows.append(self.create_page_row(row))
+                elif table == 'requests':
+                    proto_rows.serialized_rows.append(self.create_request_row(row))
+                elif table == 'parsed_css':
+                    proto_rows.serialized_rows.append(self.create_parsed_css_row(row))
 
-            request = types.AppendRowsRequest()
-            proto_data = types.AppendRowsRequest.ProtoData()
-            proto_data.rows = proto_rows
-            request.proto_rows = proto_data
+                request = types.AppendRowsRequest()
+                proto_data = types.AppendRowsRequest.ProtoData()
+                proto_data.rows = proto_rows
+                request.proto_rows = proto_data
+                responses.append(append_rows_stream.send(request))
 
-            response_future = append_rows_stream.send(request)
-            result = response_future.result()
+            # wait for the requests to complete
+            for response in responses:
+                result = response.result()
 
             # Commit the write
             append_rows_stream.close()
@@ -1159,7 +1236,6 @@ class ProcessTest(object):
             write_client.batch_commit_write_streams(batch_commit_write_streams_request)
         except Exception:
             logging.exception('Error writing to bigquery')
-            exit(0)
 
     def upload_bigquery(self, har, file_name, datastore):
         """ Upload the processed HAR data to bigquery """
@@ -1176,9 +1252,10 @@ class ProcessTest(object):
             write_client = bigquery_storage_v1.BigQueryWriteClient()
             with write_client:
                 self.bigquery_write(write_client, datastore, pages, 'pages')
+                self.bigquery_write(write_client, datastore, requests, 'requests')
+                self.bigquery_write(write_client, datastore, parsed_css, 'parsed_css')
         except Exception:
             logging.exception('Error uploading to bigquery')
-            exit(0)
 
     def get_har_page_data(self):
         """Transform the page_data into HAR format"""

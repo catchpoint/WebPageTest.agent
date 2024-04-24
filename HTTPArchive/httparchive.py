@@ -470,6 +470,7 @@ def get_parsed_css(file_name, har):
         return None
 
     date, client = utils.date_and_client_from_file_name(file_name)
+    date = "{:%Y-%m-%d}".format(date)
     page = har.get("log").get("pages")[0]
     page_url = page.get("_URL")
 
