@@ -101,8 +101,8 @@ class MaxContentSize(Enum):
     # BigQuery can handle rows up to 10 MB when using `WriteToBigQuery.Method.STREAMING_INSERTS`
     STREAMING_INSERTS = 10 * 1000000
 
-    # limit response bodies to 20MB
-    RESPONSE_BODIES = 20 * 1000000
+    # limit response bodies to 8MB
+    RESPONSE_BODIES = 8 * 1000000
 
 
 TECHNOLOGY_QUERY_ID_KEYS = {

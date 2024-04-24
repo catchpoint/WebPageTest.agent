@@ -33,7 +33,6 @@ try:
 except BaseException:
     import json
 
-
 class ProcessTest(object):
     """Controller for interfacing with the WebPageTest server"""
     # pylint: disable=E0611
@@ -1041,59 +1040,222 @@ class ProcessTest(object):
         except Exception:
             logging.exception('Error generating HAR')
 
+    def bigquery_date(self, date_str):
+        """ Convert a YYYY-MM-DD date to bigquery epoch DATE """
+        from datetime import datetime
+        
+        date_value = datetime.strptime(date_str, '%Y-%m-%d')
+        epoch_value = datetime(1970, 1, 1)
+        delta = date_value - epoch_value
+        return delta.days
+
+    def create_page_row(self, page):
+        """ Create a serialized protobuf of a single page row """
+        from google.protobuf import descriptor_pb2
+        from schema import all_pages_pb2
+
+        row = all_pages_pb2.PageRecord()
+
+        row.date = self.bigquery_date(page['date'])
+        row.client = page['client']
+        row.page = page['page']
+        row.is_root_page = page['is_root_page']
+        row.root_page = page['root_page']
+
+        # Optional fields
+        if 'rank' in page and page['rank'] is not None:
+            row.rank = page['rank']
+        if 'wptid' in page and page['wptid']:
+            row.wptid = page['wptid']
+        if 'payload' in page and page['payload']:
+            row.payload = page['payload']
+        if 'summary' in page and page['summary']:
+            row.summary = page['summary']
+        if 'custom_metrics' in page and page['custom_metrics']:
+            row.custom_metrics = page['custom_metrics']
+        if 'lighthouse' in page and page['lighthouse']:
+            row.lighthouse = page['lighthouse']
+        if 'metadata' in page and page['metadata']:
+            row.metadata = page['metadata']
+
+        # Arrays
+        if 'features' in page and page['features'] is not None and len(page['features']):
+            for feature in page['features']:
+                feat = all_pages_pb2.PageRecord.Feature()
+                if 'feature' in feature and feature['feature']:
+                    feat.feature = feature['feature']
+                if 'id' in feature and feature['id']:
+                    feat.id = feature['id']
+                if 'type' in feature and feature['type']:
+                    feat.type = feature['type']
+                row.features.append(feat)
+        if 'technologies' in page and page['technologies'] is not None and len(page['technologies']):
+            for technology in page['technologies']:
+                tech = all_pages_pb2.PageRecord.Technology()
+                if 'technology' in technology and technology['technology']:
+                    tech.technology = technology['technology']
+                if 'categories' in technology and technology['categories'] is not None and len(technology['categories']):
+                    for category in technology['categories']:
+                        tech.categories.append(category)
+                if 'info' in technology and technology['info'] is not None and len(technology['info']):
+                    for info in technology['info']:
+                        tech.info.append(info)
+                row.technologies.append(tech)
+        return row.SerializeToString()
+
+    def create_request_row(self, request):
+        """ Create a serialized protobuf of a single page row """
+        from google.protobuf import descriptor_pb2
+        from schema import all_requests_pb2
+
+        row = all_requests_pb2.RequestRecord()
+
+        row.date = self.bigquery_date(request['date'])
+        row.client = request['client']
+        row.page = request['page']
+        if 'is_root_page' in request and request['is_root_page'] is not None:
+            row.is_root_page = request['is_root_page']
+        row.root_page = request['root_page']
+        if 'url' in request and request['url']:
+            row.url = request['url']
+        if 'is_main_document' in request and request['is_main_document'] is not None:
+            row.is_main_document = request['is_main_document']
+        if 'type' in request and request['type']:
+            row.type = request['type']
+        if 'index' in request and request['index'] is not None:
+            row.index = request['index']
+        if 'payload' in request and request['payload']:
+            row.payload = request['payload']
+        if 'summary' in request and request['summary']:
+            row.summary = request['summary']
+        if 'request_headers' in request and request['request_headers'] is not None and len(request['request_headers']):
+            for header in request['request_headers']:
+                head = all_requests_pb2.RequestRecord.Header()
+                if 'name' in header and header['name']:
+                    head.name = header['name']
+                if 'value' in header and header['value']:
+                    head.value = header['value']
+                row.request_headers.append(head)
+        if 'response_headers' in request and request['response_headers'] is not None and len(request['response_headers']):
+            for header in request['response_headers']:
+                head = all_requests_pb2.RequestRecord.Header()
+                if 'name' in header and header['name']:
+                    head.name = header['name']
+                if 'value' in header and header['value']:
+                    head.value = header['value']
+                row.response_headers.append(head)
+        if 'response_body' in request and request['response_body']:
+            row.response_body = request['response_body']
+
+        return row.SerializeToString()
+
+    def create_parsed_css_row(self, parsed_css):
+        """ Create a serialized protobuf of a single parsed_css row """
+        from google.protobuf import descriptor_pb2
+        from schema import all_parsed_css_pb2
+
+        row = all_parsed_css_pb2.CSSRecord()
+
+        row.date = self.bigquery_date(parsed_css['date'])
+        row.client = parsed_css['client']
+        row.page = parsed_css['page']
+        if 'is_root_page' in parsed_css and parsed_css['is_root_page'] is not None:
+            row.is_root_page = parsed_css['is_root_page']
+        if 'url' in parsed_css and parsed_css['url']:
+            row.url = parsed_css['url']
+        if 'css' in parsed_css and parsed_css['css']:
+            row.css = parsed_css['css']
+
+        return row.SerializeToString()
+
+    def bigquery_write(self, write_client, datastore, rows, table):
+        """ Upload one of the tables of the processed HAR data to bigquery """
+        logging.debug('Writing BigQuery data for "%s" ...', table)
+        if not rows:
+            return
+        try:
+            from google.protobuf import descriptor_pb2
+            from google.cloud.bigquery_storage_v1 import types, writer
+            from schema import all_pages_pb2, all_requests_pb2, all_parsed_css_pb2
+
+            project_id, dataset_id = datastore.split('.')
+            parent = write_client.table_path(project_id, dataset_id, table)
+            write_stream = types.WriteStream()
+            write_stream.type_ = types.WriteStream.Type.PENDING
+            write_stream = write_client.create_write_stream(
+                parent=parent, write_stream=write_stream
+            )
+            stream_name = write_stream.name
+
+            request_template = types.AppendRowsRequest()
+            request_template.write_stream = stream_name
+
+            proto_schema = types.ProtoSchema()
+            proto_descriptor = descriptor_pb2.DescriptorProto()
+            if table == 'pages':
+                all_pages_pb2.PageRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            elif table == 'requests':
+                all_requests_pb2.RequestRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            elif table == 'parsed_css':
+                all_parsed_css_pb2.CSSRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            proto_schema.proto_descriptor = proto_descriptor
+            proto_data = types.AppendRowsRequest.ProtoData()
+            proto_data.writer_schema = proto_schema
+            request_template.proto_rows = proto_data
+
+            append_rows_stream = writer.AppendRowsStream(write_client, request_template)
+
+            # Write each row as a separate request because of the 10 MB/request limit
+            responses = []
+            for row in rows:
+                # Add the actual rows
+                proto_rows = types.ProtoRows()
+                if table == 'pages':
+                    proto_rows.serialized_rows.append(self.create_page_row(row))
+                elif table == 'requests':
+                    proto_rows.serialized_rows.append(self.create_request_row(row))
+                elif table == 'parsed_css':
+                    proto_rows.serialized_rows.append(self.create_parsed_css_row(row))
+
+                request = types.AppendRowsRequest()
+                proto_data = types.AppendRowsRequest.ProtoData()
+                proto_data.rows = proto_rows
+                request.proto_rows = proto_data
+                responses.append(append_rows_stream.send(request))
+
+            # wait for the requests to complete
+            for response in responses:
+                result = response.result()
+
+            # Commit the write
+            append_rows_stream.close()
+            write_client.finalize_write_stream(name=write_stream.name)
+            batch_commit_write_streams_request = types.BatchCommitWriteStreamsRequest()
+            batch_commit_write_streams_request.parent = parent
+            batch_commit_write_streams_request.write_streams = [write_stream.name]
+            write_client.batch_commit_write_streams(batch_commit_write_streams_request)
+        except Exception:
+            logging.exception('Error writing to bigquery')
+
     def upload_bigquery(self, har, file_name, datastore):
         """ Upload the processed HAR data to bigquery """
         logging.debug('Processing HAR for BigQuery...')
         try:
             from HTTPArchive import httparchive
+            from google.cloud import bigquery_storage_v1
+
+            # Collect the data for the 3 tables we will be updating
             pages = httparchive.get_page(file_name, har)
-            page_data_file = os.path.join(self.task['dir'], self.prefix + '_bq_page_data.json')
-            with open(page_data_file, 'wt', encoding='utf-8') as f:
-                for page in pages:
-                    json.dump(page, f)
-                    f.write("\n")
             requests = httparchive.get_requests(file_name, har)
-            requests_file = os.path.join(self.task['dir'], self.prefix + '_bq_requests.json')
-            with open(requests_file, 'wt', encoding='utf-8') as f:
-                for request in requests:
-                    json.dump(request, f)
-                    f.write("\n")
-            if pages and requests and os.path.exists(page_data_file) and os.path.exists(requests_file):
-                from google.cloud import bigquery
-                client = bigquery.Client()
-                schema_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), os.pardir, 'schema'))
-                page_job = None
-                with open(os.path.join(schema_path, 'all_pages.json'), 'rt', encoding='utf-8') as f:
-                    pages_schema = json.load(f)
-                    page_job = self.bq_upload_file(client, page_data_file, datastore + '.pages', pages_schema)
-                requests_job = None
-                with open(os.path.join(schema_path, 'all_requests.json'), 'rt', encoding='utf-8') as f:
-                    requests_schema = json.load(f)
-                    requests_job = self.bq_upload_file(client, requests_file, datastore + '.requests', requests_schema)
-                # Wait for the uploads to complete
-                if page_job is not None:
-                    page_job.result()
-                if requests_job is not None:
-                    requests_job.result()
-                client.close()
-            if os.path.exists(page_data_file):
-                os.unlink(page_data_file)
-            if os.path.exists(requests_file):
-                os.unlink(requests_file)
+            parsed_css = httparchive.get_parsed_css(file_name, har)
+
+            write_client = bigquery_storage_v1.BigQueryWriteClient()
+            with write_client:
+                self.bigquery_write(write_client, datastore, pages, 'pages')
+                self.bigquery_write(write_client, datastore, requests, 'requests')
+                self.bigquery_write(write_client, datastore, parsed_css, 'parsed_css')
         except Exception:
             logging.exception('Error uploading to bigquery')
-
-    def bq_upload_file(self, client, file, table_id, schema):
-        """ Batch Upload the given file to the provided BigQuery table """
-        from google.cloud import bigquery
-        job = None
-        logging.debug('Uploading %s to BigQuery table %s', file, table_id)
-        job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema)
-
-        with open(file, "rb") as source_file:
-            job = client.load_table_from_file(source_file, table_id, job_config=job_config)
-
-        return job
 
     def get_har_page_data(self):
         """Transform the page_data into HAR format"""
