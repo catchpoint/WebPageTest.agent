@@ -1159,12 +1159,9 @@ class ProcessTest(object):
         row.date = self.bigquery_date(parsed_css['date'])
         row.client = parsed_css['client']
         row.page = parsed_css['page']
-        if 'is_root_page' in parsed_css and parsed_css['is_root_page'] is not None:
-            row.is_root_page = parsed_css['is_root_page']
-        if 'url' in parsed_css and parsed_css['url']:
-            row.url = parsed_css['url']
-        if 'css' in parsed_css and parsed_css['css']:
-            row.css = parsed_css['css']
+        row.is_root_page = parsed_css['is_root_page']
+        row.url = parsed_css['url']
+        row.css = parsed_css['css']
 
         return row.SerializeToString()
 
@@ -1180,12 +1177,8 @@ class ProcessTest(object):
 
             project_id, dataset_id = datastore.split('.')
             parent = write_client.table_path(project_id, dataset_id, table)
+            stream_name = f'{parent}/_default'
             write_stream = types.WriteStream()
-            write_stream.type_ = types.WriteStream.Type.PENDING
-            write_stream = write_client.create_write_stream(
-                parent=parent, write_stream=write_stream
-            )
-            stream_name = write_stream.name
 
             request_template = types.AppendRowsRequest()
             request_template.write_stream = stream_name
@@ -1226,14 +1219,6 @@ class ProcessTest(object):
             # wait for the requests to complete
             for response in responses:
                 result = response.result()
-
-            # Commit the write
-            append_rows_stream.close()
-            write_client.finalize_write_stream(name=write_stream.name)
-            batch_commit_write_streams_request = types.BatchCommitWriteStreamsRequest()
-            batch_commit_write_streams_request.parent = parent
-            batch_commit_write_streams_request.write_streams = [write_stream.name]
-            write_client.batch_commit_write_streams(batch_commit_write_streams_request)
         except Exception:
             logging.exception('Error writing to bigquery')
 
