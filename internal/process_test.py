@@ -1010,6 +1010,7 @@ class ProcessTest(object):
                 json.dump(har, f)
             
             # Upload the HAR to GCS for "successful" tests
+            uploaded = False
             har_filename = os.path.basename(har_file)
             if 'gcs_har_upload' in self.job and \
                     'bucket' in self.job['gcs_har_upload'] and \
@@ -1026,11 +1027,12 @@ class ProcessTest(object):
                     blob = bucket.blob(gcs_path)
                     if not blob.exists():
                         blob.upload_from_filename(filename=har_file)
+                        uploaded = True
                         logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
             
-            if 'bq_datastore' in self.job:
+            if uploaded and 'bq_datastore' in self.job:
                 self.upload_bigquery(har, har_filename, self.job['bq_datastore'])
             
             # Delete the local HAR file if it was only supposed to be uploaded
