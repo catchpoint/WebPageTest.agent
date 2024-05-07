@@ -976,6 +976,19 @@ class WebPageTest(object):
                         task['page_data']['saas_device_type_id'] = job['saas_device_type_id']
                     else:
                         task['page_data']['saas_device_type_id'] = 0
+                # See if there is a wappalyzer build that needs to be pulled
+                if 'wappalyzerPR' in job:
+                    try:
+                        path = os.path.join(job['test_shared_dir'], 'wappalyzer')
+                        if not os.path.exists(path):
+                            logging.debug('Fetching Wappalyzer PR %s...', job['wappalyzerPR'])
+                            subprocess.check_call(['git', 'clone', '--depth', '1', '-b', 'main', 'https://github.com/HTTPArchive/wappalyzer.git', 'wappalyzer'], cwd=self.job['test_shared_dir'])
+                            subprocess.check_call(['git', 'fetch', 'origin', 'pull/{:d}/head:pr'.format(job['wappalyzerPR'])], cwd=path)
+                            subprocess.check_call(['git', 'checkout', 'pr'], cwd=path)
+                    except Exception:
+                        job['error'] = "Error cloning Wappalyzer"
+                        task = None
+                        logging.exception('Error cloning Wappalyzer')
                 self.test_run_count += 1
         if task is None and self.job is not None:
             self.upload_test_result()

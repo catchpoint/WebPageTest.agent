@@ -996,7 +996,6 @@ class OptimizationChecks(object):
                         # Use imagemagick to convert metadata to json
                         try:
                             command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
-                            subprocess.call(command, shell=True)
                             magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
                             try:
                                 magick = json.loads(magick_str)
@@ -1016,7 +1015,7 @@ class OptimizationChecks(object):
                                         del image[key]
                                 check['info']['magick'] = image
                         except Exception:
-                            logging.exception('Error extracting image magick')
+                            pass
                         # Extract format-specific data
                         if sniff_type == 'jpeg':
                             if content_length < 1400:
@@ -1091,7 +1090,7 @@ class OptimizationChecks(object):
                                 with Image.open(request['body']) as gif:
                                     try:
                                         gif.seek(1)
-                                    except EOFError:
+                                    except Exception:
                                         is_animated = False
                                     else:
                                         is_animated = True
@@ -1124,7 +1123,7 @@ class OptimizationChecks(object):
                             check['score'] = 100
                         self.image_results[request_id] = check
             except Exception:
-                logging.exception('Error checking images')
+                logging.exception('Error checking image')
         self.image_time = monotonic() - start
         self.profile_end('images')
 

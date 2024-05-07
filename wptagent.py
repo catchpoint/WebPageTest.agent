@@ -649,6 +649,46 @@ class WPTAgent(object):
         if platform.system() == "Windows":
             self.update_windows_certificates()
 
+        # Update Wappalyzer
+        ret = self.update_wappalyzer() and ret
+
+        return ret
+
+    def update_wappalyzer(self):
+        """ Grab the latest Wappalyzer definitions from github """
+        from time import monotonic
+        import shutil
+        ret = False
+        # Try updating for 60 minutes before failing
+        end = monotonic() + 3600
+        while not ret and monotonic() < end:
+            try:
+                if not os.path.isdir(self.persistent_work_dir):
+                    os.makedirs(self.persistent_work_dir)
+                path = os.path.join(self.persistent_work_dir, 'wappalyzer')
+                if os.path.exists(path):
+                    logging.debug('Updating Wappalyzer...')
+                    if subprocess.call(['git', 'pull', 'origin', 'main'], cwd=path) == 0:
+                        ret = True
+                    else:
+                        logging.info("Error updating Wappalyzer")
+                else:
+                    logging.debug('Cloning Wappalyzer...')
+                    if subprocess.call(['git', 'clone', '--depth', '1', '-b', 'main', 'https://github.com/HTTPArchive/wappalyzer.git', 'wappalyzer'], cwd=self.persistent_work_dir) == 0:
+                        ret = True
+                    else:
+                        logging.info("Error cloning Wappalyzer")
+            except Exception:
+                logging.exception('Error updating Wappalyzer')
+
+            if not ret:
+                if os.path.exists(path):
+                    try:
+                        shutil.rmtree(path)
+                    except Exception:
+                        pass
+                time.sleep(5)
+
         return ret
 
     def get_node_version(self):

@@ -1147,15 +1147,27 @@ class DevtoolsBrowser(object):
             with open(os.path.join(self.support_path, 'Wappalyzer', 'script.js')) as f_in:
                 script = f_in.read()
             if script is not None:
+                # See if there is a test-specific or updated Wappalyzer
+                wappalyzer_path = os.path.join(self.support_path, 'Wappalyzer', 'wappalyzer.js')
+                categories_path = os.path.join(self.support_path, 'Wappalyzer', 'categories.json')
+                technologies_path = os.path.join(self.support_path, 'Wappalyzer', 'technologies')
+                for location in ['persistent_dir', 'test_shared_dir']:
+                    if location in self.job:
+                        path = os.path.join(self.job[location], 'wappalyzer')
+                        if os.path.exists(path):
+                            wappalyzer_path = os.path.join(path, 'src', 'js', 'wappalyzer.js')
+                            categories_path = os.path.join(path, 'src', 'categories.json')
+                            technologies_path = os.path.join(path, 'src', 'technologies')
                 wappalyzer = None
-                with open(os.path.join(self.support_path, 'Wappalyzer', 'wappalyzer.js')) as f_in:
+                logging.debug("Using Wappalyzer from %s", wappalyzer_path)
+                with open(wappalyzer_path) as f_in:
                     wappalyzer = f_in.read()
                 if wappalyzer is not None:
                     technologies = {}
                     categories = {}
-                    with io.open(os.path.join(self.support_path, 'Wappalyzer', 'categories.json'), 'r', encoding='utf-8') as f_in:
+                    with io.open(categories_path, 'r', encoding='utf-8') as f_in:
                         categories = json.load(f_in)
-                    for filename in sorted(glob.glob(os.path.join(self.support_path, 'Wappalyzer', 'technologies', '*.json'))):
+                    for filename in sorted(glob.glob(os.path.join(technologies_path, '*.json'))):
                         with io.open(filename, 'r', encoding='utf-8') as f_in:
                             technologies.update(json.load(f_in))
                     if technologies and categories:

@@ -1066,7 +1066,7 @@ class iWptBrowser(BaseBrowser):
             if self.path_base is not None:
                 path = self.path_base + '_page_data.json.gz'
                 json_page_data = json.dumps(task['page_data'])
-                logging.debug('Page Data: %s', json_page_data)
+                logging.debug('Page Data: %s', json_page_data[:200])
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json_page_data)
 

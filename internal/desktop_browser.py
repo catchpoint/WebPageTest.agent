@@ -788,7 +788,7 @@ class DesktopBrowser(BaseBrowser):
                     int(round((monotonic() - task['run_start_time']) * 1000.0))
             path = os.path.join(task['dir'], task['prefix'] + '_page_data.json.gz')
             json_page_data = json.dumps(task['page_data'])
-            logging.debug('Page Data: %s', json_page_data)
+            logging.debug('Page Data: %s', json_page_data[:200])
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json_page_data)
 
