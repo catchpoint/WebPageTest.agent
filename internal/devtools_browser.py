@@ -1151,7 +1151,8 @@ class DevtoolsBrowser(object):
                 wappalyzer_path = os.path.join(self.support_path, 'Wappalyzer', 'wappalyzer.js')
                 categories_path = os.path.join(self.support_path, 'Wappalyzer', 'categories.json')
                 technologies_path = os.path.join(self.support_path, 'Wappalyzer', 'technologies')
-                for location in ['persistent_dir', 'test_shared_dir']:
+                #for location in ['persistent_dir', 'test_shared_dir']:
+                for location in ['test_shared_dir']:
                     if location in self.job:
                         path = os.path.join(self.job[location], 'wappalyzer')
                         if os.path.exists(path):
