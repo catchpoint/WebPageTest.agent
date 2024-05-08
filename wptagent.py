@@ -650,7 +650,7 @@ class WPTAgent(object):
             self.update_windows_certificates()
 
         # Update Wappalyzer
-        ret = self.update_wappalyzer() and ret
+        #ret = self.update_wappalyzer() and ret
 
         return ret
 
