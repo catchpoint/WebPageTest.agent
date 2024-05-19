@@ -577,6 +577,7 @@ class DevtoolsBrowser(object):
             custom_metrics = {}
             requests = None
             bodies = None
+            cookies = None
             accessibility_tree = None
             for name in sorted(self.job['customMetrics']):
                 logging.debug('Collecting custom metric %s', name)
@@ -605,6 +606,16 @@ class DevtoolsBrowser(object):
                         custom_script = custom_script.replace('$WPT_BODIES', bodies)
                     except Exception:
                         logging.exception('Error substituting request data with bodies into custom script')
+                if custom_script.find('$WPT_COOKIES') >= 0:
+                    if cookies is None:
+                        cookies = '[]'
+                        response = self.devtools.send_command("Storage.getCookies", {}, wait=True, timeout=30)
+                        if response is not None and 'result' in response and 'cookies' in response['result']:
+                            cookies = json.dumps(response['result']['cookies'])
+                    try:
+                        custom_script = custom_script.replace('$WPT_COOKIES', cookies)
+                    except Exception:
+                        logging.exception('Error substituting request data with cookies into custom script')
                 if custom_script.find('$WPT_ACCESSIBILITY_TREE') >= 0:
                     if accessibility_tree is None:
                         try:
