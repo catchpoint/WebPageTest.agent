@@ -39,8 +39,8 @@ def get_page(file_name, har):
         rank = int(metadata.get("rank")) if metadata.get("rank") else None
 
     try:
-        page = trim_page(page)
-        payload_json = to_json(page)
+        payload = trim_page(page)
+        payload_json = to_json(payload)
     except ValueError:
         logging.warning(
             'Skipping pages payload for "%s": unable to stringify as JSON.', wptid
@@ -85,12 +85,26 @@ def get_page(file_name, har):
     }
 
     if json_exceeds_max_content_size(ret, "pages", wptid):
-        return None
+        # try dropping the payload since it is already processed
+        ret['payload'] = '{}'
+        if json_exceeds_max_content_size(ret, "pages", wptid):
+            # try stripping out any REALLY large custom metrics or lighthouse results
+            if len('custom_metrics') > 1000000:
+                ret['custom_metrics'] = get_custom_metrics(page, wptid, 100000)
+            if len('lighthouse') > 1000000:
+                ret['lighthouse'] = '{}'
+            if json_exceeds_max_content_size(ret, "pages", wptid):
+                ret['lighthouse'] = '{}'
+                if json_exceeds_max_content_size(ret, "pages", wptid):
+                    ret['custom_metrics'] = '{}'
+                    if json_exceeds_max_content_size(ret, "pages", wptid):
+                        # Give up. Can't get this result to be small enough
+                        return None
 
     return [ret]
 
 
-def get_custom_metrics(page, wptid):
+def get_custom_metrics(page, wptid, max_size=None):
     """Transforms the page data into a custom metrics object."""
 
     page_metrics = page.get("_custom")
@@ -122,7 +136,12 @@ def get_custom_metrics(page, wptid):
                 )
                 continue
 
-        custom_metrics[metric] = value
+        if max_size is not None:
+            value_json = to_json(value)
+            if value_json and len(value_json) <= max_size:
+                custom_metrics[metric] = value
+        else:
+            custom_metrics[metric] = value
 
     try:
         custom_metrics_json = to_json(custom_metrics)
@@ -389,15 +408,22 @@ def trim_request(request):
     return request
 
 
-def trim_page(page):
+def trim_page(src_page):
     """Removes unneeded fields from the page object."""
 
-    if not page:
+    if not src_page:
         return None
 
     # Make a copy first so the data can be used later.
-    page = deepcopy(page)
+    page = deepcopy(src_page)
+
+    # Remove the fields that are parsed out into separate columns
     page.pop("_parsed_css", None)
+    page.pop("_custom", None)
+    page.pop("_lighthouse", None)
+    page.pop("_blinkFeatureFirstUsed", None)
+    page.pop("_detected_apps", None)
+    page.pop("_detected", None)
     return page
 
 
