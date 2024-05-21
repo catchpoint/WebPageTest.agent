@@ -306,6 +306,11 @@ def get_requests(file_name, har):
     requests = []
     index = 0
 
+    # State information for the request summary processing
+    first_url = None
+    first_html_url = None
+    entry_number = 0
+
     for request in entries:
 
         request_url = request.get("_full_url")
@@ -350,8 +355,8 @@ def get_requests(file_name, har):
         summary_request = None
         try:
             status_info = HarJsonToSummary.initialize_status_info(file_name, page)
-            summary_request, _, _, _ = HarJsonToSummary.summarize_entry(
-                request, "", "", 0, status_info
+            summary_request, first_url, first_html_url, entry_number = HarJsonToSummary.summarize_entry(
+                request, first_url, first_html_url, entry_number, status_info
             )
             wanted_summary_fields = [
                 field["name"]
