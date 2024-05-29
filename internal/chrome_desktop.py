@@ -58,6 +58,9 @@ HOST_RULES = [
 ]
 
 ENABLE_CHROME_FEATURES = [
+    'BrowsingTopics',
+    'InterestGroupStorage',
+    'PrivacySandboxAdsAPIsOverride',
 ]
 
 DISABLE_CHROME_FEATURES = [
