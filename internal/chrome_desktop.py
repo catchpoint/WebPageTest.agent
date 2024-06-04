@@ -68,6 +68,7 @@ DISABLE_CHROME_FEATURES = [
     'MediaRouter',
     'OfflinePagesPrefetching',
     'OptimizationHints',
+    'SidePanelPinning',
     'Translate',
     # Disable noisy Edge features
     'msAutofillEdgeCoupons',
