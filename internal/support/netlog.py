@@ -44,6 +44,7 @@ class Netlog():
         self.on_response_headers_received = None    # (request_id, response_headers)
         self.on_response_bytes_received = None      # (request_id, filtered_bytes)
         self.on_request_id_changed = None           # (request_id, new_request_id)
+        self.on_update_dns_lookup = None                     # (dns_id, info)
 
     def set_constants(self, constants):
         """Setup the event look-up tables"""
@@ -735,6 +736,7 @@ class Netlog():
         params = event['params'] if 'params' in event else {}
         entry = self.netlog['dns'][request_id]
         name = event['type']
+        updated = False
         if 'source_dependency' in params and 'id' in params['source_dependency']:
             parent_id = params['source_dependency']['id']
             if 'connect_job' in self.netlog and parent_id in self.netlog['connect_job']:
@@ -759,10 +761,18 @@ class Netlog():
                 entry['end'] = event['time']
         if 'host' not in entry and 'host' in params:
             entry['host'] = params['host']
+            updated = True
         if name == 'HOST_RESOLVER_DNS_TASK' and params:
             if 'info' not in entry:
                 entry['info'] = {}
             entry['info'].update(params)
+            updated = True
+        # Send the updated DNS entry info to the caller in realtime
+        if updated and self.on_update_dns_lookup is not None:
+            try:
+                self.on_update_dns_lookup(request_id, entry)
+            except Exception:
+                logging.exception('Error calling on_update_dns_lookup')
 
     def process_socket_event(self, event):
         if 'socket' not in self.netlog:

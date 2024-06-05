@@ -65,6 +65,7 @@ class DevTools(object):
         self.requests = {}
         self.netlog_requests = {}
         self.netlog_urls = {}
+        self.netlog_dns = {}
         self.netlog_lock = threading.Lock()
         self.request_count = 0
         self.response_bodies = {}
@@ -980,6 +981,18 @@ class DevTools(object):
             except Exception:
                 logging.exception('Error adding netlog requests')
         return requests
+
+    def get_dns_info(self):
+        """ Return the DNS lookup information indexed by origin """
+        dns_info = {}
+        with self.netlog_lock:
+            for dns_id in self.netlog_dns:
+                entry = self.netlog_dns[dns_id]
+                if 'host' in entry and 'info' in entry and entry['host'] and entry['info']:
+                    parts = urlsplit(entry['host'])
+                    origin = parts.scheme + '://' + parts.netloc
+                    dns_info[origin] = dict(entry['info'])
+        return dns_info
 
     def flush_pending_messages(self):
         """Clear out any pending websocket messages"""
@@ -1940,6 +1953,18 @@ class DevTools(object):
             logging.debug("Netlog response bytes for %s: %d bytes", request_id, len(filtered_bytes))
         except Exception:
             logging.exception('Error handling on_netlog_response_bytes_received')
+
+    def on_netlog_update_dns_lookup(self, dns_id, info):
+        """Callbacks from streamed netlog processing (these will come in on a background thread)"""
+        try:
+            if dns_id and info:
+                with self.netlog_lock:
+                    if self.netlog_dns is None:
+                        self.netlog_dns = {}
+                    self.netlog_dns[dns_id] = info
+            logging.debug("Netlog DNS info %s: %s", dns_id, json.dumps(info))
+        except Exception:
+            logging.exception('Error handling on_netlog_update_dns_lookup')
 
     def on_request_id_changed(self, request_id, new_request_id):
         """Callbacks from streamed netlog processing (these will come in on a background thread)"""

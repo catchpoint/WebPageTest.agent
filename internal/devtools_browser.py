@@ -576,6 +576,7 @@ class DevtoolsBrowser(object):
         if 'customMetrics' in self.job:
             custom_metrics = {}
             requests = None
+            dns_info = None
             bodies = None
             cookies = None
             accessibility_tree = None
@@ -597,6 +598,16 @@ class DevtoolsBrowser(object):
                         requests = self.get_sorted_requests_json(False)
                     try:
                         custom_script = custom_script.replace('$WPT_REQUESTS', requests)
+                    except Exception:
+                        logging.exception('Error substituting request data into custom script')
+                if custom_script.find('$WPT_DNS') >= 0:
+                    if dns_info is None:
+                        if self.devtools is not None:
+                            dns_info = json.dumps(self.devtools.get_dns_info())
+                        else:
+                            dns_info = "{}"
+                    try:
+                        custom_script = custom_script.replace('$WPT_DNS', dns_info)
                     except Exception:
                         logging.exception('Error substituting request data into custom script')
                 if custom_script.find('$WPT_BODIES') >= 0:
