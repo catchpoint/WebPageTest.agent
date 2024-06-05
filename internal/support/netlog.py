@@ -367,6 +367,8 @@ class Netlog():
                             if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                                 dns = dns_lookups[hostname]
                                 dns['claimed'] = True
+                                if 'info' in dns:
+                                    request['dns_info'] = dns['info']
                                 # Find the longest DNS time that completed before connect_start
                                 if 'times' in dns_lookups[hostname]:
                                     elapsed = None
@@ -384,6 +386,8 @@ class Netlog():
                         if hostname in dns_lookups and 'claimed' not in dns_lookups[hostname]:
                             dns = dns_lookups[hostname]
                             dns['claimed'] = True
+                            if 'info' in dns:
+                                request['dns_info'] = dns['info']
                             # Find the longest DNS time that completed before the request start
                             if 'times' in dns_lookups[hostname]:
                                 elapsed = None
@@ -755,6 +759,10 @@ class Netlog():
                 entry['end'] = event['time']
         if 'host' not in entry and 'host' in params:
             entry['host'] = params['host']
+        if name == 'HOST_RESOLVER_DNS_TASK' and params:
+            if 'info' not in entry:
+                entry['info'] = {}
+            entry['info'].update(params)
 
     def process_socket_event(self, event):
         if 'socket' not in self.netlog:

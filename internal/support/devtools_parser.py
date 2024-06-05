@@ -870,6 +870,7 @@ class DevToolsParser(object):
         mapping = {'created': 'created',
                    'dns_start': 'dns_start',
                    'dns_end': 'dns_end',
+                   'dns_info': 'dns_info',
                    'connect_start': 'connect_start',
                    'connect_end': 'connect_end',
                    'ssl_start': 'ssl_start',
