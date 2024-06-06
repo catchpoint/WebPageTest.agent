@@ -6444,6 +6444,33 @@ BLINK_FEATURES = {
     "4964": "ScriptingMediaFeature",
     "4965": "InvertedColorsMediaFeature",
     "4966": "CSSLightDark",
+    "4967": "PrivateAggregationApiFilteringIds",
+    "4968": "HTMLInputInSelect",
+    "4969": "Canvas2DMesh",
+    "4970": "CaretPositionFromPoint",
+    "4971": "DocumentPolicyIncludeJSCallStacksInCrashReports",
+    "4972": "MaximumHTMLParserDOMTreeDepthHit",
+    "4973": "V8ModelGenericSession_Destroy_Method",
+    "4974": "UsedDeviceScaleAdjustment",
+    "4975": "DisableThirdPartyStoragePartitioning2",
+    "4976": "LinkRelPayment",
+    "4977": "V8GPUAdapter_RequestAdapterInfo_Method",
+    "4978": "OBSOLETE_V8ModelGenericSession_Destroy_Method",
+    "4979": "V8AITextSession_Execute_Method",
+    "4980": "V8AITextSession_ExecuteStreaming_Method",
+    "4981": "V8AI_CanCreateGenericSession_Method",
+    "4982": "V8AI_CreateGenericSession_Method",
+    "4983": "V8AI_DefaultGenericSessionOptions_Method",
+    "4984": "V8AITextSession_Prompt_Method",
+    "4985": "V8AITextSession_PromptStreaming_Method",
+    "4986": "V8AI_CanCreateTextSession_Method",
+    "4987": "V8AI_CreateTextSession_Method",
+    "4988": "V8AI_DefaultTextSessionOptions_Method",
+    "4989": "V8AITextSession_Destroy_Method",
+    "4990": "ImportMapIntegrity",
+    "4991": "SelectElementAppearanceNone",
+    "4992": "RubyPositionAlternate",
+    "4993": "RubyPositionInterCharacter",
 }
 
 ##########################################################################
@@ -7193,6 +7220,9 @@ CSS_FEATURES = {
     "790": "CSSPropertyTypes",
     "791": "CSSPropertyLineClamp",
     "792": "CSSPropertyFontVariantEmoji",
+    "793": "CSSPropertyScrollMarkers",
+    "794": "CSSPropertyAnchorScope",
+    "795": "CSSPropertyRubyAlign",
 }
 
 if '__main__' == __name__:
