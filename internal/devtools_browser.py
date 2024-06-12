@@ -649,7 +649,11 @@ class DevtoolsBrowser(object):
                     except Exception:
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
-                custom_metrics[name] = self.devtools.execute_js(script)
+                if len(script) > 100000000:
+                    custom_metrics[name] = None
+                    logging.debug('Skipping %s. Script length is %d', name, len(script))
+                else:
+                    custom_metrics[name] = self.devtools.execute_js(script)
             path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
             with gzip.open(path, GZIP_TEXT, 7) as outfile:
                 outfile.write(json.dumps(custom_metrics))
