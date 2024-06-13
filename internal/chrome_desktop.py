@@ -44,6 +44,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-first-run',
     '--password-store=basic',
     '--use-mock-keychain',
+    '--propagate-iph-for-testing',
 ]
 
 HOST_RULES = [
