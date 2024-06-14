@@ -1360,7 +1360,35 @@ class DevTools(object):
                     self.send_character(char)
         except Exception:
             logging.exception('Error running type command')
+    def mouse_press(self, commandOptions):
+        """Press down the mouse"""
+        params = {
+            'type': 'mousePressed',
+            'x': commandOptions['x'],
+            'y': commandOptions['y'],
+            'button': commandOptions['button'],
+            'clickCount': commandOptions['clickCount']
+        }
+        self.send_command('Input.dispatchMouseEvent', params)
 
+    def mouse_release(self, commandOptions):
+        """Let up the mouse"""
+        self.send_command('Input.dispatchMouseEvent', {
+            'type': 'mouseReleased',
+            'x': commandOptions['x'],
+            'y': commandOptions['y'],
+            'button': commandOptions['button'],
+            'clickCount': commandOptions['clickCount']
+        })
+
+    def mouseClick(self, params):
+        """Simulate pressing the mouse"""
+        try:
+            self.mouse_press(params)
+            self.mouse_release(params)
+        except Exception:
+            logging.exception('Error running mouse click command')
+            
     def enable_target(self, target_id=None):
         """Hook up the necessary network (or other) events for the given target"""
         try:
