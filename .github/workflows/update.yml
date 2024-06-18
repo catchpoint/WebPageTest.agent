@@ -3,6 +3,7 @@ on:
   schedule:
     # Run Monthly on the 2nd of each month
     - cron: '12 2 2 * *'
+  workflow_dispatch:
 
 jobs:
   update:
