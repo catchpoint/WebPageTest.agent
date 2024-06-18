@@ -20,7 +20,8 @@ for name in SOURCES:
     path = os.path.join(os.path.abspath(os.path.dirname(__file__)), name + '.json')
     with open(path, 'rt', encoding='utf-8') as f:
         features = json.load(f)
-    url = SOURCES[name][url]
+    updated = False
+    url = SOURCES[name]['url']
     prefix = SOURCES[name]['prefix'] if 'prefix' in SOURCES[name] else ''
     response = requests.get(url)
     for line in response.text.splitlines():
@@ -30,5 +31,7 @@ for name in SOURCES:
             key = match.group(2)
             if key not in features:
                 features[key] = prefix + value
-    with open(path, 'wt', encoding='utf-8') as f:
-        json.dump(features, f, indent=4)
+                updated = True
+    if updated:
+        with open(path, 'wt', encoding='utf-8') as f:
+            json.dump(features, f, indent=4)
