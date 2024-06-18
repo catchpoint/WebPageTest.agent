@@ -1,0 +1,25 @@
+# Update wappalyzer and the Chrome feature names and create a PR if there were any changes
+on:
+  schedule:
+    # Run Monthly on the 2nd of each month
+    - cron: '12 2 2 * *'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Wappalyzer
+        run: ./update_wappalyzer.sh
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          # token: ${{ secrets.PAT }}
+          commit-message: Update Wappalyzer and Features
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: updates
+          delete-branch: true
+          title: 'Update Wappalyzer and Chrome Feature Names'
+          draft: false
