@@ -424,11 +424,19 @@ def trim_page(src_page):
 
     # Remove the fields that are parsed out into separate columns
     page.pop("_parsed_css", None)
-    page.pop("_custom", None)
     page.pop("_lighthouse", None)
     page.pop("_blinkFeatureFirstUsed", None)
     page.pop("_detected_apps", None)
     page.pop("_detected", None)
+
+    # Delete the custom metrics (enumerated in the _custom entry)
+    """
+    if '_custom' in page:
+        for metric in page['_custom']:
+            page.pop('_' + metric, None)
+        page.pop("_custom", None)
+    """
+
     return page
 
 
