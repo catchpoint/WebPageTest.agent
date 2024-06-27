@@ -36,6 +36,9 @@ jobs:
         python3 -m pip install --upgrade pip
         pip3 install -r .github/workflows/requirements.txt
 
+    - name: Analysing the code with Black
+      run: black --include font --check .
+
     - name: Analysing the code with pylint
       run: |
        find -name "*.py" -not -path "./ws4py/*" -exec pylint {} --errors-only \;
