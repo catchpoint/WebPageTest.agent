@@ -5,10 +5,12 @@
 # found in the LICENSE.md file.
 """Extract metadata from OpenType fonts."""
 
-from fontTools.ttLib import TTFont
-from fontTools.ttLib.tables import otTables
 import functools
 import logging
+from typing import Optional
+
+from fontTools.ttLib import TTFont
+from fontTools.ttLib.tables import otTables
 
 
 _NAME_ID_VERSION = 5
@@ -25,6 +27,13 @@ def _safe_result_type(v):
 
 def _safe_map(m):
     return {k: v for k, v in m.items() if _safe_result_type(v)}
+
+
+def _read_head(font: TTFont) -> Optional[dict]:
+    try:
+        return _safe_map(font["head"].__dict__)
+    except Exception:
+        logging.exception("Error reading font head")
 
 
 def _read_names(ttf, name_ids):
@@ -236,6 +245,7 @@ def read_metadata(font):
         "table_sizes": {
             tag: reader.tables[tag].length for tag in sorted(reader.keys())
         },
+        "head": _read_head(ttf),
         "names": _read_names(
             ttf, (_NAME_ID_VERSION, _NAME_ID_POSTSCRIPT_NAME, _NAME_ID_LICENSE_URL)
         ),

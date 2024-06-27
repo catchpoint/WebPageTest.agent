@@ -21,6 +21,25 @@
     "post": 32,
     "prep": 7
   },
+  "head": {
+    "tableVersion": 1.0,
+    "fontRevision": 4.003997802734375,
+    "checkSumAdjustment": 1208928167,
+    "magicNumber": 1594834165,
+    "flags": 3,
+    "unitsPerEm": 1000,
+    "created": 3694181727,
+    "modified": 3719402917,
+    "xMin": -240,
+    "yMin": -321,
+    "xMax": 2236,
+    "yMax": 1003,
+    "macStyle": 0,
+    "lowestRecPPEM": 6,
+    "fontDirectionHint": 2,
+    "indexToLocFormat": 0,
+    "glyphDataFormat": 0
+  },
   "names": {
     "0": "\u00a9 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/)",
     "1": "Source Serif 4",
