@@ -189,6 +189,7 @@ def _read_features(ttf):
                 languages = list(script.Script.LangSysRecord)
 
                 if script.Script.DefaultLangSys:
+                    # pylint: disable=no-member
                     defaultlangsys = otTables.LangSysRecord()
                     defaultlangsys.LangSysTag = "default"
                     defaultlangsys.LangSys = script.Script.DefaultLangSys
@@ -207,6 +208,7 @@ def _read_features(ttf):
 
                     if langsys.LangSys.ReqFeatureIndex != 0xFFFF:
                         record = featureRecords[langsys.LangSys.ReqFeatureIndex]
+                        # pylint: disable=no-member
                         requiredfeature = otTables.FeatureRecord()
                         requiredfeature.FeatureTag = "required(%s)" % record.FeatureTag
                         requiredfeature.Feature = record.Feature
