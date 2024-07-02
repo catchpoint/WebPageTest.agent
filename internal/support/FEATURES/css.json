@@ -794,5 +794,6 @@
     "792": "CSSPropertyFontVariantEmoji",
     "793": "CSSPropertyScrollMarkers",
     "794": "CSSPropertyAnchorScope",
-    "795": "CSSPropertyRubyAlign"
+    "795": "CSSPropertyRubyAlign",
+    "796": "CSSPropertyBoxDecorationBreak"
 }
