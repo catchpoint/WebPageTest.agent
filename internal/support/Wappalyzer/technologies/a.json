@@ -2454,21 +2454,35 @@
     "scriptSrc": "cf\\.aliyun\\.com/",
     "website": "https://help.aliyun.com/document_detail/193141.html"
   },
-  "All in One SEO Pack": {
+  "All in One SEO": {
     "cats": [
       54,
       87
     ],
     "cpe": "cpe:2.3:a:aioseo:all_in_one_seo:*:*:*:*:*:wordpress:*:*",
-    "description": "All in One SEO plugin optimizes WordPress website and its content for search engines.",
-    "html": "<!-- All in One SEO Pack ([\\d.]+) \\;version:\\1",
+    "description": "All in One SEO optimizes a WordPress website and its content for search engines.",
+    "dom": {
+      "script.aioseo-schema": {}
+    },
+    "html": [
+      "<!-- All in One SEO Pack ([\\d.]+) \\;version:\\1",
+      "<!-- All in One SEO ([\\d.]+) \\;version:\\1",
+      "<!-- All in One SEO Pro ([\\d.]+) \\;version:Pro \\1"
+    ],
     "icon": "AIOSEO.svg",
+    "implies": "WordPress",
+    "meta": {
+      "generator": [
+        "^All in One SEO \\(AIOSEO\\) ([\\d\\.]+)\\;version:\\1",
+        "^All in One SEO Pro \\(AIOSEO\\) ([\\d\\.]+)\\;version:Pro \\1"
+      ]
+    },
+    "oss": true,
     "pricing": [
       "freemium",
       "low",
       "recurring"
     ],
-    "requires": "WordPress",
     "website": "https://aioseo.com"
   },
   "Alli": {

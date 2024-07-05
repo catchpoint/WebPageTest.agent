@@ -2533,7 +2533,8 @@
   },
   "Shopify": {
     "cats": [
-      6
+      6,
+      1
     ],
     "cookies": {
       "_shopify_s": "",
