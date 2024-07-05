@@ -1025,7 +1025,8 @@
   },
   "Webflow": {
     "cats": [
-      51
+      51,
+      1
     ],
     "description": "Webflow is Software-as-a-Service (SaaS) for website building and hosting.",
     "dom": "html[data-wf-site]",
@@ -2065,6 +2066,16 @@
     ],
     "website": "https://wordpress.org"
   },
+  "WordPress Block Editor": {
+    "cats": [
+      51
+    ],
+    "description": "Sites using the WordPress Block Editor, also known as Gutenberg.",
+    "html": "<div[^>]+class=[\"']wp-block-*",
+    "icon": "WordPress.svg",
+    "requires": "WordPress",
+    "website": "https://wordpress.org/gutenberg/"
+  },
   "WordPress Default": {
     "cats": [
       80
@@ -2104,6 +2115,17 @@
     "oss": true,
     "requires": "WordPress",
     "website": "https://wordpress.org/documentation/article/create-a-network/"
+  },
+  "WordPress Site Editor": {
+    "cats": [
+      51
+    ],
+    "description": "Full Site Editing enables users to design and customize their entire WordPress website with a block-based editor.",
+    "excludes": "WordPress Block Editor",
+    "html": "<div class=\"wp-site-blocks\">",
+    "icon": "WordPress.svg",
+    "requires": "WordPress",
+    "website": "https://wordpress.org/documentation/article/site-editor/"
   },
   "WordPress Super Cache": {
     "cats": [

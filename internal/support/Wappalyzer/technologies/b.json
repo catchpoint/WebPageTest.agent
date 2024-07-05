@@ -474,6 +474,20 @@
     "scriptSrc": "cdn\\.trybeans\\.com",
     "website": "https://www.trybeans.com/"
   },
+  "Beaver Builder": {
+    "cats": [
+      51,
+      87
+    ],
+    "description": "Beaver Builder is a drag and drop page builder for WordPress.",
+    "dom": "body[class*='fl-builder'], link[id*='fl-builder']",
+    "html": [
+      "<body[^>]+fl-builder"
+    ],
+    "icon": "beaver-builder-icon.png",
+    "implies": "WordPress",
+    "website": "https://www.wpbeaverbuilder.com/"
+  },
   "Beehiiv": {
     "cats": [
       11
@@ -2348,6 +2362,34 @@
       "recurring"
     ],
     "website": "https://brimble.io"
+  },
+  "Brizy Cloud": {
+    "cats": [
+      1,
+      51
+    ],
+    "description": "Brizy Cloud is a platform for creating and managing websites using an intuitive drag-and-drop editor, allowing users to design and publish sites without any coding knowledge. ",
+    "html": "<div[^>]+class=[\"']brz-root__container",
+    "icon": "brizy.svg",
+    "saas": true,
+    "scriptSrc": "b-cloud\\.b-cdn\\.net/builds/(?:free|pro)/\\d+-cloud",
+    "website": "https://brizy.io"
+  },
+  "Brizy WordPress": {
+    "cats": [
+      51,
+      87
+    ],
+    "description": "Brizy WordPress is a plugin that enables users to build and design WordPress websites with an easy-to-use drag-and-drop editor and a wide range of customizable templates.",
+    "dom": "link[href*='/wp-content/plugins/brizy/']",
+    "excludes": "Brizy Cloud",
+    "html": "<div[^>]+class=[\"']brz-root__container",
+    "icon": "brizy.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "website": "https://brizy.io"
   },
   "Broadstreet": {
     "cats": [

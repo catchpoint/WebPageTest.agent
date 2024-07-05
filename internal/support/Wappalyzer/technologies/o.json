@@ -959,7 +959,8 @@
   },
   "OpenCart": {
     "cats": [
-      6
+      6,
+      1
     ],
     "cookies": {
       "OCSESSID": ""

@@ -4649,5 +4649,8 @@
     "5024": "V8MLContext_Compute_Method",
     "5025": "V8MLContext_Dispatch_Method",
     "5026": "CSSMixins",
-    "5027": "DurationFormat"
+    "5027": "DurationFormat",
+    "5028": "SharedStorageAPI_AddModule_CrossOriginScript",
+    "5029": "CrossOriginOpenerPolicyNoopenerAllowPopups",
+    "5030": "CrossOriginOpenerPolicyNoopenerAllowPopupsReportOnly"
 }
