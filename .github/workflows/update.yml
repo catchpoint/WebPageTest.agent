@@ -1,4 +1,6 @@
 # Update wappalyzer and the Chrome feature names and create a PR if there were any changes
+name: "Update Wappalyzer and Chrome feature names"
+
 on:
   schedule:
     # Run Monthly on the 2nd of each month
