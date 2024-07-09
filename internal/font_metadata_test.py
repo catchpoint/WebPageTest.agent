@@ -14,6 +14,7 @@ def test_read_metadata_color():
 
     assert actual == expected
 
+
 def test_read_metadata_variable():
     base = "test/data/SourceSerif4-VariableFont_opsz,wght"
 

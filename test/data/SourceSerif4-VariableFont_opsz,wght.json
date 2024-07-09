@@ -1069,9 +1069,7 @@
     ]
   },
   "color": {
-    "formats": [],
-    "numPalettes": 0,
-    "numPaletteEntries": 0
+    "formats": []
   },
   "features": {
     "GSUB": {
