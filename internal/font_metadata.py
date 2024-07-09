@@ -19,6 +19,8 @@ _NAME_ID_LICENSE_URL = 14
 _MAX_NAME_LEN = 64
 _MAX_NAME_ID = 20
 _MAX_NAMES = 20
+_MAX_PALETTES = 10
+_MAX_COLORS = 10
 
 
 def _safe_result_type(v):
@@ -135,39 +137,37 @@ def _read_cmap(ttf):
     return None
 
 
-def _read_color(ttf):
+def _read_color(font: TTFont) -> Optional[dict]:
     try:
-        t = []
-
         # It is possible a single font uses multiple color
         # formats for wider OS and browser support.
-        if "COLR" in ttf and ttf["COLR"].version == 0:
-            t.append("COLRv0")
+        result = {"formats": []}
 
-        if "COLR" in ttf and ttf["COLR"].version == 1:
-            t.append("COLRv1")
+        if "COLR" in font and font["COLR"].version == 0:
+            result["formats"].append("COLRv0")
 
-        if "SVG " in ttf:
-            t.append("SVG")
+        if "COLR" in font and font["COLR"].version == 1:
+            result["formats"].append("COLRv1")
 
-        if "CBDT" in ttf:
-            t.append("CBDT")
+        if "SVG " in font:
+            result["formats"].append("SVG")
 
-        if "sbix" in ttf:
-            t.append("sbix")
+        if "CBDT" in font:
+            result["formats"].append("CBDT")
 
-        numPalettes = 0
-        numPaletteEntries = 0
+        if "sbix" in font:
+            result["formats"].append("sbix")
 
-        if "CPAL" in ttf:
-            numPaletteEntries = ttf["CPAL"].numPaletteEntries
-            numPalettes = len(ttf["CPAL"].palettes)
+        if "CPAL" in font:
+            result["numPalettes"] = len(font["CPAL"].palettes)
+            result["numPaletteEntries"] = font["CPAL"].numPaletteEntries
+            result["palettes"] = [
+                palette
+                for palette in font["CPAL"].palettes
+                if len(palette) <= _MAX_COLORS
+            ][:_MAX_PALETTES]
 
-        return {
-            "formats": t,
-            "numPalettes": numPalettes,
-            "numPaletteEntries": numPaletteEntries,
-        }
+        return result
     except Exception:
         logging.exception("Error reading color font data")
     return None
