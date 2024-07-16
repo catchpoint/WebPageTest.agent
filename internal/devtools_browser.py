@@ -574,17 +574,6 @@ class DevtoolsBrowser(object):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit_now:
             return
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        page_data = self.run_js_file('page_data.js')
-        self.document_domain = None
-        if page_data is not None:
-            if 'document_hostname' in page_data:
-                self.document_domain = page_data['document_hostname']
-            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
             requests = None
             dns_info = None
@@ -671,6 +660,8 @@ class DevtoolsBrowser(object):
 
     def finish_collect_browser_metrics(self, task):
         """ Collect the asyc custom metrics results"""
+        if self.must_exit_now:
+            return
         try:
             if self.custom_metrics_command_ids:
                 custom_metrics = {}
@@ -694,6 +685,17 @@ class DevtoolsBrowser(object):
                 with gzip.open(path, GZIP_TEXT, 7) as outfile:
                     outfile.write(json.dumps(custom_metrics))
                 self.custom_metrics_command_ids = None
+            user_timing = self.run_js_file('user_timing.js')
+            if user_timing is not None:
+                path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                    outfile.write(json.dumps(user_timing))
+            page_data = self.run_js_file('page_data.js')
+            self.document_domain = None
+            if page_data is not None:
+                if 'document_hostname' in page_data:
+                    self.document_domain = page_data['document_hostname']
+                task['page_data'].update(page_data)
         except Exception:
             logging.exception('Error collecting async custom metrics results')
 

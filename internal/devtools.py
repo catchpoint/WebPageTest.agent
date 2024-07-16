@@ -1486,10 +1486,10 @@ class DevTools(object):
             if len(parts) >= 2:
                 category = parts[0]
                 event = parts[1]
-                log_event = bool(self.recording)
+                log_event = bool(self.capturing)
                 if category == 'Page' and self.recording:
                     self.process_page_event(event, msg)
-                elif category == 'Network' and self.recording:
+                elif category == 'Network':
                     self.process_network_event(event, msg, target_id)
                 elif category == 'Console' and self.recording:
                     self.process_console_event(event, msg)
@@ -1681,7 +1681,7 @@ class DevTools(object):
                 except Exception:
                     logging.exception('Error processing host override')
                 self.send_command('Network.continueInterceptedRequest', params, target_id=target_id)
-        elif 'requestId' in msg['params']:
+        elif 'requestId' in msg['params'] and self.capturing:
             timestamp = None
             if 'params' in msg and 'timestamp' in msg['params']:
                 timestamp = msg['params']['timestamp']

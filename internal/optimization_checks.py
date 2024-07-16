@@ -55,10 +55,12 @@ class OptimizationChecks(object):
         self.hosting_results = {}
         self.gzip_results = {}
         self.image_results = {}
+        self.image_lock = threading.Lock()
         self.progressive_results = {}
         self.font_results = {}
         self.wasm_results = {}
         self.results = {}
+        self.image_queue = multiprocessing.JoinableQueue()
         self.dns_lookup_queue = multiprocessing.JoinableQueue()
         self.dns_result_queue = multiprocessing.JoinableQueue()
         self.fetch_queue = multiprocessing.JoinableQueue()
@@ -957,81 +959,187 @@ class OptimizationChecks(object):
         """Check each request to see if images can be compressed better"""
         self.profile_start('images')
         start = monotonic()
+        count = 0
         for request_id in self.requests:
-            try:
-                request = self.requests[request_id]
-                content_length = None
-                if 'response_headers' in request:
-                    content_length = self.get_header_value(request['response_headers'], 'Content-Length')
-                if content_length is not None:
-                    content_length = int(re.search(r'\d+', str(content_length)).group())
-                elif 'transfer_size' in request:
-                    content_length = request['transfer_size']
-                if 'body' in request:
-                    sniff_type = self.sniff_file_content(request['body'])
-                    if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
-                        if sniff_type is None:
-                            sniff_type = 'Unknown'
-                        check = {'score': -1,
-                                 'size': content_length,
-                                 'target_size': content_length,
-                                 'info': {
-                                     'detected_type': sniff_type
-                                 }}
-                        # Use exiftool to extract the image metadata if it is installed
+            count += 1
+            self.image_queue.put(request_id)
+        threads = []
+        thread_count = min(count, 4)
+        for _ in range(thread_count):
+            self.image_queue.put(None)
+        for _ in range(thread_count):
+            thread = threading.Thread(target=self.image_worker)
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
+        self.image_time = monotonic() - start
+        self.profile_end('images')
+
+    def image_worker(self):
+        """Handle the image checks in multiple threads"""
+        try:
+            while True:
+                request_id = self.image_queue.get(5)
+                if request_id is None:
+                    self.image_queue.task_done()
+                    break
+                else:
+                    self.check_image(request_id)
+                    self.image_queue.task_done()
+        except Exception:
+            pass
+
+    def check_image(self, request_id):
+        """ Run the image checks on a single image """
+        try:
+            request = self.requests[request_id]
+            content_length = None
+            if 'response_headers' in request:
+                content_length = self.get_header_value(request['response_headers'], 'Content-Length')
+            if content_length is not None:
+                content_length = int(re.search(r'\d+', str(content_length)).group())
+            elif 'transfer_size' in request:
+                content_length = request['transfer_size']
+            if 'body' in request:
+                sniff_type = self.sniff_file_content(request['body'])
+                if sniff_type in ['jpeg', 'png', 'gif', 'webp', 'avif', 'jxl']:
+                    if sniff_type is None:
+                        sniff_type = 'Unknown'
+                    check = {'score': -1,
+                                'size': content_length,
+                                'target_size': content_length,
+                                'info': {
+                                    'detected_type': sniff_type
+                                }}
+                    # Use exiftool to extract the image metadata if it is installed
+                    try:
+                        metadata = json.loads(subprocess.check_output(['exiftool', '-j', '-g', request['body']], encoding='UTF-8'))
+                        if metadata is not None:
+                            if isinstance(metadata, list) and len(metadata) == 1:
+                                metadata = metadata[0]
+                            if 'SourceFile' in metadata:
+                                del metadata['SourceFile']
+                            if 'File' in metadata:
+                                for key in ['FileName', 'Directory', 'FileModifyDate', 'FileAccessDate', 'FileInodeChangeDate', 'FilePermissions']:
+                                    if key in metadata['File']:
+                                        del metadata['File'][key]
+                            check['info']['metadata'] = metadata
+                    except Exception:
+                        pass
+                    # Use imagemagick to convert metadata to json
+                    try:
+                        command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
+                        magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
                         try:
-                            metadata = json.loads(subprocess.check_output(['exiftool', '-j', '-g', request['body']], encoding='UTF-8'))
-                            if metadata is not None:
-                                if isinstance(metadata, list) and len(metadata) == 1:
-                                    metadata = metadata[0]
-                                if 'SourceFile' in metadata:
-                                    del metadata['SourceFile']
-                                if 'File' in metadata:
-                                    for key in ['FileName', 'Directory', 'FileModifyDate', 'FileAccessDate', 'FileInodeChangeDate', 'FilePermissions']:
-                                        if key in metadata['File']:
-                                            del metadata['File'][key]
-                                check['info']['metadata'] = metadata
+                            magick = json.loads(magick_str)
                         except Exception:
-                            pass
-                        # Use imagemagick to convert metadata to json
-                        try:
-                            command = '{0} "{1}[0]" json:-'.format(self.job['image_magick']['convert'], request['body'])
-                            magick_str = subprocess.check_output(command, shell=True, encoding='UTF-8')
-                            try:
-                                magick = json.loads(magick_str)
-                            except Exception:
-                                # Fix issues with imagemagick's json output
-                                magick_str = magick_str.replace('}\n{', '},\n{')
-                                magick_str = re.sub(r"([\"\w])(\n\s+\")", r"\1,\2", magick_str)
-                                magick_str = '[' + magick_str + ']'
-                                magick = json.loads(magick_str)
-                            if magick and 'image' in magick[0]:
-                                image = magick[0]['image']
-                                if len(magick) > 1:
-                                    image['FrameCount'] = len(magick)
-                                remove = ['name', 'artifacts', 'colormap', 'version']
-                                for key in remove:
-                                    if key in image:
-                                        del image[key]
-                                check['info']['magick'] = image
-                        except Exception:
-                            pass
-                        # Extract format-specific data
-                        if sniff_type == 'jpeg':
-                            if content_length < 1400:
+                            # Fix issues with imagemagick's json output
+                            magick_str = magick_str.replace('}\n{', '},\n{')
+                            magick_str = re.sub(r"([\"\w])(\n\s+\")", r"\1,\2", magick_str)
+                            magick_str = '[' + magick_str + ']'
+                            magick = json.loads(magick_str)
+                        if magick and 'image' in magick[0]:
+                            image = magick[0]['image']
+                            if len(magick) > 1:
+                                image['FrameCount'] = len(magick)
+                            remove = ['name', 'artifacts', 'colormap', 'version']
+                            for key in remove:
+                                if key in image:
+                                    del image[key]
+                            check['info']['magick'] = image
+                    except Exception:
+                        pass
+                    # Extract format-specific data
+                    if sniff_type == 'jpeg':
+                        if content_length < 1400:
+                            check['score'] = 100
+                        else:
+                            # Compress it as a quality 85 stripped progressive image and compare
+                            jpeg_file = request['body'] + '.jpg'
+                            command = '{0} -define jpeg:dct-method=fast -strip '\
+                                '-interlace Plane -quality 85 '\
+                                '"{1}" "{2}"'.format(self.job['image_magick']['convert'],
+                                                    request['body'], jpeg_file)
+                            subprocess.call(command, shell=True)
+                            if os.path.isfile(jpeg_file):
+                                target_size = os.path.getsize(jpeg_file)
+                                try:
+                                    os.remove(jpeg_file)
+                                except Exception:
+                                    pass
+                                delta = content_length - target_size
+                                # Only count it if there is at least 1 packet savings
+                                if target_size > 0 and delta > 1400:
+                                    check['target_size'] = target_size
+                                    check['score'] = int(target_size * 100 / content_length)
+                                else:
+                                    check['score'] = 100
+                    elif sniff_type == 'png':
+                        if 'response_body' not in request:
+                            request['response_body'] = ''
+                            with open(request['body'], 'rb') as f_in:
+                                request['response_body'] = f_in.read()
+                        if content_length < 1400:
+                            check['score'] = 100
+                        else:
+                            # spell-checker: disable
+                            image_chunks = [b"iCCP", b"tIME", b"gAMA", b"PLTE", b"acTL", b"IHDR", b"cHRM",
+                                            b"bKGD", b"tRNS", b"sBIT", b"sRGB", b"pHYs", b"hIST", b"vpAg",
+                                            b"oFFs", b"fcTL", b"fdAT", b"IDAT"]
+                            # spell-checker: enable
+                            body = request['response_body']
+                            image_size = len(body)
+                            valid = True
+                            target_size = 8
+                            bytes_remaining = image_size - 8
+                            pos = 8
+                            while valid and bytes_remaining >= 4:
+                                chunk_len = struct.unpack('>I', body[pos: pos + 4])[0]
+                                pos += 4
+                                if chunk_len + 12 <= bytes_remaining:
+                                    chunk_type = body[pos: pos + 4]
+                                    pos += 4
+                                    if chunk_type in image_chunks:
+                                        target_size += chunk_len + 12
+                                    pos += chunk_len + 4  # Skip the data and CRC
+                                    bytes_remaining -= chunk_len + 12
+                                else:
+                                    valid = False
+                                    bytes_remaining = 0
+                            if valid:
+                                delta = content_length - target_size
+                                # Only count it if there is at least 1 packet savings
+                                if target_size > 0 and delta > 1400:
+                                    check['target_size'] = target_size
+                                    check['score'] = int(target_size * 100 / content_length)
+                                else:
+                                    check['score'] = 100
+                    elif sniff_type == 'gif':
+                        if content_length < 1400:
+                            check['score'] = 100
+                        else:
+                            is_animated = False
+                            from PIL import Image
+                            with Image.open(request['body']) as gif:
+                                try:
+                                    gif.seek(1)
+                                except Exception:
+                                    is_animated = False
+                                else:
+                                    is_animated = True
+                            check['info']['animated'] = is_animated
+                            if is_animated:
                                 check['score'] = 100
                             else:
-                                # Compress it as a quality 85 stripped progressive image and compare
-                                jpeg_file = request['body'] + '.jpg'
-                                command = '{0} -define jpeg:dct-method=fast -strip '\
-                                    '-interlace Plane -quality 85 '\
-                                    '"{1}" "{2}"'.format(self.job['image_magick']['convert'],
-                                                        request['body'], jpeg_file)
+                                # Convert it to a PNG
+                                png_file = request['body'] + '.png'
+                                command = 'convert "{0}" "{1}"'.format(request['body'], png_file)
                                 subprocess.call(command, shell=True)
-                                if os.path.isfile(jpeg_file):
-                                    target_size = os.path.getsize(jpeg_file)
+                                if os.path.isfile(png_file):
+                                    target_size = os.path.getsize(png_file)
                                     try:
-                                        os.remove(jpeg_file)
+                                        os.remove(png_file)
                                     except Exception:
                                         pass
                                     delta = content_length - target_size
@@ -1041,91 +1149,16 @@ class OptimizationChecks(object):
                                         check['score'] = int(target_size * 100 / content_length)
                                     else:
                                         check['score'] = 100
-                        elif sniff_type == 'png':
-                            if 'response_body' not in request:
-                                request['response_body'] = ''
-                                with open(request['body'], 'rb') as f_in:
-                                    request['response_body'] = f_in.read()
-                            if content_length < 1400:
-                                check['score'] = 100
-                            else:
-                                # spell-checker: disable
-                                image_chunks = [b"iCCP", b"tIME", b"gAMA", b"PLTE", b"acTL", b"IHDR", b"cHRM",
-                                                b"bKGD", b"tRNS", b"sBIT", b"sRGB", b"pHYs", b"hIST", b"vpAg",
-                                                b"oFFs", b"fcTL", b"fdAT", b"IDAT"]
-                                # spell-checker: enable
-                                body = request['response_body']
-                                image_size = len(body)
-                                valid = True
-                                target_size = 8
-                                bytes_remaining = image_size - 8
-                                pos = 8
-                                while valid and bytes_remaining >= 4:
-                                    chunk_len = struct.unpack('>I', body[pos: pos + 4])[0]
-                                    pos += 4
-                                    if chunk_len + 12 <= bytes_remaining:
-                                        chunk_type = body[pos: pos + 4]
-                                        pos += 4
-                                        if chunk_type in image_chunks:
-                                            target_size += chunk_len + 12
-                                        pos += chunk_len + 4  # Skip the data and CRC
-                                        bytes_remaining -= chunk_len + 12
-                                    else:
-                                        valid = False
-                                        bytes_remaining = 0
-                                if valid:
-                                    delta = content_length - target_size
-                                    # Only count it if there is at least 1 packet savings
-                                    if target_size > 0 and delta > 1400:
-                                        check['target_size'] = target_size
-                                        check['score'] = int(target_size * 100 / content_length)
-                                    else:
-                                        check['score'] = 100
-                        elif sniff_type == 'gif':
-                            if content_length < 1400:
-                                check['score'] = 100
-                            else:
-                                is_animated = False
-                                from PIL import Image
-                                with Image.open(request['body']) as gif:
-                                    try:
-                                        gif.seek(1)
-                                    except Exception:
-                                        is_animated = False
-                                    else:
-                                        is_animated = True
-                                check['info']['animated'] = is_animated
-                                if is_animated:
-                                    check['score'] = 100
-                                else:
-                                    # Convert it to a PNG
-                                    png_file = request['body'] + '.png'
-                                    command = 'convert "{0}" "{1}"'.format(request['body'], png_file)
-                                    subprocess.call(command, shell=True)
-                                    if os.path.isfile(png_file):
-                                        target_size = os.path.getsize(png_file)
-                                        try:
-                                            os.remove(png_file)
-                                        except Exception:
-                                            pass
-                                        delta = content_length - target_size
-                                        # Only count it if there is at least 1 packet savings
-                                        if target_size > 0 and delta > 1400:
-                                            check['target_size'] = target_size
-                                            check['score'] = int(target_size * 100 / content_length)
-                                        else:
-                                            check['score'] = 100
-                        elif sniff_type == 'webp':
-                            check['score'] = 100
-                        elif sniff_type == 'avif':
-                            check['score'] = 100
-                        elif sniff_type == 'jxl':
-                            check['score'] = 100
+                    elif sniff_type == 'webp':
+                        check['score'] = 100
+                    elif sniff_type == 'avif':
+                        check['score'] = 100
+                    elif sniff_type == 'jxl':
+                        check['score'] = 100
+                    with self.image_lock:
                         self.image_results[request_id] = check
-            except Exception:
-                logging.exception('Error checking image')
-        self.image_time = monotonic() - start
-        self.profile_end('images')
+        except Exception:
+            logging.exception('Error checking image')
 
     def check_progressive(self):
         """Count the number of scan lines in each jpeg"""
