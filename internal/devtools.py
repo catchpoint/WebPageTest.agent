@@ -82,6 +82,7 @@ class DevTools(object):
         self.video_path = None
         self.video_prefix = None
         self.recording = False
+        self.capturing = False
         self.mobile_viewport = None
         self.tab_id = None
         self.use_devtools_video = use_devtools_video
@@ -338,6 +339,7 @@ class DevTools(object):
             self.bodies_zip_file = zipfile.ZipFile(self.path_base + '_bodies.zip', 'w',
                                                    zipfile.ZIP_DEFLATED)
         self.recording = True
+        self.capturing = True
         if self.use_devtools_video and self.job['video'] and self.task['log_data']:
             self.grab_screenshot(self.video_prefix + '000000.jpg', png=False)
         self.flush_pending_messages()
@@ -454,6 +456,7 @@ class DevTools(object):
         """Do any quick work to stop things that are capturing data"""
         if self.must_exit:
             return
+        self.capturing = False
         self.start_collecting_trace()
         # Process messages for up to 10 seconds in case we still have some pending async commands
         self.wait_for_pending_commands(10)
@@ -746,7 +749,7 @@ class DevTools(object):
                     optimization_checks_disabled = bool('noopt' in self.job and self.job['noopt'])
                     if optimization_checks_disabled and self.bodies_zip_file is None:
                         need_body = False
-                    if need_body:
+                    if need_body and self.capturing:
                         target_id = None
                         if request_id in self.requests and 'targetId' in self.requests[request_id]:
                             target_id = self.requests[request_id]['targetId']
@@ -1014,9 +1017,11 @@ class DevTools(object):
             except Exception:
                 pass
 
-    def send_command(self, method, params, wait=False, timeout=10, target_id=None):
+    def send_command(self, method, params, wait=False, timeout=10, target_id=None, run_async=False):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
+        if run_async:
+            wait = False
         if target_id is None and self.default_target is not None and \
                 not method.startswith('Target.') and \
                 not method.startswith('Automation.') and \
@@ -1026,12 +1031,12 @@ class DevTools(object):
             self.command_id += 1
             command_id = int(self.command_id)
             msg = {'id': command_id, 'method': method, 'params': params}
-            if wait:
+            if wait or run_async:
                 self.pending_commands.append(command_id)
             end_time = monotonic() + timeout
             target_response = self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
-                              wait=wait, timeout=timeout)
+                              wait=wait, timeout=timeout, run_async=run_async)
             if wait:
                 if command_id in self.command_responses:
                     ret = self.command_responses[command_id]
@@ -1039,29 +1044,16 @@ class DevTools(object):
                 elif target_response is None or 'error' in target_response:
                     ret = target_response
                 else:
-                    while ret is None and monotonic() < end_time:
-                        try:
-                            raw = self.websocket.get_message(1)
-                            try:
-                                if raw is not None and len(raw):
-                                    if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('<- %s', raw[:200])
-                                    msg = json.loads(raw)
-                                    self.process_message(msg)
-                                    if command_id in self.command_responses:
-                                        ret = self.command_responses[command_id]
-                                        del self.command_responses[command_id]
-                            except Exception:
-                                logging.exception('Error processing websocket message')
-                        except Exception:
-                            pass
+                    ret = self.get_command_result(command_id, timeout)
+            elif run_async:
+                ret = command_id
             elif method == 'Network.getResponseBody' and 'requestId' in params:
                 self.pending_body_requests[command_id] = params['requestId']
 
         elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
-            if wait:
+            if wait or run_async:
                 self.pending_commands.append(command_id)
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
@@ -1069,27 +1061,40 @@ class DevTools(object):
                 logging.debug("-> %s", out[:1000])
                 self.websocket.send(out)
                 if wait:
-                    end_time = monotonic() + timeout
-                    while ret is None and monotonic() < end_time:
-                        try:
-                            raw = self.websocket.get_message(1)
-                            try:
-                                if raw is not None and len(raw):
-                                    if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
-                                        logging.debug('<- %s', raw[:200])
-                                    msg = json.loads(raw)
-                                    self.process_message(msg)
-                                    if command_id in self.command_responses:
-                                        ret = self.command_responses[command_id]
-                                        del self.command_responses[command_id]
-                            except Exception as err:
-                                logging.error('Error processing websocket message: %s', err.__str__())
-                        except Exception:
-                            pass
+                    ret = self.get_command_result(command_id, timeout)
+                elif run_async:
+                    ret = command_id
                 elif method == 'Network.getResponseBody' and 'requestId' in params:
                     self.pending_body_requests[command_id] = params['requestId']
             except Exception as err:
                 logging.exception("Websocket send error: %s", err.__str__())
+        return ret
+
+    def get_command_result(self, command_id, timeout=30):
+        ret = None
+        try:
+            if command_id in self.command_responses:
+                ret = self.command_responses[command_id]
+                del self.command_responses[command_id]
+            end_time = monotonic() + timeout
+            while ret is None and monotonic() < end_time:
+                try:
+                    raw = self.websocket.get_message(1)
+                    try:
+                        if raw is not None and len(raw):
+                            if raw.find("Timeline.eventRecorded") == -1 and raw.find("Target.dispatchMessageFromTarget") == -1 and raw.find("Target.receivedMessageFromTarget") == -1:
+                                logging.debug('<- %s', raw[:200])
+                            msg = json.loads(raw)
+                            self.process_message(msg)
+                            if command_id in self.command_responses:
+                                ret = self.command_responses[command_id]
+                                del self.command_responses[command_id]
+                    except Exception as err:
+                        logging.error('Error processing websocket message: %s', err.__str__())
+                except Exception:
+                    pass
+        except Exception as err:
+            logging.error('Error getting devtools command result: %s', err.__str__())
         return ret
 
     def wait_for_page_load(self):
@@ -1228,14 +1233,15 @@ class DevTools(object):
             similar = False
         return similar
 
-    def execute_js(self, script, use_execution_context=False):
+    def execute_js(self, script, use_execution_context=False, run_async=False):
         """Run the provided JS in the browser and return the result"""
         if self.must_exit:
             return
         ret = None
+        wait = not run_async
         if (self.task['error'] is None or self.task['soft_error']) and not self.main_thread_blocked:
             if self.is_webkit:
-                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
+                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=wait, run_async=run_async)
             else:
                 params = {'expression': script,
                           'awaitPromise': True,
@@ -1243,8 +1249,10 @@ class DevTools(object):
                           'timeout': 30000}
                 if use_execution_context and self.execution_context is not None:
                     params['contextId'] = self.execution_context
-                response = self.send_command("Runtime.evaluate", params, wait=True, timeout=30)
-            if response is not None and 'result' in response and\
+                response = self.send_command("Runtime.evaluate", params, wait=wait, timeout=30, run_async=run_async)
+            if run_async:
+                ret = response
+            elif response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
                 ret = response['result']['result']['value']

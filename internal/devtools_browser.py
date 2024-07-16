@@ -53,6 +53,7 @@ class DevtoolsBrowser(object):
         self.webkit_context = None
         self.total_sleep = 0
         self.document_domain = None
+        self.custom_metrics_command_ids = None
 
     def shutdown(self):
         """Agent is dying NOW"""
@@ -325,7 +326,7 @@ class DevtoolsBrowser(object):
 
     def wait_for_processing(self, task):
         """Wait for the background processing (if any)"""
-        pass
+        self.finish_collect_browser_metrics(task)
 
     def execute_js(self, script):
         """Run javascipt"""
@@ -573,15 +574,26 @@ class DevtoolsBrowser(object):
         """Collect all of the in-page browser metrics that we need"""
         if self.must_exit_now:
             return
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        page_data = self.run_js_file('page_data.js')
+        self.document_domain = None
+        if page_data is not None:
+            if 'document_hostname' in page_data:
+                self.document_domain = page_data['document_hostname']
+            task['page_data'].update(page_data)
         if 'customMetrics' in self.job:
-            custom_metrics = {}
             requests = None
             dns_info = None
             bodies = None
             cookies = None
             accessibility_tree = None
+            self.custom_metrics_command_ids = {}
             for name in sorted(self.job['customMetrics']):
-                logging.debug('Collecting custom metric %s', name)
+                logging.debug('Requesting custom metric %s', name)
                 custom_script = unicode(self.job['customMetrics'][name])
                 if custom_script.find('$WPT_TEST_URL') >= 0:
                     wpt_url = 'window.location.href'
@@ -650,24 +662,40 @@ class DevtoolsBrowser(object):
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 if len(script) > 100000000:
-                    custom_metrics[name] = None
+                    self.custom_metrics_command_ids[name] = None
                     logging.debug('Skipping %s. Script length is %d', name, len(script))
                 else:
-                    custom_metrics[name] = self.devtools.execute_js(script)
-            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(custom_metrics))
-        user_timing = self.run_js_file('user_timing.js')
-        if user_timing is not None:
-            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-            with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                outfile.write(json.dumps(user_timing))
-        page_data = self.run_js_file('page_data.js')
-        self.document_domain = None
-        if page_data is not None:
-            if 'document_hostname' in page_data:
-                self.document_domain = page_data['document_hostname']
-            task['page_data'].update(page_data)
+                    command_id = self.devtools.execute_js(script, run_async=True)
+                    if command_id is not None:
+                        self.custom_metrics_command_ids[name] = command_id
+
+    def finish_collect_browser_metrics(self, task):
+        """ Collect the asyc custom metrics results"""
+        try:
+            if self.custom_metrics_command_ids:
+                custom_metrics = {}
+                for name in self.custom_metrics_command_ids:
+                    try:
+                        logging.debug('Collecting custom metric %s', name)
+                        command_id = self.custom_metrics_command_ids[name]
+                        if command_id is None:
+                            custom_metrics[name] = None
+                        else:
+                            response = self.devtools.get_command_result(command_id, timeout=60)
+                            if response is not None and 'result' in response and\
+                                'result' in response['result'] and\
+                                'value' in response['result']['result']:
+                                custom_metrics[name] = response['result']['result']['value']
+                            else:
+                                custom_metrics[name] = None
+                    except Exception:
+                        logging.exception('Error collecting async custom metric result for %s', name)
+                path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
+                with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                    outfile.write(json.dumps(custom_metrics))
+                self.custom_metrics_command_ids = None
+        except Exception:
+            logging.exception('Error collecting async custom metrics results')
 
     def process_command(self, command):
         """Process an individual script command"""
@@ -1095,7 +1123,7 @@ class DevtoolsBrowser(object):
             try:
                 logging.debug('wappalyzer_detect')
                 cookies = {}
-                response = self.devtools.send_command("Storage.getCookies", {}, wait=True, timeout=30)
+                response = self.devtools.send_command("Storage.getCookies", {}, wait=True, timeout=60)
                 if response is not None and 'result' in response and 'cookies' in response['result']:
                     for cookie in response['result']['cookies']:
                         name = cookie['name'].lower()
@@ -1143,7 +1171,7 @@ class DevtoolsBrowser(object):
                                                        'awaitPromise': True,
                                                        'returnByValue': True,
                                                        'timeout': 30000},
-                                                      wait=True, timeout=30)
+                                                      wait=True, timeout=60)
                 if response is not None and 'result' in response and\
                         'result' in response['result'] and\
                         'value' in response['result']['result']:

@@ -894,8 +894,7 @@ class DevToolsParser(object):
                    'tls_cipher_suite': 'tls_cipher_suite',
                    'uncompressed_bytes_in': 'objectSizeUncompressed',
                    'early_hint_headers': 'early_hint_headers',
-                   'netlog_id': 'netlog_id',
-                   'body_hash': 'body_hash'}
+                   'netlog_id': 'netlog_id'}
         if self.netlog_requests_file is not None and os.path.isfile(self.netlog_requests_file):
             _, ext = os.path.splitext(self.netlog_requests_file)
             if ext.lower() == '.gz':
@@ -950,6 +949,8 @@ class DevToolsParser(object):
                                                                entry['start']))
                             if 'pushed' in entry and entry['pushed']:
                                 request['was_pushed'] = 1
+                            if 'body_hash' in entry:
+                                request['body_hash'] = entry['body_hash']
                             if 'request_headers' in entry:
                                 if 'headers' not in request:
                                     request['headers'] = {'request': [], 'response': []}
@@ -1063,6 +1064,8 @@ class DevToolsParser(object):
                                                        entry['start']))
                     if 'pushed' in entry and entry['pushed']:
                         request['was_pushed'] = 1
+                    if 'body_hash' in entry:
+                        request['body_hash'] = entry['body_hash']
                     if 'start' in entry:
                         request['load_start_float'] = float(str(entry['start']).strip())
                     request['headers'] = {'request': [], 'response': []}

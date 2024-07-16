@@ -135,7 +135,7 @@ class AndroidBrowser(BaseBrowser):
         hosts_remote_tmp = '/data/local/tmp/hosts.wpt'
         hosts_file = '/etc/hosts'
         if len(hosts):
-            logging.debug('Modifying hosts file:')
+            logging.debug('Modifying hosts file.')
             # Make sure the system files are writable
             self.adb.su('mount -o rw,remount /system')
             try:
@@ -152,7 +152,6 @@ class AndroidBrowser(BaseBrowser):
                     self.adb.su('chown root:root {}'.format(hosts_file))
                     self.adb.su('chmod 644 {}'.format(hosts_file))
                     os.unlink(hosts_tmp)
-                    logging.debug(hosts_text)
             except Exception as err:
                 logging.exception("Exception modifying hosts file: %s", err.__str__())
 

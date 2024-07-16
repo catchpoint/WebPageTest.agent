@@ -137,7 +137,7 @@ class DesktopBrowser(BaseBrowser):
         hosts_tmp = os.path.join(task['dir'], "hosts.wpt")
         hosts_file = '/etc/hosts'
         if len(hosts) and platform.system() != 'Windows':
-            logging.debug('Modifying hosts file:')
+            logging.debug('Modifying hosts file')
             try:
                 hosts_text = None
                 with open(hosts_file, 'rt') as f_in:
@@ -155,7 +155,6 @@ class DesktopBrowser(BaseBrowser):
                     subprocess.call(['sudo', 'cp', hosts_file, hosts_backup])
                     subprocess.call(['sudo', 'cp', hosts_tmp, hosts_file])
                     os.unlink(hosts_tmp)
-                    logging.debug(hosts_text)
             except Exception as err:
                 logging.exception("Exception modifying hosts file: %s", err.__str__())
 
