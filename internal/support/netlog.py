@@ -8,6 +8,7 @@ found in the LICENSE.md file.
 """
 import base64
 import gzip
+import hashlib
 import logging
 import os
 import re
@@ -264,6 +265,10 @@ class Netlog():
                             if stream['bytes_in'] > request['bytes_in']:
                                 request['bytes_in'] = stream['bytes_in']
                                 request['chunks'] = stream['chunks']
+                    # Convert the hash to a string
+                    if 'hash' in request:
+                        request['body_hash'] = request['hash'].hexdigest()
+                        del request['hash']
                     if 'phantom' not in request and 'request_headers' in request:
                         requests.append(request)
             # See if there were any connections for hosts that we didn't know abot that timed out
@@ -942,6 +947,9 @@ class Netlog():
             if 'bytes' in params and self.on_response_bytes_received is not None:
                 try:
                     raw_bytes = base64.b64decode(params['bytes'])
+                    if 'hash' not in entry:
+                        entry['hash'] = hashlib.sha256()
+                    entry['hash'].update(raw_bytes)
                     self.on_response_bytes_received(str(request_id), raw_bytes)
                 except Exception:
                     logging.exception('Error decoding netlog response bytes')
