@@ -523,7 +523,7 @@
     "cats": [
       80
     ],
-    "description": "Neve is a super-fast, easily customizable, multi-purpose theme that works perfectly with Gutenberg and the most popular page builders as well as WooCommerce",
+    "description": "Neve is a super-fast, easily customizable, multi-purpose theme that works perfectly with the WordPress Block Editor and the most popular page builders as well as WooCommerce",
     "dom": {
       "body[class*='neve-theme']": {
         "text": ""

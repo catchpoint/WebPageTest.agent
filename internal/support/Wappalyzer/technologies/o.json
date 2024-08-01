@@ -1580,10 +1580,9 @@
   },
   "OrbitFox": {
     "cats": [
-      87,
-      5
+      87
     ],
-    "description": "OrbitFox is a multi-featured WordPress plugin that works with the Elementor, Beaver Builder and Gutenberg site-building utilities by Themeisle.",
+    "description": "OrbitFox is a multi-featured WordPress plugin that works with the Elementor, Beaver Builder and WordPress Block Editor site-building utilities by Themeisle.",
     "dom": "link[href*='/wp-content/plugins/themeisle-companion/']",
     "icon": "OrbitFox.svg",
     "requires": "WordPress",

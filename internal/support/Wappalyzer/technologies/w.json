@@ -654,7 +654,7 @@
     "dom": "link[href*='/wp-content/themes/waveme/']",
     "icon": "Waveme.svg",
     "implies": [
-      "Gutenberg",
+      "WordPress Block Editor",
       "Waveform"
     ],
     "pricing": [
@@ -1878,7 +1878,7 @@
     "cats": [
       87
     ],
-    "description": "WooCommerce Blocks offers a range of Gutenberg blocks you can use to build and customise your site.",
+    "description": "WooCommerce Blocks offers a range of blocks for the WordPress Block Editor you can use to build and customise your site.",
     "dom": {
       "link[href*='/wp-content/plugins/woo-gutenberg-products-block/']": {
         "attributes": {
@@ -1887,6 +1887,7 @@
       }
     },
     "icon": "WooCommerce Blocks.png",
+    "implies": "WordPress Block Editor",
     "oss": true,
     "requires": [
       "WordPress",

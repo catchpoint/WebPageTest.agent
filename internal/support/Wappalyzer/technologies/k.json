@@ -126,10 +126,11 @@
     "cats": [
       87
     ],
-    "description": "Kadence WP Blocks is a plugin for WordPress that provides a collection of custom blocks for the Gutenberg editor, allowing users to create custom layouts and designs for their website without needing to know how to code.",
+    "description": "Kadence Blocks is a plugin for WordPress that provides a collection of custom blocks for the WordPress Block Editor, allowing users to create custom layouts and designs for their website without needing to know how to code.",
     "dom": "link[href*='/wp-content/plugins/kadence-blocks/']",
+    "html": "<style[^>]* id=[^>]+kadence-blocks-",
     "icon": "Kadence WP.svg",
-    "implies": "Gutenberg",
+    "implies": "WordPress Block Editor",
     "pricing": [
       "freemium",
       "low",

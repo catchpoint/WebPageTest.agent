@@ -4363,7 +4363,7 @@
     "description": "Cwicly is an advanced professional design and block toolkit that integrates directly with the WordPress editor.",
     "dom": "link[href*='/wp-content/uploads/cwicly/']",
     "icon": "Cwicly.png",
-    "implies": "Gutenberg",
+    "implies": "WordPress Block Editor",
     "pricing": [
       "low",
       "recurring"

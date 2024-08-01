@@ -796,5 +796,6 @@
     "794": "CSSPropertyAnchorScope",
     "795": "CSSPropertyRubyAlign",
     "796": "CSSPropertyBoxDecorationBreak",
-    "797": "CSSPropertyPositionTryFallbacks"
+    "797": "CSSPropertyPositionTryFallbacks",
+    "798": "CSSPropertyInterpolateSize"
 }
