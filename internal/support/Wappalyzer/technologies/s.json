@@ -5141,10 +5141,10 @@
     "cats": [
       87
     ],
-    "description": "Spectra is a WordPress plugin that provides a collection of new and enhanced blocks for the Gutenberg editor.",
+    "description": "Spectra is a WordPress plugin that provides a collection of new and enhanced blocks for the WordPress Block editor.",
     "dom": "link[href*='/wp-content/plugins/ultimate-addons-for-gutenberg/']",
     "icon": "Spectra.svg",
-    "implies": "Gutenberg",
+    "implies": "WordPress Block Editor",
     "pricing": [
       "freemium",
       "low",
@@ -5919,8 +5919,7 @@
   },
   "Stackable": {
     "cats": [
-      87,
-      51
+      87
     ],
     "description": "Stackable is a plugin for WordPress that offers a collection of blocks, templates, and other design tools to help users create custom, professional-looking websites.",
     "dom": {
@@ -5931,7 +5930,7 @@
       }
     },
     "icon": "Stackable.svg",
-    "implies": "Gutenberg",
+    "implies": "WordPress Block Editor",
     "js": {
       "stackable.restUrl": "",
       "stackableAnimations": ""

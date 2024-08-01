@@ -4652,5 +4652,20 @@
     "5027": "DurationFormat",
     "5028": "SharedStorageAPI_AddModule_CrossOriginScript",
     "5029": "CrossOriginOpenerPolicyNoopenerAllowPopups",
-    "5030": "CrossOriginOpenerPolicyNoopenerAllowPopupsReportOnly"
+    "5030": "CrossOriginOpenerPolicyNoopenerAllowPopupsReportOnly",
+    "5031": "V8ConsoleContext",
+    "5032": "ButtonTypeAttrInvalid",
+    "5033": "ButtonTypeAttrEmptyString",
+    "5034": "ProtectedAudienceDirectFromSellerSignals",
+    "5035": "WebGPUSubgroupsFeatures",
+    "5036": "AudioContextOnError",
+    "5037": "NoVarySearchPrerender",
+    "5038": "V8AITextSession_Clone_Method",
+    "5039": "GamepadHapticActuatorType",
+    "5040": "SelectionDirection",
+    "5041": "SelectionGetComposedRanges",
+    "5042": "EyeDropperOpen",
+    "5043": "FlexNewColumnWrapIntrinsicSize",
+    "5044": "V8AI_TextModelInfo_Method",
+    "5045": "EventTimingSimulatedClickWithNoKeyboardInteraction"
 }
