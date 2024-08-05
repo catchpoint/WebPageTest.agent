@@ -797,5 +797,6 @@
     "795": "CSSPropertyRubyAlign",
     "796": "CSSPropertyBoxDecorationBreak",
     "797": "CSSPropertyPositionTryFallbacks",
-    "798": "CSSPropertyInterpolateSize"
+    "798": "CSSPropertyInterpolateSize",
+    "799": "CSSPropertyViewTransitionGroup"
 }
