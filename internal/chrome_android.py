@@ -46,6 +46,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--no-first-run',
     '--password-store=basic',
     '--use-mock-keychain',
+    '--disable-search-engine-choice-screen',
 ]
 
 HOST_RULES = [

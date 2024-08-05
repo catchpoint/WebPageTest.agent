@@ -45,6 +45,7 @@ CHROME_COMMAND_LINE_OPTIONS = [
     '--password-store=basic',
     '--use-mock-keychain',
     '--propagate-iph-for-testing',
+    '--disable-search-engine-choice-screen',
 ]
 
 HOST_RULES = [
