@@ -4667,5 +4667,15 @@
     "5042": "EyeDropperOpen",
     "5043": "FlexNewColumnWrapIntrinsicSize",
     "5044": "V8AI_TextModelInfo_Method",
-    "5045": "EventTimingSimulatedClickWithNoKeyboardInteraction"
+    "5045": "EventTimingSimulatedClickWithNoKeyboardInteraction",
+    "5046": "ViewTransitionGroupNesting",
+    "5047": "V8LanguageDetector_Detect_Method",
+    "5048": "V8Translation_CanDetect_Method",
+    "5049": "V8Translation_CreateDetector_Method",
+    "5050": "V8AI_Summarizer_AttributeGetter",
+    "5051": "V8AISummarizer_Summarize_Method",
+    "5052": "V8AISummarizer_SummarizeStreaming_Method",
+    "5053": "V8AISummarizer_Destroy_Method",
+    "5054": "V8AISummarizerFactory_Capabilities_Method",
+    "5055": "V8AISummarizerFactory_Create_Method"
 }
