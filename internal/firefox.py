@@ -982,10 +982,7 @@ class Firefox(DesktopBrowser):
                     parts = command['target'].split(',')
                     lat = float(parts[0])
                     lng = float(parts[1])
-                    location_uri = 'data:application/json,{{'\
-                        '"status":"OK","accuracy":{2:d},'\
-                        '"location":{{"lat":{0:f},"lng":{1:f}}}'\
-                        '}}'.format(lat, lng, accuracy)
+                    location_uri = _get_location_uri(accuracy, lat, lng)
                     logging.debug('Setting location: %s', location_uri)
                     self.set_pref('geo.wifi.uri', location_uri)
             except Exception:
