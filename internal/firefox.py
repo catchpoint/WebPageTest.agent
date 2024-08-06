@@ -31,6 +31,8 @@ except BaseException:
     import json
 from .desktop_browser import DesktopBrowser
 
+def _get_location_uri(accuracy, lat, lng) -> str:
+    return f'data:application/json, {{ "status":"OK", "accuracy":{accuracy}, "location":{{ "lat":{lat}, "lng":{lng} }} }}'
 
 class Firefox(DesktopBrowser):
     """Firefox"""
@@ -140,26 +142,47 @@ class Firefox(DesktopBrowser):
             return
         from selenium import webdriver # pylint: disable=import-error
 
-        capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
-        if 'ignoreSSL' in job and job['ignoreSSL']:
-            capabilities['acceptInsecureCerts'] = True
-        else:
-            capabilities['acceptInsecureCerts'] = False
+        if webdriver.__version__ >= "4.12":
+            service_args = ["--marionette-port", "2828"]
+            service = webdriver.FirefoxService(service_args=service_args, log_output=os.environ["MOZ_LOG_FILE"])
 
-        capabilities['moz:firefoxOptions'] = {
-            'binary': self.path,
-            'args': ['-profile', task['profile']],
-            'prefs': self.prepare_prefs(),
-            "log": {"level": "error"},
-            'env': {
-                "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
-                "MOZ_LOG": os.environ["MOZ_LOG"]
+            options = webdriver.FirefoxOptions()
+            options.binary_location = self.path
+            options.add_argument('--profile')
+            options.add_argument(f'{task["profile"]}')
+            options.log.level = 'error'
+            options.prefs = self.prepare_prefs()
+
+            capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
+            if 'ignoreSSL' in job and job['ignoreSSL']:
+                capabilities['acceptInsecureCerts'] = True
+            else:
+                capabilities['acceptInsecureCerts'] = False
+
+            for key, value in capabilities.items():
+                options.set_capability(key, value)
+            self.driver = webdriver.Firefox(options=options, service=service)
+        elif webdriver.__version__ <= "4.9":
+            capabilities = webdriver.DesiredCapabilities.FIREFOX.copy()
+            if 'ignoreSSL' in job and job['ignoreSSL']:
+                capabilities['acceptInsecureCerts'] = True
+            else:
+                capabilities['acceptInsecureCerts'] = False
+
+            capabilities['moz:firefoxOptions'] = {
+                'binary': self.path,
+                'args': ['-profile', task['profile']],
+                'prefs': self.prepare_prefs(),
+                "log": {"level": "error"},
+                'env': {
+                    "MOZ_LOG_FILE": os.environ["MOZ_LOG_FILE"],
+                    "MOZ_LOG": os.environ["MOZ_LOG"]
+                }
             }
-        }
-        service_args = ["--marionette-port", "2828"]
-
-        self.driver = webdriver.Firefox(desired_capabilities=capabilities, service_args=service_args)
-        logging.debug(self.driver.capabilities)
+            service_args = ["--marionette-port", "2828"]
+            self.driver = webdriver.Firefox(desired_capabilities=capabilities, service_args=service_args)
+        else:
+            raise Exception("Unsupported selenium version %s", webdriver.__version__)
 
         self.driver.set_page_load_timeout(task['time_limit'])
         if 'browserVersion' in self.driver.capabilities:
@@ -208,17 +231,13 @@ class Firefox(DesktopBrowser):
                     ua_string += ' ' + task['AppendUA']
                     modified = True
                 if modified:
-                    logging.debug(ua_string)
                     self.driver_set_pref('general.useragent.override', ua_string)
                 # Location
                 if 'lat' in self.job and 'lng' in self.job:
                     try:
                         lat = float(str(self.job['lat']))
                         lng = float(str(self.job['lng']))
-                        location_uri = 'data:application/json,{{'\
-                            '"status":"OK","accuracy":10.0,'\
-                            '"location":{{"lat":{0:f},"lng":{1:f}}}'\
-                            '}}'.format(lat, lng)
+                        location_uri = _get_location_uri(10, lat, lng)
                         logging.debug('Setting location: %s', location_uri)
                         self.driver_set_pref('geo.wifi.uri', location_uri)
                     except Exception:
@@ -292,6 +311,8 @@ class Firefox(DesktopBrowser):
         if platform.system() == "Linux":
             subprocess.call(['killall', '-9', 'firefox'])
             subprocess.call(['killall', '-9', 'firefox-trunk'])
+            subprocess.call(['killall', '-9', 'firefox-nightly'])
+            subprocess.call(['killall', '-9', 'firefox-esr'])
         os.environ["MOZ_LOG_FILE"] = ''
         os.environ["MOZ_LOG"] = ''
 
@@ -326,7 +347,7 @@ class Firefox(DesktopBrowser):
                 script += "'" + "', '".join(axe_cats) + "'"
                 script += ']}).then(results=>{return results;});'
         except Exception as err:
-            logging.exception("Exception running Axe: %s", err.__str__())
+            logging.exception("Exception running Axe: %s", err)
         if self.must_exit_now:
             return
         completed = False
@@ -349,7 +370,7 @@ class Firefox(DesktopBrowser):
                         axe_info['incomplete'] = axe_results['incomplete']
                     task['page_data']['axe'] = axe_info
         except Exception as err:
-            logging.exception("Exception running Axe: %s", err.__str__())
+            logging.exception("Exception running Axe: %s", err)
         if not completed:
             task['page_data']['axe_failed'] = 1
         self.axe_time = monotonic() - start
@@ -376,7 +397,7 @@ class Firefox(DesktopBrowser):
                     logging.exception("Exception running task")
                 if command['record']:
                     self.wait_for_page_load()
-                    if not task['combine_steps'] or not len(task['script']):
+                    if not task['combine_steps'] or not task['script']:
                         self.on_stop_capture(task)
                         self.on_stop_recording(task)
                         recording = False
@@ -397,9 +418,8 @@ class Firefox(DesktopBrowser):
             self.task = None
 
     def alert_size(self, _alert_config, _task_dir, _prefix):
-        '''Checks the agents file size and alert on certain percentage over avg byte size'''             
+        '''Checks the agents file size and alert on certain percentage over avg byte size'''
         self.alert_desktop_results(_alert_config, 'Firefox', _task_dir, _prefix)
-
 
     def wait_for_extension(self):
         """Wait for the extension to send the started message"""
@@ -506,7 +526,7 @@ class Firefox(DesktopBrowser):
         script = None
         script_file_path = os.path.join(self.script_dir, file_name)
         if os.path.isfile(script_file_path):
-            with open(script_file_path, 'r') as script_file:
+            with open(script_file_path, 'r', encoding='utf-8') as script_file:
                 script = script_file.read()
         if self.driver is not None and script is not None:
             try:
@@ -518,7 +538,7 @@ class Firefox(DesktopBrowser):
                 logging.debug(ret)
         return ret
 
-    def get_sorted_requests_json(self, include_bodies):
+    def get_sorted_requests_json(self, _include_bodies):
         return 'null'
 
     def collect_browser_metrics(self, task):
