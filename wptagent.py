@@ -1084,7 +1084,7 @@ def fix_selenium_version():
     newer versions are going to use 4.8.3
     """
     from internal.os_util import run_elevated
-    version = '4.8.3'
+    version = '4.18.1'
     if sys.version_info[1] == 6:
         version = '3.141.0'
 

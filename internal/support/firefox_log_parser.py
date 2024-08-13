@@ -296,6 +296,14 @@ class FirefoxLogParser(object):
                 socket = self.http['current_socket']
                 self.http['connections'][connection] = {'socket': socket}
             del self.http['current_socket']
+        elif msg['message'].startswith('TlsHandshaker::SetupSSL '):
+            match = re.search(r'^TlsHandshaker::SetupSSL (?P<connection>[\w\d]+)',
+                              msg['message'])
+            if match:
+                connection = match.groupdict().get('connection')
+                if connection in self.http['connections']:
+                    if 'ssl_start' not in self.http['connections'][connection]:
+                        self.http['connections'][connection]['ssl_start'] = msg['timestamp']
         elif msg['message'].startswith('nsHttpConnection::SetupSSL '):
             match = re.search(r'^nsHttpConnection::SetupSSL (?P<connection>[\w\d]+)',
                               msg['message'])
@@ -325,6 +333,17 @@ class FirefoxLogParser(object):
                 msg['message'].find(' status=804b0005 progress=') > -1:
             match = re.search(r'^nsHttpTransaction::OnSocketStatus '\
                               r'\[this=(?P<id>[\w\d]+) status=804b0005 progress=(?P<bytes>[\d+]+)',
+                              msg['message'])
+            if match:
+                trans_id = match.groupdict().get('id')
+                byte_count = int(match.groupdict().get('bytes'))
+                if byte_count > 0 and trans_id in self.http['requests'] and \
+                        'start' not in self.http['requests'][trans_id]:
+                    self.http['requests'][trans_id]['start'] = msg['timestamp']
+        elif msg['message'].startswith('nsHttpTransaction::OnSocketStatus ') and \
+                msg['message'].find(' status=4b0005 progress=') > -1:
+            match = re.search(r'^nsHttpTransaction::OnSocketStatus '
+                              r'\[this=(?P<id>[\w\d]+) status=4b0005 progress=(?P<bytes>[\d+]+)',
                               msg['message'])
             if match:
                 trans_id = match.groupdict().get('id')
@@ -446,6 +465,7 @@ class FirefoxLogParser(object):
                 port = match.groupdict().get('port')
                 self.http['sockets'][socket] = {'host': host, 'port': port}
         # nsSocketTransport::SendStatus [this=143f4000 status=804b0007]
+        # nsSocketTransport::SendStatus [this=7fe074bd2a00 status=4B0007]
         elif msg['message'].startswith('nsSocketTransport::SendStatus '):
             match = re.search(r'^nsSocketTransport::SendStatus \['
                               r'this=(?P<socket>[\w\d]+) '
@@ -453,7 +473,7 @@ class FirefoxLogParser(object):
             if match:
                 socket = match.groupdict().get('socket')
                 status = match.groupdict().get('status')
-                if status == '804b0007':
+                if status in ['804b0007', '4b0007']:
                     if socket not in self.http['sockets']:
                         self.http['sockets'][socket] = {}
                     if 'start' not in self.http['sockets'][socket]:
