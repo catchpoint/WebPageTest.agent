@@ -111,7 +111,6 @@ user_pref("security.warn_viewing_mixed", false);
 user_pref("security.warn_entering_secure", false);
 user_pref("security.warn_leaving_secure", false);
 user_pref("security.warn_submit_insecure", false);
-user_pref("security.OCSP.enabled", 0);
 user_pref("services.settings.server", "");
 user_pref("services.sync.migrated", true);
 user_pref("services.sync.engine.bookmarks", false);
