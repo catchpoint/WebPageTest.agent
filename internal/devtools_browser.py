@@ -1135,6 +1135,10 @@ class DevtoolsBrowser(object):
                 # Get the relavent DNS records for the origin
                 dns = {}
                 dns_types = ['cname', 'ns', 'mx', 'txt', 'soa', 'https', 'svcb']
+                if self.document_domain is None:
+                    document_domain = self.devtools.execute_js("document.location.hostname")
+                    if document_domain is not None:
+                        self.document_domain = document_domain
                 if self.document_domain is not None:
                     dns_domain = str(self.document_domain)
                     while dns_domain.find('.') > 0:
