@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61ll_requests.proto\"\xe9\x02\n\rRequestRecord\x12\x0c\n\x04\x64\x61te\x18\x01 \x02(\x05\x12\x0e\n\x06\x63lient\x18\x02 \x02(\t\x12\x0c\n\x04page\x18\x03 \x02(\t\x12\x14\n\x0cis_root_page\x18\x04 \x01(\x08\x12\x11\n\troot_page\x18\x05 \x02(\t\x12\x0b\n\x03url\x18\x06 \x02(\t\x12\x18\n\x10is_main_document\x18\x07 \x02(\x08\x12\x0c\n\x04type\x18\x08 \x01(\t\x12\r\n\x05index\x18\t \x01(\x05\x12\x0f\n\x07payload\x18\n \x01(\t\x12\x0f\n\x07summary\x18\x0b \x01(\t\x12.\n\x0frequest_headers\x18\x0c \x03(\x0b\x32\x15.RequestRecord.Header\x12/\n\x10response_headers\x18\r \x03(\x0b\x32\x15.RequestRecord.Header\x12\x15\n\rresponse_body\x18\x0e \x01(\t\x1a%\n\x06Header\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61ll_requests.proto\"\xf7\x02\n\rRequestRecord\x12\x0c\n\x04\x64\x61te\x18\x01 \x02(\x05\x12\x0e\n\x06\x63lient\x18\x02 \x02(\t\x12\x0c\n\x04page\x18\x03 \x02(\t\x12\x14\n\x0cis_root_page\x18\x04 \x01(\x08\x12\x11\n\troot_page\x18\x05 \x02(\t\x12\x0c\n\x04rank\x18\x06 \x01(\x05\x12\x0b\n\x03url\x18\x07 \x02(\t\x12\x18\n\x10is_main_document\x18\x08 \x02(\x08\x12\x0c\n\x04type\x18\t \x01(\t\x12\r\n\x05index\x18\n \x01(\x05\x12\x0f\n\x07payload\x18\x0b \x01(\t\x12\x0f\n\x07summary\x18\x0c \x01(\t\x12.\n\x0frequest_headers\x18\r \x03(\x0b\x32\x15.RequestRecord.Header\x12/\n\x10response_headers\x18\x0e \x03(\x0b\x32\x15.RequestRecord.Header\x12\x15\n\rresponse_body\x18\x0f \x01(\t\x1a%\n\x06Header\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,7 +22,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'all_requests_pb2', _globals
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_REQUESTRECORD']._serialized_start=23
-  _globals['_REQUESTRECORD']._serialized_end=384
-  _globals['_REQUESTRECORD_HEADER']._serialized_start=347
-  _globals['_REQUESTRECORD_HEADER']._serialized_end=384
+  _globals['_REQUESTRECORD']._serialized_end=398
+  _globals['_REQUESTRECORD_HEADER']._serialized_start=361
+  _globals['_REQUESTRECORD_HEADER']._serialized_end=398
 # @@protoc_insertion_point(module_scope)
