@@ -24,30 +24,33 @@ message RequestRecord {
   // The URL of the root page being tested, the origin followed by /
   required string root_page = 5;
 
+  // Site popularity rank, from CrUX
+  optional int32 rank = 6;
+
   // The URL of the request
-  required string url = 6;
+  required string url = 7;
 
   // Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects
-  required bool is_main_document = 7;
+  required bool is_main_document = 8;
 
   // Simplified description of the type of resource (script, html, css, text, other, etc)
-  optional string type = 8;
+  optional string type = 9;
 
   // The sequential 0-based index of the request
-  optional int32 index = 9;
+  optional int32 index = 10;
 
   // JSON-encoded WebPageTest result data for this request
-  optional string payload = 10;
+  optional string payload = 11;
 
   // JSON-encoded summarization of request data
-  optional string summary = 11;
+  optional string summary = 12;
 
   // Request headers
-  repeated Header request_headers = 12;
+  repeated Header request_headers = 13;
 
   // Response headers
-  repeated Header response_headers = 13;
+  repeated Header response_headers = 14;
 
   // Text-based response body
-  optional string response_body = 14;
+  optional string response_body = 15;
 }

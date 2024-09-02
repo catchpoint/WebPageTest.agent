@@ -30,6 +30,12 @@
         "description": "The URL of the root page being tested"
     },
     {
+        "name": "rank",
+        "type": "INTEGER",
+        "mode": "NULLABLE",
+        "description": "Site popularity rank, from CrUX"
+    },
+    {
         "name": "url",
         "type": "STRING",
         "mode": "REQUIRED",

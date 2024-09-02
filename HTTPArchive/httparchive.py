@@ -293,6 +293,7 @@ def get_requests(file_name, har):
     date = "{:%Y-%m-%d}".format(date)
     is_root_page = True
     root_page = page_url
+    rank = None
     wptid = page.get("testID")
 
     metadata = page.get("_metadata")
@@ -303,6 +304,7 @@ def get_requests(file_name, har):
         client = metadata.get("layout", client).lower()
         is_root_page = metadata.get("crawl_depth", 0) == 0
         root_page = metadata.get("root_page_url", page_url)
+        rank = int(metadata.get("rank")) if metadata.get("rank") else None
 
     entries = har.get("log").get("entries")
 
@@ -379,6 +381,7 @@ def get_requests(file_name, har):
             "page": page_url,
             "is_root_page": is_root_page,
             "root_page": root_page,
+            "rank": rank,
             "url": request_url,
             "is_main_document": is_main_document,
             "type": type,
