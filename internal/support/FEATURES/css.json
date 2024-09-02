@@ -798,5 +798,13 @@
     "796": "CSSPropertyBoxDecorationBreak",
     "797": "CSSPropertyPositionTryFallbacks",
     "798": "CSSPropertyInterpolateSize",
-    "799": "CSSPropertyViewTransitionGroup"
+    "799": "CSSPropertyViewTransitionGroup",
+    "800": "CSSPropertyPositionArea",
+    "801": "CSSPropertyTextBox",
+    "802": "CSSPropertyMasonryTrackEnd",
+    "803": "CSSPropertyMasonryTrackStart",
+    "804": "CSSPropertyMasonryTemplateTracks",
+    "805": "CSSPropertyTextWrapMode",
+    "806": "CSSPropertyTextWrapStyle",
+    "807": "CSSPropertyMasonryTrack"
 }

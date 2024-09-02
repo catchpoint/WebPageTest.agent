@@ -1693,7 +1693,7 @@
     ],
     "description": "Hydrogen is a front-end web development framework used for building Shopify custom storefronts.",
     "headers": {
-      "powered-by": "^Hydrogen$"
+      "powered-by": "^Hydrogen$|Shopify.+Hydrogen"
     },
     "icon": "Hydrogen.svg",
     "implies": [

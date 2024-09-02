@@ -5154,6 +5154,19 @@
     "scriptSrc": "/wp-content/plugins/ultimate-addons-for-gutenberg/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://wpspectra.com"
   },
+  "Speculative Loading": {
+    "cats": [
+      87,
+      92
+    ],
+    "description": "Performance plugin from the WordPress Performance Group, which adds support for the Speculation Rules API, by which certain URLs are dynamically prefetched or prerendered based on user interaction.",
+    "icon": "speculation-rules.svg",
+    "meta": {
+      "generator": "^speculation-rules ([\\d.]+)?\\;version:\\1"
+    },
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/speculation-rules/"
+  },
   "Speed Kit": {
     "cats": [
       92

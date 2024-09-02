@@ -2504,6 +2504,23 @@
     "saas": true,
     "website": "https://www.traek.io"
   },
+  "TrafficGuard": {
+    "cats": [
+      16
+    ],
+    "description": "TrafficGuard is an ad fraud and click-fraud detection software.",
+    "icon": "TrafficGuard.png",
+    "pricing": [
+      "payg",
+      "recurring"
+    ],
+    "saas": true,
+    "scriptSrc": [
+      "\\.tgtag\\.io",
+      "trafficguard\\.ai"
+    ],
+    "website": "https://www.trafficguard.ai/"
+  },
   "TrafficStars": {
     "cats": [
       36
