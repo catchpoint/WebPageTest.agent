@@ -518,6 +518,13 @@ def get_parsed_css(file_name, har):
     date = "{:%Y-%m-%d}".format(date)
     page = har.get("log").get("pages")[0]
     page_url = page.get("_URL")
+    root_page = page_url
+    rank = None
+
+    metadata = page.get("_metadata")
+    if metadata:
+        rank = int(metadata.get("rank")) if metadata.get("rank") else None
+        root_page = metadata.get("root_page_url", url)
 
     if not page_url:
         logging.warning("Skipping parsed CSS, no page URL")
@@ -561,6 +568,8 @@ def get_parsed_css(file_name, har):
             "client": client,
             "page": page_url,
             "is_root_page": is_root_page,
+            "root_page": root_page,
+            "rank": rank,
             "url": url,
             "css": ast_json
         })

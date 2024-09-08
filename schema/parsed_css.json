@@ -1,18 +1,38 @@
 [
   {
     "name": "page",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Test environment: desktop or mobile"
   },
   {
     "name": "is_root_page",
-    "type": "BOOLEAN"
+    "type": "BOOLEAN",
+    "mode": "REQUIRED",
+    "description": "Whether the page is the root of the origin"
+  },
+  {
+    "name": "root_page",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The URL of the root page being tested, the origin followed by /"
+  },
+  {
+    "name": "rank",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "Site popularity rank, from CrUX"
   },
   {
     "name": "url",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The URL stylesheet or 'block' for inline CSS"
   },
   {
     "name": "css",
-    "type": "STRING"
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "The CSS AST"
   }
 ]

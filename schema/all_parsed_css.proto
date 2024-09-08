@@ -14,9 +14,15 @@ message CSSRecord {
   // Whether the page is the root of the origin
   required bool is_root_page = 4;
 
+  // Whether the page is the root of the origin
+  required string root_page = 5;
+
+  // Site popularity rank, from CrUX
+  optional int32 rank = 6;
+
   // The URL of the request
-  required string url = 5;
+  required string url = 7;
 
   // The parsed CSS of the request
-  required string css = 6;
+  required string css = 8;
 }
