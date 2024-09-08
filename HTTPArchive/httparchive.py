@@ -118,7 +118,7 @@ def get_custom_metrics(page, wptid, max_size=None):
     for metric in page_metrics:
         if metric == 'parsed_css':
             continue
-            
+
         value = page.get(f"_{metric}")
 
         if isinstance(value, str):

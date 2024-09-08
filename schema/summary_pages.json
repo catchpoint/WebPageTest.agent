@@ -1,51 +1,7 @@
 [
   {
-    "name": "pageid",
-    "type": "INTEGER"
-  },
-  {
-    "name": "createDate",
-    "type": "INTEGER"
-  },
-  {
-    "name": "archive",
-    "type": "STRING"
-  },
-  {
-    "name": "label",
-    "type": "STRING"
-  },
-  {
-    "name": "crawlid",
-    "type": "INTEGER"
-  },
-  {
-    "name": "wptid",
-    "type": "STRING"
-  },
-  {
-    "name": "wptrun",
-    "type": "INTEGER"
-  },
-  {
-    "name": "url",
-    "type": "STRING"
-  },
-  {
-    "name": "urlShort",
-    "type": "STRING"
-  },
-  {
-    "name": "urlhash",
-    "type": "INTEGER"
-  },
-  {
     "name": "cdn",
     "type": "STRING"
-  },
-  {
-    "name": "startedDateTime",
-    "type": "INTEGER"
   },
   {
     "name": "TTFB",
@@ -72,15 +28,7 @@
     "type": "INTEGER"
   },
   {
-    "name": "PageSpeed",
-    "type": "INTEGER"
-  },
-  {
     "name": "SpeedIndex",
-    "type": "INTEGER"
-  },
-  {
-    "name": "rank",
     "type": "INTEGER"
   },
   {
@@ -252,46 +200,6 @@
     "type": "INTEGER"
   },
   {
-    "name": "_adult_site",
-    "type": "BOOLEAN"
-  },
-  {
-    "name": "avg_dom_depth",
-    "type": "INTEGER"
-  },
-  {
-    "name": "document_height",
-    "type": "INTEGER"
-  },
-  {
-    "name": "document_width",
-    "type": "INTEGER"
-  },
-  {
-    "name": "localstorage_size",
-    "type": "INTEGER"
-  },
-  {
-    "name": "sessionstorage_size",
-    "type": "INTEGER"
-  },
-  {
-    "name": "num_iframes",
-    "type": "INTEGER"
-  },
-  {
-    "name": "num_scripts",
-    "type": "INTEGER"
-  },
-  {
-    "name": "doctype",
-    "type": "STRING"
-  },
-  {
-    "name": "meta_viewport",
-    "type": "STRING"
-  },
-  {
     "name": "reqAudio",
     "type": "INTEGER"
   },
@@ -340,19 +248,7 @@
     "type": "INTEGER"
   },
   {
-    "name": "num_scripts_async",
-    "type": "INTEGER"
-  },
-  {
-    "name": "num_scripts_sync",
-    "type": "INTEGER"
-  },
-  {
     "name": "usertiming",
     "type": "INTEGER"
-  },
-  {
-    "name": "metadata",
-    "type": "STRING"
   }
 ]

@@ -132,16 +132,8 @@ class HarJsonToSummary:
             entry_number += 1
 
         ret_request = {
-            "requestid": (status_info["pageid"] << 32) + entry_number,
             "client": status_info["client"],
             "date": status_info["date"],
-            "pageid": status_info["pageid"],
-            "crawlid": status_info["crawlid"],
-            "metadata": status_info["metadata"],
-            # we use this below for expAge calculation
-            "startedDateTime": utils.datetime_to_epoch(
-                entry["startedDateTime"], status_info
-            ),
             "time": entry["time"],
             "_cdn_provider": entry.get("_cdn_provider"),
             # amount response WOULD have been reduced if it had been gzipped
@@ -177,11 +169,8 @@ class HarJsonToSummary:
             {
                 "method": request["method"],
                 "httpVersion": request["httpVersion"],
-                "url": url,
-                "urlShort": url[:255],
                 "reqHeadersSize": req_headers_size,
                 "reqBodySize": req_body_size,
-                "reqOtherHeaders": request_other_headers,
                 "reqCookieLen": request_cookie_size,
             }
         )
@@ -240,7 +229,6 @@ class HarJsonToSummary:
         )
         ret_request.update(
             {
-                "respOtherHeaders": response_other_headers,
                 "respCookieLen": response_cookie_size,
             }
         )
@@ -270,7 +258,7 @@ class HarJsonToSummary:
                 start_date = (
                     date_parser.parse(response_headers.get("resp_date")[0]).timestamp()
                     if "resp_date" in response_headers
-                    else ret_request["startedDateTime"]
+                    else utils.datetime_to_epoch(entry["startedDateTime"], status_info)
                 )
                 end_date = date_parser.parse(
                     response_headers["resp_expires"][0]
@@ -320,8 +308,6 @@ class HarJsonToSummary:
             first_html = True
             first_html_url = url
 
-        ret_request.update({"firstReq": first_req, "firstHtml": first_html})
-
         return ret_request, first_url, first_html_url, entry_number
 
     @staticmethod
@@ -364,20 +350,8 @@ class HarJsonToSummary:
         )
 
         return {
-            "metadata": json.dumps(status_info["metadata"]),
             "client": status_info["client"],
             "date": status_info["date"],
-            "pageid": status_info["pageid"],
-            "createDate": utils.clamp_integer(datetime.datetime.now().timestamp()),
-            "startedDateTime": utils.datetime_to_epoch(
-                page["startedDateTime"], status_info
-            ),
-            "archive": status_info["archive"],
-            "label": status_info["label"],
-            "crawlid": status_info["crawlid"],
-            "url": status_info["page"],
-            "urlhash": utils.get_url_hash(status_info["page"]),
-            "urlShort": status_info["page"][:255],
             "TTFB": page.get("_TTFB"),
             "renderStart": page.get("_render"),
             "fullyLoaded": page.get("_fullyLoaded"),
@@ -389,21 +363,7 @@ class HarJsonToSummary:
             "onContentLoaded": page.get("_domContentLoadedEventStart"),
             "cdn": page.get("_base_page_cdn"),
             "SpeedIndex": page.get("_SpeedIndex"),
-            "PageSpeed": page.get("_pageSpeed", {}).get("score"),
             "_connections": page.get("_connections"),
-            "_adult_site": page.get("_adult_site", False),
-            "avg_dom_depth": avg_dom_depth,
-            "doctype": doc_type,
-            "document_height": document_height,
-            "document_width": document_width,
-            "localstorage_size": localstorage_size,
-            "sessionstorage_size": sessionstorage_size,
-            "meta_viewport": page.get("_meta_viewport"),
-            "num_iframes": page.get("_num_iframes"),
-            "num_scripts": page.get("_num_scripts"),
-            "num_scripts_sync": page.get("_num_scripts_sync"),
-            "num_scripts_async": page.get("_num_scripts_async"),
-            "usertiming": page.get("_usertiming"),
         }
 
     @staticmethod
@@ -575,9 +535,6 @@ class HarJsonToSummary:
                 "numHttps": num_https,
                 "numCompressed": num_compressed,
                 "maxDomainReqs": max_domain_reqs,
-                "wptid": status_info["wptid"],
-                "wptrun": status_info["medianRun"],
-                "rank": status_info["rank"],
             }
         )
 
