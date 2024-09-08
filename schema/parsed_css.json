@@ -8,6 +8,16 @@
     "type": "BOOLEAN"
   },
   {
+    "name": "root_page",
+    "type": "STRING"
+  },
+  {
+    "name": "rank",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "Site popularity rank, from CrUX"
+  },
+  {
     "name": "url",
     "type": "STRING"
   },
