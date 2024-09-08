@@ -564,9 +564,9 @@ def get_parsed_css(file_name, har):
         parsed_css.append({
             "date": date,
             "client": client,
-            "rank": rank,
             "page": page_url,
             "is_root_page": is_root_page,
+            "rank": rank,
             "url": url,
             "css": ast_json
         })

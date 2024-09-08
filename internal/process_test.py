@@ -1161,8 +1161,8 @@ class ProcessTest(object):
         row.date = self.bigquery_date(parsed_css['date'])
         row.client = parsed_css['client']
         row.page = parsed_css['page']
-        row.rank = parsed_css['rank']
         row.is_root_page = parsed_css['is_root_page']
+        row.rank = parsed_css['rank']
         row.url = parsed_css['url']
         row.css = parsed_css['css']
 
