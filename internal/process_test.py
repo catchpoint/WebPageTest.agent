@@ -1210,7 +1210,6 @@ class ProcessTest(object):
                 # Add the actual rows
                 proto_rows = types.ProtoRows()
                 if table == 'pages':
-                    page_row = 
                     proto_rows.serialized_rows.append(self.create_page_row(row))
                 elif table == 'requests':
                     proto_rows.serialized_rows.append(self.create_request_row(row))
