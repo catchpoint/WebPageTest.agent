@@ -1118,6 +1118,8 @@ class ProcessTest(object):
         if 'is_root_page' in request and request['is_root_page'] is not None:
             row.is_root_page = request['is_root_page']
         row.root_page = request['root_page']
+        if 'rank' in request and request['rank'] is not None:
+            row.rank = request['rank']
         if 'url' in request and request['url']:
             row.url = request['url']
         if 'is_main_document' in request and request['is_main_document'] is not None:
@@ -1208,6 +1210,7 @@ class ProcessTest(object):
                 # Add the actual rows
                 proto_rows = types.ProtoRows()
                 if table == 'pages':
+                    page_row = 
                     proto_rows.serialized_rows.append(self.create_page_row(row))
                 elif table == 'requests':
                     proto_rows.serialized_rows.append(self.create_request_row(row))
