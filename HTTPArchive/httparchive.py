@@ -524,7 +524,7 @@ def get_parsed_css(file_name, har):
     metadata = page.get("_metadata")
     if metadata:
         rank = int(metadata.get("rank")) if metadata.get("rank") else None
-        root_page = metadata.get("root_page_url", url)
+        root_page = metadata.get("root_page_url", page_url)
 
     if not page_url:
         logging.warning("Skipping parsed CSS, no page URL")
