@@ -673,7 +673,7 @@ class DevtoolsBrowser(object):
                         if command_id is None:
                             custom_metrics[name] = None
                         else:
-                            response = self.devtools.get_command_result(command_id, timeout=60)
+                            response = self.devtools.get_command_result(command_id, timeout=120)
                             if response is not None and 'result' in response and\
                                 'result' in response['result'] and\
                                 'value' in response['result']['result']:
