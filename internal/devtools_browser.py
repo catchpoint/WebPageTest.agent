@@ -53,7 +53,6 @@ class DevtoolsBrowser(object):
         self.webkit_context = None
         self.total_sleep = 0
         self.document_domain = None
-        self.custom_metrics_command_ids = None
 
     def shutdown(self):
         """Agent is dying NOW"""
@@ -316,18 +315,17 @@ class DevtoolsBrowser(object):
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
+            if self.job.get('wappalyzer'):
+                self.wappalyzer_detect(task, self.devtools.main_request_headers)
+            if self.job.get('axe'):
+                self.run_axe(task)
 
             # wait for the background optimization checks
             optimization.join()
 
     def wait_for_processing(self, task):
         """Wait for the background processing (if any)"""
-        self.finish_collect_browser_metrics(task)
-        if task['log_data']:
-            if self.job.get('wappalyzer'):
-                self.wappalyzer_detect(task, self.devtools.main_request_headers)
-            if self.job.get('axe'):
-                self.run_axe(task)
+        pass
 
     def execute_js(self, script):
         """Run javascipt"""
@@ -576,12 +574,12 @@ class DevtoolsBrowser(object):
         if self.must_exit_now:
             return
         if 'customMetrics' in self.job:
+            custom_metrics = {}
             requests = None
             dns_info = None
             bodies = None
             cookies = None
             accessibility_tree = None
-            self.custom_metrics_command_ids = {}
             for name in sorted(self.job['customMetrics']):
                 logging.debug('Requesting custom metric %s', name)
                 custom_script = unicode(self.job['customMetrics'][name])
@@ -652,53 +650,24 @@ class DevtoolsBrowser(object):
                         logging.exception('Error substituting request data with bodies into custom script')
                 script = 'var wptCustomMetric = function() {' + custom_script + '};try{wptCustomMetric();}catch(e){};'
                 if len(script) > 100000000:
-                    self.custom_metrics_command_ids[name] = None
+                    custom_metrics[name] = None
                     logging.debug('Skipping %s. Script length is %d', name, len(script))
                 else:
-                    command_id = self.devtools.execute_js(script, run_async=True)
-                    if command_id is not None:
-                        self.custom_metrics_command_ids[name] = command_id
-
-    def finish_collect_browser_metrics(self, task):
-        """ Collect the asyc custom metrics results"""
-        if self.must_exit_now:
-            return
-        try:
-            if self.custom_metrics_command_ids:
-                custom_metrics = {}
-                for name in self.custom_metrics_command_ids:
-                    try:
-                        logging.debug('Collecting custom metric %s', name)
-                        command_id = self.custom_metrics_command_ids[name]
-                        if command_id is None:
-                            custom_metrics[name] = None
-                        else:
-                            response = self.devtools.get_command_result(command_id, timeout=120)
-                            if response is not None and 'result' in response and\
-                                'result' in response['result'] and\
-                                'value' in response['result']['result']:
-                                custom_metrics[name] = response['result']['result']['value']
-                            else:
-                                custom_metrics[name] = None
-                    except Exception:
-                        logging.exception('Error collecting async custom metric result for %s', name)
-                path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
-                with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                    outfile.write(json.dumps(custom_metrics))
-                self.custom_metrics_command_ids = None
-            user_timing = self.run_js_file('user_timing.js')
-            if user_timing is not None:
-                path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
-                with gzip.open(path, GZIP_TEXT, 7) as outfile:
-                    outfile.write(json.dumps(user_timing))
-            page_data = self.run_js_file('page_data.js')
-            self.document_domain = None
-            if page_data is not None:
-                if 'document_hostname' in page_data:
-                    self.document_domain = page_data['document_hostname']
-                task['page_data'].update(page_data)
-        except Exception:
-            logging.exception('Error collecting async custom metrics results')
+                    custom_metrics[name] = self.devtools.execute_js(script)
+            path = os.path.join(task['dir'], task['prefix'] + '_metrics.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(custom_metrics))
+        user_timing = self.run_js_file('user_timing.js')
+        if user_timing is not None:
+            path = os.path.join(task['dir'], task['prefix'] + '_timed_events.json.gz')
+            with gzip.open(path, GZIP_TEXT, 7) as outfile:
+                outfile.write(json.dumps(user_timing))
+        page_data = self.run_js_file('page_data.js')
+        self.document_domain = None
+        if page_data is not None:
+            if 'document_hostname' in page_data:
+                self.document_domain = page_data['document_hostname']
+            task['page_data'].update(page_data)
 
     def process_command(self, command):
         """Process an individual script command"""

@@ -1017,11 +1017,9 @@ class DevTools(object):
             except Exception:
                 pass
 
-    def send_command(self, method, params, wait=False, timeout=10, target_id=None, run_async=False):
+    def send_command(self, method, params, wait=False, timeout=10, target_id=None):
         """Send a raw dev tools message and optionally wait for the response"""
         ret = None
-        if run_async:
-            wait = False
         if target_id is None and self.default_target is not None and \
                 not method.startswith('Target.') and \
                 not method.startswith('Automation.') and \
@@ -1031,12 +1029,11 @@ class DevTools(object):
             self.command_id += 1
             command_id = int(self.command_id)
             msg = {'id': command_id, 'method': method, 'params': params}
-            if wait or run_async:
+            if wait:
                 self.pending_commands.append(command_id)
-            end_time = monotonic() + timeout
             target_response = self.send_command('Target.sendMessageToTarget',
                               {'targetId': target_id, 'message': json.dumps(msg)},
-                              wait=wait, timeout=timeout, run_async=run_async)
+                              wait=wait, timeout=timeout)
             if wait:
                 if command_id in self.command_responses:
                     ret = self.command_responses[command_id]
@@ -1045,15 +1042,13 @@ class DevTools(object):
                     ret = target_response
                 else:
                     ret = self.get_command_result(command_id, timeout)
-            elif run_async:
-                ret = command_id
             elif method == 'Network.getResponseBody' and 'requestId' in params:
                 self.pending_body_requests[command_id] = params['requestId']
 
         elif self.websocket:
             self.command_id += 1
             command_id = int(self.command_id)
-            if wait or run_async:
+            if wait:
                 self.pending_commands.append(command_id)
             msg = {'id': command_id, 'method': method, 'params': params}
             try:
@@ -1062,8 +1057,6 @@ class DevTools(object):
                 self.websocket.send(out)
                 if wait:
                     ret = self.get_command_result(command_id, timeout)
-                elif run_async:
-                    ret = command_id
                 elif method == 'Network.getResponseBody' and 'requestId' in params:
                     self.pending_body_requests[command_id] = params['requestId']
             except Exception as err:
@@ -1233,15 +1226,14 @@ class DevTools(object):
             similar = False
         return similar
 
-    def execute_js(self, script, use_execution_context=False, run_async=False):
+    def execute_js(self, script, use_execution_context=False):
         """Run the provided JS in the browser and return the result"""
         if self.must_exit:
             return
         ret = None
-        wait = not run_async
         if (self.task['error'] is None or self.task['soft_error']) and not self.main_thread_blocked:
             if self.is_webkit:
-                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=wait, run_async=run_async)
+                response = self.send_command('Runtime.evaluate', {'expression': script, 'returnByValue': True}, timeout=30, wait=True)
             else:
                 params = {'expression': script,
                           'awaitPromise': True,
@@ -1249,10 +1241,8 @@ class DevTools(object):
                           'timeout': 30000}
                 if use_execution_context and self.execution_context is not None:
                     params['contextId'] = self.execution_context
-                response = self.send_command("Runtime.evaluate", params, wait=wait, timeout=30, run_async=run_async)
-            if run_async:
-                ret = response
-            elif response is not None and 'result' in response and\
+                response = self.send_command("Runtime.evaluate", params, wait=True, timeout=30)
+            if response is not None and 'result' in response and\
                     'result' in response['result'] and\
                     'value' in response['result']['result']:
                 ret = response['result']['result']['value']
