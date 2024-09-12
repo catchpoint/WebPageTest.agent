@@ -316,10 +316,6 @@ class DevtoolsBrowser(object):
             # Run the video post-processing
             if self.use_devtools_video and self.job['video']:
                 self.process_video()
-            if self.job.get('wappalyzer'):
-                self.wappalyzer_detect(task, self.devtools.main_request_headers)
-            if self.job.get('axe'):
-                self.run_axe(task)
 
             # wait for the background optimization checks
             optimization.join()
@@ -327,6 +323,11 @@ class DevtoolsBrowser(object):
     def wait_for_processing(self, task):
         """Wait for the background processing (if any)"""
         self.finish_collect_browser_metrics(task)
+        if task['log_data']:
+            if self.job.get('wappalyzer'):
+                self.wappalyzer_detect(task, self.devtools.main_request_headers)
+            if self.job.get('axe'):
+                self.run_axe(task)
 
     def execute_js(self, script):
         """Run javascipt"""
