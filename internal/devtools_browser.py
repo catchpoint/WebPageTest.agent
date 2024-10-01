@@ -1104,7 +1104,7 @@ class DevtoolsBrowser(object):
                         cookies[name].append(cookie['value'])
                 # Get the relavent DNS records for the origin
                 dns = {}
-                dns_types = ['cname', 'ns', 'mx', 'txt', 'soa', 'https', 'svcb']
+                dns_types = ['a', 'aaaa', 'cname', 'ns', 'mx', 'txt', 'soa', 'https', 'svcb']
                 if self.document_domain is None:
                     document_domain = self.devtools.execute_js("document.location.hostname")
                     if document_domain is not None:
