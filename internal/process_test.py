@@ -1012,11 +1012,14 @@ class ProcessTest(object):
             # Upload the HAR to GCS for "successful" tests
             uploaded = False
             har_filename = os.path.basename(har_file)
+            needs_upload = self.job['success']
+            if not needs_upload and 'metadata' in self.job and 'retry_count' in self.job['metadata'] and self.job['metadata']['retry_count'] >= 2:
+                needs_upload = True
             if 'gcs_har_upload' in self.job and \
                     'bucket' in self.job['gcs_har_upload'] and \
                     'path' in self.job['gcs_har_upload'] and \
                     os.path.exists(har_file) and \
-                    self.job['success']:
+                    needs_upload:
                 try:
                     from google.cloud import storage
                     client = storage.Client()
@@ -1032,8 +1035,11 @@ class ProcessTest(object):
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
             
-            if uploaded and 'bq_datastore' in self.job:
-                self.upload_bigquery(har, har_filename, self.job['bq_datastore'])
+            if uploaded:
+                if self.job['success'] and 'bq_datastore' in self.job:
+                    self.upload_bigquery(har, har_filename, self.job['bq_datastore'])
+                elif 'bq_datastore_failures' in self.job:
+                    self.upload_bigquery(har, har_filename, self.job['bq_datastore_failures'])
             
             # Delete the local HAR file if it was only supposed to be uploaded
             if not self.options.har:
