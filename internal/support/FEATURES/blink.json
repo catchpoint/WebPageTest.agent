@@ -4717,5 +4717,22 @@
     "5092": "V8AIAssistant_Clone_Method",
     "5093": "V8AIAssistant_Destroy_Method",
     "5094": "V8AIAssistant_Prompt_Method",
-    "5095": "V8AIAssistant_PromptStreaming_Method"
+    "5095": "V8AIAssistant_PromptStreaming_Method",
+    "5096": "V8Window_PopinContextTypesSupported_Method",
+    "5097": "V8Window_PopinContextType_Method",
+    "5098": "WebAuthentication_AttestationFormats",
+    "5099": "CssDisplayPropertyMultipleValues",
+    "5100": "DocumentPolicyExpectNoLinkedResources",
+    "5101": "SelectionIsCollapsedBehaviorChange",
+    "5102": "TopicsAPIAll",
+    "5103": "PaymentRequestDeprecatedPaymentMethod",
+    "5104": "V8PublicKeyCredential_SignalUnknownCredential_Method",
+    "5105": "V8PublicKeyCredential_SignalAllAcceptedCredentials_Method",
+    "5106": "V8PublicKeyCredential_SignalCurrentUserDetails_Method",
+    "5107": "V8AIAssistant_CountPromptTokens_Method",
+    "5108": "HTMLSearchElement",
+    "5109": "HTMLUnsafeMethods",
+    "5110": "V8GPUSupportedLimits_MaxInterStageShaderComponents_AttributeGetter",
+    "5111": "MaxInterStageShaderComponentsRequiredLimit",
+    "5112": "ShowPickerSelect"
 }
