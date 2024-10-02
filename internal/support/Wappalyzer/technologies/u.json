@@ -1022,6 +1022,19 @@
     },
     "website": "https://user.com"
   },
+  "Utiq": {
+    "cats": [
+      36
+    ],
+    "description": "Utiq empowers brands and publishers to address audiences through Telco-powered first-party identifier.",
+    "icon": "Utiq.svg",
+    "oss": false,
+    "website": "https://utiq.com/",
+    "scriptSrc": "/utiqLoader\\.js",
+    "js": {
+      "Utiq": ""
+    }
+  },
   "utterances": {
     "cats": [
       15
