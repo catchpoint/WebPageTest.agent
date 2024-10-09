@@ -766,7 +766,7 @@ class DevtoolsBrowser(object):
             self.devtools.type_text(command['target'])
         elif command['command'] == 'keypress':
             self.devtools.keypress(command['target'])
-        elif command['command'] == 'mouseclick':
+        elif command['command'] == 'mouse_click':
             if 'target' in command:
                 target = command['target']
                 separator = target.find('=')
@@ -775,7 +775,6 @@ class DevtoolsBrowser(object):
                 if separator >= 0:
                     attribute = target[:separator]
                     attr_value = target[separator + 1:]
-                    mouseclickError = False
                     try:
                         query = "JSON.stringify(document.querySelector('[{0}=\"{1}\"]').getBoundingClientRect())".format(
                             attribute, attr_value)
@@ -791,21 +790,19 @@ class DevtoolsBrowser(object):
                             clickCount = 2                 
                         elif value is not None:
                             logging.info("Click type is not defined.")
-                            mouseclickError = True
 
                         if 'x' in resp_json and 'y' in resp_json and 'width' in resp_json and 'height' in resp_json:
                             x = int(float(resp_json['x'])) + int(float(resp_json['width']))/2
                             y = int(float(resp_json['y'])) + int(float(resp_json['height']))/2
-                            commandOptions = {}
-                            commandOptions['x'] = x
-                            commandOptions['y'] = y
-                            commandOptions['button'] = button
-                            commandOptions['clickCount'] = clickCount
-                            self.devtools.mouseClick(commandOptions)
+                            command_options = {}
+                            command_options['x'] = x
+                            command_options['y'] = y
+                            command_options['button'] = button
+                            command_options['clickCount'] = clickCount
+                            self.devtools.mouse_click(command_options)
                     except:
-                        self.task['error'] = 'Exception parsing mouseClick arguments.'
+                        self.task['error'] = 'Exception parsing mouse_click arguments.'
                         logging.error(self.task['error'])
-                        mouseclickError = True
         elif command['command'] == 'waitfor':
             try:
                 self.devtools.wait_for_script = command['target'] if command['target'] else None

@@ -1360,28 +1360,28 @@ class DevTools(object):
                     self.send_character(char)
         except Exception:
             logging.exception('Error running type command')
-    def mouse_press(self, commandOptions):
+    def mouse_press(self, command_options):
         """Press down the mouse"""
         params = {
             'type': 'mousePressed',
-            'x': commandOptions['x'],
-            'y': commandOptions['y'],
-            'button': commandOptions['button'],
-            'clickCount': commandOptions['clickCount']
+            'x': command_options['x'],
+            'y': command_options['y'],
+            'button': command_options['button'],
+            'clickCount': command_options['clickCount']
         }
         self.send_command('Input.dispatchMouseEvent', params)
 
-    def mouse_release(self, commandOptions):
+    def mouse_release(self, command_options):
         """Let up the mouse"""
         self.send_command('Input.dispatchMouseEvent', {
             'type': 'mouseReleased',
-            'x': commandOptions['x'],
-            'y': commandOptions['y'],
-            'button': commandOptions['button'],
-            'clickCount': commandOptions['clickCount']
+            'x': command_options['x'],
+            'y': command_options['y'],
+            'button': command_options['button'],
+            'clickCount': command_options['clickCount']
         })
 
-    def mouseClick(self, params):
+    def mouse_click(self, params):
         """Simulate pressing the mouse"""
         try:
             self.mouse_press(params)
