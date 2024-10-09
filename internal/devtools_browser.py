@@ -766,7 +766,7 @@ class DevtoolsBrowser(object):
             self.devtools.type_text(command['target'])
         elif command['command'] == 'keypress':
             self.devtools.keypress(command['target'])
-        elif command['command'] == 'mouse_click':
+        elif command['command'] == 'mouseClick':
             if 'target' in command:
                 target = command['target']
                 separator = target.find('=')
@@ -801,7 +801,7 @@ class DevtoolsBrowser(object):
                             command_options['clickCount'] = clickCount
                             self.devtools.mouse_click(command_options)
                     except:
-                        self.task['error'] = 'Exception parsing mouse_click arguments.'
+                        self.task['error'] = 'Exception parsing mouseClick arguments.'
                         logging.error(self.task['error'])
         elif command['command'] == 'waitfor':
             try:
