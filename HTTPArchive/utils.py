@@ -55,8 +55,10 @@ def pretty_type(mime_typ, ext):
             return typ
 
     # Special cases I found by manually searching.
-    if "json" in mime_typ or ext in ["js", "json"]:
+    if ext  == "js":
         return "script"
+    elif "json" in mime_typ or ext == "json":
+        return "json"
     elif ext in ["eot", "ttf", "woff", "woff2", "otf"]:
         return "font"
     elif ext in [
