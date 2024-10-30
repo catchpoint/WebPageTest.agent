@@ -234,9 +234,31 @@ class WebPageTest(object):
                 hash_val.update(hash_data)
                 iteration += 1
             elapsed = monotonic() - start
-            self.cpu_scale_multiplier = 1.0 / elapsed
+            self.cpu_scale_multiplier = min(1.0 / elapsed, float(self.options.maxcpuscale))
             logging.debug('CPU Benchmark elapsed time: %0.3f, multiplier: %0.3f',
                           elapsed, self.cpu_scale_multiplier)
+
+            # Get the median scale value from the last 9 benchmarks on this machine
+            try:
+                cpu_scale = []
+                scale_file = os.path.join(self.persistent_dir, 'cpu_scale.json')
+                if os.path.isfile(scale_file):
+                    with open(scale_file, 'r') as f_in:
+                        cpu_scale = json.load(f_in)
+                if type(cpu_scale) is list:
+                    if len(cpu_scale) >= 9:
+                        cpu_scale.pop(0)
+                    cpu_scale.append(self.cpu_scale_multiplier)
+                    if not os.path.isdir(self.persistent_dir):
+                        os.makedirs(self.persistent_dir)
+                    with open(scale_file, 'w') as f_out:
+                        json.dump(cpu_scale, f_out)
+                    cpu_scale.sort()
+                    median_index = int((len(cpu_scale) - 1) / 2)
+                    self.cpu_scale_multiplier = cpu_scale[median_index]
+                    logging.debug('CPU Benchmark selected multiplier: %0.3f at index %d of %d values', self.cpu_scale_multiplier, median_index, len(cpu_scale))
+            except Exception:
+                logging.exception('Error processing benchmark history')
 
     def get_persistent_dir(self):
         """Return the path to the persistent cache directory"""

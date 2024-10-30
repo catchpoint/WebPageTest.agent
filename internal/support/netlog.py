@@ -340,8 +340,12 @@ class Netlog():
                     for dns_id in self.netlog['dns']:
                         dns = self.netlog['dns'][dns_id]
                         if 'host' in dns and 'start' in dns and 'end' in dns \
-                                and dns['end'] >= dns['start'] and 'address_list' in dns:
+                                and dns['end'] >= dns['start']:
                             hostname = dns['host']
+                            separator = hostname.find('://')
+                            if separator > 0:
+                                separator += 3
+                                hostname = hostname[separator:]
                             separator = hostname.find(':')
                             if separator > 0:
                                 hostname = hostname[:separator]
@@ -731,7 +735,7 @@ class Netlog():
             parent_id = params['source_dependency']['id']
             if 'connect_job' in self.netlog and parent_id in self.netlog['connect_job']:
                 self.netlog['connect_job'][parent_id]['dns'] = request_id
-        if name == 'HOST_RESOLVER_IMPL_REQUEST' and 'phase' in event:
+        if (name == 'HOST_RESOLVER_IMPL_REQUEST' or name == 'HOST_RESOLVER_DNS_TASK') and 'phase' in event:
             if event['phase'] == 'PHASE_BEGIN':
                 if 'start' not in entry or event['time'] < entry['start']:
                     entry['start'] = event['time']
@@ -751,8 +755,6 @@ class Netlog():
                 entry['end'] = event['time']
         if 'host' not in entry and 'host' in params:
             entry['host'] = params['host']
-        if 'address_list' in params:
-            entry['address_list'] = params['address_list']
 
     def process_socket_event(self, event):
         if 'socket' not in self.netlog:

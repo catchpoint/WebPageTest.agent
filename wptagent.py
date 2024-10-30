@@ -585,6 +585,10 @@ class WPTAgent(object):
             if self.get_node_version() < 16.0:
                 logging.warning("Node.js 16 or newer is required for Lighthouse testing")
 
+        # Force lighthouse 11.4.0
+        if self.get_lighthouse_version() != '11.4.0':
+            subprocess.call(['sudo', 'npm', 'i', '-g', 'lighthouse@11.4.0'])
+
         # Check the iOS install
         if self.ios is not None:
             ret = self.requires('usbmuxwrapper') and ret
@@ -623,6 +627,20 @@ class WPTAgent(object):
                 version = float(matches.group(1))
         except Exception:
             pass
+        return version
+
+    def get_lighthouse_version(self):
+        """Get the installed version of lighthouse"""
+        version = None
+        try:
+            if sys.version_info >= (3, 0):
+                stdout = subprocess.check_output(['lighthouse', '--version'], encoding='UTF-8')
+            else:
+                stdout = subprocess.check_output(['lighthouse', '--version'])
+            version = stdout.strip()
+        except Exception:
+            pass
+
         return version
 
     def update_windows_certificates(self):
@@ -1060,6 +1078,19 @@ def get_browser_versions(browsers):
             browsers[browser]['version'] = get_file_version(exe)
 
 
+def fix_selenium_version():
+    """
+    On older python versions we are going to force selenium version 3.141.0, 
+    newer versions are going to use 4.8.3
+    """
+    from internal.os_util import run_elevated
+    version = '4.18.1'
+    if sys.version_info[1] == 6:
+        version = '3.141.0'
+
+    run_elevated(sys.executable, f'-m pip install selenium=={version}')
+
+
 # Constant used for --logformat command line parameter mapping
 LOG_FORMATS = ["syslog"]
 
@@ -1152,6 +1183,8 @@ def main():
     parser.add_argument('--healthcheckport', type=int, default=8889, help='Run a HTTP health check server on the given port.')
     parser.add_argument('--har', action='store_true', default=False,
                         help="Generate a per-run HAR file as part of the test result (defaults to False).")
+    parser.add_argument('--maxcpuscale', type=int, default=2,
+                        help='Maximum scaling to apply to CPU throttle based on host benchmark (defaults to 2).')
 
     # Video capture/display settings
     parser.add_argument('--xvfb', action='store_true', default=False,
@@ -1266,6 +1299,9 @@ def main():
         elif sys.version_info[0] != 2 or sys.version_info[1] != 7:
             logging.critical("Requires python 2.7")
             exit(1)
+
+    # Make sure we are using a compatible selenium version
+    fix_selenium_version()
 
     if options.list:
         from internal.ios_device import iOSDevice

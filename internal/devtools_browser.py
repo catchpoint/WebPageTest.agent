@@ -777,6 +777,43 @@ class DevtoolsBrowser(object):
                 if keyModifier in KeyModifiers.keys():
                     modifier = KeyModifiers[keyModifier]
             self.devtools.keypress(command['target'], modifier)
+        elif command['command'] == 'mouseClick':
+            if 'target' in command:
+                target = command['target']
+                separator = target.find('=')
+                if separator == -1:
+                    separator = target.find("'")
+                if separator >= 0:
+                    attribute = target[:separator]
+                    attr_value = target[separator + 1:]
+                    try:
+                        query = "JSON.stringify(document.querySelector('[{0}=\"{1}\"]').getBoundingClientRect())".format(
+                            attribute, attr_value)
+                        resp = self.devtools.execute_js(query, use_execution_context = True)
+                        resp_json = json.loads(resp)
+
+                        value = command['value']
+                        button = 'left'
+                        clickCount = 1                 
+                        if value in ['left', 'right']:
+                            button = value
+                        elif value == 'double':
+                            clickCount = 2                 
+                        elif value is not None:
+                            logging.info("Click type is not defined.")
+
+                        if 'x' in resp_json and 'y' in resp_json and 'width' in resp_json and 'height' in resp_json:
+                            x = int(float(resp_json['x'])) + int(float(resp_json['width']))/2
+                            y = int(float(resp_json['y'])) + int(float(resp_json['height']))/2
+                            command_options = {}
+                            command_options['x'] = x
+                            command_options['y'] = y
+                            command_options['button'] = button
+                            command_options['clickCount'] = clickCount
+                            self.devtools.mouse_click(command_options)
+                    except:
+                        self.task['error'] = 'Exception parsing mouseClick arguments.'
+                        logging.error(self.task['error'])
         elif command['command'] == 'waitfor':
             try:
                 self.devtools.wait_for_script = command['target'] if command['target'] else None
@@ -865,7 +902,12 @@ class DevtoolsBrowser(object):
             else:
                 cpu_throttle = '{:.3f}'.format(self.job['throttle_cpu']) if 'throttle_cpu' in self.job else '1'
                 if self.job['dtShaper']:
-                    command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '768', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    if self.options.android or ('mobile' in self.job and self.job['mobile']):
+                        # 1.6Mbps down, 750Kbps up, 150ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '150', '--throttling.downloadThroughputKbps', '1600', '--throttling.uploadThroughputKbps', '750', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
+                    else:
+                        # 10Mbps, 40ms RTT
+                        command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '40', '--throttling.downloadThroughputKbps', '10240', '--throttling.uploadThroughputKbps', '10240', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 elif 'throttle_cpu_requested' in self.job and self.job['throttle_cpu_requested'] > 1:
                     command.extend(['--throttling-method', 'devtools', '--throttling.requestLatencyMs', '0', '--throttling.downloadThroughputKbps', '0', '--throttling.uploadThroughputKbps', '0', '--throttling.cpuSlowdownMultiplier', cpu_throttle])
                 else:
