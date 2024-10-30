@@ -1313,7 +1313,7 @@ class DevTools(object):
                 info['text'] = definition['text']
         return info
 
-    def key_down(self, key):
+    def key_down(self, key, modifier):
         """Press down a key"""
         info = self.key_info(key)
         params = {
@@ -1321,7 +1321,8 @@ class DevTools(object):
             'key': info['key'],
             'windowsVirtualKeyCode': info['keyCode'],
             'code': info['code'],
-            'location': info['location']
+            'location': info['location'],
+            'modifiers': modifier
         }
         if 'text' in info:
             params['type'] = 'keyDown'
@@ -1331,7 +1332,7 @@ class DevTools(object):
             params['isKeypad'] = True
         self.send_command('Input.dispatchKeyEvent', params)
 
-    def key_up(self, key):
+    def key_up(self, key, modifier):
         """Let up a key"""
         info = self.key_info(key)
         self.send_command('Input.dispatchKeyEvent', {
@@ -1339,14 +1340,15 @@ class DevTools(object):
             'key': info['key'],
             'windowsVirtualKeyCode': info['keyCode'],
             'code': info['code'],
-            'location': info['location']
+            'location': info['location'],
+            'modifiers': modifier
         })
 
-    def keypress(self, key):
+    def keypress(self, key, modifier):
         """Simulate pressing a keyboard key"""
         try:
-            self.key_down(key)
-            self.key_up(key)
+            self.key_down(key, modifier)
+            self.key_up(key, modifier)
         except Exception:
             logging.exception('Error running keypress command')
 
@@ -1355,7 +1357,7 @@ class DevTools(object):
         try:
             for char in string:
                 if char in self.key_definitions:
-                    self.keypress(char)
+                    self.keypress(char, 0)
                 else:
                     self.send_character(char)
         except Exception:
