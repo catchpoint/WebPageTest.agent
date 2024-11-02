@@ -302,11 +302,11 @@
     "website": "https://www.iluria.com.br"
   },
   "Image Placeholders": {
-      "cats": [
+    "cats": [
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which determines and stores the dominant color for newly uploaded images in the media library, then uses that as a placeholder background during front end image loads.",
+    "description": "Performance plugin from the WordPress Performance Team, which determines and stores the dominant color for newly uploaded images in the media library, then uses that as a placeholder background during front end image loads.",
     "icon": "dominant-color-images.svg",
     "meta": {
       "generator": "^dominant-color-images ([\\d.]+)?\\;version:\\1"
@@ -319,7 +319,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which optimizes the loading of images which are the LCP (Largest Contentful Paint) element, including both img elements and elements with CSS background images.",
+    "description": "Performance plugin from the WordPress Performance Team, which optimizes the loading of images which are the LCP (Largest Contentful Paint) element, including both img elements and elements with CSS background images.",
     "icon": "image-prioritizer.svg",
     "meta": {
       "generator": "^image-prioritizer ([\\d.]+)?\\;version:\\1"

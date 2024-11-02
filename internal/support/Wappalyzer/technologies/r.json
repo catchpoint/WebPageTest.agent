@@ -633,9 +633,9 @@
     "icon": "React Router.svg",
     "implies": "React",
     "oss": true,
-    "scriptSrc": [
-      "(?:/react-router(@|/)([\\d.]+)(?:/[a-z]+)?)?/react-router(?:\\.min)?\\.js\\;version:\\2"
-    ],
+    "js": {
+      "__reactRouterVersion": "([\\d\\.]+)\\;version:\\1"
+    },
     "website": "https://reactrouter.com"
   },
   "Reactive": {
@@ -1337,7 +1337,8 @@
     "description": "Remix is a React framework used for server-side rendering (SSR).",
     "icon": "Remix.svg",
     "implies": [
-      "React"
+      "React",
+      "React Router"
     ],
     "js": {
       "__remixContext": ""

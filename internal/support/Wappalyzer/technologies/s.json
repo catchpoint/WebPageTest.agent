@@ -5159,7 +5159,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which adds support for the Speculation Rules API, by which certain URLs are dynamically prefetched or prerendered based on user interaction.",
+    "description": "Performance plugin from the WordPress Performance Team, which adds support for the Speculation Rules API, by which certain URLs are dynamically prefetched or prerendered based on user interaction.",
     "icon": "speculation-rules.svg",
     "meta": {
       "generator": "^speculation-rules ([\\d.]+)?\\;version:\\1"

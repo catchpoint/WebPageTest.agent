@@ -807,5 +807,7 @@
     "805": "CSSPropertyTextWrapMode",
     "806": "CSSPropertyTextWrapStyle",
     "807": "CSSPropertyMasonryTrack",
-    "808": "CSSPropertyMasonrySlack"
+    "808": "CSSPropertyMasonrySlack",
+    "809": "CSSPropertyCaretAnimation",
+    "810": "CSSPropertyViewTransitionCaptureMode"
 }

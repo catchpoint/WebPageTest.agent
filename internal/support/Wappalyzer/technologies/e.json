@@ -961,7 +961,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which optimizes embeds by lazy loading them only as they come into view.",
+    "description": "Performance plugin from the WordPress Performance Team, which optimizes embeds by lazy loading them only as they come into view.",
     "icon": "embed-optimizer.svg",
     "meta": {
       "generator": "^embed-optimizer ([\\d.]+)?\\;version:\\1"
@@ -1145,7 +1145,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which improves image sizes attribute accuracy and implements the HTML spec for adding sizes='auto' to lazy loaded images.",
+    "description": "Performance plugin from the WordPress Performance Team, which improves image sizes attribute accuracy and implements the HTML spec for adding sizes='auto' to lazy loaded images.",
     "icon": "enhanced-image-sizes.svg",
     "meta": {
       "generator": "^auto-sizes ([\\d.]+)?\\;version:\\1"
