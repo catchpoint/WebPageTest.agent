@@ -1096,7 +1096,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which is a collection of standalone performance modules.",
+    "description": "Performance plugin from the WordPress Performance Team, which is a collection of standalone performance modules.",
     "icon": "Performance Lab.svg",
     "meta": {
       "generator": "^(Performance Lab|performance-lab) ?([\\d.]+)?\\;version:\\2"
@@ -1109,7 +1109,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which makes internationalization/localization in WordPress faster than ever before.",
+    "description": "Performance plugin from the WordPress Performance Team, which makes internationalization/localization in WordPress faster than ever before.",
     "icon": "performant-translations.svg",
     "meta": {
       "generator": "^performant-translations ([\\d.]+)?\\;version:\\1"

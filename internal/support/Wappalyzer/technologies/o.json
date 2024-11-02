@@ -1277,7 +1277,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which captures real user metrics about what elements are displayed on the page across a variety of device form factors (e.g. desktop, tablet, and phone) in order to apply loading optimizations.",
+    "description": "Performance plugin from the WordPress Performance Team, which captures real user metrics about what elements are displayed on the page across a variety of device form factors (e.g. desktop, tablet, and phone) in order to apply loading optimizations.",
     "icon": "optimization-detective.svg",
     "meta": {
       "generator": "^optimization-detective ([\\d.]+)?\\;version:\\1"

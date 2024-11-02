@@ -2328,7 +2328,7 @@
       87,
       92
     ],
-    "description": "Performance plugin from the WordPress Performance Group, which adds support for outputting images in WebP or AVIF format and supports the `picture` element to enable format fallbacks.",
+    "description": "Performance plugin from the WordPress Performance Team, which adds support for outputting images in WebP or AVIF format and supports the `picture` element to enable format fallbacks.",
     "icon": "modern-image-formats.svg",
     "meta": {
       "generator": "^webp-uploads ([\\d.]+)?\\;version:\\1"
