@@ -97,11 +97,11 @@
     for (let entry of resolved) {
       try {
         if (entry) {
-          const app = entry.name;
-          const version = entry.version;
+          const app = entry.name.replaceAll(",", "");
+          const version = entry.version.replaceAll(",", "");;
           detected[app] = entry;
           for (let catEntry of entry.categories) {
-            let category = catEntry.name;
+            let category = catEntry.name.replaceAll(",", "");;
             if (!category.length) {
               category = catEntry.slug;
             }
