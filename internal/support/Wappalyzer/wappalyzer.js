@@ -89,8 +89,15 @@ const Wappalyzer = {
         .flat(),
     ].find(({ name: _name }) => name === _name),
 
-  getCategory: (id) => Wappalyzer.categories.find(({ id: _id }) => id === _id),
-
+    getCategory: (id) => {
+      for (const category of Wappalyzer.categories) {
+        if (category.id == id) {
+          return category;
+        }
+      }
+      return null;
+    },
+  
   /**
    * Resolve promises for implied technology.
    * @param {Array} detections
