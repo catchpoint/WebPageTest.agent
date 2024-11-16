@@ -47,7 +47,7 @@ wptagent currently supports Windows, Linux and OSX for desktop browsers as well 
 ## For lighthouse testing
 * NodeJS
     * Ubuntu/Debian:
-        * ```curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -```
+        * ```curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -```
         * ```sudo apt-get install -y nodejs```
 * The lighthouse npm module
     * ```sudo npm install -g lighthouse```
