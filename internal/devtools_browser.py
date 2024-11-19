@@ -777,7 +777,7 @@ class DevtoolsBrowser(object):
                 if keyModifier in KeyModifiers.keys():
                     modifier = KeyModifiers[keyModifier]
             self.devtools.keypress(command['target'], modifier)
-        elif command['command'] == 'mouseClick':
+        elif command['command'] == 'mouseclick':
             if 'target' in command:
                 target = command['target']
                 separator = target.find('=')
