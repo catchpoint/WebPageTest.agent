@@ -18,7 +18,7 @@ FROM ubuntu:22.04 as production
 ARG TIMEZONE=UTC
 
 ### UPDATE ###
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt update 
 
 ### INSTALL APT-GET LIBS ###

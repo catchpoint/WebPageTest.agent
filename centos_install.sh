@@ -27,7 +27,7 @@ until python3 -m pip install --user -r .github/workflows/requirements.txt
 do
     sleep 1
 done
-curl --silent --location https://rpm.nodesource.com/setup_18.x | sudo bash -
+curl --silent --location https://rpm.nodesource.com/setup_20.x | sudo bash -
 until sudo yum -y install nodejs
 do
     sleep 1
