@@ -4133,6 +4133,7 @@
     "icon": "Slider Revolution.svg",
     "js": {
       "RS_MODULES.main.version": "^Slider Revolution\\s([\\d\\.]+)$\\;version:\\1",
+      "SR7.version": "^Slider Revolution\\s([\\d\\.]+)$\\;version:\\1",
       "revapi1": "",
       "revapi2": "",
       "revapi3": "",

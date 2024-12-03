@@ -709,6 +709,7 @@
       62,
       88
     ],
+    "description": "Kinsta is a leading managed WordPress hosting provider, prioritizing speed and security.",
     "headers": {
       "x-kinsta-cache": ""
     },

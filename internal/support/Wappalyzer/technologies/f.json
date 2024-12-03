@@ -1659,9 +1659,6 @@
       "FourthwallAnalytics": "",
       "fourthwallTheme": ""
     },
-    "meta": {
-      "version": "^(.+)$\\;version:\\1\\;confidence:0"
-    },
     "pricing": [
       "payg"
     ],

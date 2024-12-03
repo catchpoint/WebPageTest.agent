@@ -632,10 +632,10 @@
     "description": "React Router provides declarative routing for React.",
     "icon": "React Router.svg",
     "implies": "React",
-    "oss": true,
     "js": {
       "__reactRouterVersion": "([\\d\\.]+)\\;version:\\1"
     },
+    "oss": true,
     "website": "https://reactrouter.com"
   },
   "Reactive": {

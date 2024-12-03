@@ -809,5 +809,6 @@
     "807": "CSSPropertyMasonryTrack",
     "808": "CSSPropertyMasonrySlack",
     "809": "CSSPropertyCaretAnimation",
-    "810": "CSSPropertyViewTransitionCaptureMode"
+    "810": "CSSPropertyViewTransitionCaptureMode",
+    "811": "CSSPropertyInteractivity"
 }
