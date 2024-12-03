@@ -443,16 +443,40 @@
     "scriptSrc": "/wp-content/plugins/gp-premium/.+\\.js(?:\\?ver=(\\d+(?:\\.\\d+)+))?\\;version:\\1",
     "website": "https://docs.generatepress.com/article/installing-gp-premium/"
   },
+  "Genesis blocks": {
+    "cats": [
+      87
+    ],
+    "description": "Premium block library & block editor enhancements from StudioPress.",
+    "icon": "genesis-blocks.png",
+    "requires": "WordPress",
+    "html": "<div[^>]+class=[\"']wp-block-atomic-blocks-*",
+    "dom": {
+      "link[href*='/wp-content/plugins/atomic-blocks']": {
+        "attributes": {
+          "href": "/wp-content/plugins/atomic-blocks/"
+        }
+      },
+      "link[href*='/wp-content/plugins/genesis-blocks']": {
+        "attributes": {
+          "href": "/wp-content/plugins/genesis-blocks/"
+        }
+      }
+    },
+    "scriptSrc": "/wp-content/themes/genesis-blocks/lib/js/",
+    "website": "https://www.studiopress.com/genesis-blocks/"
+  },
   "Genesis theme": {
     "cats": [
       80
     ],
     "description": "Genesis theme is a WordPress theme that has been developed using the Genesis Framework from Studiopress.",
     "icon": "Genesis theme.svg",
-    "js": {
-      "genesisBlocksShare": "",
-      "genesis_responsive_menu": ""
-    },
+    "dom": [
+      "body[class*='theme-genesis']",
+      "body[class*='genesis-breadcrumbs-hidden']",
+      "body[class*='genesis-title-hidden']"
+    ],
     "requires": "WordPress",
     "scriptSrc": "/wp-content/themes/genesis/lib/js/",
     "website": "https://www.studiopress.com/themes/genesis"
