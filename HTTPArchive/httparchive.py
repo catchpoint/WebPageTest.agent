@@ -37,6 +37,9 @@ def get_page(file_name, har):
         is_root_page = metadata.get("crawl_depth", 0) == 0
         root_page = metadata.get("root_page_url", url)
         rank = int(metadata.get("rank")) if metadata.get("rank") else None
+        metadata.pop('page_id', None)
+        metadata.pop('parent_page_id', None)
+        metadata.pop('root_page_id', None)
 
     try:
         payload = trim_page(page)
@@ -60,6 +63,7 @@ def get_page(file_name, har):
             for field in constants.BIGQUERY["schemas"]["summary_pages"]["fields"]
         ]
         summary_page = utils.dict_subset(summary_page, wanted_summary_fields)
+        summary_page['crux'] = page.get("_CrUX")
         summary_page = json.dumps(summary_page)
     except Exception:
         logging.exception(
@@ -416,6 +420,13 @@ def trim_request(request):
     # Make a copy first so the response body can be used later.
     request = deepcopy(request)
     request.get("response", {}).get("content", {}).pop("text", None)
+    request.pop('_headers', None)
+    if 'response' in request:
+        request['response'].pop('headers', None)
+        request['response'].pop('content', None)
+        request['response'].pop('text', None)
+    if 'request' in request:
+        request['request'].pop('headers', None)
     return request
 
 
@@ -429,11 +440,75 @@ def trim_page(src_page):
     page = deepcopy(src_page)
 
     # Remove the fields that are parsed out into separate columns
-    page.pop("_parsed_css", None)
-    page.pop("_lighthouse", None)
-    page.pop("_blinkFeatureFirstUsed", None)
-    page.pop("_detected_apps", None)
-    page.pop("_detected", None)
+    FIELDS = [  '_lighthouse',
+                '_metadata',
+                '_detected',
+                '_detected_apps',
+                '_detected_technologies',
+                '_detected_raw',
+                '_custom',
+                '_00_reset',
+                '_a11y',
+                '_ads',
+                '_almanac',
+                '_aurora',
+                '_avg_dom_depth',
+                '_cms',
+                '_Colordepth',
+                '_cookies',
+                '_crawl_links',
+                '_css-variables',
+                '_css',
+                '_doctype',
+                '_document_height',
+                '_document_width',
+                '_Dpi',
+                '_ecommerce',
+                '_element_count',
+                '_event-names',
+                '_fugu-apis',
+                '_generated-content',
+                '_has_shadow_root',
+                '_Images',
+                '_img-loading-attr',
+                '_initiators',
+                '_inline_style_bytes',
+                '_javascript',
+                '_lib-detector-version',
+                '_localstorage_size',
+                '_markup',
+                '_media',
+                '_meta_viewport',
+                '_num_iframes',
+                '_num_scripts_async',
+                '_num_scripts_sync',
+                '_num_scripts',
+                '_observers',
+                '_origin-trials',
+                '_parsed_css',
+                '_performance',
+                '_privacy-sandbox',
+                '_privacy',
+                '_pwa',
+                '_quirks_mode',
+                '_Resolution',
+                '_responsive_images',
+                '_robots_meta',
+                '_robots_txt',
+                '_sass',
+                '_security',
+                '_sessionstorage_size',
+                '_structured-data',
+                '_third-parties',
+                '_usertiming',
+                '_valid-head',
+                '_well-known',
+                '_wpt_bodies',
+                '_blinkFeatureFirstUsed',
+                '_CrUX'
+              ]
+    for field in FIELDS:
+        page.pop(field, None)
 
     # Delete the custom metrics (enumerated in the _custom entry)
     """
