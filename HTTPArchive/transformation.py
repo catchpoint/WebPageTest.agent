@@ -171,6 +171,8 @@ class HarJsonToSummary:
             {
                 "method": request["method"],
                 "httpVersion": request["httpVersion"],
+                "url": url,
+                "urlShort": url[:255],
                 "reqHeadersSize": req_headers_size,
                 "reqBodySize": req_body_size,
                 "reqCookieLen": request_cookie_size,
