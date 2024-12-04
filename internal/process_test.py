@@ -104,6 +104,7 @@ class ProcessTest(object):
 
         self.save_data()
 
+        logging.debug("Preparing to generate HAR")
         if self.options.har or 'gcs_har_upload' in self.job:
             self.generate_har()
 
@@ -972,6 +973,7 @@ class ProcessTest(object):
 
     def generate_har(self):
         """Generate a HAR file for the current step"""
+        logging.debug("Generating HAR")
         try:
             page_data = self.data['pageData']
             har = {'log': {
@@ -1034,6 +1036,8 @@ class ProcessTest(object):
                         logging.debug('Uploaded HAR to gs://%s/%s', self.job['gcs_har_upload']['bucket'], gcs_path)
                 except Exception:
                     logging.exception('Error uploading HAR to Cloud Storage')
+            else:
+                logging.debug("Not uploading HAR")
             
             if uploaded:
                 if self.job['success'] and 'bq_datastore' in self.job:
