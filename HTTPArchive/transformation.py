@@ -132,16 +132,10 @@ class HarJsonToSummary:
             entry_number += 1
 
         ret_request = {
-            "requestid": (status_info["pageid"] << 32) + entry_number,
             "client": status_info["client"],
             "date": status_info["date"],
-            "pageid": status_info["pageid"],
-            "crawlid": status_info["crawlid"],
             "metadata": status_info["metadata"],
             # we use this below for expAge calculation
-            "startedDateTime": utils.datetime_to_epoch(
-                entry["startedDateTime"], status_info
-            ),
             "time": entry["time"],
             "_cdn_provider": entry.get("_cdn_provider"),
             # amount response WOULD have been reduced if it had been gzipped
@@ -181,7 +175,6 @@ class HarJsonToSummary:
                 "urlShort": url[:255],
                 "reqHeadersSize": req_headers_size,
                 "reqBodySize": req_body_size,
-                "reqOtherHeaders": request_other_headers,
                 "reqCookieLen": request_cookie_size,
             }
         )
@@ -240,7 +233,6 @@ class HarJsonToSummary:
         )
         ret_request.update(
             {
-                "respOtherHeaders": response_other_headers,
                 "respCookieLen": response_cookie_size,
             }
         )
@@ -295,9 +287,6 @@ class HarJsonToSummary:
 
         ret_request.update({"expAge": int(max(exp_age, 0))})
 
-        # NOW add all the headers from both the request and response.
-        ret_request.update({k: ", ".join(v) for k, v in request_headers.items()})
-
         # TODO implement custom rules?
         # https://github.com/HTTPArchive/legacy.httparchive.org/blob/de08e0c7c94a7da529826f0a4429a9d28b8fdf5e/bulktest/batch_lib.inc#L658-L664
 
@@ -319,8 +308,6 @@ class HarJsonToSummary:
             # This is the first URL found associated with the page that's HTML.
             first_html = True
             first_html_url = url
-
-        ret_request.update({"firstReq": first_req, "firstHtml": first_html})
 
         return ret_request, first_url, first_html_url, entry_number
 

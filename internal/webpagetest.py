@@ -1625,9 +1625,11 @@ class WebPageTest(object):
         self.cpu_pct = None
         self.update_browser_viewport(task)
         if task['run'] == 1 and not task['cached']:
+            logging.debug("Collecting CrUX data")
             self.collect_crux_data(task)
         # Post-process the given test run
         try:
+            logging.debug("Processing test result")
             from internal.process_test import ProcessTest
             ProcessTest(self.options, self.job, task)
         except Exception:
