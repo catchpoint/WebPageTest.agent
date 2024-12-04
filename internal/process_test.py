@@ -1094,8 +1094,8 @@ class ProcessTest(object):
                 row.custom_metrics.cms = json.dumps(custom_metrics.pop('cms'))
             if 'cookies' in custom_metrics:
                 row.custom_metrics.cookies = json.dumps(custom_metrics.pop('cookies'))
-            if 'css_variables' in custom_metrics:
-                row.custom_metrics.css_variables = json.dumps(custom_metrics.pop('css_variables'))
+            if 'css-variables' in custom_metrics:
+                row.custom_metrics.css_variables = json.dumps(custom_metrics.pop('css-variables'))
             if 'ecommerce' in custom_metrics:
                 row.custom_metrics.ecommerce = json.dumps(custom_metrics.pop('ecommerce'))
             if 'element_count' in custom_metrics:
@@ -1106,8 +1106,8 @@ class ProcessTest(object):
                 row.custom_metrics.markup = json.dumps(custom_metrics.pop('markup'))
             if 'media' in custom_metrics:
                 row.custom_metrics.media = json.dumps(custom_metrics.pop('media'))
-            if 'origin_trials' in custom_metrics:
-                row.custom_metrics.origin_trials = json.dumps(custom_metrics.pop('origin_trials'))
+            if 'origin-trials' in custom_metrics:
+                row.custom_metrics.origin_trials = json.dumps(custom_metrics.pop('origin-trials'))
             if 'performance' in custom_metrics:
                 row.custom_metrics.performance = json.dumps(custom_metrics.pop('performance'))
             if 'privacy' in custom_metrics:
@@ -1118,12 +1118,12 @@ class ProcessTest(object):
                 row.custom_metrics.robots_txt = json.dumps(custom_metrics.pop('robots_txt'))
             if 'security' in custom_metrics:
                 row.custom_metrics.security = json.dumps(custom_metrics.pop('security'))
-            if 'structured_data' in custom_metrics:
-                row.custom_metrics.structured_data = json.dumps(custom_metrics.pop('structured_data'))
-            if 'third_parties' in custom_metrics:
-                row.custom_metrics.third_parties = json.dumps(custom_metrics.pop('third_parties'))
-            if 'well_known' in custom_metrics:
-                row.custom_metrics.well_known = json.dumps(custom_metrics.pop('well_known'))
+            if 'structured-data' in custom_metrics:
+                row.custom_metrics.structured_data = json.dumps(custom_metrics.pop('structured-data'))
+            if 'third-parties' in custom_metrics:
+                row.custom_metrics.third_parties = json.dumps(custom_metrics.pop('third-parties'))
+            if 'well-known' in custom_metrics:
+                row.custom_metrics.well_known = json.dumps(custom_metrics.pop('well-known'))
             if 'wpt_bodies' in custom_metrics:
                 row.custom_metrics.wpt_bodies = json.dumps(custom_metrics.pop('wpt_bodies'))
             row.custom_metrics.other = json.dumps(custom_metrics)
