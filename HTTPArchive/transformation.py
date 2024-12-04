@@ -216,6 +216,7 @@ class HarJsonToSummary:
             {
                 "mimeType": mime_type.lower(),
                 "ext": ext.lower(),
+                "type": typ.lower(),
                 "format": frmt.lower(),
             }
         )
