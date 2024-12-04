@@ -186,6 +186,7 @@ class WPTAgent(object):
                             self.job = self.wpt.get_test(self.browsers.browsers)
                         self.run_job()
                         self.job_done()
+                        self.must_exit = True
                     elif self.options.exit > 0 and self.browsers.should_exit():
                         self.must_exit = True
                     if self.job is not None:
