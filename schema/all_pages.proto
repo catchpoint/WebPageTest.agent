@@ -2,6 +2,29 @@ syntax = "proto2";
 
 // Maps to httparchive.all.pages schema
 message PageRecord {
+  // Custom Metric record (used for "custom_metrics)
+  message CustomMetrics {
+    optional string a11y = 1;
+    optional string cms = 2;
+    optional string cookies = 3;
+    optional string css_variables = 4;
+    optional string ecommerce = 5;
+    optional string element_count = 6;
+    optional string javascript = 7;
+    optional string markup = 8;
+    optional string media = 9;
+    optional string origin_trials = 10;
+    optional string performance = 11;
+    optional string privacy = 12;
+    optional string responsive_images = 13;
+    optional string robots_txt = 14;
+    optional string security = 15;
+    optional string structured_data = 16;
+    optional string third_parties = 17;
+    optional string well_known = 18;
+    optional string wpt_bodies = 19;
+    optional string other = 20;
+  }
 
   // Individual blink feature (used for "features")
   message Feature {
@@ -55,7 +78,7 @@ message PageRecord {
   optional string summary = 9;
 
   // JSON-encoded test results of the custom metrics
-  optional string custom_metrics = 10;
+  optional CustomMetrics custom_metrics = 10;
 
   // JSON-encoded Lighthouse report
   optional string lighthouse = 11;

@@ -55,9 +55,131 @@
     },
     {
         "name": "custom_metrics",
-        "type": "STRING",
+        "type": "RECORD",
         "mode": "NULLABLE",
-        "description": "JSON-encoded test results of the custom metrics"
+        "description": "JSON-encoded test results of the custom metrics",
+        "fields": [
+            {
+                "name": "a11y",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded A11Y metrics"
+            },
+            {
+                "name": "cms",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded CMS metrics"
+            },
+            {
+                "name": "cookies",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded cookie metrics"
+            },
+            {
+                "name": "css_variables",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded CSS variable metrics"
+            },
+            {
+                "name": "ecommerce",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded ecommerce metrics"
+            },
+            {
+                "name": "element_count",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded element count metrics"
+            },
+            {
+                "name": "javascript",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded JavaScript metrics"
+            },
+            {
+                "name": "markup",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded markup metrics"
+            },
+            {
+                "name": "media",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded media metrics"
+            },
+            {
+                "name": "origin_trials",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded origin trial metrics"
+            },
+            {
+                "name": "performance",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded performance metrics"
+            },
+            {
+                "name": "privacy",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded privacy metrics"
+            },
+            {
+                "name": "responsive_images",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded responsive image metrics"
+            },
+            {
+                "name": "robots_txt",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded robots.txt metrics"
+            },
+            {
+                "name": "security",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded security metrics"
+            },
+            {
+                "name": "structured_data",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded structured data metrics"
+            },
+            {
+                "name": "third_parties",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded third-party metrics"
+            },
+            {
+                "name": "well_known",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded well-known metrics"
+            },
+            {
+                "name": "wpt_bodies",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded WebPageTest bodies"
+            },
+            {
+                "name": "other",
+                "type": "STRING",
+                "mode": "NULLABLE",
+                "description": "JSON-encoded other custom metrics"
+            }
+        ]
     },
     {
         "name": "lighthouse",

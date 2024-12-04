@@ -1080,7 +1080,45 @@ class ProcessTest(object):
         if 'summary' in page and page['summary']:
             row.summary = page['summary']
         if 'custom_metrics' in page and page['custom_metrics']:
-            row.custom_metrics = page['custom_metrics']
+            if 'a11y' in page['custom_metrics']:
+                row.custom_metrics.a11y = page['custom_metrics'].pop('a11y')
+            if 'cms' in page['custom_metrics']:
+                row.custom_metrics.cms = page['custom_metrics'].pop('cms')
+            if 'cookies' in page['custom_metrics']:
+                row.custom_metrics.cookies = page['custom_metrics'].pop('cookies')
+            if 'css_variables' in page['custom_metrics']:
+                row.custom_metrics.css_variables = page['custom_metrics'].pop('css_variables')
+            if 'ecommerce' in page['custom_metrics']:
+                row.custom_metrics.ecommerce = page['custom_metrics'].pop('ecommerce')
+            if 'element_count' in page['custom_metrics']:
+                row.custom_metrics.element_count = page['custom_metrics'].pop('element_count')
+            if 'javascript' in page['custom_metrics']:
+                row.custom_metrics.javascript = page['custom_metrics'].pop('javascript')
+            if 'markup' in page['custom_metrics']:
+                row.custom_metrics.markup = page['custom_metrics'].pop('markup')
+            if 'media' in page['custom_metrics']:
+                row.custom_metrics.media = page['custom_metrics'].pop('media')
+            if 'origin_trials' in page['custom_metrics']:
+                row.custom_metrics.origin_trials = page['custom_metrics'].pop('origin_trials')
+            if 'performance' in page['custom_metrics']:
+                row.custom_metrics.performance = page['custom_metrics'].pop('performance')
+            if 'privacy' in page['custom_metrics']:
+                row.custom_metrics.privacy = page['custom_metrics'].pop('privacy')
+            if 'responsive_images' in page['custom_metrics']:
+                row.custom_metrics.responsive_images = page['custom_metrics'].pop('responsive_images')
+            if 'robots_txt' in page['custom_metrics']:
+                row.custom_metrics.robots_txt = page['custom_metrics'].pop('robots_txt')
+            if 'security' in page['custom_metrics']:
+                row.custom_metrics.security = page['custom_metrics'].pop('security')
+            if 'structured_data' in page['custom_metrics']:
+                row.custom_metrics.structured_data = page['custom_metrics'].pop('structured_data')
+            if 'third_parties' in page['custom_metrics']:
+                row.custom_metrics.third_parties = page['custom_metrics'].pop('third_parties')
+            if 'well_known' in page['custom_metrics']:
+                row.custom_metrics.well_known = page['custom_metrics'].pop('well_known')
+            if 'wpt_bodies' in page['custom_metrics']:
+                row.custom_metrics.wpt_bodies = page['custom_metrics'].pop('wpt_bodies')
+            row.custom_metrics.other = page['custom_metrics']
         if 'lighthouse' in page and page['lighthouse']:
             row.lighthouse = page['lighthouse']
         if 'metadata' in page and page['metadata']:
