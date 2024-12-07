@@ -28,7 +28,7 @@ def get_page(file_name, har):
     root_page = url
     rank = None
 
-    metadata = page.get("_metadata")
+    metadata = deepcopy(page.get("_metadata", {}))
     if metadata:
         # The page URL from metadata is more accurate.
         # See https://github.com/HTTPArchive/data-pipeline/issues/48
