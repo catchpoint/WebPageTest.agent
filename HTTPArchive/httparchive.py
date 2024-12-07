@@ -165,9 +165,15 @@ def get_features(page, wptid):
     if not page:
         return None
 
-    blink_features = page.get("_blinkFeatureFirstUsed")
+    blink_features = page.get("_blinkFeatureFirstUsed", [])
+    webdx_features = page.get("_webdx_features", [])
+    webdx_feature_names = []
+    for feature in webdx_features:
+        webdx_feature_names.append(
+            {"feature": feature.get("name"), "type": "webdx", "id": feature.get("id")}
+        )
 
-    if not blink_features:
+    if not blink_features and not webdx_feature_names:
         return None
 
     def get_feature_names(feature_map, feature_type):
@@ -206,6 +212,7 @@ def get_features(page, wptid):
         get_feature_names(blink_features.get("Features"), "default")
         + get_feature_names(blink_features.get("CSSFeatures"), "css")
         + get_feature_names(blink_features.get("AnimatedCSSFeatures"), "animated-css")
+        + webdx_feature_names
     )
 
 
@@ -505,6 +512,7 @@ def trim_page(src_page):
                 '_well-known',
                 '_wpt_bodies',
                 '_blinkFeatureFirstUsed',
+                '_webdx_features',
                 '_CrUX'
               ]
     for field in FIELDS:

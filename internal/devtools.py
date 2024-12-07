@@ -1092,6 +1092,7 @@ class DevTools(object):
 
     def wait_for_page_load(self):
         """Wait for the page load and activity to finish"""
+        logging.debug("Waiting for page load")
         self.profile_start('wait_for_page_load')
         if self.websocket:
             start_time = monotonic()
@@ -1123,6 +1124,7 @@ class DevTools(object):
                         now < end_time:
                     continue
                 if self.nav_error is not None:
+                    logging.debug("Waiting for page load - Nav error")
                     done = True
                     if self.page_loaded is None or 'minimumTestSeconds' in self.task:
                         self.task['error'] = self.nav_error
@@ -1140,6 +1142,7 @@ class DevTools(object):
                         self.task['page_data']['result'] = 99997
                 elif max_requests > 0 and self.request_count > max_requests:
                     done = True
+                    logging.debug("Waiting for page load - max request count reached")
                     # only consider it an error if we didn't get a page load event
                     if self.page_loaded is None:
                         self.task['error'] = "Exceeded Maximum Requests"
@@ -1156,9 +1159,15 @@ class DevTools(object):
                     elapsed_activity = now - self.last_activity
                     elapsed_page_load = now - self.page_loaded if self.page_loaded else 0
                     if elapsed_page_load >= 1 and elapsed_activity >= self.task['activity_time']:
+                        logging.debug("Waiting for page load - elapsed activity time")
                         done = True
                     elif self.task['error'] is not None:
+                        logging.debug("Waiting for page load - error: %s", self.task['error'])
                         done = True
+            if done:
+                logging.debug("Waiting for page load - done")
+            elif self.must_exit:
+                logging.debug("Waiting for page load - must_exit")
         self.profile_end('wait_for_page_load')
     
     def grab_screenshot(self, path, png=True, resize=0):

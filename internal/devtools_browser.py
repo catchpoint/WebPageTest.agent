@@ -53,6 +53,9 @@ class DevtoolsBrowser(object):
         self.webkit_context = None
         self.total_sleep = 0
         self.document_domain = None
+        self.HISTOGRAMS = [
+            'Blink.UseCounter.WebDXFeatures'
+        ]
 
     def shutdown(self):
         """Agent is dying NOW"""
@@ -238,6 +241,7 @@ class DevtoolsBrowser(object):
             return
         if 'page_data' not in task:
             task['page_data'] = {}
+        self.reset_histograms()
         task['page_data']['date'] = time.time()
         task['page_result'] = None
         task['run_start_time'] = monotonic()
@@ -270,6 +274,7 @@ class DevtoolsBrowser(object):
             # Stop recording dev tools
             self.devtools.stop_recording()
             # Collect end of test data from the browser
+            self.collect_histograms(task)
             self.collect_browser_metrics(task)
 
     def run_task(self, task):
@@ -568,6 +573,51 @@ class DevtoolsBrowser(object):
         except Exception:
             logging.exception("Error looking up DOM Node")
         return info
+
+    def reset_histograms(self):
+        """Reset the histogram data we are interested in"""
+        if self.devtools:
+            try:
+                for histogram in self.HISTOGRAMS:
+                    self.devtools.send_command('Browser.getHistogram', {'name': histogram}, wait=True)
+            except Exception:
+                logging.exception("Error resetting histogram %s", histogram)
+
+    def collect_histograms(self, task):
+        """Collect the histogram data we are interested in"""
+        histograms = {}
+        if 'page_data' in self.task and self.devtools:
+            try:
+                for histogram in self.HISTOGRAMS:
+                    result = self.devtools.send_command('Browser.getHistogram', {'name': histogram, 'delta': True}, wait=True)
+                    if result and 'result' in result:
+                        histograms[histogram] = result['result']
+            except Exception:
+                logging.exception("Error resetting histogram %s", histogram)
+
+        if 'Blink.UseCounter.WebDXFeatures' in histograms:
+            try:
+                path = os.path.abspath(os.path.dirname(__file__))
+                with open(os.path.join(path, 'support', 'FEATURES', 'webdx.json'), 'rt', encoding='utf-8') as f:
+                    mapping = json.load(f)
+
+                result = histograms['Blink.UseCounter.WebDXFeatures']
+                if 'histogram' in result and 'buckets' in result['histogram']:
+                    webdx = []
+                    for entry in result['histogram']['buckets']:
+                        if 'low' in entry:
+                            id = str(entry['low'])
+                            if id in mapping:
+                                name = mapping[id]
+                                webdx.append({"name": name, "id": id})
+                            else:
+                                logging.debug("webdx feature %d not found", id)
+                        else:
+                            logging.debug("Unexpected webdx histogram bucket: %s", json.dumps(entry))
+                    self.task['page_data']['webdx_features'] = webdx
+                    logging.debug("webdx features: %s", json.dumps(webdx))
+            except Exception:
+                logging.exception("Error processing webdx features")
 
     def collect_browser_metrics(self, task):
         """Collect all of the in-page browser metrics that we need"""
