@@ -4831,5 +4831,11 @@
     "5206": "Canvas2DIsPointInPath",
     "5207": "Canvas2DIsPointInStroke",
     "5208": "Canvas2DGetImageData",
-    "5209": "V8ExtendingNonExtensibleWithPrivate"
+    "5209": "V8ExtendingNonExtensibleWithPrivate",
+    "5210": "SharedStorageAPI_BatchUpdate_Method",
+    "5211": "PreservesPitch",
+    "5212": "SelectionCustomProperty",
+    "5213": "VerticalFormControls",
+    "5214": "V8AuthenticatorAttestationResponse_GetPublicKey_Method",
+    "5215": "CloseWatcherScriptConstructor"
 }

@@ -12,6 +12,9 @@ SOURCES = {
     'css': {
         'url': 'https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom',
         'prefix': 'CSSProperty'
+    },
+    'webdx': {
+        'url': 'https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/public/mojom/use_counter/metrics/webdx_feature.mojom'
     }
 }
 
