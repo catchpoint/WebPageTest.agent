@@ -222,41 +222,23 @@ def get_technologies(page):
     if not page:
         return None
 
-    app_names = page.get("_detected_apps", {})
-    categories = page.get("_detected", {})
-
-    # When there are no detected apps, it appears as an empty array.
-    if isinstance(app_names, list):
-        app_names = {}
-        categories = {}
-
     technologies = {}
-    app_map = {}
-    for app, info_list in app_names.items():
-        if not info_list:
-            continue
-
-        # There may be multiple info values. Add each to the map.
-        for info in info_list.split(","):
-            app_id = f"{app} {info}" if len(info) > 0 else app
-            app_map[app_id] = app
-
-    for category, apps in categories.items():
-        for app_id in apps.split(","):
-            app = app_map.get(app_id)
-            info = ""
-            if app is None:
-                app = app_id
-            else:
-                info = app_id[len(app):].strip()
-
-            technologies[app] = technologies.get(
-                app, {"technology": app, "info": [], "categories": []}
-            )
-
-            technologies.get(app).get("info").append(info)
-            if category not in technologies.get(app).get("categories"):
-                technologies.get(app).get("categories").append(category)
+    try:
+        detected = page.get("_detected_technologies", {})
+        for id in detected:
+            entry = detected[id]
+            if 'name' in entry:
+                name = entry['name']
+                if name not in technologies:
+                    technologies[name] = {"technology": name, "info": [], "categories": []}
+                if 'version' in entry and len(entry['version'].strip()):
+                    technologies[name]['info'].append(entry['version'].strip())
+                if 'categories' in technologies[name]:
+                    for cat in technologies[name]['categories']:
+                        if 'name' in cat:
+                            technologies[name]['categories'].append(cat['name'].strip())
+    except Exception:
+        logging.exception("Error processing technologies")
 
     return list(technologies.values())
 
