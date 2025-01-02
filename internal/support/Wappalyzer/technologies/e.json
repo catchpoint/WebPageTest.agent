@@ -146,6 +146,20 @@
     ],
     "website": "https://erpnext.com"
   },
+  "Essential Blocks": {
+    "cats": [
+      87
+    ],
+    "description": "Essential Blocks is a Gutenberg Blocks page builder plugin that adds extra functionality to the WordPress Block Editor.",
+    "icon": "essential-blocks.png",
+    "requires": "WordPress",
+    "dom": [
+      "link[href*='/wp-content/uploads/eb-style/']",
+      "link#essential-blocks-frontend-style-css"
+    ],
+    "html": "<div[^>]+class=[\"']wp-block-essential-blocks-*",
+    "website": "https://essential-blocks.com"
+  },
   "ESW": {
     "cats": [
       106

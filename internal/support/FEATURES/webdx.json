@@ -258,5 +258,22 @@
     "256": "VerticalFormControls",
     "257": "PdfViewer",
     "258": "FileSystemAccess",
-    "259": "Closewatcher"
+    "259": "Closewatcher",
+    "260": "ReferrerPolicy",
+    "261": "UrlCanparse",
+    "262": "Writingsuggestions",
+    "263": "Ink",
+    "264": "VirtualKeyboard",
+    "265": "NonCookieStorageAccess",
+    "266": "IntlDurationFormat",
+    "267": "WindowControlsOverlay",
+    "268": "FetchPriority",
+    "269": "Highlight",
+    "270": "DRAFT_ErrorIsError",
+    "271": "ClipboardCustomFormat",
+    "272": "ClipboardSvg",
+    "273": "ClipboardSupports",
+    "274": "BarProp",
+    "275": "BeforeUnload",
+    "276": "BfcacheBlockingReasons"
 }

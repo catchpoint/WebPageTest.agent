@@ -1,4 +1,15 @@
 {
+  "Otter Blocks": {
+    "cats": [
+      87
+    ],
+    "description": "Otter blocks is a Gutenberg Blocks page builder plugin that adds extra functionality to the WordPress Block Editor.",
+    "dom": "link[href*='/wp-content/plugins/otter-blocks']",
+    "html": "<div[^>]+class=[\"']wp-block-themeisle-blocks-*",
+    "icon": "otter-blocks.png",
+    "requires": "WordPress",
+    "website": "https://wordpress.org/plugins/otter-blocks/"
+  },
   "OTYS": {
     "cats": [
       101
@@ -1771,10 +1782,11 @@
     "cats": [
       67
     ],
-    "description": "Osano is a data privacy platform that helps your website become compliant with laws such as GDPR and CCPA.",
+    "description": "Osano is a data privacy platform that helps your website comply with regulations such as GDPR and CCPA.",
     "icon": "Osano.svg",
     "js": {
-      "Osano": ""
+      "Osano": "",
+      "Osano.cm.cmpVersion": "(.+)\\;version:\\1"
     },
     "pricing": [
       "freemium",
@@ -1782,7 +1794,11 @@
       "recurring"
     ],
     "saas": true,
-    "scriptSrc": "cmp\\.osano\\.com/",
+    "scriptSrc": [
+      "cmp\\.osano\\.com/",
+      "ajax/libs/cookieconsent2?/([\\d\\.]+)/cookieconsent.min.js\\;version:\\1",
+      "npm/cookieconsent@(\\d)/build/cookieconsent.min.js\\;version:\\1"
+    ],
     "website": "https://www.osano.com"
   },
   "Osterreichische Post": {

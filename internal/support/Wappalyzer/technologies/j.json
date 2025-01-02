@@ -17,6 +17,22 @@
     ],
     "website": "https://www.j2store.org"
   },
+  "Jadu": {
+    "cats": [
+      1
+    ],
+    "dom": {
+      "footer.site-footer": {
+          "text": "Designed and powered by Jadu"
+      }
+    },
+    "description": "Jadu is a commercial Digital Experience Platform focused on customer self-service with accessibility at the core. Websites, Forms, CRM and Case Management written in PHP with integrations to many enterprise systems.",
+    "headers": {
+      "node": "^jadu-web-."
+    },
+    "icon": "Jadu.png",
+    "website": "https://www.jadu.net"
+  },
   "JANet": {
     "cats": [
       71

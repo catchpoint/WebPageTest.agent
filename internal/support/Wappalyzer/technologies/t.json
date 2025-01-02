@@ -3216,6 +3216,20 @@
     "scriptSrc": "/wp-content/themes/twentytwenty/",
     "website": "https://wordpress.org/themes/twentytwenty"
   },
+  "Twenty Twenty-Four": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Twenty-Four is the default WordPress theme for 2024.",
+    "dom": "link[href*='/wp-content/themes/twentytwentyfour/']",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentytwentyfour/",
+    "website": "https://wordpress.org/themes/twentytwentyfour"
+  },
   "Twenty Twenty-One": {
     "cats": [
       80
@@ -3233,6 +3247,20 @@
     "requires": "WordPress",
     "scriptSrc": "/wp-content/themes/twentytwentyone/",
     "website": "https://wordpress.org/themes/twentytwentyone"
+  },
+  "Twenty Twenty-Five": {
+    "cats": [
+      80
+    ],
+    "description": "Twenty Twenty-Five is the default WordPress theme for 2025.",
+    "dom": "link[href*='/wp-content/themes/twentytwentyfive/']",
+    "icon": "WordPress.svg",
+    "pricing": [
+      "freemium"
+    ],
+    "requires": "WordPress",
+    "scriptSrc": "/wp-content/themes/twentytwentyfive/",
+    "website": "https://wordpress.org/themes/twentytwentyfive"
   },
   "Twenty Twenty-Three": {
     "cats": [

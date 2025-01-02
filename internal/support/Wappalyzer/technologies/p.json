@@ -166,6 +166,17 @@
     "saas": true,
     "website": "https://www.index-education.com/fr/logiciel-gestion-vie-scolaire.php"
   },
+  "PublishPress Blocks": {
+    "cats": [
+      87
+    ],
+    "description": "PublishPress Blocks is a Gutenberg Blocks page builder plugin that adds extra functionality to the WordPress Block Editor.",
+    "icon": "publishpress-blocks.png",
+    "requires": "WordPress",
+    "dom": "link[href*='/wp-content/plugins/advanced-gutenberg/assets/css/blocks.css?ver=([\\d\\.]+))?\\;version:\\1']",
+    "html": "<div[^>]+class=[\"']wp-block-advgb-*",
+    "website": "https://publishpress.com/blocks/"
+  },
   "PWA": {
     "cats": [
       19
