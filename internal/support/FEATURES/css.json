@@ -812,5 +812,20 @@
     "810": "CSSPropertyViewTransitionCaptureMode",
     "811": "CSSPropertyInteractivity",
     "812": "CSSPropertyMasonryFill",
-    "813": "CSSPropertyMasonryDirection"
+    "813": "CSSPropertyMasonryDirection",
+    "814": "CSSPropertyMasonryFlow",
+    "815": "CSSPropertyMasonryAutoTracks",
+    "816": "CSSPropertyResult",
+    "817": "CSSPropertyAnimationTriggerType",
+    "818": "CSSPropertyAnimationTriggerTimeline",
+    "819": "CSSPropertyAnimationTriggerRangeStart",
+    "820": "CSSPropertyAnimationTriggerRangeEnd",
+    "821": "CSSPropertyAnimationTriggerExitRangeStart",
+    "822": "CSSPropertyAnimationTriggerExitRangeEnd",
+    "823": "CSSPropertyInterestTargetShowDelay",
+    "824": "CSSPropertyInterestTargetHideDelay",
+    "825": "CSSPropertyAnimationTriggerRange",
+    "826": "CSSPropertyAnimationTriggerExitRange",
+    "827": "CSSPropertyInterestTargetDelay",
+    "828": "CSSPropertyAnimationTrigger"
 }

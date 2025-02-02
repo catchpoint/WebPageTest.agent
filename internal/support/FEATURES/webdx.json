@@ -275,5 +275,8 @@
     "273": "ClipboardSupports",
     "274": "BarProp",
     "275": "BeforeUnload",
-    "276": "BfcacheBlockingReasons"
+    "276": "BfcacheBlockingReasons",
+    "277": "LayoutInstability",
+    "278": "Profiler",
+    "279": "AsyncIterableStreams"
 }
