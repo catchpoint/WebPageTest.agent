@@ -18,7 +18,6 @@ FROM ubuntu:22.04 as production
 ARG TIMEZONE=UTC
 
 ### UPDATE ###
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt update 
 
 ### INSTALL APT-GET LIBS ###
@@ -30,8 +29,12 @@ RUN ln -fs /usr/share/zoneinfo/$TIMEZONE /etc/localtime && DEBIAN_FRONTEND=nonin
     libtiff5-dev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk \
     python3-dev libavutil-dev libmp3lame-dev libx264-dev yasm autoconf automake build-essential libass-dev libfreetype6-dev libtheora-dev \
     libtool libvorbis-dev pkg-config texi2html libtext-unidecode-perl python3-numpy python3-scipy perl \
-    adb ethtool nodejs cmake git-core libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget \
-    ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans ffmpeg npm sudo curl xvfb
+    adb ethtool cmake git-core libsdl2-dev libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev texinfo wget \
+    ttf-mscorefonts-installer fonts-noto fonts-roboto fonts-open-sans ffmpeg sudo curl xvfb
+
+### INSTALL NodeJS ###
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install nodejs npm -y
 
 ### UPDATE FONT CACHE ###
 RUN fc-cache -f -v
