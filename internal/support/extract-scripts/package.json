@@ -1,0 +1,16 @@
+{
+  "name": "extract-scripts",
+  "version": "1.0.0",
+  "description": "Extract script functions from JS and HTML",
+  "main": "extract-scripts.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "pmeenan",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "esprima": "^4.0.1",
+    "glob": "^11.0.1"
+  }
+}

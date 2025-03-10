@@ -102,6 +102,7 @@ class DevTools(object):
         self.key_definitions = {}
         self.wait_interval = 5.0
         self.wait_for_script = None
+        self.scripts = {}
         keyfile = os.path.join(os.path.dirname(__file__), 'support', 'keys.json')
         try:
             with open(keyfile, 'rt') as f_in:
@@ -121,6 +122,7 @@ class DevTools(object):
         self.console_log = []
         self.audit_issues = []
         self.performance_timing = []
+        self.scripts = {}
         self.nav_error = None
         self.nav_error_code = None
         self.start_timestamp = None
@@ -564,6 +566,8 @@ class DevTools(object):
         log_file = self.path_base + '_console_log.json.gz'
         with gzip.open(log_file, GZIP_TEXT, 7) as f_out:
             json.dump(self.console_log, f_out)
+        # Save the script sources
+        self.collect_scripts()
         self.send_command('Inspector.disable', {})
         self.send_command('Page.disable', {})
         self.send_command('Debugger.disable', {})
@@ -589,6 +593,30 @@ class DevTools(object):
             logging.debug("Done processing the trace events: %0.3fs", elapsed)
             self.trace_parser = None
         self.profile_end('stop_recording')
+    
+    def collect_scripts(self):
+        """Collect the bodies for all of the scripts and save them in a json file to be parsed"""
+        try:
+            scripts = {}
+            for id in self.scripts:
+                script = self.scripts[id]
+                url = script['url'] if 'url' in script else ''
+                response = self.send_command("Debugger.getScriptSource", {"scriptId": id}, wait=True)
+                if response is not None and 'result' in response and 'scriptSource' in response['result']:
+                    src = response['result']['scriptSource']
+                    if len(src) > 100:
+                        scripts[id] = {'url': url, 'src': src, 'size': len(src)}
+            if len(scripts):
+                scripts_file = self.path_base + '_scripts.json'
+                with open(scripts_file, 'wt') as f_out:
+                    json.dump(scripts, f_out)
+                if os.path.exists(scripts_file):
+                    directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'support', 'extract-scripts')
+                    script_chunks_file = self.path_base + '_script_chunks.json'
+                    subprocess.call(['node', 'extract-scripts.js', scripts_file, script_chunks_file], cwd=directory)
+                    os.unlink(scripts_file)
+        except Exception:
+            logging.exception('Error collecting script chunks')
 
     def wait_for_pending_commands(self, timeout):
         """Wait for any queued commands"""
@@ -1625,6 +1653,12 @@ class DevTools(object):
         """Handle Debugger.* events"""
         if event == 'paused':
             self.send_command('Debugger.resume', {})
+        elif event == 'scriptParsed':
+            if 'params' in msg and 'scriptId' in msg['params'] and 'url' in msg['params'] and len(msg['params']['url']):
+                if 'scriptLanguage' in msg['params'] and msg['params']['scriptLanguage'] != 'JavaScript':
+                    return
+                script = {'url': msg['params']['url']}
+                self.scripts[msg['params']['scriptId']] = script
 
     def process_runtime_event(self, event, msg):
         """Handle Runtime.* events"""

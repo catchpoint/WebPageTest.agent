@@ -1222,6 +1222,30 @@ class ProcessTest(object):
 
         return row.SerializeToString()
 
+    def create_script_chunk_row(self, chunk):
+        """ Create a serialized protobuf of a single script chunk """
+        from google.protobuf import descriptor_pb2
+        from schema import script_chunks_pb2
+
+        row = script_chunks_pb2.ScriptChunkRecord()
+
+        row.date = self.bigquery_date(chunk['date'])
+        row.client = chunk['client']
+        row.page = chunk['page']
+        if 'is_root_page' in chunk and chunk['is_root_page'] is not None:
+            row.is_root_page = chunk['is_root_page']
+        if 'rank' in chunk and chunk['rank'] is not None:
+            row.rank = chunk['rank']
+        row.url = chunk['url']
+        row.hash = chunk['hash']
+        row.content = chunk['content']
+        if 'chunk_type' in chunk and chunk['chunk_type'] is not None:
+            row.chunk_type = chunk['chunk_type']
+        if 'size' in chunk and chunk['size'] is not None:
+            row.size = chunk['size']
+
+        return row.SerializeToString()
+
     def bigquery_write(self, write_client, datastore, rows, table):
         """ Upload one of the tables of the processed HAR data to bigquery """
         logging.debug('Writing BigQuery data for "%s" ...', table)
@@ -1230,7 +1254,7 @@ class ProcessTest(object):
         try:
             from google.protobuf import descriptor_pb2
             from google.cloud.bigquery_storage_v1 import types, writer
-            from schema import all_pages_pb2, all_requests_pb2, all_parsed_css_pb2
+            from schema import all_pages_pb2, all_requests_pb2, all_parsed_css_pb2, script_chunks_pb2
 
             project_id, dataset_id = datastore.split('.')
             parent = write_client.table_path(project_id, dataset_id, table)
@@ -1248,6 +1272,8 @@ class ProcessTest(object):
                 all_requests_pb2.RequestRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
             elif table == 'parsed_css':
                 all_parsed_css_pb2.CSSRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
+            elif table == 'script_chunks':
+                script_chunks_pb2.CSSRecord.DESCRIPTOR.CopyToProto(proto_descriptor)
             proto_schema.proto_descriptor = proto_descriptor
             proto_data = types.AppendRowsRequest.ProtoData()
             proto_data.writer_schema = proto_schema
@@ -1266,6 +1292,8 @@ class ProcessTest(object):
                     proto_rows.serialized_rows.append(self.create_request_row(row))
                 elif table == 'parsed_css':
                     proto_rows.serialized_rows.append(self.create_parsed_css_row(row))
+                elif table == 'script_chunks':
+                    proto_rows.serialized_rows.append(self.create_script_chunk_row(row))
 
                 request = types.AppendRowsRequest()
                 proto_data = types.AppendRowsRequest.ProtoData()
@@ -1279,6 +1307,36 @@ class ProcessTest(object):
         except Exception:
             logging.exception('Error writing to bigquery')
 
+    def get_script_chunks(self, pages):
+        """ Process the extracted script chunks """
+        chunks = []
+        try:
+            script_chunks_file = os.path.join(self.task['dir'], self.task['prefix'] + '_script_chunks.json')
+            if pages and os.path.exists(script_chunks_file):
+                date = pages[0]['date']
+                client = pages[0]['client']
+                page = pages[0]['page']
+                is_root_page = pages[0]['is_root_page'] if 'is_root_page' in pages[0] else None
+                rank = pages[0]['rank'] if 'rank' in pages[0] else None
+                with open(script_chunks_file, 'r', encoding='utf-8') as f:
+                    all_chunks = json.load(f)
+                    for c in all_chunks:
+                        chunk = {'date': date,
+                                 'client': client,
+                                 'page': page,
+                                 'is_root_page': is_root_page,
+                                 'rank': rank,
+                                 'url': c['url'],
+                                 'hash': c['hash'],
+                                 'content': c['src'],
+                                 'chunk_type': c['type'],
+                                 'size': c['size'],}
+                        chunks.append(chunk)
+        except Exception:
+            logging.exception("Error processing script chunks")
+
+        return chunks
+
     def upload_bigquery(self, har, file_name, datastore):
         """ Upload the processed HAR data to bigquery """
         logging.debug('Processing HAR for BigQuery...')
@@ -1290,12 +1348,14 @@ class ProcessTest(object):
             pages = httparchive.get_page(file_name, har)
             requests = httparchive.get_requests(file_name, har)
             parsed_css = httparchive.get_parsed_css(file_name, har)
+            script_chunks = self.get_script_chunks(pages)
 
             write_client = bigquery_storage_v1.BigQueryWriteClient()
             with write_client:
                 self.bigquery_write(write_client, datastore, pages, 'pages')
                 self.bigquery_write(write_client, datastore, requests, 'requests')
                 self.bigquery_write(write_client, datastore, parsed_css, 'parsed_css')
+                self.bigquery_write(write_client, datastore, script_chunks, 'script_chunks')
         except Exception:
             logging.exception('Error uploading to bigquery')
 

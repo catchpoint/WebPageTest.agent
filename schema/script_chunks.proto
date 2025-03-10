@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+// Maps to httparchive.crawl_staging.script_chunks schema
+message ScriptChunkRecord {
+
+  // number of days since the Unix epoch
+  required int32 date = 1;
+
+  // Test environment: desktop or mobile
+  required string client = 2;
+
+  // The URL of the page being tested
+  required string page = 3;
+
+  // Whether the page is the root of the origin
+  optional bool is_root_page = 4;
+
+  // Site popularity rank, from CrUX
+  optional int32 rank = 6;
+
+  // The URL of the request
+  required string url = 7;
+
+  // SHA-256 hash of the chunk contents
+  required string hash = 8;
+
+  // raw chunk contents
+  required string content = 9;
+
+  // Type of chunk
+  optional string chunk_type = 10;
+
+  // Size of the chunk in bytes
+  optional int32 size = 11;
+}
