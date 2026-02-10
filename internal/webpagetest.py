@@ -201,6 +201,9 @@ class WebPageTest(object):
         # Load any locally-defined custom metrics from {agent root}/custom/metrics/*.js
         self.custom_metrics = {}
         self.load_local_custom_metrics()
+        # Warn if no server is configured
+        if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0 and not self.options.pubsub:
+            logging.warning("No WebPageTest server configured. Please specify --server option (e.g., --server http://your-server.com/work/) or --scheduler option.")
     # pylint: enable=E0611
 
     def load_local_custom_metrics(self):
@@ -631,6 +634,7 @@ class WebPageTest(object):
         proxies = {"http": None, "https": None}
         from .os_util import get_free_disk_space
         if len(self.work_servers) == 0 and len(self.scheduler_nodes) == 0:
+            logging.critical("No work servers or scheduler nodes configured. Please specify --server or --scheduler options.")
             return None
         job = None
         self.raw_job = None
@@ -746,7 +750,10 @@ class WebPageTest(object):
                     count -= 1
                     retry = True
             except requests.exceptions.RequestException as err:
-                logging.critical("Get Work Error: %s", err.strerror)
+                error_msg = str(err)
+                if hasattr(err, 'response') and err.response is not None:
+                    error_msg = "{} (Status: {})".format(error_msg, err.response.status_code)
+                logging.critical("Get Work Error connecting to %s: %s", url, error_msg)
                 now = monotonic()
                 if self.first_failure is None:
                     self.first_failure = now
@@ -755,8 +762,8 @@ class WebPageTest(object):
                 if elapsed > 1800:
                     self.reboot()
                 time.sleep(0.1)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.exception("Unexpected error in get_test: %s", str(e))
             # Rotate through the list of servers
             if not retry and job is None and len(servers) > 0 and not self.scheduler:
                 self.url = str(servers.pop(0))
@@ -768,14 +775,17 @@ class WebPageTest(object):
         return job
 
     def notify_test_started(self, job):
-        """Tell the server that we have started the test. Used when the queueing isn't handled directly by the server responsible for a test"""
+        """
+        Tell the server that we have started the test.
+        Used when the queueing isn't handled directly by the server.
+        """
         if 'work_server' in job and 'Test ID' in job:
             try:
                 url = job['work_server'] + 'started.php?id=' + quote_plus(job['Test ID'])
                 proxies = {"http": None, "https": None}
                 self.session.get(url, timeout=30, proxies=proxies)
             except Exception:
-                logging.exception('Error notifying test start')
+                logging.exception("Unexpected error in notify_test_started")
 
     def get_task(self, job):
         """Create a task object for the next test run or return None if the job is done"""
